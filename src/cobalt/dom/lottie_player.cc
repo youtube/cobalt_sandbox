@@ -82,6 +82,18 @@ void LottiePlayer::set_direction(int direction) {
   SetAttribute("direction", base::Int32ToString(direction));
 }
 
+bool LottiePlayer::hover() const { return GetBooleanAttribute("hover"); }
+
+void LottiePlayer::set_hover(bool hover) {
+  // The value of 'hover' is true when the 'hover' attribute is present.
+  // The value of the attribute is irrelevant.
+  if (hover) {
+    SetBooleanAttribute("hover", true);
+  } else {
+    SetBooleanAttribute("hover", false);
+  }
+}
+
 bool LottiePlayer::loop() const { return properties_.loop; }
 
 void LottiePlayer::set_loop(bool loop) {
@@ -197,6 +209,18 @@ void LottiePlayer::TogglePlay() {
 
 LottieAnimation::LottieProperties LottiePlayer::GetProperties() const {
   return properties_;
+}
+
+void LottiePlayer::OnHover() {
+  if (hover()) {
+    UpdateState(LottieAnimation::LottieState::kPlaying);
+  }
+}
+
+void LottiePlayer::OnUnHover() {
+  if (hover()) {
+    UpdateState(LottieAnimation::LottieState::kStopped);
+  }
 }
 
 void LottiePlayer::PurgeCachedBackgroundImagesOfNodeAndDescendants() {
@@ -435,6 +459,14 @@ void LottiePlayer::SetAnimationEventCallbacks() {
   properties_.onenterframe_callback = base::Bind(
       &LottiePlayer::CallOnEnterFrame, callback_task_runner_,
       base::Bind(&LottiePlayer::OnEnterFrame, base::AsWeakPtr(this)));
+  properties_.onfreeze_callback =
+      base::Bind(base::IgnoreResult(&base::SingleThreadTaskRunner::PostTask),
+                 callback_task_runner_, FROM_HERE,
+                 base::Bind(&LottiePlayer::OnFreeze, base::AsWeakPtr(this)));
+  properties_.onunfreeze_callback =
+      base::Bind(base::IgnoreResult(&base::SingleThreadTaskRunner::PostTask),
+                 callback_task_runner_, FROM_HERE,
+                 base::Bind(&LottiePlayer::OnUnfreeze, base::AsWeakPtr(this)));
 }
 
 void LottiePlayer::OnPlay() { ScheduleEvent(base::Tokens::play()); }
@@ -465,6 +497,20 @@ void LottiePlayer::CallOnEnterFrame(
     double seeker) {
   callback_task_runner->PostTask(
       FROM_HERE, base::Bind(enter_frame_callback, frame, seeker));
+}
+
+void LottiePlayer::OnFreeze() {
+  if (properties_.FreezeAnimationState()) {
+    ScheduleEvent(base::Tokens::freeze());
+    UpdateLottieObjects();
+  }
+}
+
+void LottiePlayer::OnUnfreeze() {
+  if (properties_.UnfreezeAnimationState()) {
+    ScheduleEvent(base::Tokens::play());
+    UpdateLottieObjects();
+  }
 }
 
 }  // namespace dom

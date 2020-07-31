@@ -526,7 +526,7 @@ WebModule::Impl::Impl(const ConstructionData& data)
   DCHECK_LE(0, data.options.encoded_image_cache_capacity);
   loader_factory_.reset(new loader::LoaderFactory(
       name_.c_str(), fetcher_factory_.get(), resource_provider_,
-      data.options.encoded_image_cache_capacity,
+      debugger_hooks_, data.options.encoded_image_cache_capacity,
       data.options.loader_thread_priority));
 
   animated_image_tracker_.reset(new loader::image::AnimatedImageTracker(
@@ -534,7 +534,7 @@ WebModule::Impl::Impl(const ConstructionData& data)
 
   DCHECK_LE(0, data.options.image_cache_capacity);
   image_cache_ = loader::image::CreateImageCache(
-      base::StringPrintf("%s.ImageCache", name_.c_str()),
+      base::StringPrintf("%s.ImageCache", name_.c_str()), debugger_hooks_,
       static_cast<uint32>(data.options.image_cache_capacity),
       loader_factory_.get());
   DCHECK(image_cache_);
@@ -547,13 +547,14 @@ WebModule::Impl::Impl(const ConstructionData& data)
   DCHECK_LE(0, data.options.remote_typeface_cache_capacity);
   remote_typeface_cache_ = loader::font::CreateRemoteTypefaceCache(
       base::StringPrintf("%s.RemoteTypefaceCache", name_.c_str()),
+      debugger_hooks_,
       static_cast<uint32>(data.options.remote_typeface_cache_capacity),
       loader_factory_.get());
   DCHECK(remote_typeface_cache_);
 
   DCHECK_LE(0, data.options.mesh_cache_capacity);
   mesh_cache_ = loader::mesh::CreateMeshCache(
-      base::StringPrintf("%s.MeshCache", name_.c_str()),
+      base::StringPrintf("%s.MeshCache", name_.c_str()), debugger_hooks_,
       static_cast<uint32>(data.options.mesh_cache_capacity),
       loader_factory_.get());
   DCHECK(mesh_cache_);

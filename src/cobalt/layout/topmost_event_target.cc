@@ -23,6 +23,7 @@
 #include "cobalt/dom/event.h"
 #include "cobalt/dom/html_element.h"
 #include "cobalt/dom/html_html_element.h"
+#include "cobalt/dom/lottie_player.h"
 #include "cobalt/dom/mouse_event.h"
 #include "cobalt/dom/mouse_event_init.h"
 #include "cobalt/dom/pointer_event.h"
@@ -144,6 +145,11 @@ void SendStateChangeEvents(bool is_pointer_event,
 
     // Send out and leave events.
     if (previous_element) {
+      // LottiePlayer elements may change playback state.
+      if (previous_element->AsLottiePlayer()) {
+        previous_element->AsLottiePlayer()->OnUnHover();
+      }
+
       event_init->set_related_target(target_element);
       if (is_pointer_event) {
         previous_element->DispatchEvent(new dom::PointerEvent(
@@ -190,6 +196,11 @@ void SendStateChangeEvents(bool is_pointer_event,
 
     // Send over and enter events.
     if (target_element) {
+      // LottiePlayer elements may change playback state.
+      if (target_element->AsLottiePlayer()) {
+        target_element->AsLottiePlayer()->OnHover();
+      }
+
       event_init->set_related_target(previous_element);
       if (is_pointer_event) {
         target_element->DispatchEvent(new dom::PointerEvent(

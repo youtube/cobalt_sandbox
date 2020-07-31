@@ -59,6 +59,8 @@ class LottiePlayer : public HTMLElement {
   void set_count(int count);
   int direction() const;
   void set_direction(int direction);
+  bool hover() const;
+  void set_hover(bool hover);
   bool loop() const;
   void set_loop(bool loop);
   std::string mode() const;
@@ -88,6 +90,11 @@ class LottiePlayer : public HTMLElement {
   }
 
   LottieAnimation::LottieProperties GetProperties() const;
+
+  // These functions will be called when there is a hover change for the
+  // element.
+  void OnHover();
+  void OnUnHover();
 
   DEFINE_WRAPPABLE_TYPE(LottiePlayer);
 
@@ -137,6 +144,8 @@ class LottiePlayer : public HTMLElement {
       scoped_refptr<base::SingleThreadTaskRunner> callback_task_runner,
       base::Callback<void(double, double)> enter_frame_callback, double frame,
       double seeker);
+  void OnFreeze();
+  void OnUnfreeze();
 
   scoped_refptr<loader::image::CachedImage> cached_image_;
   std::unique_ptr<loader::image::CachedImage::OnLoadedCallbackHandler>
