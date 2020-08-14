@@ -219,6 +219,42 @@ requirements to do so:
     `PROT_EXEC`) for loading in-memory and performing relocations for Cobalt
     Evergreen binaries
 
+## Building and Running Tests
+
+The `elf_loader_sandbox` binary can be used to run tests in Evergreen mode. This
+is much more lightweight than the `loader_app`, and does not have any knowledge
+about installations or downloading updates.
+
+The `elf_loader_sandbox` is run using two command line switches:
+`--evergreen_library` and `--evergreen_content`. These switches are the path to
+the shared library to be run and the path to that shared library's content.
+These paths should be *relative to the content of the elf_loader_sandbox*.
+
+For example, if we wanted to run the NPLB set of tests and had the following
+directory tree,
+
+```
+.../elf_loader_sandbox
+.../content/app/nplb/lib/libnplb.so
+.../content/app/nplb/content
+```
+
+we would use the following command to run NPLB:
+
+```
+.../elf_loader_sandbox --evergreen_library=app/nplb/lib/libcobalt.so
+                       --evergreen_content=app/nplb/content
+```
+
+Building tests is identical to how they are already built except that a
+different platform configuration must be used. The platform configuration should
+be an Evergreen platform configuration, and have a Starboard ABI file that
+matches the file used by the platform configuration used to build the
+`elf_loader_sandbox`.
+
+For example, building these targets for the Raspberry Pi 2 would use the
+`raspi-2` and `evergreen-arm-hardfp` platform configurations.
+
 ## Verifying Platform Requirements
 
 In order to verify the platform requirements you should run the
@@ -377,6 +413,7 @@ Image required for all slot configurations:
 ```
 .
 ├── content <--(kSbSystemPathContentDirectory)
+│   └── fonts <--(kSbSystemPathFontDirectory, to be explained below)
 │   └── app
 │       └── cobalt <--(SLOT_0)
 │           ├── content <--(relative path defined in kSystemImageContentPath)
@@ -431,8 +468,9 @@ reference.
 ### Fonts
 The system font directory `kSbSystemPathFontDirectory` should be configured to
 point to the `standard` (23MB) or the `limited` (3.1MB) cobalt font packages. An
-easy way to do that is to use the `loader_app/content` directory and setting the
-`cobalt_font_package` to `standard` or `limited` in your port.
+easy way to do that is to use the `kSbSystemPathContentDirectory` to contain
+the system font directory and setting the `cobalt_font_package` to `standard` or
+`limited` in your port.
 
 Cobalt Evergreen (built by Google), will by default use the `minimal` font
 package which is around 16KB to minimize storage requirements. A separate
@@ -442,12 +480,12 @@ On Raspberry Pi this is:
 
 `minimal` set of fonts under:
 ```
-<kSbSystemPathContentDirectory>/fonts/
+<kSbSystemPathContentDirectory>/app/cobalt/content/fonts
 ```
 
 `standard` or `limited` set of fonts under:
 ```
-loader_app/content/fonts
+<kSbSystemPathContentDirectory>/fonts
 ```
 
 ### ICU Tables
@@ -467,6 +505,16 @@ stored under the content location for the installation:
 ```
 <SLOT_#>/content/icu
 ```
+
+### Handling Pending Updates
+Pending updates will be picked up on the next application start, which means
+that on platforms that support suspending the platform should check
+`loader_app::IsPendingRestart` and call `SbSystemRequestStop` instead of
+ suspending if there is a pending restart.
+
+Please see
+[`suspend_signals.cc`](https://cobalt.googlesource.com/cobalt/+/refs/heads/master/src/starboard/shared/signal/suspend_signals.cc)
+for an example.
 
 ### Multi-App Support
 Evergreen can support multiple apps that share a Cobalt binary. This is a very
