@@ -24,6 +24,32 @@ device. The package being built here is referred to as CoAT (Cobalt on Android T
     PATH=${PATH}:/path/to/depot_tools
     ```
 
+1.  Additional build dependencies may need to be installed:
+    ```
+    sudo apt-get install python python-pip
+    ```
+
+    If `python-pip` is not available via your package mangaer, you can install `pip` following [recommended instructions](https://pip.pypa.io/en/stable/installing/) from the official Python guide.
+
+    There are also some Python module requirements:
+
+    ```
+    python -m pip install requests
+    ```
+
+1.  Install ccache to support build acceleration. ccache is automatically used
+    when available, otherwise defaults to unaccelerated building:
+
+    ```
+    $ sudo apt-get install ccache
+    ```
+
+    We recommend adjusting the cache size as needed to increase cache hits:
+
+    ```
+    $ ccache --max-size=20G
+    ```
+
 1.  Download and install [Android Studio](https://developer.android.com/studio/).
 1.  Run `cobalt/build/gyp_cobalt android-x86` to configure the Cobalt build,
     which also installs the SDK and NDK. (This step will have to be repeated

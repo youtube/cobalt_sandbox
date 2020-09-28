@@ -22,6 +22,7 @@ import _env  # pylint: disable=unused-import, relative-import
 from starboard.build.application_configuration import ApplicationConfiguration
 from starboard.optional import get_optional_tests
 from starboard.sabi import sabi
+from starboard.tools import ccache
 from starboard.tools import environment
 from starboard.tools import paths
 from starboard.tools import platform
@@ -62,13 +63,22 @@ class PlatformConfiguration(object):
                asan_enabled_by_default=False,
                directory=None):
     self._platform_name = platform_name
+    self._asan_default = 1 if asan_enabled_by_default else 0
     if directory:
       self._directory = directory
     else:
       self._directory = os.path.realpath(os.path.dirname(__file__))
-    self._asan_default = 1 if asan_enabled_by_default else 0
     self._application_configuration = None
     self._application_configuration_search_path = [self._directory]
+
+    # Specifies the build accelerator to be used. Default is ccache.
+    build_accelerator = ccache.Ccache()
+    if build_accelerator.Use():
+      self.build_accelerator = build_accelerator.GetName()
+      logging.info('Using %sbuild accelerator.', self.build_accelerator)
+    else:
+      self.build_accelerator = ''
+      logging.info('Not using a build accelerator.')
 
   def GetBuildFormat(self):
     """Returns the desired build format."""
