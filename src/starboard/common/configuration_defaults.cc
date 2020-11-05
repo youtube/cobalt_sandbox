@@ -30,7 +30,11 @@ int CobaltEglSwapIntervalDefault() {
 }
 
 const char* CobaltFallbackSplashScreenUrlDefault() {
-  return "none";
+  return "h5vcc-embedded://black_splash_screen.html";
+}
+
+const char* CobaltFallbackSplashScreenTopicsDefault() {
+  return "";
 }
 
 bool CobaltEnableQuicDefault() {

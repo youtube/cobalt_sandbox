@@ -17,9 +17,11 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "base/optional.h"
 #include "base/synchronization/lock.h"
+#include "cobalt/loader/cache_fetcher.h"
 #include "url/gurl.h"
 
 namespace cobalt {
@@ -36,25 +38,46 @@ class SplashScreenCache {
   SplashScreenCache();
 
   // Cache the splash screen.
-  bool CacheSplashScreen(const std::string& key,
-                         const std::string& content) const;
+  bool CacheSplashScreen(const std::string& content,
+                         const base::Optional<std::string>& topic) const;
 
   // Read the cached the splash screen.
   int ReadCachedSplashScreen(const std::string& key,
                              std::unique_ptr<char[]>* result) const;
 
-  // Determine if a splash screen is cached corresponding to the key.
-  bool IsSplashScreenCached(const std::string& key) const;
+  // Determine if a splash screen is cached corresponding to the current url.
+  bool IsSplashScreenCached() const;
 
-  // Get the key that corresponds to a starting URL. Optionally create
-  // subdirectories along the path.
-  static base::Optional<std::string> GetKeyForStartUrl(const GURL& url);
+  // Set the URL of the currently requested splash screen.
+  void SetUrl(const GURL& url, const base::Optional<std::string>& topic) {
+    url_ = url;
+    topic_ = topic;
+  }
+
+  // Get the cache location of the currently requested splash screen.
+  GURL GetCachedSplashScreenUrl() {
+    base::Optional<std::string> key = GetKeyForStartConfig(url_, topic_);
+    return GURL(loader::kCacheScheme + ("://" + *key));
+  }
 
  private:
+  // Get the key that corresponds to the starting URL and (optional) topic.
+  base::Optional<std::string> GetKeyForStartConfig(
+      const GURL& url, const base::Optional<std::string>& topic) const;
+
+  // Adds the directory to the path and subpath if the new path does not exceed
+  // maximum length. Returns true if successful.
+  bool AddPathDirectory(const std::string& directory, std::vector<char>& path,
+                        std::string& subpath) const;
+
   // Lock to protect access to the cache file.
   mutable base::Lock lock_;
   // Hash of the last read page contents.
   mutable uint32_t last_page_hash_;
+  // Latest url that was navigated to.
+  GURL url_;
+  // Splash topic associated with startup.
+  base::Optional<std::string> topic_;
 };
 
 }  // namespace browser
