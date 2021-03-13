@@ -5,6 +5,7 @@
 #include "cobalt/updater/configurator.h"
 
 #include <set>
+#include <utility>
 
 #include "base/version.h"
 #include "cobalt/script/javascript_engine.h"
@@ -48,16 +49,18 @@ const std::set<std::string> valid_channels = {
     "tcrash",
     // Test an update that fails verification.
     "tfailv",
+    // Test an update that works for one app only.
+    "t1app",
     // Test a series of continuous updates with two channels.
     "tseries1", "tseries2",
 };
 
 #if defined(COBALT_BUILD_TYPE_DEBUG) || defined(COBALT_BUILD_TYPE_DEVEL)
-const std::string kDefaultUpdaterChannel = "dev";
+const char kDefaultUpdaterChannel[] = "dev";
 #elif defined(COBALT_BUILD_TYPE_QA)
-const std::string kDefaultUpdaterChannel = "qa";
+const char kDefaultUpdaterChannel[] = "qa";
 #elif defined(COBALT_BUILD_TYPE_GOLD)
-const std::string kDefaultUpdaterChannel = "prod";
+const char kDefaultUpdaterChannel[] = "prod";
 #endif
 
 std::string GetDeviceProperty(SbSystemPropertyId id) {
@@ -140,7 +143,7 @@ std::string Configurator::GetLang() const {
 }
 
 std::string Configurator::GetOSLongName() const {
-  return "Starboard";  // version_info::GetOSType();
+  return GetDeviceProperty(kSbSystemPropertyPlatformName);
 }
 
 base::flat_map<std::string, std::string> Configurator::ExtraRequestParams()
@@ -160,6 +163,18 @@ base::flat_map<std::string, std::string> Configurator::ExtraRequestParams()
   // Model name
   params.insert(
       std::make_pair("model", GetDeviceProperty(kSbSystemPropertyModelName)));
+
+  // Chipset model number
+  params.insert(std::make_pair(
+      "chipset", GetDeviceProperty(kSbSystemPropertyChipsetModelNumber)));
+
+  // Firmware version
+  params.insert(std::make_pair(
+      "firmware", GetDeviceProperty(kSbSystemPropertyFirmwareVersion)));
+
+  // Model year
+  params.insert(
+      std::make_pair("year", GetDeviceProperty(kSbSystemPropertyModelYear)));
 
   return params;
 }
@@ -231,7 +246,6 @@ std::string Configurator::GetChannel() const {
 void Configurator::SetChannel(const std::string& updater_channel) {
   base::AutoLock auto_lock(updater_channel_lock_);
   updater_channel_ = updater_channel;
-  persisted_data_->SetUpdaterChannel(GetAppGuid(), updater_channel);
 }
 
 bool Configurator::IsChannelValid(const std::string& channel) {

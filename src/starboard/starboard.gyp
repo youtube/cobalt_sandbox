@@ -25,6 +25,7 @@
         ['sb_evergreen == 1', {
           'dependencies': [
             '<(DEPTH)/starboard/client_porting/eztime/eztime.gyp:eztime',
+            '<(DEPTH)/starboard/elf_loader/sabi_string.gyp:sabi_string',
             '<(DEPTH)/starboard/starboard_headers_only.gyp:starboard_headers_only',
             '<(DEPTH)/third_party/llvm-project/compiler-rt/compiler-rt.gyp:compiler_rt',
             '<(DEPTH)/third_party/llvm-project/libcxx/libcxx.gyp:cxx',
@@ -52,7 +53,7 @@
         '<(DEPTH)/<(starboard_path)/starboard_platform.gyp:starboard_platform',
       ],
       'conditions': [
-        ['sb_crashpad_enabled == 1', {
+        ['sb_evergreen_compatible == 1', {
           'dependencies': [
             '<(DEPTH)/third_party/crashpad/wrapper/wrapper.gyp:crashpad_wrapper',
           ],

@@ -84,6 +84,19 @@ jint SbMediaRangeIdToColorRange(SbMediaRangeId range_id) {
 }  // namespace
 
 extern "C" SB_EXPORT_PLATFORM void
+Java_dev_cobalt_media_MediaCodecBridge_nativeOnMediaCodecFrameRendered(
+    JNIEnv* env,
+    jobject unused_this,
+    jlong native_media_codec_bridge,
+    jlong presentation_time_us,
+    jlong render_at_system_time_ns) {
+  MediaCodecBridge* media_codec_bridge =
+      reinterpret_cast<MediaCodecBridge*>(native_media_codec_bridge);
+  SB_DCHECK(media_codec_bridge);
+  media_codec_bridge->OnMediaCodecFrameRendered(presentation_time_us);
+}
+
+extern "C" SB_EXPORT_PLATFORM void
 Java_dev_cobalt_media_MediaCodecBridge_nativeOnMediaCodecError(
     JniEnvExt* env,
     jobject unused_this,
@@ -176,11 +189,13 @@ scoped_ptr<MediaCodecBridge> MediaCodecBridge::CreateVideoMediaCodecBridge(
     SbMediaVideoCodec video_codec,
     int width,
     int height,
+    int fps,
     Handler* handler,
     jobject j_surface,
     jobject j_media_crypto,
     const SbMediaColorMetadata* color_metadata,
     bool require_software_codec,
+    int tunnel_mode_audio_session_id,
     std::string* error_message) {
   SB_DCHECK(error_message);
 
@@ -205,7 +220,7 @@ scoped_ptr<MediaCodecBridge> MediaCodecBridge::CreateVideoMediaCodecBridge(
         color_range != COLOR_VALUE_UNKNOWN) {
       const auto& mastering_metadata = color_metadata->mastering_metadata;
       j_color_info.Reset(env->NewObjectOrAbort(
-          "dev/cobalt/media/MediaCodecBridge$ColorInfo", "(IIIFFFFFFFFFF)V",
+          "dev/cobalt/media/MediaCodecBridge$ColorInfo", "(IIIFFFFFFFFFFII)V",
           color_range, color_standard, color_transfer,
           mastering_metadata.primary_r_chromaticity_x,
           mastering_metadata.primary_r_chromaticity_y,
@@ -215,7 +230,8 @@ scoped_ptr<MediaCodecBridge> MediaCodecBridge::CreateVideoMediaCodecBridge(
           mastering_metadata.primary_b_chromaticity_y,
           mastering_metadata.white_point_chromaticity_x,
           mastering_metadata.white_point_chromaticity_y,
-          mastering_metadata.luminance_max, mastering_metadata.luminance_min));
+          mastering_metadata.luminance_max, mastering_metadata.luminance_min,
+          color_metadata->max_cll, color_metadata->max_fall));
     }
   }
 
@@ -228,14 +244,15 @@ scoped_ptr<MediaCodecBridge> MediaCodecBridge::CreateVideoMediaCodecBridge(
       new MediaCodecBridge(handler));
   env->CallStaticVoidMethodOrAbort(
       "dev/cobalt/media/MediaCodecBridge", "createVideoMediaCodecBridge",
-      "(JLjava/lang/String;ZZIILandroid/view/Surface;"
+      "(JLjava/lang/String;ZZIIILandroid/view/Surface;"
       "Landroid/media/MediaCrypto;"
       "Ldev/cobalt/media/MediaCodecBridge$ColorInfo;"
+      "I"
       "Ldev/cobalt/media/MediaCodecBridge$CreateMediaCodecBridgeResult;)"
       "V",
       reinterpret_cast<jlong>(native_media_codec_bridge.get()), j_mime.Get(),
-      !!j_media_crypto, require_software_codec, width, height, j_surface,
-      j_media_crypto, j_color_info.Get(),
+      !!j_media_crypto, require_software_codec, width, height, fps, j_surface,
+      j_media_crypto, j_color_info.Get(), tunnel_mode_audio_session_id,
       j_create_media_codec_bridge_result.Get());
 
   jobject j_media_codec_bridge = env->CallObjectMethodOrAbort(
@@ -379,8 +396,9 @@ AudioOutputFormatResult MediaCodecBridge::GetAudioOutputFormat() {
     return {status, 0, 0};
   }
 
-  return {status, env->CallIntMethodOrAbort(j_reused_get_output_format_result_,
-                                            "sampleRate", "()I"),
+  return {status,
+          env->CallIntMethodOrAbort(j_reused_get_output_format_result_,
+                                    "sampleRate", "()I"),
           env->CallIntMethodOrAbort(j_reused_get_output_format_result_,
                                     "channelCount", "()I")};
 }
@@ -407,6 +425,10 @@ void MediaCodecBridge::OnMediaCodecOutputBufferAvailable(
 
 void MediaCodecBridge::OnMediaCodecOutputFormatChanged() {
   handler_->OnMediaCodecOutputFormatChanged();
+}
+
+void MediaCodecBridge::OnMediaCodecFrameRendered(SbTime frame_timestamp) {
+  handler_->OnMediaCodecFrameRendered(frame_timestamp);
 }
 
 MediaCodecBridge::MediaCodecBridge(Handler* handler) : handler_(handler) {

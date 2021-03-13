@@ -78,7 +78,8 @@ MediaDecoder::MediaDecoder(Host* host,
     : media_type_(kSbMediaTypeAudio),
       host_(host),
       drm_system_(static_cast<DrmSystem*>(drm_system)),
-      condition_variable_(mutex_) {
+      condition_variable_(mutex_),
+      tunnel_mode_enabled_(false) {
   SB_DCHECK(host_);
 
   jobject j_media_crypto = drm_system_ ? drm_system_->GetMediaCrypto() : NULL;
@@ -103,20 +104,28 @@ MediaDecoder::MediaDecoder(Host* host,
                            SbMediaVideoCodec video_codec,
                            int width,
                            int height,
+                           int fps,
                            jobject j_output_surface,
                            SbDrmSystem drm_system,
                            const SbMediaColorMetadata* color_metadata,
                            bool require_software_codec,
+                           const FrameRenderedCB& frame_rendered_cb,
+                           int tunnel_mode_audio_session_id,
                            std::string* error_message)
     : media_type_(kSbMediaTypeVideo),
       host_(host),
       drm_system_(static_cast<DrmSystem*>(drm_system)),
+      frame_rendered_cb_(frame_rendered_cb),
+      tunnel_mode_enabled_(tunnel_mode_audio_session_id != -1),
       condition_variable_(mutex_) {
+  SB_DCHECK(frame_rendered_cb_);
+
   jobject j_media_crypto = drm_system_ ? drm_system_->GetMediaCrypto() : NULL;
   SB_DCHECK(!drm_system_ || j_media_crypto);
   media_codec_bridge_ = MediaCodecBridge::CreateVideoMediaCodecBridge(
-      video_codec, width, height, this, j_output_surface, j_media_crypto,
-      color_metadata, require_software_codec, error_message);
+      video_codec, width, height, fps, this, j_output_surface, j_media_crypto,
+      color_metadata, require_software_codec, tunnel_mode_audio_session_id,
+      error_message);
   if (!media_codec_bridge_) {
     SB_LOG(ERROR) << "Failed to create video media codec bridge with error: "
                   << *error_message;
@@ -126,7 +135,27 @@ MediaDecoder::MediaDecoder(Host* host,
 MediaDecoder::~MediaDecoder() {
   SB_DCHECK(thread_checker_.CalledOnValidThread());
 
-  JoinOnThreads();
+  destroying_.store(true);
+  condition_variable_.Signal();
+
+  if (SbThreadIsValid(decoder_thread_)) {
+    SbThreadJoin(decoder_thread_, NULL);
+    decoder_thread_ = kSbThreadInvalid;
+  }
+
+  if (is_valid()) {
+    host_->OnFlushing();
+    // After |decoder_thread_| is ended and before |media_codec_bridge_| is
+    // flushed, OnMediaCodecOutputBufferAvailable() would still be called.
+    // So that, |dequeue_output_results_| may not be empty. As
+    // DequeueOutputResult is consisted of plain data, it's fine to let
+    // destructor delete |dequeue_output_results_|.
+    jint status = media_codec_bridge_->Flush();
+    if (status != MEDIA_CODEC_OK) {
+      SB_LOG(ERROR) << "Failed to flush media codec.";
+    }
+    host_ = NULL;
+  }
 }
 
 void MediaDecoder::Initialize(const ErrorCB& error_cb) {
@@ -252,23 +281,35 @@ void MediaDecoder::DecoderThreadFunc() {
           pending_queue_input_buffer_task_ ||
           (!pending_tasks.empty() && !input_buffer_indices.empty());
       bool has_output = !dequeue_output_results.empty();
-      if (!has_input || !has_output) {
+      bool collect_pending_data = false;
+
+      if (tunnel_mode_enabled_) {
+        // We don't explicitly process output in tunnel mode.
+        collect_pending_data = !has_input;
+      } else {
+        collect_pending_data = !has_input || !has_output;
+      }
+
+      if (collect_pending_data) {
         ScopedLock scoped_lock(mutex_);
         CollectPendingData_Locked(&pending_tasks, &input_buffer_indices,
                                   &dequeue_output_results);
       }
 
-      if (!dequeue_output_results.empty()) {
-        auto& dequeue_output_result = dequeue_output_results.front();
-        if (dequeue_output_result.index < 0) {
-          host_->RefreshOutputFormat(media_codec_bridge_.get());
-        } else {
-          host_->ProcessOutputBuffer(media_codec_bridge_.get(),
-                                     dequeue_output_result);
+      if (!tunnel_mode_enabled_) {
+        // Output is only processed when tunnel mode is disabled.
+        if (!dequeue_output_results.empty()) {
+          auto& dequeue_output_result = dequeue_output_results.front();
+          if (dequeue_output_result.index < 0) {
+            host_->RefreshOutputFormat(media_codec_bridge_.get());
+          } else {
+            host_->ProcessOutputBuffer(media_codec_bridge_.get(),
+                                       dequeue_output_result);
+          }
+          dequeue_output_results.erase(dequeue_output_results.begin());
         }
-        dequeue_output_results.erase(dequeue_output_results.begin());
+        host_->Tick(media_codec_bridge_.get());
       }
-      host_->Tick(media_codec_bridge_.get());
 
       bool can_process_input =
           pending_queue_input_buffer_task_ ||
@@ -277,7 +318,11 @@ void MediaDecoder::DecoderThreadFunc() {
         ProcessOneInputBuffer(&pending_tasks, &input_buffer_indices);
       }
 
-      bool ticked = host_->Tick(media_codec_bridge_.get());
+      bool ticked = false;
+      if (!tunnel_mode_enabled_) {
+        // Output is only processed when tunnel mode is disabled.
+        ticked = host_->Tick(media_codec_bridge_.get());
+      }
 
       can_process_input =
           pending_queue_input_buffer_task_ ||
@@ -296,30 +341,6 @@ void MediaDecoder::DecoderThreadFunc() {
   }
 
   SB_LOG(INFO) << "Destroying decoder thread.";
-}
-
-void MediaDecoder::JoinOnThreads() {
-  destroying_.store(true);
-  condition_variable_.Signal();
-
-  if (SbThreadIsValid(decoder_thread_)) {
-    SbThreadJoin(decoder_thread_, NULL);
-    decoder_thread_ = kSbThreadInvalid;
-  }
-
-  if (is_valid()) {
-    host_->OnFlushing();
-    // After |decoder_thread_| is ended and before |media_codec_bridge_| is
-    // flushed, OnMediaCodecOutputBufferAvailable() would still be called.
-    // So that, |dequeue_output_results_| may not be empty. As we call
-    // JoinOnThreads() in destructor and DequeueOutputResult is consisted of
-    // plain data, it's fine to let destructor delete |dequeue_output_results_|.
-    jint status = media_codec_bridge_->Flush();
-    if (status != MEDIA_CODEC_OK) {
-      SB_LOG(ERROR) << "Failed to flush media codec.";
-    }
-    host_ = NULL;
-  }
 }
 
 void MediaDecoder::CollectPendingData_Locked(
@@ -406,8 +427,19 @@ bool MediaDecoder::ProcessOneInputBuffer(
   if (!input_buffer_already_written && event.type != Event::kWriteEndOfStream) {
     ScopedJavaByteBuffer byte_buffer(
         media_codec_bridge_->GetInputBuffer(dequeue_input_result.index));
-    if (byte_buffer.IsNull() || byte_buffer.capacity() < size) {
-      SB_LOG(ERROR) << "Unable to write to MediaCodec input buffer.";
+    if (byte_buffer.IsNull()) {
+      SB_LOG(ERROR) << "Unable to write to MediaCodec buffer, |byte_buffer| is"
+                    << " null.";
+      // TODO: Stop the decoding loop and call error_cb_ on fatal error.
+      return false;
+    }
+    if (byte_buffer.capacity() < size) {
+      auto error_message = FormatString(
+          "Unable to write to MediaCodec buffer, input buffer size (%d) is"
+          " greater than |byte_buffer.capacity()| (%d).",
+          size, static_cast<int>(byte_buffer.capacity()));
+      SB_LOG(ERROR) << error_message;
+      error_cb_(kSbPlayerErrorDecode, error_message);
       return false;
     }
     byte_buffer.CopyInto(data, size);
@@ -432,11 +464,12 @@ bool MediaDecoder::ProcessOneInputBuffer(
     status = media_codec_bridge_->QueueInputBuffer(dequeue_input_result.index,
                                                    kNoOffset, size, kNoPts,
                                                    BUFFER_FLAG_END_OF_STREAM);
+    host_->OnEndOfStreamWritten(media_codec_bridge_.get());
   }
 
   if (status != MEDIA_CODEC_OK) {
     HandleError("queue(Secure)?InputBuffer", status);
-    // TODO: Stop the decoding loop on fatal error.
+    // TODO: Stop the decoding loop and call error_cb_ on fatal error.
     SB_DCHECK(!pending_queue_input_buffer_task_);
     pending_queue_input_buffer_task_ = {dequeue_input_result, event};
     return false;
@@ -559,6 +592,11 @@ void MediaDecoder::OnMediaCodecOutputFormatChanged() {
   ScopedLock scoped_lock(mutex_);
   dequeue_output_results_.push_back(dequeue_output_result);
   condition_variable_.Signal();
+}
+
+void MediaDecoder::OnMediaCodecFrameRendered(SbTime frame_timestamp) {
+  SB_DCHECK(tunnel_mode_enabled_);
+  frame_rendered_cb_(frame_timestamp);
 }
 
 }  // namespace shared

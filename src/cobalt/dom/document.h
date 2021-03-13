@@ -20,6 +20,7 @@
 #include <memory>
 #include <queue>
 #include <string>
+#include <unordered_set>
 
 #include "base/callback.h"
 #include "base/memory/ref_counted.h"
@@ -53,6 +54,7 @@
 #include "cobalt/page_visibility/visibility_state.h"
 #include "cobalt/script/exception_state.h"
 #include "cobalt/script/wrappable.h"
+#include "starboard/time.h"
 #include "url/gurl.h"
 
 namespace cobalt {
@@ -341,6 +343,29 @@ class Document : public Node,
   // Returns whether the computed style is valid after the call.
   bool UpdateComputedStyleOnElementAndAncestor(HTMLElement* element);
 
+  // Called periodically to update the UI navigation system.
+  void UpdateUiNavigation();
+
+  // Track UI navigation system's focus element.
+  const void* ui_nav_focus_element() const { return ui_nav_focus_element_; }
+  bool TrySetUiNavFocusElement(const void* focus_element, SbTimeMonotonic time);
+
+  // Track HTML elements that are UI navigtion items. This facilitates updating
+  // their layout information as needed.
+  void AddUiNavigationElement(HTMLElement* element) {
+    ui_nav_elements_.insert(element);
+  }
+  void RemoveUiNavigationElement(HTMLElement* element) {
+    ui_nav_elements_.erase(element);
+  }
+  const std::unordered_set<HTMLElement*>& ui_navigation_elements() const {
+    return ui_nav_elements_;
+  }
+  void set_ui_nav_needs_layout(bool needs_layout) {
+    ui_nav_needs_layout_ = needs_layout;
+  }
+  bool ui_nav_needs_layout() const { return ui_nav_needs_layout_; }
+
   // Manages the clock used by Web Animations.
   //     https://www.w3.org/TR/web-animations
   // This clock is also used for requestAnimationFrame() callbacks, according
@@ -559,6 +584,26 @@ class Document : public Node,
 
   // Whether or not rendering is currently postponed.
   bool render_postponed_;
+
+  // Indicates whether UI navigation focus needs to be updated.
+  bool ui_nav_focus_needs_update_ = false;
+
+  // Track the current focus of UI navigation. This is only an identifier and
+  // not meant to be dereferenced.
+  const void* ui_nav_focus_element_ = nullptr;
+
+  // Since UI navigation involves multiple threads, use a timestamp to help
+  // filter out obsolete focus changes.
+  SbTimeMonotonic ui_nav_focus_element_update_time_ = 0;
+
+  // Track all HTMLElements in this document which are UI navigation items.
+  // These should be raw pointers to avoid affecting the elements' ref counts.
+  // The elements will explicitly add and remove themselves from this set.
+  std::unordered_set<HTMLElement*> ui_nav_elements_;
+
+  // This specifies whether the UI navigation HTML elements need updating during
+  // layout.
+  bool ui_nav_needs_layout_ = false;
 
   scoped_refptr<IntersectionObserverTaskManager>
       intersection_observer_task_manager_;

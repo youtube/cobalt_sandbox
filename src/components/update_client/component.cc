@@ -603,6 +603,21 @@ void Component::StateChecking::DoHandle() {
 void Component::StateChecking::UpdateCheckComplete() {
   DCHECK(thread_checker_.CalledOnValidThread());
   auto& component = State::component();
+
+#if defined(OS_STARBOARD)
+  auto& config = component.update_context_.config;
+  auto metadata = component.update_context_.update_checker->GetPersistedData();
+  if (metadata != nullptr) {
+    base::ThreadTaskRunnerHandle::Get()->PostTask(
+        FROM_HERE, base::BindOnce(&PersistedData::SetUpdaterChannel,
+                                  base::Unretained(metadata), component.id_,
+                                  config->GetChannel()));
+  } else {
+    SB_LOG(WARNING) << "Failed to get the persisted data store to write the "
+                       "updater channel.";
+  }
+#endif
+
   if (!component.error_code_) {
     if (component.status_ == "ok") {
       TransitionState(std::make_unique<StateCanUpdate>(&component));
@@ -719,9 +734,14 @@ void Component::StateDownloadingDiff::DoHandle() {
 
   DCHECK(component.crx_component());
 
+#if defined(STARBOARD)
+  crx_downloader_ = update_context.crx_downloader_factory(
+      component.CanDoBackgroundDownload(), update_context.config);
+#else
   crx_downloader_ = update_context.crx_downloader_factory(
       component.CanDoBackgroundDownload(),
       update_context.config->GetNetworkFetcherFactory());
+#endif
 
   const auto& id = component.id_;
   crx_downloader_->set_progress_callback(
@@ -788,9 +808,14 @@ void Component::StateDownloading::DoHandle() {
 
   DCHECK(component.crx_component());
 
+#if defined(STARBOARD)
+  crx_downloader_ = update_context.crx_downloader_factory(
+      component.CanDoBackgroundDownload(), update_context.config);
+#else
   crx_downloader_ = update_context.crx_downloader_factory(
       component.CanDoBackgroundDownload(),
       update_context.config->GetNetworkFetcherFactory());
+#endif
 
   const auto& id = component.id_;
   crx_downloader_->set_progress_callback(

@@ -113,24 +113,8 @@ Partners should set `sb_evergreen_compatible` to 1 in their gyp platform config.
 DO NOT set the `sb_evergreen` to 1 in your platform-specific configuration as it
 is used only by Cobalt when building with the Google toolchain.
 
-Partners should additionally ensure they install Crashpad's crash handlers by
-calling the `third_party::crashpad::wrapper::InstallCrashpadHandler()` hook
-directly after installing system crash handler. On linux, for example, this
-could look like:
-```
-#include "third_party/crashpad/wrapper/wrapper.h"
-
-int main(int argc, char** argv) {
-  ...
-  starboard::shared::signal::InstallCrashSignalHandlers();
-  starboard::shared::signal::InstallSuspendSignalHandlers();
-
-  third_party::crashpad::wrapper::InstallCrashpadHandler();
-
-  int result = application.Run(argc, argv);
-  ...
-}
-```
+Additionally, partners should install crash handlers as instructed in the
+[Installing Crash Handlers for Cobalt guide](../crash_handlers.md).
 
 The following additional Starboard interfaces are necessary to implement for
 Evergreen:
@@ -157,6 +141,8 @@ your platform unless it is not one of our supported architectures:
 
 If your target architecture falls outside the support list above, please reach
 out to us for guidance.
+
+#### Adding Crash Handlers to Evergreen
 
 ### What is an example for how this would help me?
 
@@ -242,7 +228,7 @@ directory tree,
 we would use the following command to run NPLB:
 
 ```
-.../elf_loader_sandbox --evergreen_library=app/nplb/lib/libcobalt.so
+.../elf_loader_sandbox --evergreen_library=app/nplb/lib/libnplb.so
                        --evergreen_content=app/nplb/content
 ```
 
@@ -413,12 +399,12 @@ Image required for all slot configurations:
 ```
 .
 ├── content <--(kSbSystemPathContentDirectory)
-│   └── fonts <--(kSbSystemPathFontDirectory, to be explained below)
+│   └── fonts <--(kSbSystemPathFontDirectory, `standard` or `limit` configuration, to be explained below)
 │   └── app
 │       └── cobalt <--(SLOT_0)
 │           ├── content <--(relative path defined in kSystemImageContentPath)
-│           │   ├── fonts
-│           │   ├── icu
+│           │   ├── fonts <--(`minimal` configuration)
+│           │   ├── (icu) <--(only present when it needs to be updated by Cobalt Update)
 │           │   ├── licenses
 │           │   ├── ssl
 │           ├── lib
@@ -438,8 +424,8 @@ updates in an example 3-slot configuration:
     ├── installation_1 <--(SLOT_1 - currently unused)
     ├── installation_2 <--(SLOT_2 - contains new Cobalt version)
     │   ├── content
-    │   │   ├── fonts
-    │   │   ├── icu
+    │   │   ├── fonts <--(`minimal` configuration)
+    │   │   ├── (icu) <--(only present when it needs to be updated by Cobalt Update)
     │   │   ├── licenses
     │   │   ├── ssl
     │   ├── lib
@@ -447,7 +433,7 @@ updates in an example 3-slot configuration:
     │   ├── manifest.fingerprint
     │   └── manifest.json <-- (Evergreen version information of libcobalt.so under SLOT_2)
     ├── installation_store_<APP_KEY>.pb
-    └── icu (To be explained below)
+    └── icu (default location shared by installation slots, to be explained below)
 ```
 
 #### App metadata
@@ -601,7 +587,7 @@ loader_app --url="<YOUR_APP_3_URL>" --disable_updates
 
 loader_app --url="<YOUR_APP_1_URL>"
 loader_app --url="<YOUR_APP_2_URL>"
-loader_app --csp_mode=disable --allow_http --url="file:///<PATH_TO_APP_3>/index.html" --content="/<PATH_TO_APP_3>/content"
+loader_app --csp_mode=disable --allow_http --url="file:///<PATH_TO_APP_3>/index.html" --content="/<PATH_TO_APP_3>/content" --disable_updates
 ```
 
 Please see

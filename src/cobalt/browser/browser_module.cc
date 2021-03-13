@@ -1635,7 +1635,7 @@ void BrowserModule::InitializeSystemWindow() {
 
   if (web_module_) {
     web_module_->SetCamera3D(input_device_manager_->camera_3d());
-    web_module_->SetWebMediaPlayerFactory(media_module_.get());
+    web_module_->SetMediaModule(media_module_.get());
     web_module_->GetUiNavRoot()->SetContainerWindow(
         system_window_->GetSbWindow());
   }
@@ -1880,6 +1880,10 @@ void BrowserModule::GetHeapStatisticsCallback(
 }
 
 void BrowserModule::SubmitCurrentRenderTreeToRenderer() {
+  if (web_module_) {
+    web_module_->GetUiNavRoot()->PerformQueuedUpdates();
+  }
+
   if (!renderer_module_) {
     return;
   }

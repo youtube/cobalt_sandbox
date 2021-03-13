@@ -67,6 +67,7 @@ class AudioTrackAudioSinkType : public SbAudioSinkPrivate::Type {
       SbAudioSinkPrivate::ErrorFunc error_func,
       SbTime start_time,
       int tunnel_mode_audio_session_id,
+      bool enable_audio_routing,
       void* context);
 
   bool IsValid(SbAudioSink audio_sink) override {
@@ -109,6 +110,7 @@ class AudioTrackAudioSink : public SbAudioSinkPrivate {
       SbAudioSinkPrivate::ErrorFunc error_func,
       SbTime start_media_time,
       int tunnel_mode_audio_session_id,
+      bool enable_audio_routing,
       void* context);
   ~AudioTrackAudioSink() override;
 
@@ -125,21 +127,20 @@ class AudioTrackAudioSink : public SbAudioSinkPrivate {
 
   int WriteData(JniEnvExt* env, void* buffer, int size, SbTime sync_time);
 
-  // TODO: Add const to the following variables where appropriate.
-  Type* type_;
-  int channels_;
-  int sampling_frequency_hz_;
-  SbMediaAudioSampleType sample_type_;
+  Type* const type_;
+  const int channels_;
+  const int sampling_frequency_hz_;
+  const SbMediaAudioSampleType sample_type_;
   void* frame_buffer_;
-  int frames_per_channel_;
-  SbAudioSinkUpdateSourceStatusFunc update_source_status_func_;
-  ConsumeFramesFunc consume_frames_func_;
-  SbAudioSinkPrivate::ErrorFunc error_func_;
+  const int frames_per_channel_;
+  const SbAudioSinkUpdateSourceStatusFunc update_source_status_func_;
+  const ConsumeFramesFunc consume_frames_func_;
+  const SbAudioSinkPrivate::ErrorFunc error_func_;
   const SbTime start_time_;
   const int tunnel_mode_audio_session_id_;
   const int max_frames_per_request_;
 
-  void* context_;
+  void* const context_;
   int last_playback_head_position_ = 0;
   jobject j_audio_track_bridge_ = nullptr;
   jobject j_audio_data_ = nullptr;
@@ -149,10 +150,6 @@ class AudioTrackAudioSink : public SbAudioSinkPrivate {
 
   Mutex mutex_;
   double playback_rate_ = 1.0;
-
-  // TODO: Rename to |frames_in_audio_track| and move it into AudioThreadFunc()
-  //       as a local variable.
-  int written_frames_ = 0;
 };
 
 }  // namespace shared

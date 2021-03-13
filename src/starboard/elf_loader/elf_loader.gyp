@@ -53,13 +53,6 @@
         'src/include',
         'src/src/',
       ],
-      'conditions': [
-        ['sb_evergreen_compatible == 1', {
-          'variables': {
-            'sb_crashpad_enabled': 1,
-          },
-        },],
-      ],
       'dependencies': [
         '<(DEPTH)/starboard/elf_loader/evergreen_config.gyp:evergreen_config',
         '<(DEPTH)/starboard/elf_loader/evergreen_info.gyp:evergreen_info',
@@ -109,6 +102,7 @@
       'dependencies': [
         'elf_loader',
         '<(DEPTH)/cobalt/content/fonts/fonts.gyp:copy_font_data',
+        '<(DEPTH)/starboard/elf_loader/sabi_string.gyp:sabi_string',
         '<(DEPTH)/starboard/starboard.gyp:starboard',
         # TODO: Remove this dependency once MediaSession is migrated to use CobaltExtensions.
         '<@(cobalt_platform_dependencies)',

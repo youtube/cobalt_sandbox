@@ -30,11 +30,12 @@ import android.net.NetworkCapabilities;
 import android.os.Build;
 import android.util.Size;
 import android.util.SizeF;
-import android.view.WindowManager;
+import android.view.Display;
 import android.view.accessibility.AccessibilityManager;
 import android.view.accessibility.CaptioningManager;
 import androidx.annotation.RequiresApi;
 import dev.cobalt.account.UserAuthorizer;
+import dev.cobalt.libraries.services.clientloginfo.ClientLogInfo;
 import dev.cobalt.media.AudioOutputManager;
 import dev.cobalt.media.CaptionSettings;
 import dev.cobalt.media.CobaltMediaSession;
@@ -121,6 +122,12 @@ public class StarboardBridge {
     activityHolder.set(activity);
     this.keyboardEditor = keyboardEditor;
     sysConfigChangeReceiver.setForeground(true);
+
+    // TODO: v0_1231sd2 is the default value used for testing,
+    // delete it once we verify it can be queried in QOE system.
+    if (!isReleaseBuild()) {
+      ClientLogInfo.setClientInfo("v0_1231sd2");
+    }
   }
 
   protected void onActivityStop(Activity activity) {
@@ -157,9 +164,9 @@ public class StarboardBridge {
   protected void beforeSuspend() {
     try {
       Log.i(TAG, "Prepare to suspend");
-      // We want the MediaSession to be deactivated immediately before suspending so that by the time
-      // the launcher is visible our "Now Playing" card is already gone. Then Cobalt and the web app
-      // can take their time suspending after that.
+      // We want the MediaSession to be deactivated immediately before suspending so that by the
+      // time, the launcher is visible our "Now Playing" card is already gone. Then Cobalt and
+      // the web app can take their time suspending after that.
       cobaltMediaSession.suspend();
       for (CobaltService service : cobaltServices.values()) {
         service.beforeSuspend();
@@ -304,13 +311,13 @@ public class StarboardBridge {
   @SuppressWarnings("unused")
   @UsedByNative
   SizeF getDisplayDpi() {
-    return DisplayUtil.getDisplayDpi(appContext);
+    return DisplayUtil.getDisplayDpi();
   }
 
   @SuppressWarnings("unused")
   @UsedByNative
   Size getDisplaySize() {
-    return DisplayUtil.getSystemDisplaySize(appContext);
+    return DisplayUtil.getSystemDisplaySize();
   }
 
   /**
@@ -418,7 +425,7 @@ public class StarboardBridge {
   /** Returns Java layer implementation for AndroidUserAuthorizer */
   @SuppressWarnings("unused")
   @UsedByNative
-  UserAuthorizer getUserAuthorizer() {
+  public UserAuthorizer getUserAuthorizer() {
     return userAuthorizer;
   }
 
@@ -525,18 +532,12 @@ public class StarboardBridge {
       return false;
     }
 
-    Activity activity = activityHolder.get();
-    if (activity == null) {
+    Display defaultDisplay = DisplayUtil.getDefaultDisplay();
+    if (defaultDisplay == null) {
       return false;
     }
 
-    WindowManager windowManager = activity.getWindowManager();
-    if (windowManager == null) {
-      return false;
-    }
-
-    int[] supportedHdrTypes =
-        windowManager.getDefaultDisplay().getHdrCapabilities().getSupportedHdrTypes();
+    int[] supportedHdrTypes = defaultDisplay.getHdrCapabilities().getSupportedHdrTypes();
     for (int supportedType : supportedHdrTypes) {
       if (supportedType == hdrType) {
         return true;

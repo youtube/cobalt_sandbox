@@ -51,6 +51,8 @@
         '<(DEPTH)/starboard/raspi/shared/configuration.h',
         '<(DEPTH)/starboard/raspi/shared/dispmanx_util.cc',
         '<(DEPTH)/starboard/raspi/shared/dispmanx_util.h',
+        '<(DEPTH)/starboard/raspi/shared/graphics.cc',
+        '<(DEPTH)/starboard/raspi/shared/graphics.h',
         '<(DEPTH)/starboard/raspi/shared/main.cc',
         '<(DEPTH)/starboard/raspi/shared/media_is_video_supported.cc',
         '<(DEPTH)/starboard/raspi/shared/open_max/decode_target_create.cc',
@@ -281,6 +283,8 @@
         '<(DEPTH)/starboard/shared/starboard/audio_sink/stub_audio_sink_type.h',
         '<(DEPTH)/starboard/shared/starboard/command_line.cc',
         '<(DEPTH)/starboard/shared/starboard/command_line.h',
+        '<(DEPTH)/starboard/shared/starboard/crash_handler.cc',
+        '<(DEPTH)/starboard/shared/starboard/crash_handler.h',
         '<(DEPTH)/starboard/shared/starboard/directory_can_open.cc',
         '<(DEPTH)/starboard/shared/starboard/event_cancel.cc',
         '<(DEPTH)/starboard/shared/starboard/event_schedule.cc',
@@ -426,6 +430,10 @@
           'dependencies': [
             '<(DEPTH)/starboard/elf_loader/evergreen_config.gyp:evergreen_config',
             '<(DEPTH)/starboard/loader_app/pending_restart.gyp:pending_restart',
+          ],},
+        ],
+        ['sb_evergreen_compatible_libunwind == 1', {
+          'dependencies': [
             '<(DEPTH)/third_party/llvm-project/libunwind/libunwind.gyp:unwind_starboard',
           ],},
         ],

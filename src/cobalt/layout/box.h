@@ -16,6 +16,7 @@
 #define COBALT_LAYOUT_BOX_H_
 
 #include <iosfwd>
+#include <memory>
 #include <ostream>
 #include <string>
 #include <vector>
@@ -279,6 +280,8 @@ class Box : public base::RefCounted<Box> {
   // account transforms.
   RectLayoutUnit GetTransformedBoxFromRoot(
       const RectLayoutUnit& box_from_margin_box) const;
+  RectLayoutUnit GetTransformedBoxFromRootWithScroll(
+      const RectLayoutUnit& box_from_margin_box) const;
   RectLayoutUnit GetTransformedBoxFromContainingBlock(
       const ContainerBox* containing_block,
       const RectLayoutUnit& box_from_margin_box) const;
@@ -367,6 +370,8 @@ class Box : public base::RefCounted<Box> {
   }
 
   math::Matrix3F GetMarginBoxTransformFromContainingBlock(
+      const ContainerBox* containing_block) const;
+  math::Matrix3F GetMarginBoxTransformFromContainingBlockWithScroll(
       const ContainerBox* containing_block) const;
 
   Vector2dLayoutUnit GetMarginBoxOffsetFromRoot(
@@ -705,6 +710,9 @@ class Box : public base::RefCounted<Box> {
     blend_background_color_ = value;
   }
 
+  // Configure the box's UI navigation item with the box's position, size, etc.
+  void UpdateUiNavigationItem();
+
   void SetUiNavItem(const scoped_refptr<ui_navigation::NavItem>& item) {
     ui_nav_item_ = item;
   }
@@ -835,6 +843,11 @@ class Box : public base::RefCounted<Box> {
   // and background-image would populate.
   math::RectF GetBackgroundRect();
 
+  // Get the transform for this box from the specified containing block (which
+  // may be null to indicate root).
+  math::Matrix3F GetMarginBoxTransformFromContainingBlockInternal(
+      const ContainerBox* containing_block, bool include_scroll) const;
+
   // Some custom CSS transform functions require a UI navigation focus item as
   // input. This computes the appropriate UI navigation item for this box's
   // transform. This should only be called if the box IsTransformed().
@@ -900,9 +913,6 @@ class Box : public base::RefCounted<Box> {
   scoped_refptr<render_tree::Node> RenderAndAnimateUiNavigationContainer(
       const scoped_refptr<render_tree::Node>& node_to_animate,
       render_tree::animations::AnimateNode::Builder* animate_node_builder);
-
-  // Configure the box's UI navigation item with the box's position, size, etc.
-  void UpdateUiNavigationItem();
 
   // The css_computed_style_declaration_ member references the
   // cssom::CSSComputedStyleDeclaration object owned by the HTML Element from

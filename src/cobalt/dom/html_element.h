@@ -17,6 +17,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "base/compiler_specific.h"
@@ -44,6 +45,7 @@
 #include "cobalt/dom/pseudo_element.h"
 #include "cobalt/loader/image/image_cache.h"
 #include "cobalt/ui_navigation/nav_item.h"
+#include "starboard/time.h"
 
 namespace cobalt {
 namespace dom {
@@ -356,6 +358,10 @@ class HTMLElement : public Element, public cssom::MutationObserver {
     return ui_nav_item_;
   }
 
+  // Update the UI navigation system to focus on the relevant navigation item
+  // for this HTML element (if any).
+  void UpdateUiNavigationFocus();
+
   // Returns true if the element is the root element as defined in
   // https://www.w3.org/TR/html50/semantics.html#the-root-element.
   bool IsRootElement();
@@ -403,6 +409,9 @@ class HTMLElement : public Element, public cssom::MutationObserver {
   // Update the cached value of tabindex.
   void SetTabIndex(const std::string& value);
 
+  // Update cached UI navigation focus duration.
+  void SetUiNavFocusDuration(const std::string& value);
+
   // Invalidate the matching rules and rule matching state in this element and
   // its descendants. In the case where this is the the initial invalidation,
   // it will also invalidate the rule matching state of its siblings.
@@ -412,7 +421,7 @@ class HTMLElement : public Element, public cssom::MutationObserver {
   void ClearRuleMatchingStateInternal(bool invalidate_descendants);
 
   // Update the UI navigation item type for this element.
-  bool UpdateUiNavigationAndReturnIfLayoutBoxesAreValid();
+  void UpdateUiNavigation();
   void ReleaseUiNavigationItem();
 
   // Clear the list of active background images, and notify the animated image
@@ -434,9 +443,9 @@ class HTMLElement : public Element, public cssom::MutationObserver {
   void InvalidateLayoutBoxes();
 
   // Handle UI navigation events.
-  void OnUiNavBlur();
-  void OnUiNavFocus();
-  void OnUiNavScroll();
+  void OnUiNavBlur(SbTimeMonotonic time);
+  void OnUiNavFocus(SbTimeMonotonic time);
+  void OnUiNavScroll(SbTimeMonotonic time);
 
   bool locked_for_focus_;
 
@@ -509,11 +518,12 @@ class HTMLElement : public Element, public cssom::MutationObserver {
   // boxes without requiring a new layout.
   scoped_refptr<ui_navigation::NavItem> ui_nav_item_;
 
-  // This temporary flag is used to avoid a cycle on focus changes. When the
-  // HTML element receives focus, it must inform the UI navigation item. When
-  // the UI navigation item receives focus (either by calling SetFocus or by an
-  // update from the UI engine), it will tell the HTML element it was focused.
-  bool ui_nav_focusing_ = false;
+  // Specify how long focus should remain on this navigation item once it
+  // becomes focused.
+  base::Optional<float> ui_nav_focus_duration_;
+
+  // Signal whether the UI navigation item may need to be updated.
+  bool ui_nav_needs_update_ = false;
 
   // HTMLElement is a friend of Animatable so that animatable can insert and
   // remove animations into HTMLElement's set of animations.

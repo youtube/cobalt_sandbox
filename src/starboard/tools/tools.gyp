@@ -29,13 +29,13 @@
           'action_name': 'package_app_launcher',
           'message': 'Zipping <(app_launcher_zip_file)',
           'inputs': [
-            '<!@(["python", "<(app_launcher_packager_path)", "-l"])',
+            '<!@pymod_do_main(starboard.tools.app_launcher_packager -l)',
           ],
           'outputs': [
             '<(app_launcher_zip_file)',
           ],
           'action': [
-            'python',
+            'python2',
             '<(app_launcher_packager_path)',
             '-z',
             '<(app_launcher_zip_file)',

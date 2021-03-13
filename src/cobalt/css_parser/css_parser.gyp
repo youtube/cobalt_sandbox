@@ -19,7 +19,7 @@
     # Define the platform specific Bison binary.
     'conditions': [
       ['host_os=="win"', {
-        'bison_exe': '<(DEPTH)/third_party/winflexbison/bin/Release/win_bison',
+        'bison_exe': 'win_bison',
       }, {
         'bison_exe': 'bison',
       }],
@@ -33,6 +33,8 @@
     {
       'target_name': 'css_grammar',
       'type': 'none',
+      # This target generates header files which may be used by other targets.
+      'hard_dependency': 1,
       'sources': [
         'grammar.h',
         'grammar.y'
@@ -51,9 +53,6 @@
         {
           'rule_name': 'bison',
           'extension': 'y',
-          # Don't run through Cygwin on Windows since we want to use a custom
-          # Bison executable.
-          'msvs_cygwin_shell': 0,
           'outputs': [
             # Tokens and types, included by scanner.
             '<(SHARED_INTERMEDIATE_DIR)/<(_module_dir)/<(RULE_INPUT_ROOT)_generated.h',

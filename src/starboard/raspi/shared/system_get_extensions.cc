@@ -15,12 +15,16 @@
 #include "starboard/system.h"
 
 #include "cobalt/extension/configuration.h"
+#include "cobalt/extension/crash_handler.h"
+#include "cobalt/extension/graphics.h"
 #include "starboard/common/string.h"
+#include "starboard/shared/starboard/crash_handler.h"
 #if SB_IS(EVERGREEN_COMPATIBLE)
 #include "starboard/elf_loader/evergreen_config.h"
 #endif
 
 #include "starboard/raspi/shared/configuration.h"
+#include "starboard/raspi/shared/graphics.h"
 
 const void* SbSystemGetExtension(const char* name) {
 #if SB_IS(EVERGREEN_COMPATIBLE)
@@ -37,6 +41,12 @@ const void* SbSystemGetExtension(const char* name) {
 
   if (SbStringCompareAll(name, kCobaltExtensionConfigurationName) == 0) {
     return starboard::raspi::shared::GetConfigurationApi();
+  }
+  if (SbStringCompareAll(name, kCobaltExtensionGraphicsName) == 0) {
+    return starboard::raspi::shared::GetGraphicsApi();
+  }
+  if (SbStringCompareAll(name, kCobaltExtensionCrashHandlerName) == 0) {
+    return starboard::common::GetCrashHandlerApi();
   }
   return NULL;
 }

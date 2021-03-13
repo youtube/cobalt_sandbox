@@ -143,6 +143,11 @@ typedef struct SbUiNavInterface {
   // kSbUiNavItemTypeFocus. Any previously focused navigation item should
   // receive the blur event. If the item is not transitively a content of the
   // root item, then this does nothing.
+#if SB_API_VERSION >= SB_UI_NAVIGATION2_VERSION
+  //
+  // Specifying kSbUiNavItemInvalid should remove focus from the UI navigation
+  // system.
+#endif
   void (*set_focus)(SbUiNavItem item);
 
   // This is used to enable or disable user interaction with the specified
@@ -157,7 +162,20 @@ typedef struct SbUiNavInterface {
   // This specifies directionality for container items. Containers within
   // containers do not inherit directionality. Directionality must be specified
   // for each container explicitly.
+#if SB_API_VERSION >= SB_UI_NAVIGATION2_VERSION
+  //
+  // This should work even if |item| is disabled.
+#endif
   void (*set_item_dir)(SbUiNavItem item, SbUiNavItemDir dir);
+
+#if SB_API_VERSION >= SB_UI_NAVIGATION2_VERSION
+  // Set the minimum amount of time the focus item should remain focused once
+  // it becomes focused. This may be used to make important focus items harder
+  // to navigate over. Focus may still be moved before |seconds| has elapsed by
+  // using the set_focus() function.
+  // By default, item focus duration is 0 seconds.
+  void (*set_item_focus_duration)(SbUiNavItem item, float seconds);
+#endif
 
   // Set the interactable size of the specified navigation item. By default,
   // an item's size is (0,0).
@@ -193,6 +211,11 @@ typedef struct SbUiNavInterface {
   // the specified window. Navigation items are only interactable if they are
   // transitively attached to a window.
   //
+#if SB_API_VERSION >= SB_UI_NAVIGATION2_VERSION
+  // The native UI engine should never change this navigation item's content
+  // offset. It is assumed to be used as a proxy for the system window.
+  //
+#endif
   // A navigation item may only have a SbUiNavItem or SbWindow as its direct
   // container. The navigation item hierarchy is established using
   // set_item_container_item() with the root container attached to a SbWindow
@@ -227,6 +250,15 @@ typedef struct SbUiNavInterface {
   //
   // Essentially, content items should be drawn at:
   //   [container position] + [content position] - [container content offset]
+#if SB_API_VERSION >= SB_UI_NAVIGATION2_VERSION
+  //
+  // Content items may overlap within a container. This can cause obscured items
+  // to be unfocusable. The only rule that needs to be followed is that contents
+  // which are focus items can obscure other contents which are containers, but
+  // not vice versa. The caller must ensure that content focus items do not
+  // overlap other content focus items and content container items do not
+  // overlap other content container items.
+#endif
   void (*set_item_container_item)(SbUiNavItem item, SbUiNavItem container);
 
   // Set the current content offset for the given container. This may be used
@@ -236,15 +268,33 @@ typedef struct SbUiNavInterface {
   //   [container position] + [content position] - [container content offset]
   // If |item| is not a container, then this does nothing.
   // By default, the content offset is (0,0).
+#if SB_API_VERSION >= SB_UI_NAVIGATION2_VERSION
+  //
+  // This should update the values returned by get_item_content_offset() even
+  // if the |item| is disabled.
+#endif
   void (*set_item_content_offset)(SbUiNavItem item,
                                   float content_offset_x,
                                   float content_offset_y);
 
   // Retrieve the current content offset for the navigation item. If |item| is
   // not a container, then the content offset is (0,0).
+#if SB_API_VERSION >= SB_UI_NAVIGATION2_VERSION
+  //
+  // The native UI engine should not change the content offset of a container
+  // unless one of its contents (possibly recursively) is focused. This is to
+  // allow seemlessly disabling then re-enabling focus items without having
+  // their containers change offsets.
+#endif
   void (*get_item_content_offset)(SbUiNavItem item,
                                   float* out_content_offset_x,
                                   float* out_content_offset_y);
+
+#if SB_API_VERSION >= SB_UI_NAVIGATION2_VERSION
+  // Call |update_function| with |context| to perform a series of UI navigation
+  // changes atomically before returning.
+  void (*do_batch_update)(void (*update_function)(void*), void* context);
+#endif
 } SbUiNavInterface;
 
 // --- Constants -------------------------------------------------------------

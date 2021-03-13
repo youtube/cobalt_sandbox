@@ -1,3 +1,4 @@
+#!/usr/bin/env python2
 # Copyright (c) 2013 Google Inc. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -685,7 +686,9 @@ class NinjaWriter:
 
   def IsCygwinRule(self, action):
     if self.flavor in sony_flavors:
-      return str(action.get('msvs_cygwin_shell', 1)) != '0'
+      value = str(action.get('msvs_cygwin_shell', 0)) != '0'
+      if value:
+        raise Exception("Cygwin usage is no longer allowed in Cobalt Gyp")
     return False
 
   def WriteActions(self, actions, extra_sources, prebuild,
@@ -1814,11 +1817,8 @@ class NinjaWriter:
     if (self.flavor in windows_host_flavors and is_windows):
       rspfile = rule_name + '.$unique_name.rsp'
       # The cygwin case handles this inside the bash sub-shell.
-      run_in = '' if is_cygwin else ' ' + self.build_to_base
-      if is_cygwin:
-        rspfile_content = self.msvs_settings.BuildCygwinBashCommandLine(
-            args, self.build_to_base)
-      elif self.flavor in sony_flavors:
+      run_in = ' ' + self.build_to_base
+      if self.flavor in sony_flavors:
         rspfile_content = gyp.msvs_emulation.EncodeRspFileList(args)
       else:
         rspfile_content = GetToolchainOrNone(
@@ -2101,6 +2101,12 @@ def GenerateOutputForConfig(target_list, target_dicts, data, params,
       master_ninja.variable('python', sys.executable)
       master_ninja.newline()
 
+    # Write python executables to the master ninja.
+    # Let 'python' resolve to what environment is active.
+    # Assume this file is executed using python2.
+    master_ninja.variable('python2', sys.executable)
+    master_ninja.newline()
+
   except NotImplementedError:
     # Fall back to the legacy toolchain.
 
@@ -2235,6 +2241,12 @@ def GenerateOutputForConfig(target_list, target_dicts, data, params,
     else:
       python_path = 'python'
     master_ninja.variable('python', python_path)
+    master_ninja.newline()
+
+    # Write python executables to the master ninja.
+    # Let 'python' resolve to what environment is active.
+    # Assume this file is executed using python2.
+    master_ninja.variable('python2', sys.executable)
     master_ninja.newline()
 
     master_ninja.pool('link_pool', depth=GetDefaultConcurrentLinks())

@@ -78,7 +78,7 @@
           ['use_system_protobuf==0', {
             'protoc': '<(PRODUCT_DIR)/<(EXECUTABLE_PREFIX)protoc<(EXECUTABLE_SUFFIX)',
           }, { # use_system_protobuf==1
-            'protoc': '<!(which protoc)',
+            'protoc': '<!pymod_do_main(starboard.build.gyp_functions find_program protoc)',
           }],
         ],
       }],
@@ -98,7 +98,7 @@
         '<(cc_dir)/<(RULE_INPUT_ROOT).pb.h',
       ],
       'action': [
-        'python',
+        'python2',
         '<(protoc_wrapper)',
         '--include',
         '<(cc_include)',
@@ -116,7 +116,6 @@
         '--cpp_out', '<(cc_generator_options)<(cc_dir)',
         '--python_out', '<(py_dir)',
       ],
-      'msvs_cygwin_shell': 0,
       'message': 'Generating C++ and Python code from <(RULE_INPUT_PATH)',
       'process_outputs_as_sources': 1,
     },
