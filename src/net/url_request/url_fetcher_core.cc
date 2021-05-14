@@ -137,6 +137,23 @@ URLFetcherCore::URLFetcherCore(
       total_response_bytes_(-1),
       traffic_annotation_(traffic_annotation) {
   CHECK(original_url_.is_valid());
+
+#if SB_API_VERSION >= 11
+  const CobaltExtensionUrlFetcherObserverApi* observer_extension =
+      static_cast<const CobaltExtensionUrlFetcherObserverApi*>(
+          SbSystemGetExtension(kCobaltExtensionUrlFetcherObserverName));
+  if (observer_extension &&
+      SbStringCompareAll(observer_extension->name,
+                         kCobaltExtensionUrlFetcherObserverName) == 0 &&
+      observer_extension->version >= 1) {
+    observer_extension_ = observer_extension;
+    observer_extension_->FetcherCreated(original_url_.spec().c_str());
+  } else {
+    observer_extension_ = nullptr;
+  }
+#else
+  observer_extension_ = nullptr;
+#endif
 }
 
 void URLFetcherCore::Start() {
@@ -598,6 +615,9 @@ void URLFetcherCore::SetIgnoreCertificateRequests(bool ignored) {
 }
 
 URLFetcherCore::~URLFetcherCore() {
+  if (observer_extension_ != nullptr) {
+    observer_extension_->FetcherDestroyed(original_url_.spec().c_str());
+  }
   // |request_| should be NULL. If not, it's unsafe to delete it here since we
   // may not be on the IO thread.
   DCHECK(!request_.get());
@@ -626,6 +646,9 @@ void URLFetcherCore::StartOnIOThread() {
 void URLFetcherCore::StartURLRequest() {
   DCHECK(network_task_runner_->BelongsToCurrentThread());
 
+  if (observer_extension_ != nullptr) {
+    observer_extension_->StartURLRequest(original_url_.spec().c_str());
+  }
   if (was_cancelled_) {
     // Since StartURLRequest() is posted as a *delayed* task, it may
     // run after the URLFetcher was already stopped.
