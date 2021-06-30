@@ -117,6 +117,7 @@ The following starboard functions have been removed:
 * `SbStringFindString`
 * `SbStringGetLength`
 * `SbStringGetLengthWide`
+* `SbStringFindCharacter`
 * `SbStringParseDouble`
 * `SbStringParseSignedInteger`
 * `SbStringParseUInt64`

@@ -591,6 +591,9 @@ struct RecordCheckerStub : public base::RecordHistogramChecker {
 ssize_t Application::available_memory_ = 0;
 int64 Application::lifetime_in_ms_ = 0;
 
+Application::AppStatus Application::app_status_ =
+    Application::kUninitializedAppStatus;
+
 Application::Application(const base::Closure& quit_closure, bool should_preload,
                          SbTimeMonotonic timestamp)
     : message_loop_(base::MessageLoop::current()),
@@ -857,6 +860,8 @@ Application::Application(const base::Closure& quit_closure, bool should_preload,
                                                          timestamp);
   UpdateUserAgent();
 
+  app_status_ = (should_preload ? kConcealedAppStatus : kRunningAppStatus);
+
   // Register event callbacks.
   window_size_change_event_callback_ = base::Bind(
       &Application::OnWindowSizeChangedEvent, base::Unretained(this));
@@ -1004,6 +1009,8 @@ Application::~Application() {
       base::DateTimeConfigurationChangedEvent::TypeId(),
       on_date_time_configuration_changed_event_callback_);
 #endif
+
+  app_status_ = kShutDownAppStatus;
 }
 
 void Application::Start(SbTimeMonotonic timestamp) {
@@ -1027,6 +1034,7 @@ void Application::Quit() {
   }
 
   quit_closure_.Run();
+  app_status_ = kQuitAppStatus;
 }
 
 void Application::HandleStarboardEvent(const SbEvent* starboard_event) {
