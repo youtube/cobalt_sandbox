@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import("//starboard/android/shared/platform_configuration/configuration.gni")
+static_library("starboard_platform") {
+  check_includes = false
+  configs += [ "//starboard/build/config:starboard_implementation" ]
 
-android_abi = "armeabi-v7a"
-arm_version = 7
-sabi_path = "//starboard/sabi/arm/softfp/sabi-v$sb_api_version.json"
+  public_deps = [ "//starboard/raspi/shared:starboard_platform" ]
+}

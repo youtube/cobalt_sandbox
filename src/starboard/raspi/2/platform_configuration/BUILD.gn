@@ -12,8 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import("//starboard/android/shared/platform_configuration/configuration.gni")
-
-android_abi = "armeabi-v7a"
-arm_version = 7
-sabi_path = "//starboard/sabi/arm/softfp/sabi-v$sb_api_version.json"
+config("platform_configuration") {
+  configs = [
+    "//starboard/build/config/sabi",
+    "//starboard/raspi/shared/platform_configuration",
+  ]
+  cflags = [
+    "-march=armv7-a",
+    "-mfpu=neon-vfpv4",
+    "-mfloat-abi=hard",
+    "-mcpu=cortex-a8",
+    "-mtune=cortex-a8",
+  ]
+}

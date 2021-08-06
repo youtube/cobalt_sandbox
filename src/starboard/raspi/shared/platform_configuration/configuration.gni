@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import("//starboard/android/shared/platform_configuration/configuration.gni")
+import("//starboard/build/config/base_configuration.gni")
 
-android_abi = "armeabi-v7a"
-arm_version = 7
-sabi_path = "//starboard/sabi/arm/softfp/sabi-v$sb_api_version.json"
+sb_pedantic_warnings = true
+sb_static_contents_output_data_dir = "$root_out_dir/content"
+
+sabi_path = "//starboard/sabi/arm/hardfp/sabi-v$sb_api_version.json"
