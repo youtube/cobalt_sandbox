@@ -50,6 +50,7 @@
 #define GL_DCHECK_MAYBE_LOG(x)
 #endif  // defined(COBALT_EGL_AND_GLES_LOGGING)
 
+#if SB_DCHECK_ENABLED
 #define EGL_DCHECK(x)                                                 \
   do {                                                                \
     EGL_DCHECK_MAYBE_LOG(x);                                          \
@@ -64,6 +65,10 @@
     SB_DCHECK(COBALT_GL_ERRNO == GL_NO_ERROR)                      \
         << #x << " exited with code: " << COBALT_GL_ERRNO;         \
   } while (false)
+#else
+#define EGL_DCHECK(x)
+#define GL_DCHECK(x)
+#endif  // SB_DCHECK_ENABLED
 
 #if SB_API_VERSION >= 11
 namespace cobalt {

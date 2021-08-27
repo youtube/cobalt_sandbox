@@ -121,3 +121,10 @@ class LinuxConfiguration(platform_configuration.PlatformConfiguration):
           'VideoDecoderTests/VideoDecoderTest.*Invalid*',
       ],
   }
+  # Conditionally disables tests that require ipv6
+  if os.getenv('IPV6_AVAILABLE', 1) == '0':
+    __FILTERED_TESTS['nplb'] = [
+        'SbSocketAddressTypes/SbSocketGetInterfaceAddressTest.SunnyDayDestination/1',
+        'SbSocketAddressTypes/SbSocketGetInterfaceAddressTest.SunnyDaySourceForDestination/1',
+        'SbSocketAddressTypes/SbSocketGetInterfaceAddressTest.SunnyDaySourceNotLoopback/1',
+    ]
