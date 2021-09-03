@@ -162,6 +162,32 @@ const int32 special_keycode_mapping[] = {
     dom::keycode::kLwin,       // kSpecialKey_Meta
 };
 
+// Besides of selenium defined special keys, we need additional special keys
+// for media control. The following utf-8 code could be provided as "keys"
+// sent to WebDriver, and should be mapped to the corresponding keyboard code.
+enum AdditionalSpecialKey {
+  kFirstAdditionalSpecialKey = 0xF000,
+  kSpecialKey_MediaNextTrack = kFirstAdditionalSpecialKey,
+  kSpecialKey_MediaPrevTrack,
+  kSpecialKey_MediaStop,
+  kSpecialKey_MediaPlayPause,
+  kSpecialKey_MediaRewind,
+  kSpecialKey_MediaFastForward,
+  kLastAdditionalSpecialKey = kSpecialKey_MediaFastForward,
+};
+
+// Mapping from an additional special keycode to virtual keycode. Subtract
+// kFirstAdditionalSpecialKey from the integer value of the WebDriver keycode
+// and index into this table.
+const int32 additional_special_keycode_mapping[] = {
+    dom::keycode::kMediaNextTrack,    // kMediaNextTrack,
+    dom::keycode::kMediaPrevTrack,    // kMediaPrevTrack,
+    dom::keycode::kMediaStop,         // kMediaStop,
+    dom::keycode::kMediaPlayPause,    // kMediaPlayPause,
+    dom::keycode::kMediaRewind,       // kMediaRewind,
+    dom::keycode::kMediaFastForward,  // kMediaFastForward,
+};
+
 // Check that the mapping is the expected size.
 const int kLargestMappingIndex = kLastSpecialKey - kFirstSpecialKey;
 COMPILE_ASSERT(arraysize(special_keycode_mapping) == kLargestMappingIndex + 1,
@@ -249,6 +275,11 @@ bool IsSpecialKey(int webdriver_key) {
   return webdriver_key >= kFirstSpecialKey && webdriver_key < kLastSpecialKey;
 }
 
+bool IsAdditionalSpecialKey(int webdriver_key) {
+  return webdriver_key >= kFirstAdditionalSpecialKey &&
+         webdriver_key <= kLastAdditionalSpecialKey;
+}
+
 bool IsModifierKey(int webdriver_key) {
   return webdriver_key == kSpecialKey_Alt ||
          webdriver_key == kSpecialKey_Shift ||
@@ -294,6 +325,15 @@ KeyLocationCode GetSpecialKeyLocation(int32 webdriver_key) {
   return KeyboardEvent::kDomKeyLocationStandard;
 }
 
+// Returns the keycode that corresponds to this additional special key.
+int32 GetAdditionalSpecialKeycode(int32 webdriver_key) {
+  DCHECK(IsAdditionalSpecialKey(webdriver_key));
+  int index = webdriver_key - kFirstAdditionalSpecialKey;
+  DCHECK_GE(index, 0);
+  DCHECK_LT(index, arraysize(additional_special_keycode_mapping));
+  return additional_special_keycode_mapping[index];
+}
+
 class KeyTranslator {
  public:
   explicit KeyTranslator(Keyboard::KeyboardEventVector* event_vector)
@@ -325,6 +365,14 @@ class KeyTranslator {
         int32 key_code = GetSpecialKeycode(webdriver_key);
         int32 char_code = 0;
         KeyLocationCode location = GetSpecialKeyLocation(webdriver_key);
+        AddKeyDownEvent(key_code, char_code, location);
+        AddKeyUpEvent(key_code, char_code, location);
+      } else if (IsAdditionalSpecialKey(webdriver_key)) {
+        // Else if it's an additional special key, translate to key_code and
+        // send key events.
+        int32 key_code = GetAdditionalSpecialKeycode(webdriver_key);
+        int32 char_code = 0;
+        KeyLocationCode location = KeyboardEvent::kDomKeyLocationStandard;
         AddKeyDownEvent(key_code, char_code, location);
         AddKeyUpEvent(key_code, char_code, location);
       } else {

@@ -24,6 +24,7 @@ RUN apt update -qqy \
     && apt install -qqy --no-install-recommends \
         g++-multilib \
         bzip2 \
+        libglib2.0-dev \
     && apt-get clean autoclean \
     && apt-get autoremove -y --purge \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \

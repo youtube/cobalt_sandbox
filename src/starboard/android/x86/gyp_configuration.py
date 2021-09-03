@@ -47,9 +47,23 @@ class Androidx86Configuration(shared_configuration.AndroidConfiguration):
           '.SunnyDaySourceForDestination/*',
           'SbMediaSetAudioWriteDurationTests/SbMediaSetAudioWriteDurationTest'
           '.WriteContinuedLimitedInput/*',
+          'SbMediaSetAudioWriteDurationTests/SbMediaSetAudioWriteDurationTest'
+          '.WriteLimitedInput/*',
       ],
       'player_filter_tests': [
-          'VideoDecoderTests/*',
           'AudioDecoderTests/*',
+          'VideoDecoderTests/*',
+
+          'PlayerComponentsTests/PlayerComponentsTest.Preroll/*',
+          'PlayerComponentsTests/PlayerComponentsTest.Pause/*',
+
+          'PlayerComponentsTests/PlayerComponentsTest.*/2',
+          'PlayerComponentsTests/PlayerComponentsTest.*/4',
+          'PlayerComponentsTests/PlayerComponentsTest.*/9',
+          'PlayerComponentsTests/PlayerComponentsTest.*/11',
+          'PlayerComponentsTests/PlayerComponentsTest.*/16',
+          'PlayerComponentsTests/PlayerComponentsTest.*/17',
+          'PlayerComponentsTests/PlayerComponentsTest.*/20',
+          'PlayerComponentsTests/PlayerComponentsTest.*/21',
       ],
   }
