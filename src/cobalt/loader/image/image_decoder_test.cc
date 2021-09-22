@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "cobalt/loader/image/image_decoder.h"
-
 #include <memory>
 #include <string>
 #include <vector>
@@ -27,89 +25,14 @@
 #include "cobalt/base/cobalt_paths.h"
 #include "cobalt/base/polymorphic_downcast.h"
 #include "cobalt/loader/image/animated_webp_image.h"
+#include "cobalt/loader/image/image_decoder_mock.h"
 #include "cobalt/loader/image/jpeg_image_decoder.h"
-#include "cobalt/render_tree/resource_provider_stub.h"
 #include "starboard/configuration.h"
-#include "testing/gmock/include/gmock/gmock.h"
-#include "testing/gtest/include/gtest/gtest.h"
 
 namespace cobalt {
 namespace loader {
 namespace image {
-
 namespace {
-
-struct MockImageDecoderCallback {
-  void SuccessCallback(const scoped_refptr<Image>& value) { image = value; }
-
-  MOCK_METHOD1(LoadCompleteCallback,
-               void(const base::Optional<std::string>& message));
-
-  scoped_refptr<Image> image;
-};
-
-class MockImageDecoder : public Decoder {
- public:
-  MockImageDecoder();
-  ~MockImageDecoder() override {}
-
-  LoadResponseType OnResponseStarted(
-      Fetcher* fetcher,
-      const scoped_refptr<net::HttpResponseHeaders>& headers) override;
-
-  void DecodeChunk(const char* data, size_t size) override;
-
-  void Finish() override;
-  bool Suspend() override;
-  void Resume(render_tree::ResourceProvider* resource_provider) override;
-
-  scoped_refptr<Image> image();
-
-  void ExpectCallWithError(const base::Optional<std::string>& error);
-
- protected:
-  render_tree::ResourceProviderStub resource_provider_;
-  base::NullDebuggerHooks debugger_hooks_;
-  ::testing::StrictMock<MockImageDecoderCallback> image_decoder_callback_;
-  std::unique_ptr<Decoder> image_decoder_;
-};
-
-MockImageDecoder::MockImageDecoder() {
-  image_decoder_.reset(new ImageDecoder(
-      &resource_provider_, debugger_hooks_,
-      base::Bind(&MockImageDecoderCallback::SuccessCallback,
-                 base::Unretained(&image_decoder_callback_)),
-      base::Bind(&MockImageDecoderCallback::LoadCompleteCallback,
-                 base::Unretained(&image_decoder_callback_))));
-}
-
-LoadResponseType MockImageDecoder::OnResponseStarted(
-    Fetcher* fetcher, const scoped_refptr<net::HttpResponseHeaders>& headers) {
-  return image_decoder_->OnResponseStarted(fetcher, headers);
-}
-
-void MockImageDecoder::DecodeChunk(const char* data, size_t size) {
-  image_decoder_->DecodeChunk(data, size);
-}
-
-void MockImageDecoder::Finish() { image_decoder_->Finish(); }
-
-bool MockImageDecoder::Suspend() { return image_decoder_->Suspend(); }
-
-void MockImageDecoder::Resume(
-    render_tree::ResourceProvider* resource_provider) {
-  image_decoder_->Resume(resource_provider);
-}
-
-scoped_refptr<Image> MockImageDecoder::image() {
-  return image_decoder_callback_.image;
-}
-
-void MockImageDecoder::ExpectCallWithError(
-    const base::Optional<std::string>& error) {
-  EXPECT_CALL(image_decoder_callback_, LoadCompleteCallback(error));
-}
-
 base::FilePath GetTestImagePath(const char* file_name) {
   base::FilePath data_directory;
   CHECK(base::PathService::Get(base::DIR_TEST_DATA, &data_directory));
@@ -227,13 +150,24 @@ std::vector<uint8> GetImageData(const base::FilePath& file_path) {
   return CheckSameColor(pixels, size.width(), size.height(), test_color);
 }
 
+// FakeResourceProviderStub has the identical behavior as ResourceProviderStub,
+// except the GetTypeId, which makes the ImageDecode not to create the
+// FailureImageDecoder based on the TypeId Check.
+class FakeResourceProviderStub : public render_tree::ResourceProviderStub {
+  base::TypeId GetTypeId() const override {
+    return base::GetTypeId<FakeResourceProviderStub>();
+  }
+};
+
 }  // namespace
 
 // TODO: Test special images like the image has gAMA chunk information,
 // pngs with 16 bit depth, and large pngs.
 
 TEST(ImageDecoderTest, DecodeImageWithContentLength0) {
-  MockImageDecoder image_decoder;
+  std::unique_ptr<FakeResourceProviderStub> resource_provider(
+      new FakeResourceProviderStub());
+  MockImageDecoder image_decoder(resource_provider.get());
   image_decoder.ExpectCallWithError(
       std::string("No content returned, but expected some."));
 
@@ -257,7 +191,9 @@ TEST(ImageDecoderTest, DecodeImageWithContentLength0) {
 }
 
 TEST(ImageDecoderTest, DecodeNonImageTypeWithContentLength0) {
-  MockImageDecoder image_decoder;
+  std::unique_ptr<FakeResourceProviderStub> resource_provider(
+      new FakeResourceProviderStub());
+  MockImageDecoder image_decoder(resource_provider.get());
   image_decoder.ExpectCallWithError(std::string(
       "No content returned, but expected some. Not an image mime type."));
 
@@ -281,7 +217,9 @@ TEST(ImageDecoderTest, DecodeNonImageTypeWithContentLength0) {
 }
 
 TEST(ImageDecoderTest, DecodeNonImageType) {
-  MockImageDecoder image_decoder;
+  std::unique_ptr<FakeResourceProviderStub> resource_provider(
+      new FakeResourceProviderStub());
+  MockImageDecoder image_decoder(resource_provider.get());
   image_decoder.ExpectCallWithError(std::string("Not an image mime type."));
 
   const char kHTMLHeaders[] = {
@@ -306,7 +244,9 @@ TEST(ImageDecoderTest, DecodeNonImageType) {
 }
 
 TEST(ImageDecoderTest, DecodeNoContentType) {
-  MockImageDecoder image_decoder;
+  std::unique_ptr<FakeResourceProviderStub> resource_provider(
+      new FakeResourceProviderStub());
+  MockImageDecoder image_decoder(resource_provider.get());
   image_decoder.ExpectCallWithError(std::string("Not an image mime type."));
 
   const char kHTMLHeaders[] = {
@@ -330,7 +270,9 @@ TEST(ImageDecoderTest, DecodeNoContentType) {
 }
 
 TEST(ImageDecoderTest, DecodeImageWithNoContent) {
-  MockImageDecoder image_decoder;
+  std::unique_ptr<FakeResourceProviderStub> resource_provider(
+      new FakeResourceProviderStub());
+  MockImageDecoder image_decoder(resource_provider.get());
   image_decoder.ExpectCallWithError(
       std::string("No content returned. Not an image mime type."));
 
@@ -354,7 +296,9 @@ TEST(ImageDecoderTest, DecodeImageWithNoContent) {
 }
 
 TEST(ImageDecoderTest, DecodeImageWithLessThanHeaderBytes) {
-  MockImageDecoder image_decoder;
+  std::unique_ptr<FakeResourceProviderStub> resource_provider(
+      new FakeResourceProviderStub());
+  MockImageDecoder image_decoder(resource_provider.get());
   image_decoder.ExpectCallWithError(
       std::string("No enough image data for header."));
 
@@ -366,7 +310,9 @@ TEST(ImageDecoderTest, DecodeImageWithLessThanHeaderBytes) {
 }
 
 TEST(ImageDecoderTest, FailedToDecodeImage) {
-  MockImageDecoder image_decoder;
+  std::unique_ptr<FakeResourceProviderStub> resource_provider(
+      new FakeResourceProviderStub());
+  MockImageDecoder image_decoder(resource_provider.get());
   image_decoder.ExpectCallWithError(
       std::string("PNGImageDecoder failed to decode image."));
 
@@ -380,7 +326,9 @@ TEST(ImageDecoderTest, FailedToDecodeImage) {
 }
 
 TEST(ImageDecoderTest, UnsupportedImageFormat) {
-  MockImageDecoder image_decoder;
+  std::unique_ptr<FakeResourceProviderStub> resource_provider(
+      new FakeResourceProviderStub());
+  MockImageDecoder image_decoder(resource_provider.get());
   image_decoder.ExpectCallWithError(std::string("Unsupported image format."));
 
   const char kPartialICOImage[] = {
@@ -393,7 +341,9 @@ TEST(ImageDecoderTest, UnsupportedImageFormat) {
 
 // Test that we can properly decode the PNG image.
 TEST(ImageDecoderTest, DecodePNGImage) {
-  MockImageDecoder image_decoder;
+  std::unique_ptr<FakeResourceProviderStub> resource_provider(
+      new FakeResourceProviderStub());
+  MockImageDecoder image_decoder(resource_provider.get());
   image_decoder.ExpectCallWithError(base::nullopt);
 
   std::vector<uint8> image_data =
@@ -427,7 +377,9 @@ TEST(ImageDecoderTest, DecodePNGImage) {
 
 // Test that we can properly decode the PNG image with multiple chunks.
 TEST(ImageDecoderTest, DecodePNGImageWithMultipleChunks) {
-  MockImageDecoder image_decoder;
+  std::unique_ptr<FakeResourceProviderStub> resource_provider(
+      new FakeResourceProviderStub());
+  MockImageDecoder image_decoder(resource_provider.get());
   image_decoder.ExpectCallWithError(base::nullopt);
 
   std::vector<uint8> image_data =
@@ -465,7 +417,9 @@ TEST(ImageDecoderTest, DecodePNGImageWithMultipleChunks) {
 
 // Test that we can properly decode the the interlaced PNG.
 TEST(ImageDecoderTest, DecodeInterlacedPNGImage) {
-  MockImageDecoder image_decoder;
+  std::unique_ptr<FakeResourceProviderStub> resource_provider(
+      new FakeResourceProviderStub());
+  MockImageDecoder image_decoder(resource_provider.get());
   image_decoder.ExpectCallWithError(base::nullopt);
 
   std::vector<uint8> image_data =
@@ -499,7 +453,9 @@ TEST(ImageDecoderTest, DecodeInterlacedPNGImage) {
 
 // Test that we can properly decode the interlaced PNG with multiple chunks.
 TEST(ImageDecoderTest, DecodeInterlacedPNGImageWithMultipleChunks) {
-  MockImageDecoder image_decoder;
+  std::unique_ptr<FakeResourceProviderStub> resource_provider(
+      new FakeResourceProviderStub());
+  MockImageDecoder image_decoder(resource_provider.get());
   image_decoder.ExpectCallWithError(base::nullopt);
 
   std::vector<uint8> image_data =
@@ -537,7 +493,9 @@ TEST(ImageDecoderTest, DecodeInterlacedPNGImageWithMultipleChunks) {
 
 // Test that we can properly decode the JPEG image.
 TEST(ImageDecoderTest, DecodeJPEGImage) {
-  MockImageDecoder image_decoder;
+  std::unique_ptr<FakeResourceProviderStub> resource_provider(
+      new FakeResourceProviderStub());
+  MockImageDecoder image_decoder(resource_provider.get());
   image_decoder.ExpectCallWithError(base::nullopt);
 
   std::vector<uint8> image_data =
@@ -563,7 +521,9 @@ TEST(ImageDecoderTest, DecodeJPEGImage) {
 
 // Test that we can properly decode the JPEG image with multiple chunks.
 TEST(ImageDecoderTest, DecodeJPEGImageWithMultipleChunks) {
-  MockImageDecoder image_decoder;
+  std::unique_ptr<FakeResourceProviderStub> resource_provider(
+      new FakeResourceProviderStub());
+  MockImageDecoder image_decoder(resource_provider.get());
   image_decoder.ExpectCallWithError(base::nullopt);
 
   std::vector<uint8> image_data =
@@ -593,7 +553,9 @@ TEST(ImageDecoderTest, DecodeJPEGImageWithMultipleChunks) {
 
 // Test that we can properly decode the progressive JPEG image.
 TEST(ImageDecoderTest, DecodeProgressiveJPEGImage) {
-  MockImageDecoder image_decoder;
+  std::unique_ptr<FakeResourceProviderStub> resource_provider(
+      new FakeResourceProviderStub());
+  MockImageDecoder image_decoder(resource_provider.get());
   image_decoder.ExpectCallWithError(base::nullopt);
 
   std::vector<uint8> image_data =
@@ -620,7 +582,9 @@ TEST(ImageDecoderTest, DecodeProgressiveJPEGImage) {
 
 // Test that we can properly decode the progressive JPEG with multiple chunks.
 TEST(ImageDecoderTest, DecodeProgressiveJPEGImageWithMultipleChunks) {
-  MockImageDecoder image_decoder;
+  std::unique_ptr<FakeResourceProviderStub> resource_provider(
+      new FakeResourceProviderStub());
+  MockImageDecoder image_decoder(resource_provider.get());
   image_decoder.ExpectCallWithError(base::nullopt);
 
   std::vector<uint8> image_data =
@@ -651,7 +615,7 @@ TEST(ImageDecoderTest, DecodeProgressiveJPEGImageWithMultipleChunks) {
 // Test that we can properly decode the progressive JPEG image while forcing the
 // output to be single plane.
 TEST(ImageDecoderTest, DecodeProgressiveJPEGImageToSinglePlane) {
-  render_tree::ResourceProviderStub resource_provider;
+  FakeResourceProviderStub resource_provider;
   base::NullDebuggerHooks debugger_hooks;
   const bool kAllowImageDecodingToMultiPlane = false;
   JPEGImageDecoder jpeg_image_decoder(&resource_provider, debugger_hooks,
@@ -684,7 +648,7 @@ TEST(ImageDecoderTest, DecodeProgressiveJPEGImageToSinglePlane) {
 // while forcing the output to be single plane.
 TEST(ImageDecoderTest,
      DecodeProgressiveJPEGImageWithMultipleChunksToSinglePlane) {
-  render_tree::ResourceProviderStub resource_provider;
+  FakeResourceProviderStub resource_provider;
   base::NullDebuggerHooks debugger_hooks;
   const bool kAllowImageDecodingToMultiPlane = false;
   JPEGImageDecoder jpeg_image_decoder(&resource_provider, debugger_hooks,
@@ -719,7 +683,9 @@ TEST(ImageDecoderTest,
 
 // Test that we can properly decode the WEBP image.
 TEST(ImageDecoderTest, DecodeWEBPImage) {
-  MockImageDecoder image_decoder;
+  std::unique_ptr<FakeResourceProviderStub> resource_provider(
+      new FakeResourceProviderStub());
+  MockImageDecoder image_decoder(resource_provider.get());
   image_decoder.ExpectCallWithError(base::nullopt);
 
   std::vector<uint8> image_data =
@@ -752,7 +718,9 @@ TEST(ImageDecoderTest, DecodeWEBPImage) {
 
 // Test that we can properly decode the WEBP image with multiple chunks.
 TEST(ImageDecoderTest, DecodeWEBPImageWithMultipleChunks) {
-  MockImageDecoder image_decoder;
+  std::unique_ptr<FakeResourceProviderStub> resource_provider(
+      new FakeResourceProviderStub());
+  MockImageDecoder image_decoder(resource_provider.get());
   image_decoder.ExpectCallWithError(base::nullopt);
 
   std::vector<uint8> image_data =
@@ -791,7 +759,9 @@ TEST(ImageDecoderTest, DecodeAnimatedWEBPImage) {
   base::Thread thread("AnimatedWebP");
   thread.Start();
 
-  MockImageDecoder image_decoder;
+  std::unique_ptr<FakeResourceProviderStub> resource_provider(
+      new FakeResourceProviderStub());
+  MockImageDecoder image_decoder(resource_provider.get());
   image_decoder.ExpectCallWithError(base::nullopt);
 
   std::vector<uint8> image_data =
@@ -820,7 +790,9 @@ TEST(ImageDecoderTest, DecodeAnimatedWEBPImageWithMultipleChunks) {
   base::Thread thread("AnimatedWebP");
   thread.Start();
 
-  MockImageDecoder image_decoder;
+  std::unique_ptr<FakeResourceProviderStub> resource_provider(
+      new FakeResourceProviderStub());
+  MockImageDecoder image_decoder(resource_provider.get());
   image_decoder.ExpectCallWithError(base::nullopt);
 
   std::vector<uint8> image_data =
@@ -846,7 +818,6 @@ TEST(ImageDecoderTest, DecodeAnimatedWEBPImageWithMultipleChunks) {
   EXPECT_EQ(math::Size(480, 270), animated_webp_image->GetSize());
   EXPECT_TRUE(animated_webp_image->IsOpaque());
 }
-
 }  // namespace image
 }  // namespace loader
 }  // namespace cobalt
