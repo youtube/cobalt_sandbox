@@ -42,13 +42,13 @@ bool IsHDRTransferCharacteristicsSupported(SbMediaVideoCodec video_codec,
     return false;
   }
   JniEnvExt* env = JniEnvExt::Get();
+  ScopedLocalJavaRef<jstring> j_mime(env->NewStringStandardUTFOrAbort(mime));
 
   // An HDR capable VP9 or AV1 decoder is needed to handle HDR at all.
   bool has_hdr_capable_decoder =
       JniEnvExt::Get()->CallStaticBooleanMethodOrAbort(
           "dev/cobalt/media/MediaCodecUtil", "hasHdrCapableVideoDecoder",
-          "(Ljava/lang/String;)Z",
-          env->NewStringStandardUTFOrAbort(mime)) == JNI_TRUE;
+          "(Ljava/lang/String;)Z", j_mime.Get()) == JNI_TRUE;
   if (!has_hdr_capable_decoder) {
     return false;
   }
@@ -98,14 +98,16 @@ bool SbMediaIsVideoSupported(SbMediaVideoCodec video_codec,
   // Check extended parameters for correctness and return false if any invalid
   // invalid params are found.
   MimeType mime_type(content_type);
-  // Allows for enabling tunneled playback. Disabled by default.
-  // https://source.android.com/devices/tv/multimedia-tunneling
-  mime_type.RegisterBoolParameter("tunnelmode");
-  // Override endianness on HDR Info header. Defaults to little.
-  mime_type.RegisterStringParameter("hdrinfoendianness", "big|little");
+  if (strlen(content_type) > 0) {
+    // Allows for enabling tunneled playback. Disabled by default.
+    // https://source.android.com/devices/tv/multimedia-tunneling
+    mime_type.RegisterBoolParameter("tunnelmode");
+    // Override endianness on HDR Info header. Defaults to little.
+    mime_type.RegisterStringParameter("hdrinfoendianness", "big|little");
 
-  if (!mime_type.is_valid()) {
-    return false;
+    if (!mime_type.is_valid()) {
+      return false;
+    }
   }
 
   bool must_support_tunnel_mode =
