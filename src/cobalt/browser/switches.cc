@@ -71,6 +71,15 @@ const char kDisableMediaCodecsHelp[] =
     "example, setting the value to \"avc;hvc\" will disable any h264 and h265 "
     "playbacks.";
 
+const char kDisableMediaEncryptionSchemes[] =
+    "disable_media_encryption_schemes";
+const char kDisableMediaEncryptionSchemesHelp[] =
+    "Disables the semicolon-separated list of encryption schemes that will be "
+    "treated as unsupported for encrypted media playback. Used for debugging "
+    "and testing purposes. For example, setting the value to \"cenc;cbcs\" "
+    "will disable any cenc and cbcs DRM playbacks. Accepted values: \"cenc\", "
+    "\"cbcs\", \"cbcs-1-9\".";
+
 const char kDisableRasterizerCaching[] = "disable_rasterizer_caching";
 const char kDisableRasterizerCachingHelp[] =
     "Disables caching of rasterized render tree nodes; caching improves "
@@ -410,6 +419,11 @@ const char kFallbackSplashScreenTopicsHelp[] =
     "the URL used to launch Cobalt, then the value of "
     "'fallback_splash_screen_url' will be used.";
 
+const char kUpdateCheckDelaySeconds[] = "update_check_delay_seconds";
+const char kUpdateCheckDelaySecondsHelp[] =
+    "Number of seconds to delay the first Cobalt Evergreen check for updates."
+    "The default value is 60 seconds.";
+
 const char kVersion[] = "version";
 const char kVersionHelp[] = "Prints the current version of Cobalt";
 
@@ -437,6 +451,7 @@ std::string HelpMessage() {
         {kDisableImageAnimations, kDisableImageAnimationsHelp},
         {kForceDeterministicRendering, kForceDeterministicRenderingHelp},
         {kDisableMediaCodecs, kDisableMediaCodecsHelp},
+        {kDisableMediaEncryptionSchemes, kDisableMediaEncryptionSchemesHelp},
         {kDisableRasterizerCaching, kDisableRasterizerCachingHelp},
         {kDisableSignIn, kDisableSignInHelp},
         {kDisableSplashScreenOnReloads, kDisableSplashScreenOnReloadsHelp},
@@ -493,6 +508,7 @@ std::string HelpMessage() {
         {kSoftwareSurfaceCacheSizeInBytes,
          kSoftwareSurfaceCacheSizeInBytesHelp},
         {kFallbackSplashScreenURL, kFallbackSplashScreenURLHelp},
+        {kUpdateCheckDelaySeconds, kUpdateCheckDelaySecondsHelp},
         {kVersion, kVersionHelp}, {kViewport, kViewportHelp},
         {kVideoPlaybackRateMultiplier, kVideoPlaybackRateMultiplierHelp},
   };
