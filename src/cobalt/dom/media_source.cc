@@ -52,6 +52,7 @@
 #include "base/compiler_specific.h"
 #include "base/guid.h"
 #include "base/logging.h"
+#include "base/trace_event/trace_event.h"
 #include "cobalt/base/tokens.h"
 #include "cobalt/dom/dom_exception.h"
 #include "cobalt/dom/dom_settings.h"
@@ -149,6 +150,7 @@ void MediaSource::set_duration(double duration,
 scoped_refptr<SourceBuffer> MediaSource::AddSourceBuffer(
     script::EnvironmentSettings* settings, const std::string& type,
     script::ExceptionState* exception_state) {
+  TRACE_EVENT1("cobalt::dom", "MediaSource::AddSourceBuffer()", "type", type);
   DLOG(INFO) << "add SourceBuffer with type " << type;
 
   if (type.empty()) {
@@ -191,6 +193,7 @@ scoped_refptr<SourceBuffer> MediaSource::AddSourceBuffer(
 void MediaSource::RemoveSourceBuffer(
     const scoped_refptr<SourceBuffer>& source_buffer,
     script::ExceptionState* exception_state) {
+  TRACE_EVENT0("cobalt::dom", "MediaSource::RemoveSourceBuffer()");
   if (source_buffer.get() == NULL) {
     DOMException::Raise(DOMException::kInvalidAccessErr, exception_state);
     return;
@@ -222,12 +225,14 @@ void MediaSource::EndOfStreamAlgorithm(MediaSourceEndOfStreamError error) {
 }
 
 void MediaSource::EndOfStream(script::ExceptionState* exception_state) {
+  TRACE_EVENT0("cobalt::dom", "MediaSource::EndOfStream()");
   // If there is no error string provided, treat it as empty.
   EndOfStream(kMediaSourceEndOfStreamErrorNoError, exception_state);
 }
 
 void MediaSource::EndOfStream(MediaSourceEndOfStreamError error,
                               script::ExceptionState* exception_state) {
+  TRACE_EVENT1("cobalt::dom", "MediaSource::EndOfStream()", "error", error);
   if (!IsOpen() || IsUpdating()) {
     DOMException::Raise(DOMException::kInvalidStateErr, exception_state);
     return;
@@ -265,28 +270,24 @@ void MediaSource::ClearLiveSeekableRange(
 // static
 bool MediaSource::IsTypeSupported(script::EnvironmentSettings* settings,
                                   const std::string& type) {
+  TRACE_EVENT1("cobalt::dom", "MediaSource::IsTypeSupported()", "type", type);
   DCHECK(settings);
   DOMSettings* dom_settings =
       base::polymorphic_downcast<DOMSettings*>(settings);
   DCHECK(dom_settings->can_play_type_handler());
   SbMediaSupportType support_type =
       dom_settings->can_play_type_handler()->CanPlayAdaptive(type.c_str(), "");
-  if (support_type == kSbMediaSupportTypeNotSupported) {
-    LOG(INFO) << "MediaSource::IsTypeSupported(" << type
-              << ") -> not supported/false";
-    return false;
+  switch (support_type) {
+    case kSbMediaSupportTypeNotSupported:
+      return false;
+    case kSbMediaSupportTypeMaybe:
+      return true;
+    case kSbMediaSupportTypeProbably:
+      return true;
+    default:
+      NOTREACHED();
+      return false;
   }
-  if (support_type == kSbMediaSupportTypeMaybe) {
-    LOG(INFO) << "MediaSource::IsTypeSupported(" << type << ") -> maybe/true";
-    return true;
-  }
-  if (support_type == kSbMediaSupportTypeProbably) {
-    LOG(INFO) << "MediaSource::IsTypeSupported(" << type
-              << ") -> probably/true";
-    return true;
-  }
-  NOTREACHED();
-  return false;
 }
 
 bool MediaSource::AttachToElement(HTMLMediaElement* media_element) {

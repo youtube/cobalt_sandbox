@@ -64,11 +64,16 @@ constexpr bool kForcePlatformOpusDecoder = false;
 // TODO: Allow this to be configured per playback at run time from the web app.
 constexpr bool kForceSecurePipelineInTunnelModeWhenRequired = true;
 
+// Forces video surface to reset after tunnel mode playbacks. This prevents
+// video distortion on some platforms.
+constexpr bool kForceResetSurfaceUnderTunnelMode = true;
+
 // This class allows us to force int16 sample type when tunnel mode is enabled.
 class AudioRendererSinkAndroid : public ::starboard::shared::starboard::player::
                                      filter::AudioRendererSinkImpl {
  public:
   explicit AudioRendererSinkAndroid(bool enable_audio_device_callback,
+                                    bool enable_pcm_content_type_movie,
                                     int tunnel_mode_audio_session_id = -1)
       : AudioRendererSinkImpl(
             [=](SbTime start_media_time,
@@ -92,6 +97,7 @@ class AudioRendererSinkAndroid : public ::starboard::shared::starboard::player::
                   frame_buffers_size_in_frames, update_source_status_func,
                   consume_frames_func, error_func, start_media_time,
                   tunnel_mode_audio_session_id, enable_audio_device_callback,
+                  enable_pcm_content_type_movie, false, /* is_web_audio */
                   context);
             }) {}
 
@@ -156,6 +162,7 @@ class PlayerComponentsPassthrough
 //       into .cc file.
 class PlayerComponentsFactory : public starboard::shared::starboard::player::
                                     filter::PlayerComponents::Factory {
+  typedef starboard::shared::starboard::media::MimeType MimeType;
   typedef starboard::shared::opus::OpusAudioDecoder OpusAudioDecoder;
   typedef starboard::shared::starboard::player::filter::AdaptiveAudioDecoder
       AdaptiveAudioDecoder;
@@ -190,7 +197,6 @@ class PlayerComponentsFactory : public starboard::shared::starboard::player::
   scoped_ptr<PlayerComponents> CreateComponents(
       const CreationParameters& creation_parameters,
       std::string* error_message) override {
-    using starboard::shared::starboard::media::MimeType;
     SB_DCHECK(error_message);
 
     if (creation_parameters.audio_codec() != kSbMediaAudioCodecAc3 &&
@@ -238,9 +244,20 @@ class PlayerComponentsFactory : public starboard::shared::starboard::player::
       constexpr int kTunnelModeAudioSessionId = -1;
       constexpr bool kForceSecurePipelineUnderTunnelMode = false;
 
-      scoped_ptr<VideoDecoder> video_decoder = CreateVideoDecoder(
-          creation_parameters, kTunnelModeAudioSessionId,
-          kForceSecurePipelineUnderTunnelMode, error_message);
+      MimeType video_mime_type(creation_parameters.video_mime());
+      video_mime_type.RegisterBoolParameter("forceimprovedsupportcheck");
+      if (!video_mime_type.is_valid()) {
+        return scoped_ptr<PlayerComponents>();
+      }
+      const bool force_improved_support_check =
+          video_mime_type.GetParamBoolValue("forceimprovedsupportcheck", true);
+      SB_LOG_IF(INFO, !force_improved_support_check)
+          << "Improved support check is disabled for queries under 4K.";
+
+      scoped_ptr<VideoDecoder> video_decoder =
+          CreateVideoDecoder(creation_parameters, kTunnelModeAudioSessionId,
+                             kForceSecurePipelineUnderTunnelMode,
+                             force_improved_support_check, error_message);
       if (video_decoder) {
         using starboard::shared::starboard::player::filter::VideoRendererImpl;
 
@@ -268,7 +285,6 @@ class PlayerComponentsFactory : public starboard::shared::starboard::player::
       scoped_ptr<VideoRenderAlgorithmBase>* video_render_algorithm,
       scoped_refptr<VideoRendererSink>* video_renderer_sink,
       std::string* error_message) override {
-    using starboard::shared::starboard::media::MimeType;
     SB_DCHECK(error_message);
 
     const char* audio_mime =
@@ -280,6 +296,7 @@ class PlayerComponentsFactory : public starboard::shared::starboard::player::
         strlen(creation_parameters.audio_mime()) > 0) {
       audio_mime_type.RegisterBoolParameter("tunnelmode");
       audio_mime_type.RegisterBoolParameter("enableaudiodevicecallback");
+      audio_mime_type.RegisterBoolParameter("enablepcmcontenttypemovie");
 
       if (!audio_mime_type.is_valid()) {
         return false;
@@ -294,6 +311,7 @@ class PlayerComponentsFactory : public starboard::shared::starboard::player::
     if (creation_parameters.video_codec() != kSbMediaVideoCodecNone &&
         strlen(creation_parameters.video_mime()) > 0) {
       video_mime_type.RegisterBoolParameter("tunnelmode");
+      video_mime_type.RegisterBoolParameter("forceimprovedsupportcheck");
 
       if (!video_mime_type.is_valid()) {
         return false;
@@ -333,17 +351,26 @@ class PlayerComponentsFactory : public starboard::shared::starboard::player::
       enable_tunnel_mode = true;
     }
 
+    const bool force_improved_support_check =
+        video_mime_type.GetParamBoolValue("forceimprovedsupportcheck", true);
+    SB_LOG_IF(INFO, !force_improved_support_check)
+        << "Improved support check is disabled for queries under 4K.";
     bool force_secure_pipeline_under_tunnel_mode = false;
     if (enable_tunnel_mode &&
         IsTunnelModeSupported(creation_parameters,
-                              &force_secure_pipeline_under_tunnel_mode)) {
-      tunnel_mode_audio_session_id =
-          GenerateAudioSessionId(creation_parameters);
+                              &force_secure_pipeline_under_tunnel_mode,
+                              force_improved_support_check)) {
+      tunnel_mode_audio_session_id = GenerateAudioSessionId(
+          creation_parameters, force_improved_support_check);
     }
 
     if (tunnel_mode_audio_session_id == -1) {
       SB_LOG(INFO) << "Create non-tunnel mode pipeline.";
     } else {
+      SB_LOG_IF(INFO, !kForceResetSurfaceUnderTunnelMode)
+          << "`kForceResetSurfaceUnderTunnelMode` is set to false, the video "
+             "surface will not be forced to reset after "
+             "tunneled playback.";
       SB_LOG(INFO) << "Create tunnel mode pipeline with audio session id "
                    << tunnel_mode_audio_session_id << '.';
     }
@@ -386,6 +413,11 @@ class PlayerComponentsFactory : public starboard::shared::starboard::player::
           audio_mime_type.GetParamBoolValue("enableaudiodevicecallback", true);
       SB_LOG(INFO) << "AudioDeviceCallback is "
                    << (enable_audio_device_callback ? "enabled." : "disabled.");
+      bool enable_pcm_content_type_movie =
+          audio_mime_type.GetParamBoolValue("enablepcmcontenttypemovie", true);
+      SB_LOG(INFO) << "AudioAttributes::CONTENT_TYPE_MOVIE is "
+                   << (enable_pcm_content_type_movie ? "enabled" : "disabled")
+                   << " for non-tunneled PCM audio playback.";
 
       if (tunnel_mode_audio_session_id != -1) {
         *audio_renderer_sink = TryToCreateTunnelModeAudioRendererSink(
@@ -396,8 +428,8 @@ class PlayerComponentsFactory : public starboard::shared::starboard::player::
         }
       }
       if (!*audio_renderer_sink) {
-        audio_renderer_sink->reset(
-            new AudioRendererSinkAndroid(enable_audio_device_callback));
+        audio_renderer_sink->reset(new AudioRendererSinkAndroid(
+            enable_audio_device_callback, enable_pcm_content_type_movie));
       }
     }
 
@@ -411,9 +443,10 @@ class PlayerComponentsFactory : public starboard::shared::starboard::player::
         force_secure_pipeline_under_tunnel_mode = false;
       }
 
-      scoped_ptr<VideoDecoder> video_decoder_impl = CreateVideoDecoder(
-          creation_parameters, tunnel_mode_audio_session_id,
-          force_secure_pipeline_under_tunnel_mode, error_message);
+      scoped_ptr<VideoDecoder> video_decoder_impl =
+          CreateVideoDecoder(creation_parameters, tunnel_mode_audio_session_id,
+                             force_secure_pipeline_under_tunnel_mode,
+                             force_improved_support_check, error_message);
       if (video_decoder_impl) {
         *video_render_algorithm = video_decoder_impl->GetRenderAlgorithm();
         *video_renderer_sink = video_decoder_impl->GetSink();
@@ -457,8 +490,8 @@ class PlayerComponentsFactory : public starboard::shared::starboard::player::
       const CreationParameters& creation_parameters,
       int tunnel_mode_audio_session_id,
       bool force_secure_pipeline_under_tunnel_mode,
+      bool force_improved_support_check,
       std::string* error_message) {
-    using starboard::shared::starboard::media::MimeType;
     // Use mime param to determine endianness of HDR metadata. If param is
     // missing or invalid it defaults to Little Endian.
     MimeType video_mime_type(creation_parameters.video_mime());
@@ -479,7 +512,8 @@ class PlayerComponentsFactory : public starboard::shared::starboard::player::
         creation_parameters.decode_target_graphics_context_provider(),
         creation_parameters.max_video_capabilities(),
         tunnel_mode_audio_session_id, force_secure_pipeline_under_tunnel_mode,
-        force_big_endian_hdr_metadata, error_message));
+        kForceResetSurfaceUnderTunnelMode, force_big_endian_hdr_metadata,
+        force_improved_support_check, error_message));
     if (creation_parameters.video_codec() == kSbMediaVideoCodecAv1 ||
         video_decoder->is_decoder_created()) {
       return video_decoder.Pass();
@@ -490,7 +524,8 @@ class PlayerComponentsFactory : public starboard::shared::starboard::player::
   }
 
   bool IsTunnelModeSupported(const CreationParameters& creation_parameters,
-                             bool* force_secure_pipeline_under_tunnel_mode) {
+                             bool* force_secure_pipeline_under_tunnel_mode,
+                             const bool force_improved_support_check) {
     SB_DCHECK(force_secure_pipeline_under_tunnel_mode);
     *force_secure_pipeline_under_tunnel_mode = false;
 
@@ -534,8 +569,8 @@ class PlayerComponentsFactory : public starboard::shared::starboard::player::
     bool is_encrypted = !!j_media_crypto;
     if (env->CallStaticBooleanMethodOrAbort(
             "dev/cobalt/media/MediaCodecUtil", "hasVideoDecoderFor",
-            "(Ljava/lang/String;ZZZIIII)Z", j_mime.Get(), is_encrypted, false,
-            true, 0, 0, 0, 0) == JNI_TRUE) {
+            "(Ljava/lang/String;ZZZZIIII)Z", j_mime.Get(), is_encrypted, false,
+            true, force_improved_support_check, 0, 0, 0, 0) == JNI_TRUE) {
       return true;
     }
 
@@ -544,8 +579,9 @@ class PlayerComponentsFactory : public starboard::shared::starboard::player::
       auto support_tunnel_mode_under_secure_pipeline =
           env->CallStaticBooleanMethodOrAbort(
               "dev/cobalt/media/MediaCodecUtil", "hasVideoDecoderFor",
-              "(Ljava/lang/String;ZZZIIII)Z", j_mime.Get(), kIsEncrypted, false,
-              true, 0, 0, 0, 0) == JNI_TRUE;
+              "(Ljava/lang/String;ZZZZIIII)Z", j_mime.Get(), kIsEncrypted,
+              false, true, force_improved_support_check, 0, 0, 0,
+              0) == JNI_TRUE;
       if (support_tunnel_mode_under_secure_pipeline) {
         *force_secure_pipeline_under_tunnel_mode = true;
         return true;
@@ -557,10 +593,12 @@ class PlayerComponentsFactory : public starboard::shared::starboard::player::
     return false;
   }
 
-  int GenerateAudioSessionId(const CreationParameters& creation_parameters) {
+  int GenerateAudioSessionId(const CreationParameters& creation_parameters,
+                             const bool force_improved_support_check) {
     bool force_secure_pipeline_under_tunnel_mode = false;
     SB_DCHECK(IsTunnelModeSupported(creation_parameters,
-                                    &force_secure_pipeline_under_tunnel_mode));
+                                    &force_secure_pipeline_under_tunnel_mode,
+                                    force_improved_support_check));
 
     JniEnvExt* env = JniEnvExt::Get();
     ScopedLocalJavaRef<jobject> j_audio_output_manager(
@@ -585,7 +623,7 @@ class PlayerComponentsFactory : public starboard::shared::starboard::player::
       const CreationParameters& creation_parameters,
       bool enable_audio_device_callback) {
     scoped_ptr<AudioRendererSink> audio_sink(new AudioRendererSinkAndroid(
-        enable_audio_device_callback, tunnel_mode_audio_session_id));
+        enable_audio_device_callback, true, tunnel_mode_audio_session_id));
     // We need to double check if the audio sink can actually be created.
     int max_cached_frames, min_frames_per_append;
     GetAudioRendererParams(creation_parameters, &max_cached_frames,

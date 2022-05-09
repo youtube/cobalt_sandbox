@@ -8,6 +8,7 @@
 #include <utility>
 
 #include "base/version.h"
+#include "cobalt/browser/switches.h"
 #include "cobalt/script/javascript_engine.h"
 #include "cobalt/updater/network_fetcher.h"
 #include "cobalt/updater/patcher.h"
@@ -43,6 +44,11 @@ std::string GetDeviceProperty(SbSystemPropertyId id) {
   return prop;
 }
 
+bool CompressUpdate() {
+  return base::CommandLine::ForCurrentProcess()->HasSwitch(
+      cobalt::browser::switches::kCompressUpdate);
+}
+
 }  // namespace
 
 namespace cobalt {
@@ -53,7 +59,7 @@ Configurator::Configurator(network::NetworkModule* network_module)
       persisted_data_(std::make_unique<update_client::PersistedData>(
           pref_service_.get(), nullptr)),
       is_channel_changed_(0),
-      unzip_factory_(base::MakeRefCounted<UnzipperFactory>()),
+      unzip_factory_(base::MakeRefCounted<UnzipperFactory>(CompressUpdate())),
       network_fetcher_factory_(
           base::MakeRefCounted<NetworkFetcherFactoryCobalt>(network_module)),
       patch_factory_(base::MakeRefCounted<PatcherFactory>()) {
@@ -241,6 +247,16 @@ std::string Configurator::GetUpdaterStatus() const {
 void Configurator::SetUpdaterStatus(const std::string& status) {
   base::AutoLock auto_lock(updater_status_lock_);
   updater_status_ = status;
+}
+
+void Configurator::SetMinFreeSpaceBytes(uint64_t bytes) {
+  base::AutoLock auto_lock(const_cast<base::Lock&>(min_free_space_bytes_lock_));
+  min_free_space_bytes_ = bytes;
+}
+
+uint64_t Configurator::GetMinFreeSpaceBytes() {
+  base::AutoLock auto_lock(const_cast<base::Lock&>(min_free_space_bytes_lock_));
+  return min_free_space_bytes_;
 }
 
 std::string Configurator::GetPreviousUpdaterStatus() const {

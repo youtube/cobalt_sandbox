@@ -26,6 +26,7 @@
 #include "base/timer/timer.h"
 #include "cobalt/base/application_state.h"
 #include "cobalt/base/debugger_hooks.h"
+#include "cobalt/dom/dom_stat_tracker.h"
 #include "cobalt/script/callback_function.h"
 #include "cobalt/script/script_value.h"
 #include "cobalt/script/wrappable.h"
@@ -38,12 +39,14 @@ class WindowTimers {
   typedef script::CallbackFunction<void()> TimerCallback;
   typedef script::ScriptValue<TimerCallback> TimerCallbackArg;
   explicit WindowTimers(script::Wrappable* const owner,
+                        DomStatTracker* dom_stat_tracker,
                         const base::DebuggerHooks& debugger_hooks,
                         base::ApplicationState application_state)
       : owner_(owner),
+        dom_stat_tracker_(dom_stat_tracker),
         debugger_hooks_(debugger_hooks),
         application_state_(application_state) {}
-  ~WindowTimers() {}
+  ~WindowTimers() { DisableCallbacks(); }
 
   int SetTimeout(const TimerCallbackArg& handler, int timeout);
 
@@ -52,8 +55,6 @@ class WindowTimers {
   int SetInterval(const TimerCallbackArg& handler, int timeout);
 
   void ClearInterval(int handle);
-
-  void ClearAllIntervalsAndTimeouts();
 
   // When called, it will irreversibly put the WindowTimers object in an
   // inactive state where timer callbacks are ignored.  This is useful when
@@ -69,11 +70,12 @@ class WindowTimers {
     enum TimerType { kOneShot, kRepeating };
 
     Timer(TimerType type, script::Wrappable* const owner,
+          DomStatTracker* dom_stat_tracker,
+          const base::DebuggerHooks& debugger_hooks,
           const TimerCallbackArg& callback, int timeout, int handle,
           WindowTimers* window_timers);
 
-    base::internal::TimerBase* timer() { return timer_.get(); }
-    TimerCallbackArg::Reference& callback_reference() { return callback_; }
+    void Run();
 
     // Pause this timer. The timer will not fire when paused.
     void Pause();
@@ -81,8 +83,11 @@ class WindowTimers {
     // time is in the past, it will fire immediately.
     void StartOrResume();
 
+    // Disable the timer callback.
+    void Disable();
+
    private:
-    ~Timer() {}
+    ~Timer();
 
     // Create and start a timer of the specified TimerClass type.
     template <class TimerClass>
@@ -91,8 +96,11 @@ class WindowTimers {
     TimerType type_;
     std::unique_ptr<base::internal::TimerBase> timer_;
     TimerCallbackArg::Reference callback_;
+    DomStatTracker* const dom_stat_tracker_;
+    const base::DebuggerHooks& debugger_hooks_;
     int timeout_;
     int handle_;
+    bool active_;
     WindowTimers* window_timers_;
 
     // Store the desired run tim of a paused timer.
@@ -111,13 +119,10 @@ class WindowTimers {
   // if none can be found.
   int GetFreeTimerHandle();
 
-  // This callback, when called by Timer, runs the callback in TimerInfo
-  // and removes the handle if necessary.
-  void RunTimerCallback(int handle);
-
   Timers timers_;
   int current_timer_index_ = 0;
   script::Wrappable* const owner_;
+  DomStatTracker* const dom_stat_tracker_;
   const base::DebuggerHooks& debugger_hooks_;
 
   // Set to false when we're about to shutdown, to ensure that no new JavaScript

@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "base/observer_list.h"
+#include "base/optional.h"
 #include "base/synchronization/lock.h"
 #include "base/synchronization/waitable_event.h"
 #include "base/threading/thread.h"
@@ -91,6 +92,7 @@ namespace browser {
 // different subsystems together.
 class BrowserModule {
  public:
+  typedef base::Callback<void(WebModule*)> WebModuleCreatedCallback;
   // All browser subcomponent options should have default constructors that
   // setup reasonable default options.
   struct Options {
@@ -103,7 +105,7 @@ class BrowserModule {
     renderer::RendererModule::Options renderer_module_options;
     WebModule::Options web_module_options;
     media::MediaModule::Options media_module_options;
-    base::Closure web_module_created_callback;
+    WebModuleCreatedCallback web_module_created_callback;
     memory_settings::AutoMemSettings command_line_auto_mem_settings;
     memory_settings::AutoMemSettings build_auto_mem_settings;
     base::Optional<GURL> fallback_splash_screen_url;
@@ -229,19 +231,13 @@ class BrowserModule {
   static void GetParamMap(const std::string& url,
                           std::map<std::string, std::string>& map);
 
-  // Pass the application preload or start timestamps from Starboard.
-  void SetApplicationStartOrPreloadTimestamp(bool is_preload,
-                                             SbTimeMonotonic timestamp);
   // Pass the deeplink timestamp from Starboard.
   void SetDeepLinkTimestamp(SbTimeMonotonic timestamp);
+
  private:
 #if SB_HAS(CORE_DUMP_HANDLER_SUPPORT)
   static void CoreDumpHandler(void* browser_module_as_void);
   int on_error_triggered_count_;
-#if defined(COBALT_CHECK_RENDER_TIMEOUT)
-  int recovery_mechanism_triggered_count_;
-  int timeout_response_trigger_count_;
-#endif  // defined(COBALT_CHECK_RENDER_TIMEOUT)
 #endif  // SB_HAS(CORE_DUMP_HANDLER_SUPPORT)
 
   // Called when the WebModule's Window.onload event is fired.
@@ -393,11 +389,6 @@ class BrowserModule {
 
   // Process all messages queued into the |render_tree_submission_queue_|.
   void ProcessRenderTreeSubmissionQueue();
-
-#if defined(COBALT_CHECK_RENDER_TIMEOUT)
-  // Poll for render timeout. Called from timeout_polling_thread_.
-  void OnPollForRenderTimeout(const GURL& url);
-#endif
 
   // Gets the current resource provider.
   render_tree::ResourceProvider* GetResourceProvider();
@@ -587,7 +578,7 @@ class BrowserModule {
 
   // This will be called after a WebModule has been recreated, which could occur
   // on navigation.
-  base::Closure web_module_created_callback_;
+  WebModuleCreatedCallback web_module_created_callback_;
 
   // The time when a URL navigation starts. This is recorded after the previous
   // WebModule is destroyed.
@@ -647,14 +638,6 @@ class BrowserModule {
 
   // Reset when the browser is paused, signalled to resume.
   base::WaitableEvent has_resumed_;
-
-#if defined(COBALT_CHECK_RENDER_TIMEOUT)
-  base::Thread timeout_polling_thread_;
-
-  // Counts the number of continuous render timeout expirations. This value is
-  // updated and used from OnPollForRenderTimeout.
-  int render_timeout_count_;
-#endif
 
   // The URL that Cobalt will attempt to navigate to during an OnErrorRetry()
   // and also when starting from a concealed state or unfreezing from a

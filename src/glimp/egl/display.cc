@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Google Inc. All Rights Reserved.
+ * Copyright 2015 The Cobalt Authors. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,9 +22,37 @@
 #include "glimp/egl/config.h"
 #include "glimp/egl/error.h"
 #include "starboard/common/log.h"
+#include "starboard/event.h"
 
 namespace glimp {
 namespace egl {
+
+const SbTime kSubmitDoneDelay = kSbTimeSecond / 60;
+
+// Don't repeat the submitDone callback during suspension
+// until specified by eglTerminate.
+bool Display::repeat_submit_done_during_suspend = false;
+
+namespace {
+void ScheduleSubmitDoneCallback(void* context) {
+  if (Display::repeat_submit_done_during_suspend) {
+    DisplayImpl::CallSubmitDone();
+    Display::RepeatSubmitDoneDuringSuspend();
+  }
+}
+}  // namespace
+
+void Display::RepeatSubmitDoneDuringSuspend() {
+  static SbEventId submit_done_repeating_callback_event = kSbEventIdInvalid;
+  if (Display::repeat_submit_done_during_suspend) {
+    submit_done_repeating_callback_event =
+        SbEventSchedule(&ScheduleSubmitDoneCallback, NULL, kSubmitDoneDelay);
+  } else {
+    if (submit_done_repeating_callback_event != kSbEventIdInvalid) {
+      SbEventCancel(submit_done_repeating_callback_event);
+    }
+  }
+}
 
 Display::Display(nb::scoped_ptr<DisplayImpl> display_impl)
     : impl_(display_impl.Pass()) {}

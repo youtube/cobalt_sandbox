@@ -22,11 +22,11 @@
 #include "base/threading/thread_checker.h"
 #if defined(STARBOARD)
 #include "base/threading/thread_id_name_manager.h"
+#include "cobalt/extension/free_space.h"
 #endif
 #include "base/threading/thread_task_runner_handle.h"
 #include "build/build_config.h"
 #if defined(STARBOARD)
-#include "cobalt/extension/installation_manager.h"
 #include "cobalt/updater/utils.h"
 #include "components/update_client/cobalt_slot_management.h"
 #endif
@@ -102,7 +102,8 @@ class UpdateCheckerImpl : public UpdateChecker {
       const base::flat_map<std::string, std::string>& additional_attributes,
       bool enabled_component_updates);
 #if defined(STARBOARD)
-  void Cancel();
+  void Cancel() ;
+  virtual bool SkipUpdate(const CobaltExtensionInstallationManagerApi* installation_api);
 #endif
   void OnRequestSenderComplete(int error,
                                const std::string& response,
@@ -228,22 +229,20 @@ void UpdateCheckerImpl::CheckForUpdatesHelper(
 
     base::Version current_version = crx_component->version;
 #if defined(STARBOARD)
-    std::string unpacked_version =
-        GetPersistedData()->GetLastUnpackedVersion(app_id);
-    // If the version of the last unpacked update package is higher than the
-    // version of the running binary, use the former to indicate the current
-    // update version in the update check request.
-    if (!unpacked_version.empty() &&
-        base::Version(unpacked_version).CompareTo(current_version) > 0) {
-      current_version = base::Version(unpacked_version);
-    }
-
     // Check if there is an available update already for quick roll-forward
     auto installation_api =
         static_cast<const CobaltExtensionInstallationManagerApi*>(
             SbSystemGetExtension(kCobaltExtensionInstallationManagerName));
     if (!installation_api) {
-      LOG(ERROR) << "Failed to get installation manager extension.";
+      LOG(ERROR) << "UpdaterChecker: "
+                 << "Failed to get installation manager extension.";
+      return;
+    }
+
+    if (SkipUpdate(installation_api)) {
+      LOG(WARNING) << "UpdaterChecker is skipping";
+      UpdateCheckFailed(ErrorCategory::kUpdateCheck,
+        static_cast<int>(UpdateCheckError::OUT_OF_SPACE), -1);
       return;
     }
 
@@ -259,6 +258,15 @@ void UpdateCheckerImpl::CheckForUpdatesHelper(
       return;
     }
 
+    std::string last_installed_version =
+        GetPersistedData()->GetLastInstalledVersion(app_id);
+    // If the version of the last installed update package is higher than the
+    // version of the running binary, use the former to indicate the current
+    // update version in the update check request.
+    if (!last_installed_version.empty() &&
+        base::Version(last_installed_version).CompareTo(current_version) > 0) {
+      current_version = base::Version(last_installed_version);
+    }
 // If the quick roll forward update slot candidate doesn't exist, continue
 // with update check.
 #endif
@@ -304,6 +312,24 @@ void UpdateCheckerImpl::Cancel() {
   if (request_sender_.get()) {
     request_sender_->Cancel();
   }
+}
+
+bool UpdateCheckerImpl::SkipUpdate(
+  const CobaltExtensionInstallationManagerApi* installation_api) {
+  auto free_space_ext = static_cast<const CobaltExtensionFreeSpaceApi*>(
+      SbSystemGetExtension(kCobaltExtensionFreeSpaceName));
+  if (!installation_api) {
+    LOG(WARNING) << "UpdaterChecker::SkipUpdate: missing installation api";
+     return false;
+  }
+  if (!free_space_ext) {
+    LOG(WARNING) << "UpdaterChecker::SkipUpdate: No FreeSpace Cobalt extension";
+    return false;
+  }
+
+  return CobaltSkipUpdate(installation_api, config_->GetMinFreeSpaceBytes(),
+     free_space_ext->MeasureFreeSpace(kSbSystemPathStorageDirectory),
+     CobaltInstallationCleanupSize(installation_api)) ;
 }
 #endif
 

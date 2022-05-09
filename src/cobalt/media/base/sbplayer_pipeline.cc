@@ -14,6 +14,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "base/basictypes.h"  // For COMPILE_ASSERT
@@ -28,6 +29,7 @@
 #include "base/time/time.h"
 #include "base/trace_event/trace_event.h"
 #include "cobalt/base/c_val.h"
+#include "cobalt/base/startup_timer.h"
 #include "cobalt/math/size.h"
 #include "cobalt/media/base/audio_decoder_config.h"
 #include "cobalt/media/base/bind_to_current_loop.h"
@@ -46,6 +48,7 @@
 #include "cobalt/media/base/video_decoder_config.h"
 #include "starboard/common/string.h"
 #include "starboard/configuration_constants.h"
+#include "starboard/time.h"
 
 namespace cobalt {
 namespace media {
@@ -193,6 +196,12 @@ class MEDIA_EXPORT SbPlayerPipeline : public Pipeline,
   // Retrieve the statistics as a string and append to message.
   std::string AppendStatisticsString(const std::string& message) const;
 
+  // Get information on the time since app start and the time since the last
+  // playback resume.
+  std::string GetTimeInformation() const;
+
+  void RunSetDrmSystemReadyCB();
+
   // An identifier string for the pipeline, used in CVal to identify multiple
   // pipelines.
   const std::string pipeline_identifier_;
@@ -316,6 +325,10 @@ class MEDIA_EXPORT SbPlayerPipeline : public Pipeline,
   base::CVal<std::string> max_video_capabilities_;
 
   PlaybackStatistics playback_statistics_;
+
+  SbTimeMonotonic last_resume_time_ = -1;
+
+  SbTimeMonotonic set_drm_system_ready_cb_time_ = -1;
 
   DISALLOW_COPY_AND_ASSIGN(SbPlayerPipeline);
 };
@@ -506,8 +519,7 @@ void SbPlayerPipeline::Start(const SetDrmSystemReadyCB& set_drm_system_ready_cb,
                  on_encrypted_media_init_data_encountered_cb);
   set_drm_system_ready_cb_ = parameters.set_drm_system_ready_cb;
   DCHECK(!set_drm_system_ready_cb_.is_null());
-  set_drm_system_ready_cb_.Run(
-      base::Bind(&SbPlayerPipeline::SetDrmSystem, this));
+  RunSetDrmSystemReadyCB();
 
   task_runner_->PostTask(
       FROM_HERE, base::Bind(&SbPlayerPipeline::StartTask, this, parameters));
@@ -933,10 +945,15 @@ void SbPlayerPipeline::CreateUrlPlayer(const std::string& source_url) {
     return;
   }
 
+  std::string time_information = GetTimeInformation();
+  LOG(INFO) << "SbPlayerPipeline::CreateUrlPlayer failed to create a valid "
+               "StarboardPlayer - "
+            << time_information << " \'" << error_message << "\'";
+
   CallSeekCB(DECODER_ERROR_NOT_SUPPORTED,
              "SbPlayerPipeline::CreateUrlPlayer failed to create a valid "
-             "StarboardPlayer: \'" +
-                 error_message + "\'");
+             "StarboardPlayer - " +
+                 time_information + " \'" + error_message + "\'");
 }
 
 void SbPlayerPipeline::SetDrmSystem(SbDrmSystem drm_system) {
@@ -949,6 +966,7 @@ void SbPlayerPipeline::SetDrmSystem(SbDrmSystem drm_system) {
   }
 
   if (player_->IsValid()) {
+    player_->RecordSetDrmSystemReadyTime(set_drm_system_ready_cb_time_);
     player_->SetDrmSystem(drm_system);
   }
 }
@@ -1018,6 +1036,7 @@ void SbPlayerPipeline::CreatePlayer(SbDrmSystem drm_system) {
   }
 
   if (player_ && player_->IsValid()) {
+    player_->RecordSetDrmSystemReadyTime(set_drm_system_ready_cb_time_);
     base::Closure output_mode_change_cb;
     {
       base::AutoLock auto_lock(lock_);
@@ -1035,10 +1054,15 @@ void SbPlayerPipeline::CreatePlayer(SbDrmSystem drm_system) {
     return;
   }
 
+  std::string time_information = GetTimeInformation();
+  LOG(INFO) << "SbPlayerPipeline::CreatePlayer failed to create a valid "
+               "StarboardPlayer - "
+            << time_information << " \'" << error_message << "\'";
+
   CallSeekCB(DECODER_ERROR_NOT_SUPPORTED,
              "SbPlayerPipeline::CreatePlayer failed to create a valid "
-             "StarboardPlayer: \'" +
-                 error_message + "\'");
+             "StarboardPlayer - " +
+                 time_information + " \'" + error_message + "\'");
 }
 
 void SbPlayerPipeline::OnDemuxerInitialized(PipelineStatus status) {
@@ -1098,8 +1122,7 @@ void SbPlayerPipeline::OnDemuxerInitialized(PipelineStatus status) {
       content_size_change_cb_.Run();
     }
     if (is_encrypted) {
-      set_drm_system_ready_cb_.Run(
-          BindToCurrentLoop(base::Bind(&SbPlayerPipeline::CreatePlayer, this)));
+      RunSetDrmSystemReadyCB();
       return;
     }
   }
@@ -1432,6 +1455,7 @@ void SbPlayerPipeline::ResumeTask(PipelineWindow window,
   DCHECK(suspended_);
 
   if (!suspended_) {
+    last_resume_time_ = SbTimeGetMonotonicNow();
     done_event->Signal();
     return;
   }
@@ -1447,17 +1471,22 @@ void SbPlayerPipeline::ResumeTask(PipelineWindow window,
         error_message = player_->GetPlayerCreationErrorMessage();
         player_.reset();
       }
+      std::string time_information = GetTimeInformation();
+      LOG(INFO) << "SbPlayerPipeline::ResumeTask failed to create a valid "
+                   "StarboardPlayer - "
+                << time_information << " \'" << error_message << "\'";
       // TODO: Determine if CallSeekCB() may be used here, as |seek_cb_| may be
       // available if the app is suspended before a seek is completed.
-      CallErrorCB(DECODER_ERROR_NOT_SUPPORTED,
-                  "SbPlayerPipeline::ResumeTask failed to create a valid "
-                  "StarboardPlayer: \'" +
-                      error_message + "\'");
+      CallSeekCB(DECODER_ERROR_NOT_SUPPORTED,
+                 "SbPlayerPipeline::ResumeTask failed to create a valid "
+                 "StarboardPlayer - " +
+                     time_information + " \'" + error_message + "\'");
       return;
     }
   }
 
   suspended_ = false;
+  last_resume_time_ = SbTimeGetMonotonicNow();
 
   done_event->Signal();
 }
@@ -1472,6 +1501,46 @@ std::string SbPlayerPipeline::AppendStatisticsString(
                video_stream_->video_decoder_config()) +
            '.';
   }
+}
+
+std::string SbPlayerPipeline::GetTimeInformation() const {
+  auto round_time_in_seconds = [](const SbTime time) {
+    const int64_t seconds = time / kSbTimeSecond;
+    if (seconds < 15) {
+      return seconds / 5 * 5;
+    }
+    if (seconds < 60) {
+      return seconds / 15 * 15;
+    }
+    if (seconds < 3600) {
+      return std::max(static_cast<SbTime>(60), seconds / 600 * 600);
+    }
+    return std::max(static_cast<SbTime>(3600), seconds / 18000 * 18000);
+  };
+  std::string time_since_start =
+      std::to_string(
+          round_time_in_seconds(base::StartupTimer::TimeElapsed().ToSbTime())) +
+      "s";
+  std::string time_since_resume =
+      last_resume_time_ != -1
+          ? std::to_string(round_time_in_seconds(SbTimeGetMonotonicNow() -
+                                                 last_resume_time_)) +
+                "s"
+          : "null";
+  return "time since app start: " + time_since_start +
+         ", time since last resume: " + time_since_resume;
+}
+
+void SbPlayerPipeline::RunSetDrmSystemReadyCB() {
+  TRACE_EVENT0("cobalt::media", "SbPlayerPipeline::RunSetDrmSystemReadyCB");
+  set_drm_system_ready_cb_time_ = SbTimeGetMonotonicNow();
+#if SB_HAS(PLAYER_WITH_URL)
+  set_drm_system_ready_cb_.Run(
+      base::Bind(&SbPlayerPipeline::SetDrmSystem, this));
+#else   // SB_HAS(PLAYER_WITH_URL)
+  set_drm_system_ready_cb_.Run(
+      BindToCurrentLoop(base::Bind(&SbPlayerPipeline::CreatePlayer, this)));
+#endif  // SB_HAS(PLAYER_WITH_URL)
 }
 
 }  // namespace

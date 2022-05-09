@@ -51,8 +51,10 @@ import dev.cobalt.util.Holder;
 import dev.cobalt.util.Log;
 import dev.cobalt.util.UsedByNative;
 import java.lang.reflect.Method;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Locale;
+import java.util.TimeZone;
 
 /** Implementation of the required JNI methods called by the Starboard C++ code. */
 public class StarboardBridge {
@@ -72,6 +74,7 @@ public class StarboardBridge {
   private AudioPermissionRequester audioPermissionRequester;
   private KeyboardEditor keyboardEditor;
   private NetworkStatus networkStatus;
+  private ResourceOverlay resourceOverlay;
 
   static {
     // Even though NativeActivity already loads our library from C++,
@@ -97,6 +100,7 @@ public class StarboardBridge {
   private final HashMap<String, CobaltService.Factory> cobaltServiceFactories = new HashMap<>();
   private final HashMap<String, CobaltService> cobaltServices = new HashMap<>();
 
+  private static final TimeZone DEFAULT_TIME_ZONE = TimeZone.getTimeZone("America/Los_Angeles");
   private final long timeNanosecondsPerMicrosecond = 1000;
 
   public StarboardBridge(
@@ -124,6 +128,7 @@ public class StarboardBridge {
         new CobaltMediaSession(appContext, activityHolder, audioOutputManager);
     this.audioPermissionRequester = new AudioPermissionRequester(appContext, activityHolder);
     this.networkStatus = new NetworkStatus(appContext);
+    this.resourceOverlay = new ResourceOverlay(appContext);
   }
 
   private native boolean nativeInitialize();
@@ -363,7 +368,9 @@ public class StarboardBridge {
     return ttsHelper;
   }
 
-  /** @return A new CaptionSettings object with the current system caption settings. */
+  /**
+   * @return A new CaptionSettings object with the current system caption settings.
+   */
   @SuppressWarnings("unused")
   @UsedByNative
   CaptionSettings getCaptionSettings() {
@@ -381,6 +388,18 @@ public class StarboardBridge {
 
   @SuppressWarnings("unused")
   @UsedByNative
+  String getTimeZoneId() {
+    Locale locale = Locale.getDefault();
+    Calendar calendar = Calendar.getInstance(locale);
+    TimeZone timeZone = DEFAULT_TIME_ZONE;
+    if (calendar != null) {
+      timeZone = calendar.getTimeZone();
+    }
+    return timeZone.getID();
+  }
+
+  @SuppressWarnings("unused")
+  @UsedByNative
   SizeF getDisplayDpi() {
     return DisplayUtil.getDisplayDpi();
   }
@@ -389,6 +408,12 @@ public class StarboardBridge {
   @UsedByNative
   Size getDisplaySize() {
     return DisplayUtil.getSystemDisplaySize();
+  }
+
+  @SuppressWarnings("unused")
+  @UsedByNative
+  public ResourceOverlay getResourceOverlay() {
+    return resourceOverlay;
   }
 
   @Nullable
@@ -486,7 +511,9 @@ public class StarboardBridge {
     return audioManager.isMicrophoneMute();
   }
 
-  /** @return true if we have an active network connection and it's on an wireless network. */
+  /**
+   * @return true if we have an active network connection and it's on an wireless network.
+   */
   @SuppressWarnings("unused")
   @UsedByNative
   boolean isCurrentNetworkWireless() {

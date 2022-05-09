@@ -29,6 +29,7 @@
 #include "cobalt/browser/browser_module.h"
 #include "cobalt/browser/memory_tracker/tool.h"
 #include "cobalt/system_window/system_window.h"
+#include "starboard/time.h"
 #if SB_IS(EVERGREEN)
 #include "cobalt/updater/updater_module.h"
 #endif
@@ -68,8 +69,7 @@ class Application {
   void OnNetworkEvent(const base::Event* event);
 
   // Called to handle an application event.
-  void OnApplicationEvent(SbEventType event_type,
-                          SbTimeMonotonic timestamp);
+  void OnApplicationEvent(SbEventType event_type, SbTimeMonotonic timestamp);
 
   // Called to handle a window size change event.
   void OnWindowSizeChangedEvent(const base::Event* event);
@@ -95,7 +95,10 @@ class Application {
 #endif
 
   // Called when a navigation occurs in the BrowserModule.
-  void WebModuleCreated();
+  void WebModuleCreated(WebModule* web_module);
+
+  void CollectUnloadEventTimingInfo(base::TimeTicks start_time,
+                                    base::TimeTicks end_time);
 
   // A conduit for system events.
   base::EventDispatcher event_dispatcher_;
@@ -195,6 +198,14 @@ class Application {
   void UpdatePeriodicStats();
   void DispatchEventInternal(base::Event* event);
 
+  base::Optional<SbTimeMonotonic> preload_timestamp_;
+  base::Optional<SbTimeMonotonic> start_timestamp_;
+
+  // These represent the 'document unload timing info' from the spec to be
+  // passed to the next document.
+  base::TimeTicks unload_event_start_time_;
+  base::TimeTicks unload_event_end_time_;
+
   // The message loop that will handle UI events.
   base::MessageLoop* message_loop_;
 
@@ -230,8 +241,7 @@ class Application {
   void OnDeepLinkConsumedCallback(const std::string& link);
 
   // Dispatch events for deep links.
-  void DispatchDeepLink(const char* link,
-                        SbTimeMonotonic timestamp);
+  void DispatchDeepLink(const char* link, SbTimeMonotonic timestamp);
   void DispatchDeepLinkIfNotConsumed();
 
   DISALLOW_COPY_AND_ASSIGN(Application);

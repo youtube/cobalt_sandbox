@@ -65,6 +65,11 @@
 //   //   exposes functionality for my new feature.
 //   #define SB_MY_EXPERIMENTAL_FEATURE_VERSION SB_EXPERIMENTAL_API_VERSION
 
+// Introduce a new format kSbDecodeTargetFormat3Plane10BitYUVI420Compact.
+//   A decoder target format consisting of 10bit Y, U, and V planes.
+#define SB_DECODE_TARGET_FORMAT_YUVI420_COMPACT_API_VERSION \
+  SB_EXPERIMENTAL_API_VERSION
+
 // --- Release Candidate Feature Defines -------------------------------------
 
 // --- Common Detected Features ----------------------------------------------

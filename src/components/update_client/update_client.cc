@@ -79,7 +79,8 @@ UpdateClientImpl::~UpdateClientImpl() {
   DCHECK(tasks_.empty());
 
 #if defined(STARBOARD)
-  LOG(INFO) << "UpdateClientImpl::~UpdateClientImpl: task_queue_.size=" << task_queue_.size() << " tasks.size=" << tasks_.size();
+  LOG(INFO) << "UpdateClientImpl::~UpdateClientImpl: task_queue_.size="
+            << task_queue_.size() << " tasks.size=" << tasks_.size();
 #endif
 
   config_ = nullptr;
@@ -175,6 +176,12 @@ void UpdateClientImpl::RemoveObserver(Observer* observer) {
 void UpdateClientImpl::NotifyObservers(Observer::Events event,
                                        const std::string& id) {
   DCHECK(thread_checker_.CalledOnValidThread());
+#if defined(STARBOARD)
+  if (is_stopped_) {
+    LOG(WARNING) << "UpdateClientImpl::NotifyObservers: already stopped";
+    return;
+  }
+#endif
   for (auto& observer : observer_list_)
     observer.OnEvent(event, id);
 }

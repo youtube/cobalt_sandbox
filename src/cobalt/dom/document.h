@@ -41,6 +41,7 @@
 #include "cobalt/cssom/viewport_size.h"
 #include "cobalt/dom/application_lifecycle_state.h"
 #include "cobalt/dom/csp_delegate_type.h"
+#include "cobalt/dom/document_load_timing_info.h"
 #include "cobalt/dom/document_ready_state.h"
 #include "cobalt/dom/document_timeline.h"
 #include "cobalt/dom/event.h"
@@ -48,6 +49,7 @@
 #include "cobalt/dom/intersection_observer_task_manager.h"
 #include "cobalt/dom/location.h"
 #include "cobalt/dom/node.h"
+#include "cobalt/dom/performance_navigation_timing.h"
 #include "cobalt/dom/pointer_state.h"
 #include "cobalt/dom/visibility_state.h"
 #include "cobalt/math/size.h"
@@ -75,6 +77,7 @@ class HTMLHtmlElement;
 class HTMLMediaElement;
 class HTMLScriptElement;
 class Location;
+class Performance;
 class Text;
 class Window;
 
@@ -481,6 +484,43 @@ class Document : public Node,
   DEFINE_WRAPPABLE_TYPE(Document);
   void TraceMembers(script::Tracer* tracer) override;
 
+  // PerformanceNavigationTiming related API.
+  void CreatePerformanceNavigationTiming(
+      Performance* performance, const net::LoadTimingInfo& timing_info);
+  base::TimeTicks GetDocumentUnloadEventStartTime() const {
+    return document_load_timing_info_.unload_event_start;
+  }
+  base::TimeTicks GetDocumentUnloadEventEndTime() const {
+    return document_load_timing_info_.unload_event_end;
+  }
+  DOMHighResTimeStamp GetDocumentContentLoadedEventStartTime() const {
+    return document_load_timing_info_.dom_content_loaded_event_start;
+  }
+  DOMHighResTimeStamp GetDocumentContentLoadedEventEndTime() const {
+    return document_load_timing_info_.dom_content_loaded_event_end;
+  }
+  DOMHighResTimeStamp GetDocumentDomCompleteTime() const {
+    return document_load_timing_info_.dom_complete;
+  }
+  DOMHighResTimeStamp GetDocumentLoadEventStartTime() const {
+    return document_load_timing_info_.load_event_start;
+  }
+  DOMHighResTimeStamp GetDocumentLoadEventEndTime() const {
+    return document_load_timing_info_.load_event_end;
+  }
+  NavigationType GetNavigationType() const { return navigation_type_; }
+
+  // Collect dom content loaded timing info and dispatch dom content loaded
+  // event.
+  void CollectTimingInfoAndDispatchEvent();
+
+  void SetNavigationType(NavigationType navigation_type) {
+    navigation_type_ = navigation_type;
+  }
+
+  void SetUnloadEventTimingInfo(base::TimeTicks start_time,
+                                base::TimeTicks end_time);
+
  protected:
   ~Document() override;
 
@@ -644,6 +684,11 @@ class Document : public Node,
 
   scoped_refptr<IntersectionObserverTaskManager>
       intersection_observer_task_manager_;
+
+  scoped_refptr<PerformanceNavigationTiming> navigation_timing_entry_;
+
+  DocumentLoadTimingInfo document_load_timing_info_;
+  NavigationType navigation_type_;
 };
 
 }  // namespace dom
