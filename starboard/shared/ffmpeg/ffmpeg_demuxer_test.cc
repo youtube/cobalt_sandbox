@@ -307,7 +307,9 @@ int64_t MockGetSize(void* user_data) {
 // between tests.
 class FFmpegDemuxerTest : public ::testing::Test {
  public:
-  FFmpegDemuxerTest() { TestOnlySetFFmpegDispatch(GetFFMPEGDispatch()); }
+  FFmpegDemuxerTest() {
+    FFmpegDemuxer::TestOnlySetFFmpegDispatch(GetFFMPEGDispatch());
+  }
 
   ~FFmpegDemuxerTest() override {
     testing::Mock::VerifyAndClearExpectations(GetMockFFmpegImpl());
