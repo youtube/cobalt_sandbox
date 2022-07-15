@@ -14,8 +14,8 @@
 
 // https://www.w3.org/TR/WebCryptoAPI/#crypto-interface
 
-[NoInterfaceObject]
-interface GlobalCrypto {
-  readonly attribute Crypto crypto;
+[Exposed=(Window,ServiceWorker)]
+interface Crypto {
+  [CallWith=EnvironmentSettings] readonly attribute SubtleCrypto subtle;
+  [RaisesException] ArrayBufferView getRandomValues(ArrayBufferView array);
 };
-Window implements GlobalCrypto;

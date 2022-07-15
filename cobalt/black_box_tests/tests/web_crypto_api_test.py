@@ -1,5 +1,3 @@
-#!/bin/bash
-#
 # Copyright 2022 The Cobalt Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,24 +11,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Tests basic WebCrypto API functionality."""
 
-# Unset the previous test's name and runner function.
-unset TEST_NAME
-unset TEST_FILE
-unset -f run_test
+from cobalt.black_box_tests import black_box_tests
+from cobalt.black_box_tests.threaded_web_server import ThreadedWebServer
 
-TEST_NAME="CompressionUpdatePerformance"
 
-function run_test() {
-  source $(dirname "$0")/performance_tests/run_update_trial.sh
+class WebCryptoApiTest(black_box_tests.BlackBoxTestCase):
+  """Test basic WebCrypto API functionality."""
 
-  for i in {1..3}; do
-    run_update_trial "$i" "--compress_update" "--loader_use_compression";
-    result=$?
-    if [[ "${result}" -ne 0 ]]; then
-      return 1
-    fi
-  done
+  def test_simple(self):
 
-  return 0
-}
+    with ThreadedWebServer(binding_address=self.GetBindingAddress()) as server:
+      url = server.GetURL(file_name='testdata/web_crypto_api_test.html')
+
+      with self.CreateCobaltRunner(url=url) as runner:
+        runner.WaitForJSTestsSetup()
+        self.assertTrue(runner.JSTestsSucceeded())

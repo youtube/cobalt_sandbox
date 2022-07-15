@@ -14,7 +14,10 @@
 
 // https://encoding.spec.whatwg.org/#interface-textencoder
 
-[Constructor()] interface TextEncoder {
+[
+  Exposed=(Window,Worker),
+  Constructor()
+] interface TextEncoder {
   // https://encoding.spec.whatwg.org/#textencodercommon
   readonly attribute DOMString encoding;
 

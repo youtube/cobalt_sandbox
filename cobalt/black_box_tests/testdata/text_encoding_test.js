@@ -1,4 +1,4 @@
-// Copyright 2016 The Cobalt Authors. All Rights Reserved.
+// Copyright 2022 The Cobalt Authors. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "starboard/shared/starboard/thread_local_storage_external_access_hack_public.h"
-
-#include "starboard/shared/starboard/thread_local_storage_internal.h"
-
-void StarboardSharedTLSKeyManagerInitializeTLSForThread() {
-  starboard::shared::TLSKeyManager::Get()->InitializeTLSForThread();
-}
-
-void StarboardSharedTLSKeyManagerShutdownTLSForThread() {
-  starboard::shared::TLSKeyManager::Get()->ShutdownTLSForThread();
-}
+onmessage = event => {
+  if (event.data === 'text_encode_decode') {
+    const encoder = new TextEncoder();
+    const message = 'this is a test';
+    const encoded = encoder.encode(message);
+    const decoder = new TextDecoder();
+    postMessage(decoder.decode(encoded) === message ? 'pass' : 'fail');
+  } else {
+    postMessage(`Unexpected message received: ${event.data}.`);
+  }
+};
