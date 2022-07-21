@@ -274,10 +274,13 @@ bool Application::DispatchAndDelete(Application::Event* event) {
   // Ensure the event is deleted unless it is released.
   scoped_ptr<Event> scoped_event(event);
 
+// Ensure that we go through the the appropriate lifecycle events based on
+// the current state. If intermediate events need to be processed, use
+// HandleEventAndUpdateState() rather than Inject() for the intermediate events
+// because there may already be other lifecycle events in the queue.
+
 #if SB_API_VERSION >= 13
   SbTimeMonotonic timestamp = scoped_event->event->timestamp;
-  // Ensure that we go through the the appropriate lifecycle events based on the
-  // current state.
   switch (scoped_event->event->type) {
     case kSbEventTypePreload:
       if (state() != kStateUnstarted) {
@@ -286,7 +289,8 @@ bool Application::DispatchAndDelete(Application::Event* event) {
       break;
     case kSbEventTypeStart:
       if (state() != kStateUnstarted && state() != kStateStarted) {
-        Inject(new Event(kSbEventTypeFocus, timestamp, NULL, NULL));
+        HandleEventAndUpdateState(
+            new Event(kSbEventTypeFocus, timestamp, NULL, NULL));
         return true;
       }
       break;
@@ -300,11 +304,13 @@ bool Application::DispatchAndDelete(Application::Event* event) {
         case kStateStopped:
           return true;
         case kStateFrozen:
-          Inject(new Event(kSbEventTypeUnfreeze, timestamp, NULL, NULL));
+          HandleEventAndUpdateState(
+              new Event(kSbEventTypeUnfreeze, timestamp, NULL, NULL));
         // The fall-through is intentional.
         case kStateConcealed:
-          Inject(new Event(kSbEventTypeReveal, timestamp, NULL, NULL));
-          Inject(scoped_event.release());
+          HandleEventAndUpdateState(
+              new Event(kSbEventTypeReveal, timestamp, NULL, NULL));
+          HandleEventAndUpdateState(scoped_event.release());
           return true;
         case kStateBlurred:
           break;
@@ -318,8 +324,9 @@ bool Application::DispatchAndDelete(Application::Event* event) {
         case kStateUnstarted:
           return true;
         case kStateStarted:
-          Inject(new Event(kSbEventTypeBlur, timestamp, NULL, NULL));
-          Inject(scoped_event.release());
+          HandleEventAndUpdateState(
+              new Event(kSbEventTypeBlur, timestamp, NULL, NULL));
+          HandleEventAndUpdateState(scoped_event.release());
           return true;
         case kStateBlurred:
           break;
@@ -334,8 +341,9 @@ bool Application::DispatchAndDelete(Application::Event* event) {
         case kStateStopped:
           return true;
         case kStateFrozen:
-          Inject(new Event(kSbEventTypeUnfreeze, timestamp, NULL, NULL));
-          Inject(scoped_event.release());
+          HandleEventAndUpdateState(
+              new Event(kSbEventTypeUnfreeze, timestamp, NULL, NULL));
+          HandleEventAndUpdateState(scoped_event.release());
           return true;
         case kStateConcealed:
           break;
@@ -350,14 +358,15 @@ bool Application::DispatchAndDelete(Application::Event* event) {
         case kStateUnstarted:
           return true;
         case kStateStarted:
-          Inject(new Event(kSbEventTypeBlur, timestamp, NULL, NULL));
+          HandleEventAndUpdateState(
+              new Event(kSbEventTypeBlur, timestamp, NULL, NULL));
         // The fall-through is intentional
         case kStateBlurred:
-          Inject(new Event(kSbEventTypeConceal, timestamp, NULL, NULL));
-          Inject(scoped_event.release());
+          HandleEventAndUpdateState(
+              new Event(kSbEventTypeConceal, timestamp, NULL, NULL));
+          HandleEventAndUpdateState(scoped_event.release());
           return true;
         case kStateConcealed:
-          OnSuspend();
           break;
         case kStateFrozen:
         case kStateStopped:
@@ -369,7 +378,6 @@ bool Application::DispatchAndDelete(Application::Event* event) {
         case kStateStopped:
           return true;
         case kStateFrozen:
-          OnResume();
           break;
         case kStateConcealed:
         case kStateBlurred:
@@ -383,13 +391,24 @@ bool Application::DispatchAndDelete(Application::Event* event) {
         case kStateUnstarted:
           return true;
         case kStateStarted:
-          Inject(new Event(kSbEventTypeBlur, timestamp, NULL, NULL));
+          HandleEventAndUpdateState(
+              new Event(kSbEventTypeBlur, timestamp, NULL, NULL));
         // The fall-through is intentional.
         case kStateBlurred:
-          Inject(new Event(kSbEventTypeConceal, timestamp, NULL, NULL));
+          HandleEventAndUpdateState(
+              new Event(kSbEventTypeConceal, timestamp, NULL, NULL));
         // The fall-through is intentional.
         case kStateConcealed:
-          Inject(new Event(kSbEventTypeFreeze, timestamp, NULL, NULL));
+          HandleEventAndUpdateState(
+              new Event(kSbEventTypeFreeze, timestamp, NULL, NULL));
+          // There is a race condition with kSbEventTypeStop processing and
+          // timed events currently in use. Processing the intermediate events
+          // takes time, so makes it more likely that a timed event will be due
+          // immediately and processed immediately afterward. The event(s) need
+          // to be fixed to behave better after kSbEventTypeStop has been
+          // handled. In the meantime, continue to use Inject() to preserve the
+          // current timing. This bug can still happen with Inject(), but it is
+          // less likely than if HandleEventAndUpdateState() were used.
           Inject(scoped_event.release());
           return true;
         case kStateFrozen:
@@ -409,8 +428,6 @@ bool Application::DispatchAndDelete(Application::Event* event) {
       break;
   }
 #else
-  // Ensure that we go through the the appropriate lifecycle events based on the
-  // current state.
   switch (scoped_event->event->type) {
     case kSbEventTypePreload:
       if (state() != kStateUnstarted) {
@@ -439,8 +456,8 @@ bool Application::DispatchAndDelete(Application::Event* event) {
       }
 
       if (state() == kStateSuspended) {
-        Inject(new Event(kSbEventTypeResume, NULL, NULL));
-        Inject(scoped_event.release());
+        HandleEventAndUpdateState(new Event(kSbEventTypeResume, NULL, NULL));
+        HandleEventAndUpdateState(scoped_event.release());
         return true;
       }
       break;
@@ -454,8 +471,8 @@ bool Application::DispatchAndDelete(Application::Event* event) {
       }
 
       if (state() == kStateStarted) {
-        Inject(new Event(kSbEventTypePause, NULL, NULL));
-        Inject(scoped_event.release());
+        HandleEventAndUpdateState(new Event(kSbEventTypePause, NULL, NULL));
+        HandleEventAndUpdateState(scoped_event.release());
         return true;
       }
       break;
@@ -463,20 +480,25 @@ bool Application::DispatchAndDelete(Application::Event* event) {
       if (state() == kStateStarted || state() == kStatePaused) {
         return true;
       }
-      if (state() == kStateSuspended) {
-        OnResume();
-      }
       break;
     case kSbEventTypeStop:
+      // There is a race condition with kSbEventTypeStop processing and
+      // timed events currently in use. Processing the intermediate events
+      // takes time, so makes it more likely that a timed event will be due
+      // immediately and processed immediately afterward. The event(s) need
+      // to be fixed to behave better after kSbEventTypeStop has been
+      // handled. In the meantime, continue to use Inject() to preserve the
+      // current timing. This bug can still happen with Inject(), but it is
+      // less likely than if HandleEventAndUpdateState() were used.
       if (state() == kStateStarted) {
-        Inject(new Event(kSbEventTypePause, NULL, NULL));
-        Inject(new Event(kSbEventTypeSuspend, NULL, NULL));
+        HandleEventAndUpdateState(new Event(kSbEventTypePause, NULL, NULL));
+        HandleEventAndUpdateState(new Event(kSbEventTypeSuspend, NULL, NULL));
         Inject(scoped_event.release());
         return true;
       }
 
       if (state() == kStatePaused || state() == kStatePreloading) {
-        Inject(new Event(kSbEventTypeSuspend, NULL, NULL));
+        HandleEventAndUpdateState(new Event(kSbEventTypeSuspend, NULL, NULL));
         Inject(scoped_event.release());
         return true;
       }
@@ -493,7 +515,32 @@ bool Application::DispatchAndDelete(Application::Event* event) {
   }
 #endif  // SB_API_VERSION >= 13
 
+  return HandleEventAndUpdateState(scoped_event.release());
+}
+
+bool Application::HandleEventAndUpdateState(Application::Event* event) {
+  // Ensure the event is deleted unless it is released.
+  scoped_ptr<Event> scoped_event(event);
+
+// Call OnSuspend() and OnResume() before the event as needed.
+#if SB_API_VERSION >= 13
+  if (scoped_event->event->type == kSbEventTypeUnfreeze &&
+      state() == kStateFrozen) {
+    OnResume();
+  } else if (scoped_event->event->type == kSbEventTypeFreeze &&
+             state() == kStateConcealed) {
+    OnSuspend();
+  }
+#else
+  if (scoped_event->event->type == kSbEventTypeResume &&
+      state() == kStateSuspended) {
+    OnResume();
+  }
+// OnSuspend() is called after SbEventHandle(kSbEventTypeSuspend).
+#endif  // SB_API_VERSION >= 13
+
   SbEventHandle(scoped_event->event);
+
 #if SB_API_VERSION >= 13
   switch (scoped_event->event->type) {
     case kSbEventTypePreload:

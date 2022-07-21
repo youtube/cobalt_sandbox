@@ -1,4 +1,4 @@
-// Copyright 2020 The Cobalt Authors. All Rights Reserved.
+// Copyright 2021 The Cobalt Authors. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,22 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "third_party/crashpad/wrapper/wrapper.h"
+#ifndef STARBOARD_LINUX_SHARED_SOFT_MIC_PLATFORM_SERVICE_H_
+#define STARBOARD_LINUX_SHARED_SOFT_MIC_PLATFORM_SERVICE_H_
 
-namespace third_party {
-namespace crashpad {
-namespace wrapper {
+// Omit namespace linux due to symbol name conflict.
+namespace starboard {
+namespace shared {
 
-void InstallCrashpadHandler(bool start_at_crash) {}
+const void* GetPlatformServiceApi();
 
-bool AddEvergreenInfoToCrashpad(EvergreenInfo evergreen_info) {
-  return false;
-}
+}  // namespace shared
+}  // namespace starboard
 
-bool AddAnnotationsToCrashpad(CrashpadAnnotations annotations) {
-  return false;
-}
-
-}  // namespace wrapper
-}  // namespace crashpad
-}  // namespace third_party
+#endif  // STARBOARD_LINUX_SHARED_SOFT_MIC_PLATFORM_SERVICE_H_
