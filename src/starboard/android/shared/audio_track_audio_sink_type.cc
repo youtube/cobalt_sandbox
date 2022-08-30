@@ -188,7 +188,7 @@ void AudioTrackAudioSink::AudioThreadFunc() {
 
     if (was_playing) {
       playback_head_position =
-          bridge_.GetPlaybackHeadPosition(&frames_consumed_at, env);
+          bridge_.GetAudioTimestamp(&frames_consumed_at, env);
       SB_DCHECK(playback_head_position >= last_playback_head_position_);
 
       playback_head_position =
@@ -387,6 +387,10 @@ void AudioTrackAudioSink::SetVolume(double volume) {
 
 int AudioTrackAudioSink::GetUnderrunCount() {
   return bridge_.GetUnderrunCount();
+}
+
+int AudioTrackAudioSink::GetStartThresholdInFrames() {
+  return bridge_.GetStartThresholdInFrames();
 }
 
 // static

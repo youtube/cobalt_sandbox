@@ -53,8 +53,7 @@ class DisplayImpl {
   // Creates and returns a new DisplayImpl object.
   // To be implemented by each implementing platform.
   static nb::scoped_ptr<DisplayImpl> Create(EGLNativeDisplayType display_id);
-
-  // Submit done call
+  // Submit done call.
   static void CallSubmitDone();
 
   // Returns the EGL major and minor versions, if they are not NULL.

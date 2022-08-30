@@ -257,7 +257,7 @@ void AudioTrackBridge::SetVolume(double volume,
   }
 }
 
-int64_t AudioTrackBridge::GetPlaybackHeadPosition(
+int64_t AudioTrackBridge::GetAudioTimestamp(
     SbTime* updated_at,
     JniEnvExt* env /*= JniEnvExt::Get()*/) {
   SB_DCHECK(env);
@@ -294,6 +294,15 @@ int AudioTrackBridge::GetUnderrunCount(JniEnvExt* env /*= JniEnvExt::Get()*/) {
 
   return env->CallIntMethodOrAbort(j_audio_track_bridge_, "getUnderrunCount",
                                    "()I");
+}
+
+int AudioTrackBridge::GetStartThresholdInFrames(
+    JniEnvExt* env /*= JniEnvExt::Get()*/) {
+  SB_DCHECK(env);
+  SB_DCHECK(is_valid());
+
+  return env->CallIntMethodOrAbort(j_audio_track_bridge_,
+                                   "getStartThresholdInFrames", "()I");
 }
 
 }  // namespace shared
