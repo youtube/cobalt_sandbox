@@ -32,7 +32,9 @@ COPY ./list_python_processes.py /list_python_processes.py
 # Install deps via chocolatey.
 RUN iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'));`
     mkdir C:\choco-cache;`
+    # Install Python 3 before Python 2, so the default on the path is python2.
     choco install -y -c C:\choco-cache python3 -ia '/quiet InstallAllUsers=1 PrependPath=1 TargetDir="C:\Python3"';`
+    choco install -y -c C:\choco-cache python2 --params '/InstallDir:C:\python2';`
     choco install -y -c C:\choco-cache winflexbison3 --params '/InstallDir:C:\bison';`
     choco install -y -c C:\choco-cache ninja;`
     choco install -y -c C:\choco-cache nodejs-lts;`
