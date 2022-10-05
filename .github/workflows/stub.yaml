@@ -19,3 +19,4 @@ jobs:
       packages: write
     with:
       platform: stub
+
