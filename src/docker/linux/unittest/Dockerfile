@@ -3,24 +3,36 @@ FROM cobalt-base
 RUN apt update -qqy \
     && apt install -qqy --no-install-recommends \
         libasound2 \
-        libavcodec57 \
-        libavformat57 \
-        libavresample3 \
-        libavutil55 \
+        libatomic1 \
+        libavcodec-dev \
+        libavformat-dev \
+        libavresample-dev \
+        libavutil-dev \
+        libegl1-mesa-dev \
+        libgl1-mesa-glx \
+        libglapi-mesa \
+        libgles2-mesa \
+        libglu1-mesa \
+        libwayland-egl1-mesa \
+        mesa-common-dev \
+        mesa-utils   \
         libegl1-mesa \
         libgl1-mesa-dri \
-        libgles2-mesa \
         libx11-6 \
         libxcomposite1 \
+        libxi-dev \
         libxrender1 \
+        procps \
         unzip \
         xauth \
-        xvfb \
+        xvfb \ 
     && apt-get clean autoclean \
     && apt-get autoremove -y --purge \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
     && rm -rf /var/lib/{apt,dpkg,cache,log} \
     && echo "Done"
+
+RUN python2 -m pip install "selenium==3.141.0" "Brotli==1.0.9" six
 
 WORKDIR /out
 
