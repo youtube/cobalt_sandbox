@@ -1,0 +1,38 @@
+// Copyright 2022 The Cobalt Authors. All Rights Reserved.
+
+syntax = "proto3";
+
+package on_device_tests_gateway;
+
+// Interface exported by the server.
+service on_device_tests_gateway {
+  // A dumb proxy RPC service that passes user defined command line options
+  // to the on-device tests gateway and streams back output in real time.
+  rpc exec_command (OnDeviceTestsCommand) returns (stream OnDeviceTestsResponse) {
+  }
+}
+
+// Working directory and command line arguments to be passed to the gateway.
+message OnDeviceTestsCommand {
+  enum Config {
+    devel = 0;
+  }
+
+  string workdir = 1;
+  string token = 2;
+  string test_type = 3;
+  string platform = 4;
+  string archive_path = 5;
+  string config = 6;
+  string tag = 7;
+  string label = 8;
+  string builder_name = 9;
+  string change_id = 10;
+  string build_number = 11;
+  optional bool dry_run = 12;
+}
+
+// Response from the on-device tests.
+message OnDeviceTestsResponse {
+  string response = 1;
+}
