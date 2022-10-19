@@ -222,7 +222,7 @@ jobs:
   # Runs on-host integration and unit tests.
   on-device-test:
     needs: [initialize, build]
-    if: needs.initialize.outputs.on_device_test == 'true' && (contains(github.workflow, '_nightly') || contains(github.event.pull_request.labels.*.name, 'on_device')) }}
+    if: needs.initialize.outputs.on_device_test == 'true' && (contains(github.workflow, '_nightly') || contains(github.event.pull_request.labels.*.name, 'on_device'))
     runs-on: [self-hosted, linux, X64]
     name: On Device Test (${{ matrix.config }}/${{ matrix.type }} on ${{ matrix.platform }})
     strategy:
