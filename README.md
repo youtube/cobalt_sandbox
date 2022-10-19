@@ -1,4 +1,4 @@
-# Cobalt
+# Cobalt (demo)
 
 ## Overview
 
