@@ -40,6 +40,23 @@ jobs:
   # Retrieves configuration from json file.
   initialize:
     runs-on: ubuntu-latest
+    if: |
+      contains(github.workflow, '_nightly') ||
+      github.event_name == 'push' ||
+      github.event.action == 'ready_for_review' ||
+      (
+        github.event.action == 'synchronize' &&
+        !github.event.pull_request.draft
+      ) ||
+      (
+        github.event.action == 'labeled' &&
+        github.event.label.name == 'on_device' &&
+        !github.event.pull_request.draft
+      ) ||
+      (
+        github.event.action == 'labeled' &&
+        github.event.label.name == 'runtest'
+      )
     steps:
       - id: checkout
         uses: actions/checkout@v3
@@ -205,7 +222,7 @@ jobs:
   # Runs on-host integration and unit tests.
   on-device-test:
     needs: [initialize, build]
-    if: needs.initialize.outputs.on_device_test == 'true'
+    if: needs.initialize.outputs.on_device_test == 'true' && (contains(github.workflow, '_nightly') || contains(github.event.pull_request.labels.*.name, 'on_device')) }}
     runs-on: [self-hosted, linux, X64]
     name: On Device Test (${{ matrix.config }}/${{ matrix.type }} on ${{ matrix.platform }})
     strategy:
