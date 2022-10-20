@@ -33,7 +33,8 @@ RUN apt update -qqy \
         xvfb \
     && /opt/clean-after-apt.sh
 
-RUN python3 -m pip install "selenium==3.141.0" "Brotli==1.0.9"
+COPY ./unittest/requirements.txt /opt/requirements.txt
+RUN python3 -m pip install --require-hashes --no-deps -r /opt/requirements.txt
 
 WORKDIR /out
 # Sets the locale in the environment. This is needed for NPLB unit tests.
