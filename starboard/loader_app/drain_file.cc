@@ -141,15 +141,10 @@ bool TryDrain(const char* dir, const char* app_key) {
   std::vector<std::string> filenames = FindAllWithPrefix(dir, kDrainFilePrefix);
 
   for (const auto& filename : filenames) {
-    SB_LOG(INFO) << "Saw filename: " << filename;
-    if (IsExpired(filename)) {
-      SB_LOG(INFO) << "It was expired.";
+    if (IsExpired(filename))
       continue;
-    }
-    if (filename.find(app_key) == std::string::npos) {
-      SB_LOG(INFO) << "It did not have app_key " << app_key << " in it.";
+    if (filename.find(app_key) == std::string::npos)
       return false;
-    }
     SB_LOG(INFO) << "Found valid drain file '" << filename << "'";
     return true;
   }
