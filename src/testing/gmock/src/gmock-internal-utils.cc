@@ -164,7 +164,7 @@ GTEST_API_ void Log(LogSeverity severity,
   }
 
 #if GTEST_OS_STARBOARD
-  SB_LOG(INFO) << "\nGMOCK WARNING:\n" << message;
+  SB_LOG(INFO) << "\nGMOCK WARNING:";
 #else
   std::cout << message;
 #endif
