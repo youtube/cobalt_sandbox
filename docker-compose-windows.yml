@@ -11,9 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 version: '2.4'
+
 volumes:
   container-sccache:
+
 x-common-definitions: &common-definitions
   stdin_open: true
   environment:
@@ -25,6 +28,7 @@ x-common-definitions: &common-definitions
     - ${SCCACHE_DIR:-container-sccache}:c:/root/sccache/
   cpus: ${DOCKER_CPUS:-12}
   mem_limit: ${DOCKER_MEMLIMIT:-100000M}
+
 services:
   visual-studio-base:
     build:
@@ -34,6 +38,7 @@ services:
         - FROM_IMAGE=mcr.microsoft.com/windows/servercore:ltsc2019
     image: visual-studio-base
     scale: 0
+
   cobalt-build-win-base:
     build:
       context: ./docker/windows/base/build
@@ -44,6 +49,7 @@ services:
     scale: 0
     depends_on:
       - visual-studio-base
+
   visual-studio-win32-base:
     build:
       context: ./docker/windows/base/visualstudio2017
@@ -52,6 +58,7 @@ services:
         - FROM_IMAGE=mcr.microsoft.com/windows:1809
     image: visual-studio-win32-base
     scale: 0
+
   cobalt-build-win32-base:
     build:
       context: ./docker/windows/base/build
@@ -62,7 +69,8 @@ services:
     scale: 0
     depends_on:
       - visual-studio-win32-base
-  build-win-win32:
+
+  win-win32:
     <<: *common-definitions
     build:
       context: ./docker/windows/win32
@@ -75,4 +83,13 @@ services:
       - TARGET=${TARGET:-cobalt_install}
       - NINJA_FLAGS
       - IS_DOCKER=1
+    image: cobalt-build-win32
+
+  build-win-win32:
+    <<: *common-definitions
+    build:
+      context: ./docker/windows/win32
+      dockerfile: ./Dockerfile
+    depends_on:
+      - cobalt-build-win32-base
     image: cobalt-build-win-win32

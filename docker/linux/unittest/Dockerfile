@@ -20,16 +20,7 @@ RUN apt update -qqy \
         libatomic1 \
         libavcodec-dev \
         libavformat-dev \
-        libavresample-dev \
-        libavutil-dev \
-        libegl1-mesa-dev \
-        libgl1-mesa-glx \
-        libglapi-mesa \
         libgles2-mesa \
-        libglu1-mesa \
-        libwayland-egl1-mesa \
-        mesa-common-dev \
-        mesa-utils   \
         libegl1-mesa \
         libgl1-mesa-dri \
         libx11-6 \
@@ -39,7 +30,7 @@ RUN apt update -qqy \
         procps \
         unzip \
         xauth \
-        xvfb \ 
+        xvfb \
     && /opt/clean-after-apt.sh
 
 RUN python3 -m pip install "selenium==3.141.0" "Brotli==1.0.9"
