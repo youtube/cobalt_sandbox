@@ -39,13 +39,20 @@ RUN curl --silent -o- ${NVM_URL} \
    && echo ${NVM_SHA256SUM} | sha256sum --check \
    && . /tmp/install.sh
 
+# === Pinned Node version to v16, as this is latest one that will work on
+# legacy Debian systems
+ARG LTS_VERSION=v16
 RUN . $NVM_DIR/nvm.sh \
-   && nvm install --lts \
-   && nvm alias default lts/* \
+   && nvm install --lts ${LTS_VERSION} \
+   && nvm alias default ${LTS_VERSION}/* \
    && nvm use default
 
 ENV NODE_PATH $NVM_DIR/v$NODE_VERSION/lib/node_modules
 ENV PATH $NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH
+
+# === Get GN via CIPD
+ARG GN_SHA256SUM="af7b2dcb3905bca56655e12131b365f1cba8e159db80d2022330c4f522fab2ef  /tmp/gn.zip"
+ARG GN_HASH=r3styzkFvKVmVeEhMbNl8cuo4VnbgNICIzDE9SL6su8C
 
 # === Get GN via CIPD
 ARG GN_SHA256SUM="af7b2dcb3905bca56655e12131b365f1cba8e159db80d2022330c4f522fab2ef  /tmp/gn.zip"
