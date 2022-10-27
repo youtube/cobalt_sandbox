@@ -16,42 +16,5 @@ import("//starboard/build/convert_i18n_data.gni")
 
 convert_i18n_data("i18n") {
   install_content = true
-  xlb_files = [
-    "da.xlb",
-    "de-AT.xlb",
-    "de-CH.xlb",
-    "de.xlb",
-    "en-AU.xlb",
-    "en-CA.xlb",
-    "en-GB.xlb",
-    "en-IE.xlb",
-    "en.xlb",
-    "es-419.xlb",
-    "es-AR.xlb",
-    "es-CL.xlb",
-    "es-CO.xlb",
-    "es-MX.xlb",
-    "es-US.xlb",
-    "es.xlb",
-    "fi.xlb",
-    "fr-CA.xlb",
-    "fr-CH.xlb",
-    "fr.xlb",
-    "it.xlb",
-    "ja.xlb",
-    "ko.xlb",
-    "nb.xlb",
-    "nl.xlb",
-    "pl.xlb",
-    "pt-BR.xlb",
-    "pt-PT.xlb",
-    "pt.xlb",
-    "ru.xlb",
-    "sv.xlb",
-    "tr.xlb",
-    "zh-CN.xlb",
-    "zh-HK.xlb",
-    "zh-TW.xlb",
-    "zh.xlb",
-  ]
+  xlb_files = [ "en.xlb" ]
 }
