@@ -7,7 +7,7 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - run: python -m pip install pre-commit
+    - run: python -m pip install pre-commit cpplint
       shell: bash
     - run: python -m pip freeze --local
       shell: bash
