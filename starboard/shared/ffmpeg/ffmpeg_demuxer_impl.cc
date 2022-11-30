@@ -82,31 +82,6 @@ CobaltExtensionDemuxerAudioCodec AvCodecIdToAudioCodec(AVCodecID codec) {
   }
 }
 
-CobaltExtensionDemuxerVideoCodec AvCodecIdToVideoCodec(AVCodecID codec) {
-  switch (codec) {
-    case AV_CODEC_ID_H264:
-      return kCobaltExtensionDemuxerCodecH264;
-    case AV_CODEC_ID_VC1:
-      return kCobaltExtensionDemuxerCodecVC1;
-    case AV_CODEC_ID_MPEG2VIDEO:
-      return kCobaltExtensionDemuxerCodecMPEG2;
-    case AV_CODEC_ID_MPEG4:
-      return kCobaltExtensionDemuxerCodecMPEG4;
-    case AV_CODEC_ID_THEORA:
-      return kCobaltExtensionDemuxerCodecTheora;
-    case AV_CODEC_ID_VP8:
-      return kCobaltExtensionDemuxerCodecVP8;
-#if FFMPEG >= 560
-    case AV_CODEC_ID_VP9:
-      return kCobaltExtensionDemuxerCodecVP9;
-    case AV_CODEC_ID_HEVC:
-      return kCobaltExtensionDemuxerCodecHEVC;
-#endif  // FFMPEG >= 560
-    default:
-      return kCobaltExtensionDemuxerCodecUnknownVideo;
-  }
-}
-
 CobaltExtensionDemuxerSampleFormat AvSampleFormatToSampleFormat(
     AVSampleFormat sample_format) {
   switch (sample_format) {
@@ -945,7 +920,28 @@ bool FFmpegDemuxerImpl<FFMPEG>::ParseVideoConfig(
       config->natural_height = static_cast<int>(height);
     }
   }
-  config->codec = AvCodecIdToVideoCodec(codec_context->codec_id);
+  switch (codec_context->codec_id) {
+    case AV_CODEC_ID_H264:
+      config->codec = kCobaltExtensionDemuxerCodecH264;
+    case AV_CODEC_ID_VC1:
+      config->codec = kCobaltExtensionDemuxerCodecVC1;
+    case AV_CODEC_ID_MPEG2VIDEO:
+      config->codec = kCobaltExtensionDemuxerCodecMPEG2;
+    case AV_CODEC_ID_MPEG4:
+      config->codec = kCobaltExtensionDemuxerCodecMPEG4;
+    case AV_CODEC_ID_THEORA:
+      config->codec = kCobaltExtensionDemuxerCodecTheora;
+    case AV_CODEC_ID_VP8:
+      config->codec = kCobaltExtensionDemuxerCodecVP8;
+#if FFMPEG >= 560
+    case AV_CODEC_ID_VP9:
+      config->codec = kCobaltExtensionDemuxerCodecVP9;
+    case AV_CODEC_ID_HEVC:
+      config->codec = kCobaltExtensionDemuxerCodecHEVC;
+#endif  // FFMPEG >= 560
+    default:
+      config->codec = kCobaltExtensionDemuxerCodecUnknownVideo;
+  }
 
   // Without the ffmpeg decoder configured, libavformat is unable to get the
   // profile, format, or coded size. So choose sensible defaults and let
