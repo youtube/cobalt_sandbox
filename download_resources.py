@@ -45,7 +45,7 @@ def DownloadClangFormat(force=False):
                                              clang_format_sha_path, force)
 
 
-def DownloadGerritCommitMsgHook(force=False):
+def Download_GerritCommitMsgHook(force=False):
   git_dir = subprocess.check_output(['git', 'rev-parse', '--git-common-dir'
                                     ]).strip().decode('utf-8')
   git_commit_msg_hook_path = os.path.join(git_dir, 'hooks', 'commit-msg')
