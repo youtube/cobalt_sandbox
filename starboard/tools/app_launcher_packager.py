@@ -100,7 +100,7 @@ def _FindFilesRecursive(  # pylint: disable=missing-docstring
   return file_list
 
 
-def CopyAppLauncherTools(repo_root,
+def CopyApp_LauncherTools(repo_root,
                          dest_root,
                          additional_glob_patterns=None,
                          include_black_box_tests=True):
