@@ -14,40 +14,40 @@
     {
       "name":"x64",
       "platform":"linux-x64x11",
-      "target_platform":"linux-x64x11"
+      "target_platform":"linux-x64x11",
+      "extra_gn_arguments":"use_clang_coverage=true"
     },
     {
       "name":"egl",
       "platform":"linux-x64x11-egl",
-      "target_platform":"linux-x64x11-egl"
+      "target_platform":"linux-x64x11-egl",
+      "extra_gn_arguments":"use_clang_coverage=true"
     },
     {
       "name":"skia",
       "platform":"linux-x64x11-skia",
-      "target_platform":"linux-x64x11-skia"
+      "target_platform":"linux-x64x11-skia",
+      "extra_gn_arguments":"use_clang_coverage=true"
     },
     {
       "name":"sbversion-12",
       "platform":"linux-x64x11-sbversion-12",
       "target_platform":"linux-x64x11",
-      "sb_api_version":"sb_api_version=12"
+      "sb_api_version":"sb_api_version=12",
+      "extra_gn_arguments":"use_clang_coverage=true"
     },
     {
       "name":"sbversion-13",
       "platform":"linux-x64x11-sbversion-13",
       "target_platform":"linux-x64x11",
-      "sb_api_version":"sb_api_version=13"
+      "sb_api_version":"sb_api_version=13",
+      "extra_gn_arguments":"use_clang_coverage=true"
     },
     {
       "name":"sbversion-14",
       "platform":"linux-x64x11-sbversion-14",
       "target_platform":"linux-x64x11",
-      "sb_api_version":"sb_api_version=14"
-    },
-    {
-      "name":"coverage",
-      "platform":"linux-x64x11-coverage",
-      "target_platform":"linux-x64x11",
+      "sb_api_version":"sb_api_version=14",
       "extra_gn_arguments":"use_clang_coverage=true"
     }
   ]
