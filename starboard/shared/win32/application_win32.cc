@@ -14,6 +14,7 @@
 
 #include "starboard/shared/win32/application_win32.h"
 
+
 #include <windows.h>   // NOLINT(build/include_order)
 #include <windowsx.h>  // NOLINT(build/include_order)
 
