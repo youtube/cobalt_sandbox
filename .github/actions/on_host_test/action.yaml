@@ -74,3 +74,8 @@ runs:
             xvfb-run -a --server-args="-screen 0 1920x1080x24i +render +extension GLX -noreset" python3 $GITHUB_WORKSPACE/starboard/tools/testing/test_runner.py --platform ${{matrix.target_platform}} --config ${{matrix.config}} -s ${{matrix.shard}} -r ${loader_args}
           fi
         fi
+    - name: Upload to Codecov
+      if: endsWith(${{matrix.target_platform}}, 'coverage')
+      uses: codecov/codecov-action@v3
+      with:
+        files: ${{env.GITHUB_WORKSPACE}}/out/${{env.BUILD_PLATFORM}}_${{matrix.config}}/coverage/report.profdata
