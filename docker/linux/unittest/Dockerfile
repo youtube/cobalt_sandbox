@@ -28,6 +28,7 @@ RUN apt update -qqy \
         libxi-dev \
         libxrender1 \
         procps \
+        strace64 \
         unzip \
         xauth \
         xvfb \

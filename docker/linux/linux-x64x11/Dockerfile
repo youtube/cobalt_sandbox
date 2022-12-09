@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 ARG FROM_IMAGE
 FROM ${FROM_IMAGE:-cobalt-build-base}
 
@@ -21,6 +20,7 @@ RUN apt update -qqy \
         libgles2-mesa-dev \
         mesa-common-dev \
         libpulse-dev \
+        bzip2 \
         libasound2-dev \
         libxrender-dev \
         libxcomposite-dev \
