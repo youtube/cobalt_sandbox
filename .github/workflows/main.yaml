@@ -99,6 +99,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       packages: write
+      contents: read
     steps:
       - name: Checkout files
         uses: actions/checkout@v3
@@ -130,6 +131,7 @@ jobs:
     needs: [initialize]
     permissions:
       packages: write
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - name: Checkout files
