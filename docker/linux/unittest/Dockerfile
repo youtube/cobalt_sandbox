@@ -24,6 +24,7 @@ RUN apt update -qqy \
         libegl1-mesa \
         libgl1-mesa-dri \
         libx11-6 \
+        strace \
         libxcomposite1 \
         libxi-dev \
         libxrender1 \
