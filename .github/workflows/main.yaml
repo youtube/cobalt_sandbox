@@ -128,8 +128,7 @@ jobs:
   docker-unittest-image:
     if: needs.initialize.outputs.on_host_test == 'true'
     needs: [initialize]
-    permissions:
-      packages: write
+    permissions: {}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout files
@@ -197,7 +196,7 @@ jobs:
       - name: Set bootloader config
         if: ${{ needs.initialize.outputs.bootloader != 'null' }}
         run: echo "COBALT_BOOTLOADER=${{needs.initialize.outputs.bootloader}}" >> $GITHUB_ENV
-      # Build bootloader for on-host tests if necessary.
+      # Build bootloader for on-host tests if neccessary.
       - name: Bootloader GN
         if: ${{ needs.initialize.outputs.bootloader != 'null' && matrix.config == 'devel' }}
         uses: ./.github/actions/gn
