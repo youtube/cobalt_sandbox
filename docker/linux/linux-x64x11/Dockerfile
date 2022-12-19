@@ -20,6 +20,7 @@ RUN apt update -qqy \
         clang \
         libgles2-mesa-dev \
         mesa-common-dev \
+        bzip2 \
         libpulse-dev \
         libasound2-dev \
         libxrender-dev \
