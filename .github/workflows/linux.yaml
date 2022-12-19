@@ -22,6 +22,7 @@ jobs:
     permissions:
       packages: write
       pull-requests: write
+      contents: read
     with:
       platform: linux
       nightly: ${{ github.event.inputs.nightly }}
@@ -30,6 +31,7 @@ jobs:
     permissions:
       packages: write
       pull-requests: write
+      contents: read
     with:
       platform: linux-clang-3-9
       nightly: ${{ github.event.inputs.nightly }}
@@ -38,6 +40,7 @@ jobs:
     permissions:
       packages: write
       pull-requests: write
+      contents: read
     with:
       platform: linux-gcc-6-3
       nightly: ${{ github.event.inputs.nightly }}
