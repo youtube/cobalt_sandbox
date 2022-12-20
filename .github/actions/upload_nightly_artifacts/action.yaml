@@ -36,4 +36,4 @@ runs:
         headers: |-
           content-type: application/x-tar
         path: ${{env.ARCHIVE_PATH}}
-        destination: ${{env.PROJECT_NAME}}-build-artifacts/${{env.WORKFLOW}}/${{env.TODAY}}/${{env.GITHUB_RUN_NUMBER}}/
+        destination: cobalt-build-artifacts-${{matrix.config}}/${{env.WORKFLOW}}/${{env.TODAY}}/${{env.GITHUB_RUN_NUMBER}}/
