@@ -45,7 +45,7 @@ runs:
     # If docker related file changed for pull_request event we need to set DOCKER_TAG to point to fork repo (if any).
     - name: Set Docker Tag
       if: ${{ (steps.changed-files.outputs.any_changed == 'true') && (github.event_name == 'pull_request') }}
-      run: echo "DOCKER_TAG=ghcr.io/${{github.event.pull_request.head.repo.full_name}}/${{inputs.docker_image}}:${GITHUB_BASE_REF%.1+}" >> $GITHUB_ENV
+      run: echo "DOCKER_TAG=ghcr.io/${{github.event.pull_request.head.repo.full_name}}/${{inputs.docker_image}}:pr-${{github.event.number}}" >> $GITHUB_ENV
       shell: bash
     - name: Process Docker metadata
       id: process-docker
