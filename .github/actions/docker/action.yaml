@@ -64,7 +64,7 @@ runs:
       uses: smartlyio/docker-compose-action@v1
       with:
         serviceName: ${{ inputs.docker_service }}
-        build: true
+        build: false
         push: "on:push"
         composeArguments: "--no-start"
     - name: Tag images
