@@ -43,22 +43,13 @@ runs:
       run: echo "DOCKER_TAG=ghcr.io/${{github.repository}}/${{inputs.docker_image}}:${GITHUB_BASE_REF%.1+}" >> $GITHUB_ENV
       shell: bash
     # We need to push to gcr for pull_request events where PR originated from a fork.
-    - name: Auth to GCR
-      if: ${{ (steps.changed-files.outputs.any_changed == 'true') && (github.event_name == 'pull_request') && (github.repository != github.event.pull_request.head.repo.full_name) }}
-      uses: 'google-github-actions/auth@v1'
-    - uses: 'docker/login-action@v1'
-      if: ${{ (steps.changed-files.outputs.any_changed == 'true') && (github.event_name == 'pull_request') && (github.repository != github.event.pull_request.head.repo.full_name) }}
-      with:
-        registry: 'gcr.io' # or REGION-docker.pkg.dev
-        username: 'oauth2accesstoken'
-        password: '${{ steps.auth.outputs.access_token }}'
     - name: Set Docker Tag
       if: ${{ (steps.changed-files.outputs.any_changed == 'true') && (github.event_name == 'pull_request') && (github.repository != github.event.pull_request.head.repo.full_name) }}
       run: |
-        #METADATA="http://metadata.google.internal./computeMetadata/v1"
-        #SVC_ACCT="${METADATA}/instance/service-accounts/default"
-        #ACCESS_TOKEN=$(curl -H 'Metadata-Flavor: Google' ${SVC_ACCT}/token | cut -d'"' -f 4)
-        #printf ${ACCESS_TOKEN} | docker login -u oauth2accesstoken --password-stdin https://gcr.io
+        METADATA="http://metadata.google.internal./computeMetadata/v1"
+        SVC_ACCT="${METADATA}/instance/service-accounts/default"
+        ACCESS_TOKEN=$(curl -H 'Metadata-Flavor: Google' ${SVC_ACCT}/token | cut -d'"' -f 4)
+        printf ${ACCESS_TOKEN} | docker login -u oauth2accesstoken --password-stdin https://gcr.io
         echo "DOCKER_TAG=gcr.io/cobalt-actions-devel/${{inputs.docker_image}}:pr-${{github.event.number}}" >> $GITHUB_ENV
       shell: bash
     - name: Process Docker metadata
