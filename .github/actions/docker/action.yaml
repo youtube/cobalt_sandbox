@@ -48,7 +48,10 @@ runs:
       uses: google-github-actions/setup-gcloud@v0.6.0
     - name: Set Docker Tag
       if: ${{ (steps.changed-files.outputs.any_changed == 'true') && (github.event_name == 'pull_request') && (github.repository != github.event.pull_request.head.repo.full_name) }}
-      run: echo "DOCKER_TAG=gcr.io/cobalt-actions-devel/${{inputs.docker_image}}:pr-${{github.event.number}}" >> $GITHUB_ENV
+      run: |
+        gcloud auth login
+        gcloud auth configure-docker
+        echo "DOCKER_TAG=gcr.io/cobalt-actions-devel/${{inputs.docker_image}}:pr-${{github.event.number}}" >> $GITHUB_ENV
       shell: bash
     - name: Process Docker metadata
       id: process-docker
