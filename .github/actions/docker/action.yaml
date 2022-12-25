@@ -44,7 +44,7 @@ runs:
       shell: bash
     # We need to push to gcr for pull_request events where PR originated from a fork.
     - name: Set Docker Tag
-      if: ${{ (env.need_to_build == 'true') && (github.event_name == 'pull_request') && (github.repository == github.event.pull_request.head.repo.full_name) }}
+      if: ${{ (env.need_to_build == 'true') && (github.event_name == 'pull_request') && (github.repository != github.event.pull_request.head.repo.full_name) }}
       run: echo "DOCKER_TAG=gcr.io/cobalt-actions-devel/${{inputs.docker_image}}:pr-${{github.event.number}}" >> $GITHUB_ENV
       shell: bash
     - name: Process Docker metadata
