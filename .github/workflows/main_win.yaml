@@ -46,7 +46,7 @@ jobs:
     - name: 'Use gcloud CLI'
       shell: bash
       run: |
-        gcloud info
+        gcloud auth application-default login
         gsutil ls gs://cobalt-actions-devel-test-artifacts-tmp/linux/515/linux-x64x11_devel/
   # Generates build matrix based on json configuration file.
   initialize:
