@@ -7,7 +7,7 @@ runs:
       if: startsWith(${{matrix.target_platform}}, 'android')
       run: |
         echo "ANDROID_HOME=/root/starboard-toolchains/AndroidSdk/" >> $GITHUB_ENV
-        echo "GCS_NIGHTLY_PATH=gs://cobalt-actions-devel-build-artifacts" >> $GITHUB_ENV
+        echo "GCS_NIGHTLY_PATH=gs://cobalt-build-artifacts-${{matrix.config}}" >> $GITHUB_ENV
       shell: bash
     - name: Build
       run: |
