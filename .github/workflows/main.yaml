@@ -37,6 +37,15 @@ concurrency:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
+  gcloud:
+    runs-on: [self-hosted, linux, X64]
+    steps:
+    - name: 'Set up Cloud SDK'
+      uses: 'google-github-actions/setup-gcloud@v1'
+    - name: 'Use gcloud CLI'
+      shell: bash
+      run: |
+        gsutil ls gs://cobalt-actions-devel-test-artifacts-tmp/linux/515/linux-x64x11_devel/
   # Retrieves configuration from json file.
   initialize:
     runs-on: ubuntu-latest
