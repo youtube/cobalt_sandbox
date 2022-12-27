@@ -39,6 +39,7 @@ concurrency:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   gcloud:
+    runs-on: [self-hosted, Windows, X64]
     steps:
     - name: 'Set up Cloud SDK'
       uses: 'google-github-actions/setup-gcloud@v1'
