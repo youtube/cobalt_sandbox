@@ -24,7 +24,7 @@ runs:
           PLATFORM=${COBALT_BOOTLOADER}
           echo "TARGET_PLATFORM=${COBALT_BOOTLOADER}" >> $GITHUB_ENV
         fi
-        
+ 
         if [ "${{ inputs.type }}" == 'ondevice' ]
         then
           echo "ARCHIVE_FILE=artifacts.tar" >> $GITHUB_ENV
