@@ -46,6 +46,7 @@ jobs:
     - name: 'Use gcloud CLI'
       shell: bash
       run: |
+        set -x
         gcloud auth list
         curl -H "Metadata-Flavor: Google" http://169.254.169.254/computeMetadata/v1/instance/service-accounts/default/email
         gsutil ls gs://cobalt-actions-devel-build-artifacts/android-arm/
