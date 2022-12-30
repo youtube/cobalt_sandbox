@@ -25,6 +25,10 @@ RUN Invoke-WebRequest -Uri https://github.com/actions/runner/releases/download/v
     Remove-Item -Path C:\runner.zip; \
     setx /M PATH $(${Env:PATH} + \";${Env:ProgramFiles}\Git\bin\")
 
+RUN Invoke-WebRequest -Uri https://dl.google.com/dl/cloudsdk/channels/rapid/GoogleCloudSDKInstaller.exe -OutFile C:\GoogleCloudSDKInstaller.exe; \
+    Start-Process -Wait -FilePath "C:\GoogleCloudSDKInstaller.exe" -ArgumentList "/S","/D","C:\gcloud-sdk","/noreporting"; \
+    Remove-Item -Path C:\GoogleCloudSDKInstaller.exe
+
 # Required for packaging artifacts.
 RUN choco install -f -y 7zip --version=19.0
 
