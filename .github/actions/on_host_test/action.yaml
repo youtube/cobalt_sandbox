@@ -7,8 +7,6 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Set up Cloud SDK
-      uses: google-github-actions/setup-gcloud@v1
     - name: Configure Environment
       id: configure-environment
       shell: bash

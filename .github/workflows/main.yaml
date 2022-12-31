@@ -40,8 +40,6 @@ jobs:
   gcloud:
     runs-on: [self-hosted, linux, X64]
     steps:
-    - name: 'Set up Cloud SDK'
-      uses: 'google-github-actions/setup-gcloud@v1'
     - name: 'Use gcloud CLI'
       shell: bash
       run: |
