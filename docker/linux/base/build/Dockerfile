@@ -26,6 +26,9 @@ RUN apt update -qqy \
         pkgconf \
         unzip \
         yasm \
+        apt-transport-https \
+        ca-certificates \
+        gnupg \
     && /opt/clean-after-apt.sh
 
 # === Get Nodejs pinned LTS version via NVM
@@ -96,6 +99,13 @@ RUN cd /tmp \
     && tar xf clang-${CLANG_VER}.tgz -C ${TC_HOME} \
     && echo ${CLANG_VER} >> ${TC_HOME}/cr_build_revision \
     && rm clang-${CLANG_VER}.tgz
+
+# === Install Google Cloud SDK (used by CI workflows).
+RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" | \
+    tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && \
+    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
+    apt-key --keyring /usr/share/keyrings/cloud.google.gpg  add - && \
+    apt-get update -y && apt-get install google-cloud-sdk -y
 
 WORKDIR /code
 CMD ["/usr/bin/python","--version"]
