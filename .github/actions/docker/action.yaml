@@ -21,6 +21,7 @@ runs:
           .github/actions/docker/**
     - name: Retrieve Docker metadata
       id: meta
+      if: github.event_name != 'pull_request'
       uses: docker/metadata-action@v4
       with:
         images: ${{env.REGISTRY}}/${{github.repository}}/${{inputs.docker_image}}
