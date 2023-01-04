@@ -71,7 +71,7 @@ runs:
       id: build-image
       if: env.need_to_build == 'true'
       shell: bash
-      run: docker-compose build build-base ${{ inputs.docker_service }}
+      run: docker-compose build base build-base ${{ inputs.docker_service }}
         #  uses: smartlyio/docker-compose-action@v1
         #  with:
         #  serviceName: ${{ inputs.docker_service }}
