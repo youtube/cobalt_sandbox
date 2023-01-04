@@ -70,6 +70,7 @@ runs:
     - name: Build containers with docker-compose
       id: build-image
       if: env.need_to_build == 'true'
+      shell: bash
       run: docker-compose build ${{ inputs.docker_service }}
         #  uses: smartlyio/docker-compose-action@v1
         #  with:
