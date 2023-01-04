@@ -8,6 +8,7 @@ inputs:
     description: "Docker image name."
     required: true
 
+
 runs:
   using: "composite"
   steps:
