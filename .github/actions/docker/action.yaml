@@ -69,15 +69,15 @@ runs:
       shell: bash
     - name: Build containers with docker-compose
       id: build-image
+      env:
+        DOCKER_CPUS: 25
       if: env.need_to_build == 'true'
-      shell: bash
-      run: docker-compose build base build-base ${{ inputs.docker_service }}
-        #  uses: smartlyio/docker-compose-action@v1
-        #  with:
-        #  serviceName: ${{ inputs.docker_service }}
-        #   build: false
-        #  push: "on:push"
-        #   composeArguments: "--no-start"
+      uses: smartlyio/docker-compose-action@v1
+      with:
+        serviceName: ${{ inputs.docker_service }}
+        build: false
+        push: "on:push"
+        composeArguments: "--no-start"
     - name: Tag images
       id: tag-images
       if: env.need_to_build == 'true'
