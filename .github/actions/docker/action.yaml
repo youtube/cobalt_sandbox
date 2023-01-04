@@ -46,7 +46,7 @@ runs:
       shell: bash
     - name: Set Docker Tag
       id: set-docker-tag-presubmit-fork
-      if: ${{ (steps.changed-files.outputs.any_changed == 'true') (github.event_name == 'pull_request') && (github.event.pull_request.head.repo.fork) }}
+      if: ${{ (steps.changed-files.outputs.any_changed == 'true') && (github.event_name == 'pull_request') && (github.event.pull_request.head.repo.fork) }}
       run: |
         # Need to login to GCR to be able to push images created by fork based PR workflows.
         METADATA="http://metadata.google.internal./computeMetadata/v1"
