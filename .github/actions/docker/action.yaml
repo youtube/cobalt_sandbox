@@ -29,7 +29,7 @@ runs:
           type=ref,event=tag
           type=ref,event=pr
     - name: Set Docker Tag
-      id: set-docker-tag-postsubmit
+      id: set-docker-tag
       run: |
         set -x
         docker_tag="${{ steps.meta.outputs.tags }}"
@@ -69,8 +69,6 @@ runs:
       shell: bash
     - name: Build containers with docker-compose
       id: build-image
-      env:
-        DOCKER_CPUS: 25
       if: env.need_to_build == 'true'
       uses: smartlyio/docker-compose-action@v1
       with:
