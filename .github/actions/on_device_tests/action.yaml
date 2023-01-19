@@ -46,7 +46,7 @@ runs:
         echo "session_id=$(
         python3 tools/on_device_tests_gateway_client.py \
           --token ${{ github.token }} \
-          --change_id "${{ github.sha }}" \
+          --change_id "${{ github.event.pull_request.head.sha || github.sha }}" \
           trigger \
           --test_type ${{ env.TEST_TYPE }} \
           --platform ${{ matrix.target_platform }} \
