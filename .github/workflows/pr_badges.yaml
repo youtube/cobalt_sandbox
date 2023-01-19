@@ -1,0 +1,57 @@
+name: PR badges
+
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: '${{ github.workflow }}-${{ inputs.platform }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.sha }}'
+  cancel-in-progress: true
+
+permissions:
+  pull-requests: write
+
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            // Get the existing comments.
+            const {data: comments} = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.number,
+            })
+
+            // Find any comment already made by the bot.
+            const botComment = comments.find(comment => comment.user.id === 41898282)
+            const commentBody = `
+            ## Build Status
+            | Workflow  | Status                                                                                                                                                                                                                                               |
+            | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+            | lint      | [![lint](https://github.com/youtube/cobalt_sandbox/actions/workflows/lint.yaml/badge.svg?branch=${{ github.head_ref }})](https://github.com/youtube/cobalt_sandbox/actions/workflows/lint.yaml?query=branch%3A${{ github.head_ref }})                |
+            | Android   | [![android](https://github.com/youtube/cobalt_sandbox/actions/workflows/android.yaml/badge.svg?branch=${{ github.head_ref }})](https://github.com/youtube/cobalt_sandbox/actions/workflows/android.yaml?query=branch%3A${{ github.head_ref }})       |
+            | Evergreen | [![evergreen](https://github.com/youtube/cobalt_sandbox/actions/workflows/evergreen.yaml/badge.svg?branch=${{ github.head_ref }})](https://github.com/youtube/cobalt_sandbox/actions/workflows/evergreen.yaml?query=branch%3A${{ github.head_ref }}) |
+            | Linux     | [![linux](https://github.com/youtube/cobalt_sandbox/actions/workflows/linux.yaml/badge.svg?branch=${{ github.head_ref }})](https://github.com/youtube/cobalt_sandbox/actions/workflows/linux.yaml?query=branch%3A${{ github.head_ref }})             |
+            | raspi-2   | [![raspi-2](https://github.com/youtube/cobalt_sandbox/actions/workflows/raspi-2.yaml/badge.svg?branch=${{ github.head_ref }})](https://github.com/youtube/cobalt_sandbox/actions/workflows/raspi-2.yaml?query=branch%3A${{ github.head_ref }})       |
+            | stub      | [![stub](https://github.com/youtube/cobalt_sandbox/actions/workflows/stub.yaml/badge.svg?branch=${{ github.head_ref }})](https://github.com/youtube/cobalt_sandbox/actions/workflows/stub.yaml?query=branch%3A${{ github.head_ref }})                |
+            | Win32     | [![win32](https://github.com/youtube/cobalt_sandbox/actions/workflows/win32.yaml/badge.svg?branch=${{ github.head_ref }})](https://github.com/youtube/cobalt_sandbox/actions/workflows/win32.yaml?query=branch%3A${{ github.head_ref }})             |
+            `
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: commentBody
+              })
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.number,
+                body: commentBody
+              })
+            }
