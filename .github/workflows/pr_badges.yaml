@@ -1,8 +1,16 @@
 name: PR badges
 
 on:
-  pull_request:
-    branches: [main]
+  pull_request_target:
+    branches:
+      - 'main'
+      - '23.lts.1\+'
+      - '22.lts.1\+'
+      - '21.lts.1\+'
+      - '20.lts.1\+'
+      - '19.lts.1\+'
+      - 'rc_11'
+      - 'COBALT_9'
 
 concurrency:
   group: '${{ github.workflow }}-${{ inputs.platform }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.sha }}'
