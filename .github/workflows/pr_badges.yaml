@@ -27,7 +27,9 @@ jobs:
             })
 
             // Find any comment already made by the bot.
-            const botComment = comments.find(comment => comment.user.id === 41898282)
+            const botComment = comments.find(comment => {
+              return comment.user.type === 'Bot' && comment.body.includes('Build Status')
+            })
             const commentBody = `
             ## Build Status
             | Workflow  | Status                                                                                                                                                                                                                                               |
