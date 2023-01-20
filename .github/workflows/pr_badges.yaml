@@ -41,17 +41,15 @@ jobs:
             | Win32     | [![win32](${{github.server_url}}/${{github.repository}}/actions/workflows/win32.yaml/badge.svg?branch=${{ github.head_ref }})](${{github.server_url}}/${{github.repository}}/actions/workflows/win32.yaml?query=branch%3A${{ github.head_ref }})             |
             `
             if (botComment) {
-              await github.rest.issues.updateComment({
+              await github.rest.issues.deleteComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 comment_id: botComment.id,
-                body: commentBody
-              })
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.payload.number,
-                body: commentBody
               })
             }
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.number,
+              body: commentBody
+            })
