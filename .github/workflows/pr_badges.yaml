@@ -1,7 +1,7 @@
 name: PR badges
 
 on:
-  pull_request_target:
+  pull_request:
     branches:
       - 'main'
       - '23.lts.1\+'
@@ -45,7 +45,7 @@ jobs:
             | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
             `
             for (let i = 0; i < workflows.length; i++) {
-              commentBody += "| " + workflows[i] + "      | [![" + workflows[i] +"](${{github.server_url}}/${{github.repository}}/actions/workflows/" + workflows[i] + ".yaml/badge.svg?branch=${{ github.head_ref }})](${{github.server_url}}/${{github.repository}}/actions/workflows/" + workflows[i] + ".yaml?query=branch%3A${{ github.head_ref }})                |"
+              commentBody += "| " + workflows[i] + "      | [![" + workflows[i] +"](${{github.server_url}}/${{github.repository}}/actions/workflows/" + workflows[i] + ".yaml/badge.svg?branch=${{ github.head_ref }})](${{github.server_url}}/${{github.repository}}/actions/workflows/" + workflows[i] + ".yaml?query=branch%3A${{ github.head_ref }})                |\n"
             }
             if (botComment) {
               await github.rest.issues.deleteComment({
