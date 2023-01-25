@@ -38,18 +38,15 @@ jobs:
             const botComment = comments.find(comment => {
               return comment.user.type === 'Bot' && comment.body.includes('Build Status')
             })
-            const commentBody = `
+            const workflows = ["lint", "android", "evergreen", "linux", "raspi-2", "stub", "win32"]
+            var commentBody = `
             ## Build Status
             | Workflow  | Status                                                                                                                                                                                                                                               |
             | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-            | lint      | [![lint](${{github.server_url}}/${{github.repository}}/actions/workflows/lint.yaml/badge.svg?branch=${{ github.head_ref }})](${{github.server_url}}/${{github.repository}}/actions/workflows/lint.yaml?query=branch%3A${{ github.head_ref }})                |
-            | Android   | [![android](${{github.server_url}}/${{github.repository}}/actions/workflows/android.yaml/badge.svg?branch=${{ github.head_ref }})](${{github.server_url}}/${{github.repository}}/actions/workflows/android.yaml?query=branch%3A${{ github.head_ref }})       |
-            | Evergreen | [![evergreen](${{github.server_url}}/${{github.repository}}/actions/workflows/evergreen.yaml/badge.svg?branch=${{ github.head_ref }})](${{github.server_url}}/${{github.repository}}/actions/workflows/evergreen.yaml?query=branch%3A${{ github.head_ref }}) |
-            | Linux     | [![linux](${{github.server_url}}/${{github.repository}}/actions/workflows/linux.yaml/badge.svg?branch=${{ github.head_ref }})](${{github.server_url}}/${{github.repository}}/actions/workflows/linux.yaml?query=branch%3A${{ github.head_ref }})             |
-            | raspi-2   | [![raspi-2](${{github.server_url}}/${{github.repository}}/actions/workflows/raspi-2.yaml/badge.svg?branch=${{ github.head_ref }})](${{github.server_url}}/${{github.repository}}/actions/workflows/raspi-2.yaml?query=branch%3A${{ github.head_ref }})       |
-            | stub      | [![stub](${{github.server_url}}/${{github.repository}}/actions/workflows/stub.yaml/badge.svg?branch=${{ github.head_ref }})](${{github.server_url}}/${{github.repository}}/actions/workflows/stub.yaml?query=branch%3A${{ github.head_ref }})                |
-            | Win32     | [![win32](${{github.server_url}}/${{github.repository}}/actions/workflows/win32.yaml/badge.svg?branch=${{ github.head_ref }})](${{github.server_url}}/${{github.repository}}/actions/workflows/win32.yaml?query=branch%3A${{ github.head_ref }})             |
             `
+            for (let i = 0; i < workflows.length; i++) {
+              commentBody += "| " + workflows[i] + "      | [![" + workflows[i] +"](${{github.server_url}}/${{github.repository}}/actions/workflows/" + workflows[i] + ".yaml/badge.svg?branch=${{ github.head_ref }})](${{github.server_url}}/${{github.repository}}/actions/workflows/" + workflows[i] + ".yaml?query=branch%3A${{ github.head_ref }})                |"
+            }
             if (botComment) {
               await github.rest.issues.deleteComment({
                 owner: context.repo.owner,
