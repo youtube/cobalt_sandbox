@@ -50,7 +50,7 @@ runs:
             --change_id "${{ github.event.pull_request.head.sha || github.sha }}" \
             trigger \
             --test_type ${{ env.TEST_TYPE }} \
-            --platform ${{ matrix.target_platform }} \
+            --platform ${{ matrix.device_test_platform }} \
             --config ${{ matrix.config }} \
             --tag cobalt_github_${{ github.event_name }} \
             --builder_name github_${{ matrix.platform }}_tests \

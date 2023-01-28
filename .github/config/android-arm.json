@@ -18,6 +18,7 @@
       "name":"arm",
       "platform":"android-arm",
       "target_platform":"android-arm",
+      "device_test_platform":"android-arm",
       "target_cpu":"target_cpu=\\\"arm\\\"",
       "target_os":"target_os=\\\"android\\\""
     }

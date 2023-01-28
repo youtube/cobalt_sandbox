@@ -18,6 +18,7 @@
       "name":"x86",
       "platform":"android-x86",
       "target_platform":"android-x86",
+      "device_test_platform":"android-x86",
       "target_cpu":"target_cpu=\\\"x86\\\"",
       "target_os": "target_os=\\\"android\\\""
     }
