@@ -73,6 +73,9 @@ runs:
         )
         echo "SESSION_ID=$SESSION_ID" >> $GITHUB_ENV
       shell: bash
+    - name: Add sponge link
+      run: echo "Test [logs](http://go/cobalt-on-device-tests/${SESSION_ID})." >> $GITHUB_STEP_SUMMARY
+      shell: bash
     - name: watch ${{ env.SHARD_NAME }} tests on ${{ matrix.platform }} platform
       run: |
         set -uxe
