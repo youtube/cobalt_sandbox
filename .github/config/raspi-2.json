@@ -1,7 +1,7 @@
 {
   "docker_service": "build-raspi",
   "on_device_test": {
-    "enabled": false,
+    "enabled": true,
     "tests": [
       "0",
       "1",
@@ -33,7 +33,8 @@
       "target_platform":"raspi-2-skia",
       "target_cpu":"target_cpu=\\\"arm\\\"",
       "extra_gn_arguments": "is_clang=false",
-      "dimension": "release_version=regex:10.*"
+      "dimension": "release_version=regex:10.*",
+      "disable_on_device_test": true
     },
     {
       "name":"sbversion-12",

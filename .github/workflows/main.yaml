@@ -246,8 +246,10 @@ jobs:
       COBALT_BOOTLOADER: ${{needs.initialize.outputs.bootloader}}
     steps:
       - name: Checkout
+        if: matrix.disable_on_device_test != 'true'
         uses: actions/checkout@v3
       - name: Run Tests (${{ matrix.shard }})
+        if: matrix.disable_on_device_test != 'true'
         uses: ./.github/actions/on_device_tests
 
   # Runs on-host integration and unit tests.
