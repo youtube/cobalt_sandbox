@@ -74,6 +74,29 @@ jobs:
         run: echo "includes=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -c '.includes')" >> $GITHUB_ENV
       - id: set-on-device-test
         run: echo "on_device_test=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -rc '.on_device_test')" >> $GITHUB_ENV
+      - id: set-on-device-test-excludes
+        run: |
+          on_device_test_excludes=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json \
+            | jq -rc '.on_device_test.excludes')
+          on_device_test_includes=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json \
+            | jq -c '.includes')
+          if [ -z "${on_device_test_excludes}" ]
+          then
+            on_device_test_excludes='[]'
+          else
+            on_device_test_includes=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json \
+              | jq -c '.includes')
+            # We need to remove excluded ODT platform from matrix.include, because matrix.include
+            # takes precedent over matrix.exclude.
+            for exclude in $(echo "${on_device_test_excludes}" | jq -c '.[]')
+            do
+              platform=$(echo ${exclude} | jq -r '.platform')
+              on_device_test_includes=$(echo ${on_device_test_includes} \
+                | jq -c --arg PLATFORM "${platform}" 'del(.[] | select(.platform == $PLATFORM))')
+            done
+          fi
+          echo "on_device_test_excludes=${on_device_test_excludes}" >> $GITHUB_ENV
+          echo "on_device_test_includes=${on_device_test_includes}" >> $GITHUB_ENV
       - id: set-on-host-test
         run: echo "on_host_test=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -rc '.on_host_test')" >> $GITHUB_ENV
       - id: set-on-host-test-shards
@@ -88,6 +111,8 @@ jobs:
       platforms: ${{ env.platforms }}
       includes: ${{ env.includes }}
       on_device_test: ${{ env.on_device_test }}
+      on_device_test_excludes: ${{ env.on_device_test_excludes }}
+      on_device_test_includes: ${{ env.on_device_test_includes }}
       on_host_test: ${{ env.on_host_test }}
       on_host_test_shards: ${{ env.on_host_test_shards }}
       bootloader: ${{ env.bootloader }}
@@ -241,7 +266,8 @@ jobs:
         platform: ${{ fromJson(needs.initialize.outputs.platforms) }}
         config: [devel]
         shard: ${{ fromJson(needs.initialize.outputs.on_device_test).tests }}
-        include: ${{ fromJson(needs.initialize.outputs.includes) }}
+        include: ${{ fromJson(needs.initialize.outputs.on_device_test_includes) }}
+        exclude: ${{ fromJson(needs.initialize.outputs.on_device_test_excludes) }}
     env:
       COBALT_BOOTLOADER: ${{needs.initialize.outputs.bootloader}}
     steps:
@@ -264,6 +290,7 @@ jobs:
         shard: ${{ fromJson(needs.initialize.outputs.on_host_test_shards) }}
         config: [devel]
         include: ${{ fromJson(needs.initialize.outputs.includes) }}
+        exclude: []
     container: ${{ needs.docker-unittest-image.outputs.docker_unittest_tag }}
     env:
       DISPLAY: :99
