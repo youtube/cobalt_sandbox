@@ -20,7 +20,7 @@
       "platform":"evergreen-arm-hardfp",
       "target_platform":"evergreen-arm-hardfp",
       "target_cpu":"target_cpu=\\\"arm\\\"",
-      "extra_gn_arguments":"use_asan=false"
+      "extra_gn_arguments":"use_asan=false",
       "dimension": "release_version=regex:10.*"
     },
     {
@@ -29,7 +29,7 @@
       "target_platform":"evergreen-arm-hardfp",
       "target_cpu":"target_cpu=\\\"arm\\\"",
       "extra_gn_arguments":"use_asan=false",
-      "sb_api_version":"sb_api_version=14"
+      "sb_api_version":"sb_api_version=14",
       "dimension": "release_version=regex:10.*"
     },
     {
@@ -38,7 +38,7 @@
       "target_platform":"evergreen-arm-hardfp",
       "target_cpu":"target_cpu=\\\"arm\\\"",
       "extra_gn_arguments":"use_asan=false",
-      "sb_api_version":"sb_api_version=13"
+      "sb_api_version":"sb_api_version=13",
       "dimension": "release_version=regex:10.*"
     },
     {
@@ -47,7 +47,7 @@
       "target_platform":"evergreen-arm-hardfp",
       "target_cpu":"target_cpu=\\\"arm\\\"",
       "extra_gn_arguments":"use_asan=false",
-      "sb_api_version":"sb_api_version=12"
+      "sb_api_version":"sb_api_version=12",
       "dimension": "release_version=regex:10.*"
     }
   ]
