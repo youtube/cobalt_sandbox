@@ -50,7 +50,7 @@ jobs:
             | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
             `
             for (let i = 0; i < workflows.length; i++) {
-              commentBody += "| " + workflows[i] + "      | [![" + workflows[i] + "](" + `${GITHUB_SERVER_URL}` + "/" + `${GITHUB_REPO}` + "/actions/workflows/" + workflows[i] + ".yaml/badge.svg?branch=" + `${GITHUB_HEAD_REF}` + ")](" + `${GITHUB_SERVER_URL}` + "/" + `${GITHUB_REPO}` + "/actions/workflows/" + workflows[i] + ".yaml?query=branch%3A" + `${GITHUB_HEAD_REF}` + ")                |\n"
+              commentBody += "| " + workflows[i] + "      | [![" + workflows[i] + "](" + `${GITHUB_SERVER_URL}` + "/" + `${GITHUB_REPO}` + "/actions/workflows/" + workflows[i] + ".yaml/badge.svg?branch=isarkis%3A" + `${GITHUB_HEAD_REF}` + ")](" + `${GITHUB_SERVER_URL}` + "/" + `${GITHUB_REPO}` + "/actions/workflows/" + workflows[i] + ".yaml?query=branch%3A" + `${GITHUB_HEAD_REF}` + ")                |\n"
             }
             if (botComment) {
               await github.rest.issues.deleteComment({
