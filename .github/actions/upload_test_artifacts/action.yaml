@@ -77,3 +77,18 @@ runs:
         path: ${{env.ARCHIVE_PATH}}
         destination: ${{env.DESTINATION}}
         parent: true
+    - name: Test ping storage.googleapis.com
+      id: ping-storage-failed
+      if: ${{ failure() }}
+      shell: bash
+      run: |
+        set -eux
+        ping -c 50 storage.googleapis.com
+        exit 1
+    - name: Test ping storage.googleapis.com
+      id: ping-storage
+      shell: bash
+      run: |
+        set -eux
+        ping -c 10 google.com
+        ping -c 10 storage.googleapis.com

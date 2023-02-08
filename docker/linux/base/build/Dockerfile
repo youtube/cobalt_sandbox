@@ -22,6 +22,7 @@ RUN apt update -qqy \
     && apt install -qqy --no-install-recommends \
         binutils \
         bison \
+        iputils-ping \
         ninja-build \
         pkgconf \
         unzip \
