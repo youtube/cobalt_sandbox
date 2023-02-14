@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# ==============================================================================
 
 # Usage: Go to
 # https://https://github.com/youtube/cobalt_sandbox/actions/workflows/manual-cherry-pick.yaml
@@ -41,29 +40,33 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      RELEASE_BRANCH: ${{ github.event.inputs.release_branch }}
+      COMMIT_HASH: ${{ github.event.inputs.git_commit }}
+      REPOSITORY: ${{ github.repository }}
+      GITHUB_REF: ${{ github.ref }}
     steps:
     - name: Checkout code
       uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0
       with:
-        ref: ${{ github.event.inputs.release_branch }}
+        ref: $RELEASE_BRANCH
     - name: Get some helpful info for formatting
       id: cherrypick
       run: |
           git config --global user.name "GitHub Release Automation"
           git config --global user.email "github@google.com"
-          git fetch origin ${{ github.ref }}
-          git cherry-pick -x ${{ github.event.inputs.git_commit }}
-          echo "SHORTSHA=$(git log -1 ${{ github.event.inputs.git_commit }} --format="%h")" >> "$GITHUB_OUTPUT"
-          echo "TITLE=$(git log -1 ${{ github.event.inputs.git_commit }} --format="%s")" >> "$GITHUB_OUTPUT"
-          echo "REVIEWER=$(curl -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${GITHUB_TOKEN}" https://api.github.com/repos/${{ github.repository }}/commits/${{ github.event.inputs.git_commit }} | jq -rc '.author.login')" >> "$GITHUB_OUTPUT"
+          git fetch origin $GITHUB_REF
+          git cherry-pick -x $COMMIT_HASH
+          echo "SHORTSHA=$(git log -1 $COMMIT_HASH --format="%h")" >> "$GITHUB_OUTPUT"
+          echo "TITLE=$(git log -1 $COMMIT_HASH --format="%s")" >> "$GITHUB_OUTPUT"
+          echo "REVIEWER=$(curl -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${GITHUB_TOKEN}" https://api.github.com/repos/$REPOSITORY/commits/$COMMIT_HASH | jq -rc '.author.login')" >> "$GITHUB_OUTPUT"
     - name: Create Pull Request with changes
       uses: peter-evans/create-pull-request@2b011faafdcbc9ceb11414d64d0573f37c774b04 # v4.2.3
       with:
-        title: '${{ github.event.inputs.release_branch }} cherry-pick: ${{ steps.cherrypick.outputs.SHORTSHA }} "${{ steps.cherrypick.outputs.TITLE }}"'
+        title: '$RELEASE_BRANCH cherry-pick: ${{ steps.cherrypick.outputs.SHORTSHA }} "${{ steps.cherrypick.outputs.TITLE }}"'
         committer: GitHub Release Automation <github@google.com>
         token: ${{ secrets.GITHUB_TOKEN }}
-        base: ${{ github.event.inputs.release_branch }}
-        branch: ${{ github.event.inputs.release_branch }}-${{ steps.cherrypick.outputs.SHORTSHA }}
+        base: $RELEASE_BRANCH
+        branch: $RELEASE_BRANCH-${{ steps.cherrypick.outputs.SHORTSHA }}
         reviewers: ${{ steps.cherrypick.outputs.REVIEWER }}
         body: |
-          Refer to the original commit: https://github.com/${{ github.repository }}/commit/${{ github.event.inputs.git_commit }}
+          Refer to the original commit: https://github.com/$REPOSITORY/commit/$COMMIT_HASH
