@@ -71,4 +71,4 @@ runs:
     - name: Push images
       if: ${{ (env.need_to_build == 'true') && ((github.event_name != 'pull_request') || (!github.event.pull_request.head.repo.fork)) }}
       run: docker push ${DOCKER_TAG}
-      shell: bash
+      shell: bas
