@@ -7,6 +7,13 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Get Docker Compose version
+      run: |
+        set -x
+        docker version
+        docker-compose version
+        docker compose version
+      shell: bash
     - name: Get docker file changes
       id: changed-files
       uses: tj-actions/changed-files@v32.1.1
