@@ -66,6 +66,9 @@ struct AlignedFieldsOf {
 };
 
 TEST(SbAlignTest, AlignAsStructFieldOnStack) {
+#ifdef BREAKME
+  EXPECT_TRUE(false);
+#endif
   char unaligned = 0;
   EXPECT_NE(1, unaligned);
   AlignedFields aligned;

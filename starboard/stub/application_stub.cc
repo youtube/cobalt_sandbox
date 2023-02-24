@@ -17,6 +17,10 @@
 #include "starboard/common/log.h"
 #include "starboard/event.h"
 
+#ifdef HASTE
+#error HASTE makes waste!
+#endif
+
 namespace starboard {
 namespace stub {
 

@@ -12,6 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+declare_args() {
+  is_hasty = false
+}
+
+if (is_hasty) {
+  print("Hasty build!")
+}
+
 static_library("starboard_platform") {
   sources = [
     "application_stub.cc",
@@ -27,6 +35,10 @@ static_library("starboard_platform") {
     "main.cc",
     "system_get_extensions.cc",
   ]
+
+  if (is_hasty) {
+    defines = ["HASTE"]
+  }
 
   public_deps = [ ":stub_sources" ]
 }

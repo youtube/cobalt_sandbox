@@ -170,6 +170,7 @@ services:
       <<: *shared-build-env
       PLATFORM: stub
       CONFIG: ${CONFIG:-debug}
+      HASTE: 1
 
   build-linux:
     <<: *build-common-definitions
