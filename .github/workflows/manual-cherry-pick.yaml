@@ -38,6 +38,8 @@ jobs:
   cherrypick:
     name: Cherrypick to ${{ github.event.inputs.release_branch}} - ${{ github.event.inputs.git_commit }}
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       RELEASE_BRANCH: ${{ github.event.inputs.release_branch }}
