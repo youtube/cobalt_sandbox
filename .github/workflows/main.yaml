@@ -209,6 +209,7 @@ jobs:
       - name: trigger ${{ matrix.type }} tests on ${{ matrix.platform }} platform
         id: on_device_test
         run: |
+          set -eux
           SESSION_ID=$(
             python3 tools/on_device_tests_gateway_client.py \
               --token ${{ github.token }} \
