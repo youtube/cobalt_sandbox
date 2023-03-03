@@ -202,7 +202,7 @@ jobs:
           os: linux
       # Build bootloader if neccessary.
       - name: Set bootloader config
-        if: ${{ needs.initialize.outputs.bootloader != 'null' && matrix.config == 'devel' }}
+        if: ${{ needs.initialize.outputs.bootloader != 'null' }}
         run: echo "COBALT_BOOTLOADER=${{needs.initialize.outputs.bootloader}}" >> $GITHUB_ENV
       - name: Bootloader GN
         if: ${{ needs.initialize.outputs.bootloader != 'null' && matrix.config == 'devel' }}
