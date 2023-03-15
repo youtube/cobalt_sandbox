@@ -22,8 +22,6 @@ ENV PYTHONUNBUFFERED 1
 
 # === Install common dependencies
 RUN apt update -qqy \
-    && add-apt-repository -qqy ppa:git-core/ppa \
-    && apt update -qqy \
     && apt install -qqy --no-install-recommends \
         python3-dev \
         python3-pip \
@@ -32,6 +30,10 @@ RUN apt update -qqy \
         python3-six \
         git ccache \
         curl xz-utils \
+        software-properties-common \
+    && add-apt-repository -qqy ppa:git-core/ppa \
+    && apt update -qqy \
+    && apt install -qqy --no-install-recommends git \
     && /opt/clean-after-apt.sh
 
 CMD ["/usr/bin/python","--version"]
