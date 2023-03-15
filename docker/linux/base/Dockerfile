@@ -30,10 +30,6 @@ RUN apt update -qqy \
         python3-six \
         git ccache \
         curl xz-utils \
-        software-properties-common \
-    && add-apt-repository -qqy ppa:git-core/ppa \
-    && apt update -qqy \
-    && apt install -qqy --no-install-recommends git \
     && /opt/clean-after-apt.sh
 
 CMD ["/usr/bin/python","--version"]
