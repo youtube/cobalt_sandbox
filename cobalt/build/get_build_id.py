@@ -14,11 +14,15 @@
 # limitations under the License.
 """Prints out the Cobalt Build ID."""
 
-from subprocess import check_call
+import subprocess
+
+BUILD_NUMBER_OFFSET = 1000000
 
 
 def main():
-  check_call(['git', 'rev-list', '--count', 'HEAD'])
+  output = subprocess.check_output(['git', 'rev-list', '--count', 'HEAD'])
+  build_number = int(output.strip().decode('utf-8'))
+  print(build_number + BUILD_NUMBER_OFFSET)
 
 
 if __name__ == '__main__':
