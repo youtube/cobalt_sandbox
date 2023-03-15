@@ -22,6 +22,8 @@ ENV PYTHONUNBUFFERED 1
 
 # === Install common dependencies
 RUN apt update -qqy \
+    && add-apt-repository -qqy ppa:git-core/ppa \
+    && apt update -qqy \
     && apt install -qqy --no-install-recommends \
         python3-dev \
         python3-pip \
