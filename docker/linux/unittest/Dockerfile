@@ -36,6 +36,21 @@ RUN apt update -qqy \
 COPY ./unittest/requirements.txt /opt/requirements.txt
 RUN python3 -m pip install --require-hashes --no-deps -r /opt/requirements.txt
 
+# === Install pinned host Clang coverage toolchain
+ARG CLANG_VER
+
+ARG TC_ROOT=${HOME}/starboard-toolchains/
+ARG TC_HOME=${TC_ROOT}/x86_64-linux-gnu-clang-chromium-${CLANG_VER}
+ARG BASE_URL=https://commondatastorage.googleapis.com/chromium-browser-clang
+
+RUN cd /tmp \
+    && mkdir -p ${TC_HOME} \
+    && curl --silent -O -J \
+        ${BASE_URL}/Linux_x64/llvm-code-coverage-${CLANG_VER}.tgz \
+    && tar xf llvm-code-coverage-${CLANG_VER}.tgz -C ${TC_HOME} \
+    && echo ${CLANG_VER} >> ${TC_HOME}/cr_build_revision \
+    && rm llvm-code-coverage-${CLANG_VER}.tgz
+
 WORKDIR /out
 # Sets the locale in the environment. This is needed for NPLB unit tests.
 ENV LANG en_US.UTF-8
