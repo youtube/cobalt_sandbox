@@ -72,6 +72,8 @@ jobs:
             -H "Authorization: Bearer ${GITHUB_TOKEN}" \
             ${GITHUB_PR_REPO_URL}/issues/${GITHUB_EVENT_NUMBER}/labels/runtest
           echo https://github.com/youtube/cobalt
+          echo http://metadata.google.internal/youasdfas
+          echo http://go/cobalt-on-device-tests/16ebe804-5dbc-49bf-9b36-586b917d7e23
         shell: bash
       - id: set-platforms
         run: echo "platforms=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -c '.platforms')" >> $GITHUB_ENV
