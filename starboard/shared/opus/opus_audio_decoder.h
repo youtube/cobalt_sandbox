@@ -35,22 +35,23 @@ class OpusAudioDecoder
     : public ::starboard::shared::starboard::player::filter::AudioDecoder,
       private starboard::player::JobQueue::JobOwner {
  public:
-  typedef shared::starboard::media::AudioSampleInfo AudioSampleInfo;
+  typedef starboard::media::AudioStreamInfo AudioStreamInfo;
 
-  explicit OpusAudioDecoder(const SbMediaAudioSampleInfo& audio_sample_info);
+  explicit OpusAudioDecoder(const AudioStreamInfo& audio_stream_info);
   ~OpusAudioDecoder() override;
 
   bool is_valid() const;
 
   // AudioDecoder functions
   void Initialize(const OutputCB& output_cb, const ErrorCB& error_cb) override;
-  void Decode(const scoped_refptr<InputBuffer>& input_buffer,
+  void Decode(const InputBuffers& input_buffers,
               const ConsumedCB& consumed_cb) override;
   void WriteEndOfStream() override;
   scoped_refptr<DecodedAudio> Read(int* samples_per_second) override;
   void Reset() override;
 
  private:
+  bool DecodeInternal(const scoped_refptr<InputBuffer>& input_buffer);
   static const int kMaxOpusFramesPerAU = 9600;
 
   SbMediaAudioSampleType GetSampleType() const;
@@ -61,7 +62,7 @@ class OpusAudioDecoder
   OpusMSDecoder* decoder_ = NULL;
   bool stream_ended_ = false;
   std::queue<scoped_refptr<DecodedAudio> > decoded_audios_;
-  AudioSampleInfo audio_sample_info_;
+  AudioStreamInfo audio_stream_info_;
   int frames_per_au_ = kMaxOpusFramesPerAU;
 };
 

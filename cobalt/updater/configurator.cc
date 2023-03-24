@@ -23,7 +23,6 @@
 #include "components/update_client/protocol_handler.h"
 #include "components/update_client/unzipper.h"
 #include "starboard/system.h"
-
 #include "url/gurl.h"
 
 namespace {
@@ -259,6 +258,7 @@ std::string Configurator::GetChannel() const {
 }
 
 void Configurator::SetChannel(const std::string& updater_channel) {
+  LOG(INFO) << "Configurator::SetChannel updater_channel=" << updater_channel;
   base::AutoLock auto_lock(updater_channel_lock_);
   updater_channel_ = updater_channel;
 }

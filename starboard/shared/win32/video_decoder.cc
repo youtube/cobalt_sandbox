@@ -278,14 +278,15 @@ void VideoDecoder::Initialize(const DecoderStatusCB& decoder_status_cb,
   }
 }
 
-void VideoDecoder::WriteInputBuffer(
-    const scoped_refptr<InputBuffer>& input_buffer) {
+void VideoDecoder::WriteInputBuffers(const InputBuffers& input_buffers) {
   SB_DCHECK(thread_checker_.CalledOnValidThread());
-  SB_DCHECK(input_buffer);
+  SB_DCHECK(input_buffers.size() == 1);
+  SB_DCHECK(input_buffers[0]);
   SB_DCHECK(decoder_status_cb_);
   EnsureDecoderThreadRunning();
 
-  if (TryUpdateOutputForHdrVideo(input_buffer->video_sample_info())) {
+  const auto& input_buffer = input_buffers[0];
+  if (TryUpdateOutputForHdrVideo(input_buffer->video_stream_info())) {
     ScopedLock lock(thread_lock_);
     thread_events_.emplace_back(
         new Event{Event::kWriteInputBuffer, input_buffer});
@@ -451,7 +452,9 @@ void VideoDecoder::InitializeCodec() {
       }
       break;
     }
-    default: { SB_NOTREACHED(); }
+    default: {
+      SB_NOTREACHED();
+    }
   }
 
   decoder_.reset(
@@ -546,7 +549,7 @@ void VideoDecoder::EnsureDecoderThreadRunning() {
 
   // NOTE: The video decoder thread will exit after processing the
   // kWriteEndOfStream event. In this case, Reset must be called (which will
-  // then StopDecoderThread) before WriteInputBuffer or WriteEndOfStream again.
+  // then StopDecoderThread) before WriteInputBuffers or WriteEndOfStream again.
   SB_DCHECK(!decoder_thread_stopped_);
 
   if (!SbThreadIsValid(decoder_thread_)) {

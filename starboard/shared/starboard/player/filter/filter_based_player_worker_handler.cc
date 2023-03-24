@@ -14,6 +14,8 @@
 
 #include "starboard/shared/starboard/player/filter/filter_based_player_worker_handler.h"
 
+#include <utility>
+
 #include "starboard/audio_sink.h"
 #include "starboard/common/log.h"
 #include "starboard/common/murmurhash2.h"
@@ -71,13 +73,19 @@ FilterBasedPlayerWorkerHandler::FilterBasedPlayerWorkerHandler(
     const SbPlayerCreationParam* creation_param,
     SbDecodeTargetGraphicsContextProvider* provider)
     : JobOwner(kDetached),
-      video_codec_(creation_param->video_sample_info.codec),
-      audio_codec_(creation_param->audio_sample_info.codec),
       drm_system_(creation_param->drm_system),
-      audio_sample_info_(creation_param->audio_sample_info),
+#if SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+      audio_stream_info_(creation_param->audio_stream_info),
+#else   // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+      audio_stream_info_(creation_param->audio_sample_info),
+#endif  // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
       output_mode_(creation_param->output_mode),
       decode_target_graphics_context_provider_(provider),
-      video_sample_info_(creation_param->video_sample_info) {
+#if SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+      video_stream_info_(creation_param->video_stream_info) {
+#else   // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+      video_stream_info_(creation_param->video_sample_info) {
+#endif  // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
   update_job_ = std::bind(&FilterBasedPlayerWorkerHandler::Update, this);
 }
 
@@ -108,11 +116,11 @@ bool FilterBasedPlayerWorkerHandler::Init(
       PlayerComponents::Factory::Create();
   SB_DCHECK(factory);
 
-  if (audio_codec_ != kSbMediaAudioCodecNone) {
+  if (audio_stream_info_.codec != kSbMediaAudioCodecNone) {
     // TODO: This is not ideal as we should really handle the creation failure
     // of audio sink inside the audio renderer to give the renderer a chance to
     // resample the decoded audio.
-    const int required_audio_channels = audio_sample_info_.number_of_channels;
+    const int required_audio_channels = audio_stream_info_.number_of_channels;
     const int supported_audio_channels = SbAudioSinkGetMaxChannels();
     if (required_audio_channels > supported_audio_channels) {
       SB_LOG(ERROR) << "Audio channels requested " << required_audio_channels
@@ -127,9 +135,8 @@ bool FilterBasedPlayerWorkerHandler::Init(
   }
 
   PlayerComponents::Factory::CreationParameters creation_parameters(
-      audio_codec_, audio_sample_info_, video_codec_, video_sample_info_,
-      player_, output_mode_, decode_target_graphics_context_provider_,
-      drm_system_);
+      audio_stream_info_, video_stream_info_, player_, output_mode_,
+      decode_target_graphics_context_provider_, drm_system_);
 
   {
     ::starboard::ScopedLock lock(player_components_existence_mutex_);
@@ -146,10 +153,10 @@ bool FilterBasedPlayerWorkerHandler::Init(
     audio_renderer_ = player_components_->GetAudioRenderer();
     video_renderer_ = player_components_->GetVideoRenderer();
   }
-  if (audio_codec_ != kSbMediaAudioCodecNone) {
+  if (audio_stream_info_.codec != kSbMediaAudioCodecNone) {
     SB_DCHECK(audio_renderer_);
   }
-  if (video_codec_ != kSbMediaVideoCodecNone) {
+  if (video_stream_info_.codec != kSbMediaVideoCodecNone) {
     SB_DCHECK(video_renderer_);
   }
   SB_DCHECK(media_time_provider_);
@@ -207,81 +214,90 @@ bool FilterBasedPlayerWorkerHandler::Seek(SbTime seek_to_time, int ticket) {
   return true;
 }
 
-bool FilterBasedPlayerWorkerHandler::WriteSample(
-    const scoped_refptr<InputBuffer>& input_buffer,
-    bool* written) {
-  SB_DCHECK(input_buffer);
+bool FilterBasedPlayerWorkerHandler::WriteSamples(
+    const InputBuffers& input_buffers,
+    int* samples_written) {
+  SB_DCHECK(!input_buffers.empty());
   SB_DCHECK(BelongsToCurrentThread());
-  SB_DCHECK(written != NULL);
+  SB_DCHECK(samples_written != NULL);
+  for (const auto& input_buffer : input_buffers) {
+    SB_DCHECK(input_buffer);
+  }
 
-  if (input_buffer->sample_type() == kSbMediaTypeAudio) {
+  *samples_written = 0;
+  if (input_buffers.front()->sample_type() == kSbMediaTypeAudio) {
     if (!audio_renderer_) {
       return false;
     }
-
-    *written = true;
 
     if (audio_renderer_->IsEndOfStreamWritten()) {
       SB_LOG(WARNING) << "Try to write audio sample after EOS is reached";
     } else {
       if (!audio_renderer_->CanAcceptMoreData()) {
-        *written = false;
         return true;
       }
-
-      if (input_buffer->drm_info()) {
-        if (!SbDrmSystemIsValid(drm_system_)) {
-          return false;
+      for (const auto& input_buffer : input_buffers) {
+        if (input_buffer->drm_info()) {
+          if (!SbDrmSystemIsValid(drm_system_)) {
+            return false;
+          }
+          DumpInputHash(input_buffer);
+          SbDrmSystemPrivate::DecryptStatus decrypt_status =
+              drm_system_->Decrypt(input_buffer);
+          if (decrypt_status == SbDrmSystemPrivate::kRetry) {
+            if (*samples_written > 0) {
+              audio_renderer_->WriteSamples(
+                  InputBuffers(input_buffers.begin(),
+                               input_buffers.begin() + *samples_written));
+            }
+            return true;
+          }
+          if (decrypt_status == SbDrmSystemPrivate::kFailure) {
+            return false;
+          }
         }
         DumpInputHash(input_buffer);
-        SbDrmSystemPrivate::DecryptStatus decrypt_status =
-            drm_system_->Decrypt(input_buffer);
-        if (decrypt_status == SbDrmSystemPrivate::kRetry) {
-          *written = false;
-          return true;
-        }
-        if (decrypt_status == SbDrmSystemPrivate::kFailure) {
-          *written = false;
-          return false;
-        }
+        ++*samples_written;
       }
-      DumpInputHash(input_buffer);
-      audio_renderer_->WriteSample(input_buffer);
+      audio_renderer_->WriteSamples(input_buffers);
     }
   } else {
-    SB_DCHECK(input_buffer->sample_type() == kSbMediaTypeVideo);
+    SB_DCHECK(input_buffers.front()->sample_type() == kSbMediaTypeVideo);
 
     if (!video_renderer_) {
       return false;
     }
 
-    *written = true;
-
     if (video_renderer_->IsEndOfStreamWritten()) {
       SB_LOG(WARNING) << "Try to write video sample after EOS is reached";
     } else {
       if (!video_renderer_->CanAcceptMoreData()) {
-        *written = false;
         return true;
       }
-      if (input_buffer->drm_info()) {
-        if (!SbDrmSystemIsValid(drm_system_)) {
-          return false;
+      for (const auto& input_buffer : input_buffers) {
+        if (input_buffer->drm_info()) {
+          if (!SbDrmSystemIsValid(drm_system_)) {
+            return false;
+          }
+          DumpInputHash(input_buffer);
+          SbDrmSystemPrivate::DecryptStatus decrypt_status =
+              drm_system_->Decrypt(input_buffer);
+          if (decrypt_status == SbDrmSystemPrivate::kRetry) {
+            if (*samples_written > 0) {
+              video_renderer_->WriteSamples(
+                  InputBuffers(input_buffers.begin(),
+                               input_buffers.begin() + *samples_written));
+            }
+            return true;
+          }
+          if (decrypt_status == SbDrmSystemPrivate::kFailure) {
+            return false;
+          }
         }
         DumpInputHash(input_buffer);
-        SbDrmSystemPrivate::DecryptStatus decrypt_status =
-            drm_system_->Decrypt(input_buffer);
-        if (decrypt_status == SbDrmSystemPrivate::kRetry) {
-          *written = false;
-          return true;
-        }
-        if (decrypt_status == SbDrmSystemPrivate::kFailure) {
-          *written = false;
-          return false;
-        }
+        ++*samples_written;
       }
-      DumpInputHash(input_buffer);
-      video_renderer_->WriteSample(input_buffer);
+      video_renderer_->WriteSamples(input_buffers);
     }
   }
 

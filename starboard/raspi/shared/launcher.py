@@ -112,14 +112,11 @@ class Launcher(abstract_launcher.AbstractLauncher):
     # TODO(b/218889313): This should reference the bin/ subdir when that's
     # used.
     test_dir = os.path.join(self.out_directory, 'install', self.target_name)
-    # TODO(b/216356058): Delete this conditional that's just for GYP.
-    if not os.path.isdir(test_dir):
-      test_dir = os.path.join(self.out_directory, 'deploy', self.target_name)
     test_file = self.target_name
 
     test_path = os.path.join(test_dir, test_file)
     if not os.path.isfile(test_path):
-      raise ValueError('TargetPath ({}) must be a file.'.format(test_path))
+      raise ValueError(f'TargetPath ({test_path}) must be a file.')
 
     raspi_user_hostname = Launcher._RASPI_USERNAME + '@' + self.device_id
 
@@ -131,7 +128,7 @@ class Launcher(abstract_launcher.AbstractLauncher):
     # rsync command setup
     options = '-avzLhc'
     source = test_dir + '/'
-    destination = '{}:~/{}/'.format(raspi_user_hostname, raspi_test_dir)
+    destination = f'{raspi_user_hostname}:~/{raspi_test_dir}/'
     self.rsync_command = 'rsync ' + options + ' ' + source + ' ' + destination
 
     # ssh command setup
@@ -145,19 +142,18 @@ class Launcher(abstract_launcher.AbstractLauncher):
     escaped_flags = re.subn(meta_re, r'\\\1', flags)[0]
 
     # test output tags
-    self.test_complete_tag = 'TEST-{time}'.format(time=time.time())
+    self.test_complete_tag = f'TEST-{time.time()}'
     self.test_success_tag = 'succeeded'
     self.test_failure_tag = 'failed'
 
     # test command setup
     test_base_command = raspi_test_path + ' ' + escaped_flags
-    test_success_output = ' && echo {} {}'.format(self.test_complete_tag,
-                                                  self.test_success_tag)
-    test_failure_output = ' || echo {} {}'.format(self.test_complete_tag,
-                                                  self.test_failure_tag)
-    self.test_command = '{} {} {}'.format(test_base_command,
-                                          test_success_output,
-                                          test_failure_output)
+    test_success_output = (f' && echo {self.test_complete_tag}'
+                           f'{self.test_success_tag}')
+    test_failure_output = (f' || echo {self.test_complete_tag}'
+                           f'{self.test_failure_tag}')
+    self.test_command = (f'{test_base_command} {test_success_output}'
+                         f'{test_failure_output}')
 
   def _PexpectSpawnAndConnect(self, command):
     """Spawns a process with pexpect and connect to the raspi.
@@ -238,8 +234,7 @@ class Launcher(abstract_launcher.AbstractLauncher):
           raise
 
   def _Sleep(self, val):
-    self._PexpectSendLine('sleep {};echo {}'.format(val,
-                                                    Launcher._SSH_SLEEP_SIGNAL))
+    self._PexpectSendLine(f'sleep {val};echo {Launcher._SSH_SLEEP_SIGNAL}')
     self.pexpect_process.expect([Launcher._SSH_SLEEP_SIGNAL])
 
   def _CleanupPexpectProcess(self):
@@ -334,7 +329,7 @@ class Launcher(abstract_launcher.AbstractLauncher):
       # Execute debugging commands on the first run
       first_run_commands = []
       if self.test_result_xml_path:
-        first_run_commands.append('touch {}'.format(self.test_result_xml_path))
+        first_run_commands.append(f'touch {self.test_result_xml_path}')
       first_run_commands.extend(['free -mh', 'ps -ux', 'df -h'])
       if FirstRun():
         for cmd in first_run_commands:

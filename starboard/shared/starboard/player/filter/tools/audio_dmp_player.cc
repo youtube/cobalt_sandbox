@@ -29,12 +29,13 @@
 
 namespace {
 
-using starboard::shared::starboard::player::video_dmp::VideoDmpReader;
+using starboard::scoped_ptr;
+using starboard::shared::starboard::player::InputBuffer;
+using starboard::shared::starboard::player::InputBuffers;
+using starboard::shared::starboard::player::JobThread;
 using starboard::shared::starboard::player::filter::AudioRenderer;
 using starboard::shared::starboard::player::filter::PlayerComponents;
-using starboard::shared::starboard::player::InputBuffer;
-using starboard::shared::starboard::player::JobThread;
-using starboard::scoped_ptr;
+using starboard::shared::starboard::player::video_dmp::VideoDmpReader;
 
 #ifdef SB_MEDIA_PLAYER_THREAD_STACK_SIZE
 const int kJobThreadStackSize = SB_MEDIA_PLAYER_THREAD_STACK_SIZE;
@@ -50,11 +51,11 @@ std::string GetTestInputDirectory() {
   std::vector<char> content_path(kPathSize);
   SB_CHECK(SbSystemGetPath(kSbSystemPathContentDirectory, content_path.data(),
                            kPathSize));
-  std::string directory_path =
-      std::string(content_path.data()) + kSbFileSepChar + "test" +
-      kSbFileSepChar + "starboard" + kSbFileSepChar + "shared" +
-      kSbFileSepChar + "starboard" + kSbFileSepChar + "player" +
-      kSbFileSepChar + "testdata";
+  std::string directory_path = std::string(content_path.data()) +
+                               kSbFileSepChar + "test" + kSbFileSepChar +
+                               "starboard" + kSbFileSepChar + "shared" +
+                               kSbFileSepChar + "starboard" + kSbFileSepChar +
+                               "player" + kSbFileSepChar + "testdata";
 
   SB_CHECK(SbDirectoryCanOpen(directory_path.c_str()))
       << "Cannot open directory " << directory_path;
@@ -73,8 +74,7 @@ SbTime s_duration;
 
 static void DeallocateSampleFunc(SbPlayer player,
                                  void* context,
-                                 const void* sample_buffer) {
-}
+                                 const void* sample_buffer) {}
 
 starboard::scoped_refptr<InputBuffer> GetAudioInputBuffer(size_t index) {
   auto player_sample_info =
@@ -93,9 +93,12 @@ void OnTimer() {
     s_player_components->GetAudioRenderer()->WriteEndOfStream();
     return;
   } else {
+    InputBuffers input_buffers;
     auto input_buffer = GetAudioInputBuffer(s_audio_sample_index);
+
     s_duration = input_buffer->timestamp();
-    s_player_components->GetAudioRenderer()->WriteSample(input_buffer);
+    input_buffers.push_back(std::move(input_buffer));
+    s_player_components->GetAudioRenderer()->WriteSamples(input_buffers);
     ++s_audio_sample_index;
   }
 
@@ -126,8 +129,7 @@ void Start(const char* filename) {
   scoped_ptr<PlayerComponents::Factory> factory =
       PlayerComponents::Factory::Create();
   PlayerComponents::Factory::CreationParameters creation_parameters(
-      s_video_dmp_reader->audio_codec(),
-      s_video_dmp_reader->audio_sample_info());
+      s_video_dmp_reader->audio_stream_info());
   std::string error_message;
   s_player_components =
       factory->CreateComponents(creation_parameters, &error_message);

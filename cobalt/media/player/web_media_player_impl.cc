@@ -17,6 +17,7 @@
 #include "base/metrics/histogram.h"
 #include "base/metrics/histogram_macros.h"
 #include "base/strings/string_number_conversions.h"
+#include "base/strings/stringprintf.h"
 #include "base/synchronization/waitable_event.h"
 #include "base/trace_event/trace_event.h"
 #include "cobalt/base/instance_counter.h"
@@ -116,7 +117,8 @@ WebMediaPlayerImpl::WebMediaPlayerImpl(
     const Pipeline::GetDecodeTargetGraphicsContextProviderFunc&
         get_decode_target_graphics_context_provider_func,
     WebMediaPlayerClient* client, WebMediaPlayerDelegate* delegate,
-    bool allow_resume_after_suspend, ::media::MediaLog* const media_log)
+    bool allow_resume_after_suspend, bool allow_batched_sample_write,
+    ::media::MediaLog* const media_log)
     : pipeline_thread_("media_pipeline"),
       network_state_(WebMediaPlayer::kNetworkStateEmpty),
       ready_state_(WebMediaPlayer::kReadyStateHaveNothing),
@@ -124,6 +126,7 @@ WebMediaPlayerImpl::WebMediaPlayerImpl(
       client_(client),
       delegate_(delegate),
       allow_resume_after_suspend_(allow_resume_after_suspend),
+      allow_batched_sample_write_(allow_batched_sample_write),
       proxy_(new WebMediaPlayerProxy(main_loop_->task_runner(), this)),
       media_log_(media_log),
       is_local_source_(false),
@@ -139,10 +142,11 @@ WebMediaPlayerImpl::WebMediaPlayerImpl(
   media_log_->AddEvent<::media::MediaLogEvent::kWebMediaPlayerCreated>();
 
   pipeline_thread_.Start();
-  pipeline_ = Pipeline::Create(
-      interface, window, pipeline_thread_.task_runner(),
-      get_decode_target_graphics_context_provider_func,
-      allow_resume_after_suspend_, media_log_, decode_target_provider_.get());
+  pipeline_ =
+      Pipeline::Create(interface, window, pipeline_thread_.task_runner(),
+                       get_decode_target_graphics_context_provider_func,
+                       allow_resume_after_suspend_, allow_batched_sample_write_,
+                       media_log_, decode_target_provider_.get());
 
   // Also we want to be notified of |main_loop_| destruction.
   main_loop_->AddDestructionObserver(this);
@@ -638,9 +642,14 @@ void WebMediaPlayerImpl::OnPipelineError(::media::PipelineStatus error,
   if (ready_state_ == WebMediaPlayer::kReadyStateHaveNothing) {
     // Any error that occurs before reaching ReadyStateHaveMetadata should
     // be considered a format error.
-    SetNetworkError(WebMediaPlayer::kNetworkStateFormatError,
-                    message.empty() ? "Ready state have nothing."
-                                    : "Ready state have nothing: " + message);
+    SetNetworkError(
+        WebMediaPlayer::kNetworkStateFormatError,
+        message.empty()
+            ? base::StringPrintf("Ready state have nothing. Error: (%d)",
+                                 static_cast<int>(error))
+            : base::StringPrintf(
+                  "Ready state have nothing: Error: (%d), Message: %s",
+                  static_cast<int>(error), message.c_str()));
     return;
   }
 

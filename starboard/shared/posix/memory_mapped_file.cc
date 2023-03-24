@@ -14,8 +14,8 @@
 
 #include "starboard/shared/posix/memory_mapped_file.h"
 
-#include "cobalt/extension/memory_mapped_file.h"
 #include "starboard/common/log.h"
+#include "starboard/extension/memory_mapped_file.h"
 #include "starboard/shared/posix/page_internal.h"
 
 namespace starboard {
@@ -25,7 +25,9 @@ namespace posix {
 namespace {
 
 const CobaltExtensionMemoryMappedFileApi kMemoryMappedFileApi = {
-    kCobaltExtensionMemoryMappedFileName, 1, &SbPageMapFile,
+    kCobaltExtensionMemoryMappedFileName,
+    1,
+    &SbPageMapFile,
 };
 
 }  // namespace

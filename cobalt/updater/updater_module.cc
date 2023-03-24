@@ -32,7 +32,6 @@
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/version.h"
 #include "cobalt/browser/switches.h"
-#include "cobalt/extension/installation_manager.h"
 #include "cobalt/updater/crash_client.h"
 #include "cobalt/updater/crash_reporter.h"
 #include "cobalt/updater/utils.h"
@@ -41,11 +40,12 @@
 #include "components/update_client/utils.h"
 #include "starboard/common/file.h"
 #include "starboard/configuration_constants.h"
+#include "starboard/extension/installation_manager.h"
 
 namespace {
 
-using update_client::ComponentState;
 using update_client::CobaltSlotManagement;
+using update_client::ComponentState;
 
 // The SHA256 hash of the "cobalt_evergreen_public" key.
 constexpr uint8_t kCobaltPublicKeyHash[] = {
@@ -95,7 +95,7 @@ namespace cobalt {
 namespace updater {
 
 // The delay in seconds before the first update check.
-const uint64_t kDefaultUpdateCheckDelaySeconds = 15;
+const uint64_t kDefaultUpdateCheckDelaySeconds = 30;
 
 void Observer::OnEvent(Events event, const std::string& id) {
   LOG(INFO) << "Observer::OnEvent id=" << id;

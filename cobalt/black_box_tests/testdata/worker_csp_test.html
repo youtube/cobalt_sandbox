@@ -20,20 +20,33 @@
   <script src='black_box_js_test_utils.js'></script>
 </head>
 
-<body style="background-color: white;">
-  <h1>
-    <span>ID element</span>
-  </h1>
+<body>
   <script>
-  var worker = new Worker('worker_csp_test.js');
+  var worker;
+  var window_onerror_count = 0;
+  window.onerror = (message, filename, lineno, colno, error) => {
+    ++window_onerror_count;
+    // Note: Worker execution errors currently don't pass line or column
+    // number in the error message.
+    assertIncludes('SecurityError', message);
+    assertIncludes('worker_csp_test.js', filename);
+    assertEqual(1, window_onerror_count);
+    window.setTimeout(
+      () => {
+        worker.terminate();
+        onEndTest();
+      }, 250);
+  }
+
+  // This worker attempts to do an XHR request that is blocked by CSP.
+  worker = new Worker('worker_csp_test.js');
   worker.onmessage = function (event) {
     notReached();
   };
+  worker.onerror = function (event) {
+    // Note: The Worker's onerror handler (incorrectly) isn't called.
+    notReached();
+  };
 
-  window.setTimeout(
-    () => {
-      worker.terminate();
-      onEndTest();
-    }, 250);
   </script>
 </body>

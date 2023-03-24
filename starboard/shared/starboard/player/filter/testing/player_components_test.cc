@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "starboard/common/scoped_ptr.h"
+#include "starboard/common/string.h"
 #include "starboard/media.h"
 #include "starboard/player.h"
 #include "starboard/shared/starboard/player/filter/testing/test_util.h"
@@ -28,6 +29,7 @@
 #include "starboard/shared/starboard/player/video_dmp_reader.h"
 #include "starboard/testing/fake_graphics_context_provider.h"
 #include "testing/gtest/include/gtest/gtest.h"
+
 namespace starboard {
 namespace shared {
 namespace starboard {
@@ -37,11 +39,11 @@ namespace testing {
 namespace {
 
 using ::starboard::testing::FakeGraphicsContextProvider;
-using std::placeholders::_1;
-using std::placeholders::_2;
 using std::string;
 using std::unique_ptr;
 using std::vector;
+using std::placeholders::_1;
+using std::placeholders::_2;
 using ::testing::ValuesIn;
 using video_dmp::VideoDmpReader;
 
@@ -88,28 +90,22 @@ class PlayerComponentsTest
     string error_message;
     if (audio_reader_ && video_reader_) {
       CreationParameters creation_parameters(
-          audio_reader_->audio_codec(), audio_reader_->audio_sample_info(),
-          video_reader_->video_codec(),
-          video_reader_->GetPlayerSampleInfo(kSbMediaTypeVideo, 0)
-              .video_sample_info,
-          kDummyPlayer, output_mode_,
+          audio_reader_->audio_stream_info(),
+          video_reader_->video_stream_info(), kDummyPlayer, output_mode_,
           fake_graphics_context_provider_.decoder_target_provider());
       player_components_ =
           factory->CreateComponents(creation_parameters, &error_message);
     } else if (audio_reader_) {
       // Audio only
       CreationParameters creation_parameters(
-          audio_reader_->audio_codec(), audio_reader_->audio_sample_info());
+          audio_reader_->audio_stream_info());
       player_components_ =
           factory->CreateComponents(creation_parameters, &error_message);
     } else {
       // Video only
       ASSERT_TRUE(video_reader_);
       CreationParameters creation_parameters(
-          video_reader_->video_codec(),
-          video_reader_->GetPlayerSampleInfo(kSbMediaTypeVideo, 0)
-              .video_sample_info,
-          kDummyPlayer, output_mode_,
+          video_reader_->video_stream_info(), kDummyPlayer, output_mode_,
           fake_graphics_context_provider_.decoder_target_provider());
       player_components_ =
           factory->CreateComponents(creation_parameters, &error_message);
@@ -259,6 +255,11 @@ class PlayerComponentsTest
     return std::min(next_timestamps[0], next_timestamps[1]);
   }
 
+  SbTime GetMaxWrittenBufferTimestamp() const {
+    return std::max(GetCurrentVideoBufferTimestamp(),
+                    GetCurrentAudioBufferTimestamp());
+  }
+
   void WriteDataUntilPrerolled(SbTime timeout = kDefaultPrerollTimeOut) {
     SbTimeMonotonic start_time = SbTimeGetMonotonicNow();
     SbTime max_timestamp = GetMediaTime() + kMaxWriteAheadDuration;
@@ -373,7 +374,11 @@ class PlayerComponentsTest
     }
     current_time = GetMediaTime();
     // TODO: investigate and reduce the tolerance.
-    ASSERT_LE(std::abs(current_time - duration), 500 * kSbTimeMillisecond);
+    ASSERT_LE(std::abs(current_time - duration), 500 * kSbTimeMillisecond)
+        << "Media time difference is too large, buffered audio("
+        << GetCurrentAudioBufferTimestamp() << "), buffered video ("
+        << GetCurrentVideoBufferTimestamp() << "), current media time is "
+        << GetMediaTime() << ".";
   }
 
   // This function needs to be called periodically to keep player components
@@ -395,8 +400,8 @@ class PlayerComponentsTest
  private:
   // We won't write audio data more than 1s ahead of current media time in
   // cobalt. So, to test with the same condition, we limit max inputs ahead to
-  // 1s in the tests.
-  const SbTime kMaxWriteAheadDuration = kSbTimeSecond;
+  // 1.5s in the tests.
+  const SbTime kMaxWriteAheadDuration = kSbTimeMillisecond * 1500;
 
   void OnError(SbPlayerError error, const std::string& error_message) {
     has_error_ = true;
@@ -447,13 +452,13 @@ class PlayerComponentsTest
     if (GetAudioRenderer() && GetAudioRenderer()->CanAcceptMoreData() &&
         audio_index_ < audio_reader_->number_of_audio_buffers() &&
         GetCurrentAudioBufferTimestamp() < max_timestamp) {
-      GetAudioRenderer()->WriteSample(GetAudioInputBuffer(audio_index_++));
+      GetAudioRenderer()->WriteSamples({GetAudioInputBuffer(audio_index_++)});
       input_buffer_written = true;
     }
     if (GetVideoRenderer() && GetVideoRenderer()->CanAcceptMoreData() &&
         video_index_ < video_reader_->number_of_video_buffers() &&
         GetCurrentVideoBufferTimestamp() < max_timestamp) {
-      GetVideoRenderer()->WriteSample(GetVideoInputBuffer(video_index_++));
+      GetVideoRenderer()->WriteSamples({GetVideoInputBuffer(video_index_++)});
       input_buffer_written = true;
     }
     if (input_buffer_written) {
@@ -480,6 +485,22 @@ class PlayerComponentsTest
   bool video_ended_ = false;
 };
 
+std::string GetPlayerComponentsTestConfigName(
+    ::testing::TestParamInfo<PlayerComponentsTestParam> info) {
+  std::string audio_filename(std::get<0>(info.param));
+  std::string video_filename(std::get<1>(info.param));
+  SbPlayerOutputMode output_mode = std::get<2>(info.param);
+
+  std::string config_name(FormatString(
+      "%s_%s_%s", audio_filename.empty() ? "null" : audio_filename.c_str(),
+      video_filename.empty() ? "null" : video_filename.c_str(),
+      output_mode == kSbPlayerOutputModeDecodeToTexture ? "DecodeToTexture"
+                                                        : "Punchout"));
+
+  std::replace(config_name.begin(), config_name.end(), '.', '_');
+  return config_name;
+}
+
 TEST_P(PlayerComponentsTest, Preroll) {
   Seek(0);
   ASSERT_NO_FATAL_FAILURE(WriteDataUntilPrerolled());
@@ -493,11 +514,10 @@ TEST_P(PlayerComponentsTest, SunnyDay) {
 
   SbTimeMonotonic play_requested_at = SbTimeGetMonotonicNow();
   Play();
-  SbTime media_duration = std::max(GetCurrentVideoBufferTimestamp(),
-                                   GetCurrentAudioBufferTimestamp());
-  media_duration = std::max(kSbTimeSecond, media_duration);
+  SbTime eos_timestamp =
+      std::max(kSbTimeSecond, GetMaxWrittenBufferTimestamp());
 
-  ASSERT_NO_FATAL_FAILURE(WriteDataAndEOS(media_duration));
+  ASSERT_NO_FATAL_FAILURE(WriteDataAndEOS(eos_timestamp));
   ASSERT_NO_FATAL_FAILURE(WaitUntilPlaybackEnded());
 
   // TODO: investigate and reduce the tolerance.
@@ -544,9 +564,7 @@ TEST_P(PlayerComponentsTest, Pause) {
   ASSERT_EQ(media_time, GetMediaTime());
 
   Play();
-  SbTime duration = std::max(GetCurrentAudioBufferTimestamp(),
-                             GetCurrentVideoBufferTimestamp());
-  ASSERT_NO_FATAL_FAILURE(WriteDataAndEOS(duration));
+  ASSERT_NO_FATAL_FAILURE(WriteDataAndEOS(GetMaxWrittenBufferTimestamp()));
   ASSERT_NO_FATAL_FAILURE(WaitUntilPlaybackEnded());
 }
 
@@ -625,7 +643,9 @@ TEST_P(PlayerComponentsTest, SeekForward) {
   ASSERT_FALSE(IsPlaying());
 
   Play();
-  ASSERT_NO_FATAL_FAILURE(WriteDataAndEOS(seek_to_time + kSbTimeSecond));
+  SbTime eos_timestamp =
+      std::max(GetMaxWrittenBufferTimestamp(), seek_to_time + kSbTimeSecond);
+  ASSERT_NO_FATAL_FAILURE(WriteDataAndEOS(eos_timestamp));
   ASSERT_NO_FATAL_FAILURE(WaitUntilPlaybackEnded());
 }
 
@@ -647,7 +667,9 @@ TEST_P(PlayerComponentsTest, SeekBackward) {
   ASSERT_FALSE(IsPlaying());
 
   Play();
-  ASSERT_NO_FATAL_FAILURE(WriteDataAndEOS(seek_to_time + kSbTimeSecond));
+  SbTime eos_timestamp =
+      std::max(GetMaxWrittenBufferTimestamp(), seek_to_time + kSbTimeSecond);
+  ASSERT_NO_FATAL_FAILURE(WriteDataAndEOS(eos_timestamp));
   ASSERT_NO_FATAL_FAILURE(WaitUntilPlaybackEnded());
 }
 
@@ -717,7 +739,8 @@ vector<PlayerComponentsTestParam> GetSupportedCreationParameters() {
 
 INSTANTIATE_TEST_CASE_P(PlayerComponentsTests,
                         PlayerComponentsTest,
-                        ValuesIn(GetSupportedCreationParameters()));
+                        ValuesIn(GetSupportedCreationParameters()),
+                        GetPlayerComponentsTestConfigName);
 }  // namespace
 }  // namespace testing
 }  // namespace filter

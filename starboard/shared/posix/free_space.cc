@@ -17,9 +17,9 @@
 #include <sys/statvfs.h>
 #include <vector>
 
-#include "cobalt/extension/free_space.h"
 #include "starboard/common/log.h"
 #include "starboard/configuration_constants.h"
+#include "starboard/extension/free_space.h"
 
 namespace starboard {
 namespace shared {
@@ -41,7 +41,9 @@ int64_t MeasureFreeSpace(SbSystemPathId system_path_id) {
 }
 
 const CobaltExtensionFreeSpaceApi kFreeSpaceApi = {
-    kCobaltExtensionFreeSpaceName, 1, &MeasureFreeSpace,
+    kCobaltExtensionFreeSpaceName,
+    1,
+    &MeasureFreeSpace,
 };
 
 }  // namespace

@@ -69,6 +69,7 @@
 #include "cobalt/storage/storage_manager.h"
 #include "cobalt/system_window/system_window.h"
 #include "cobalt/ui_navigation/scroll_engine/scroll_engine.h"
+#include "cobalt/web/web_settings.h"
 #include "cobalt/webdriver/session_driver.h"
 #include "starboard/configuration.h"
 #include "starboard/time.h"
@@ -382,6 +383,10 @@ class BrowserModule {
   // system splash screen after the first render has completed.
   void OnRendererSubmissionRasterized();
 
+  // Called when a renderer submission of the (main) web module has been
+  // rasterized. This should also call OnRendererSubmissionRasterized().
+  void OnWebModuleRendererSubmissionRasterized();
+
   // Process all messages queued into the |render_tree_submission_queue_|.
   void ProcessRenderTreeSubmissionQueue();
 
@@ -491,6 +496,11 @@ class BrowserModule {
   // |weak_ptr_factory_.GetWeakPtr() which is not).
   base::WeakPtr<BrowserModule> weak_this_;
 
+  // Holds browser wide web settings accessible from both the main web thread
+  // and all Workers.  It can only be set on the main web module via h5vcc but
+  // any setting changes affect all web modules.
+  web::WebSettingsImpl web_settings_;
+
   // Memory configuration tool.
   memory_settings::AutoMem auto_mem_;
 
@@ -514,6 +524,9 @@ class BrowserModule {
   // Whether the browser module has yet rendered anything. On the very first
   // render, we hide the system splash screen.
   bool is_rendered_;
+
+  // Whether the (main) web module has yet rendered anything.
+  bool is_web_module_rendered_;
 
   // The main system window for our application. This routes input event
   // callbacks, and provides a native window handle on desktop systems.

@@ -42,18 +42,16 @@ template <>
 class AudioDecoderImpl<FFMPEG> : public AudioDecoder,
                                  private starboard::player::JobQueue::JobOwner {
  public:
-  AudioDecoderImpl(SbMediaAudioCodec audio_codec,
-                   const SbMediaAudioSampleInfo& audio_sample_info);
+  explicit AudioDecoderImpl(const AudioStreamInfo& audio_stream_info);
   ~AudioDecoderImpl() override;
 
   // From: AudioDecoder
-  static AudioDecoder* Create(SbMediaAudioCodec audio_codec,
-                              const SbMediaAudioSampleInfo& audio_sample_info);
+  static AudioDecoder* Create(const AudioStreamInfo& audio_stream_info);
   bool is_valid() const override;
 
   // From: starboard::player::filter::AudioDecoder
   void Initialize(const OutputCB& output_cb, const ErrorCB& error_cb) override;
-  void Decode(const scoped_refptr<InputBuffer>& input_buffer,
+  void Decode(const InputBuffers& input_buffers,
               const ConsumedCB& consumed_cb) override;
   void WriteEndOfStream() override;
   scoped_refptr<DecodedAudio> Read(int* samples_per_second) override;
@@ -71,13 +69,12 @@ class AudioDecoderImpl<FFMPEG> : public AudioDecoder,
   FFMPEGDispatch* ffmpeg_;
   OutputCB output_cb_;
   ErrorCB error_cb_;
-  SbMediaAudioCodec audio_codec_;
   AVCodecContext* codec_context_;
   AVFrame* av_frame_;
 
   bool stream_ended_;
   std::queue<scoped_refptr<DecodedAudio> > decoded_audios_;
-  starboard::media::AudioSampleInfo audio_sample_info_;
+  AudioStreamInfo audio_stream_info_;
 };
 
 }  // namespace ffmpeg

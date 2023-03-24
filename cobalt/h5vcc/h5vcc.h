@@ -27,7 +27,6 @@
 #include "cobalt/h5vcc/h5vcc_crash_log.h"
 #include "cobalt/h5vcc/h5vcc_runtime.h"
 #include "cobalt/h5vcc/h5vcc_settings.h"
-#include "cobalt/h5vcc/h5vcc_sso.h"
 #include "cobalt/h5vcc/h5vcc_storage.h"
 #include "cobalt/h5vcc/h5vcc_system.h"
 #include "cobalt/h5vcc/h5vcc_trace_event.h"
@@ -46,7 +45,8 @@ class H5vcc : public script::Wrappable {
  public:
   struct Settings {
     Settings()
-        : network_module(NULL),
+        : media_module(NULL),
+          network_module(NULL),
 #if SB_IS(EVERGREEN)
           updater_module(NULL),
 #endif
@@ -55,7 +55,8 @@ class H5vcc : public script::Wrappable {
           user_agent_data(NULL),
           global_environment(NULL) {
     }
-    H5vccSettings::SetMediaSourceSettingFunc set_media_source_setting_func;
+    H5vccSettings::SetSettingFunc set_web_setting_func;
+    media::MediaModule* media_module;
     network::NetworkModule* network_module;
 #if SB_IS(EVERGREEN)
     updater::UpdaterModule* updater_module;
@@ -81,9 +82,6 @@ class H5vcc : public script::Wrappable {
   const scoped_refptr<H5vccCrashLog>& crash_log() const { return crash_log_; }
   const scoped_refptr<H5vccRuntime>& runtime() const { return runtime_; }
   const scoped_refptr<H5vccSettings>& settings() const { return settings_; }
-#if defined(COBALT_ENABLE_SSO)
-  const scoped_refptr<H5vccSso>& sso() const { return sso_; }
-#endif
   const scoped_refptr<H5vccStorage>& storage() const { return storage_; }
   const scoped_refptr<H5vccSystem>& system() const { return system_; }
   const scoped_refptr<H5vccTraceEvent>& trace_event() const {
@@ -104,7 +102,6 @@ class H5vcc : public script::Wrappable {
   scoped_refptr<H5vccCrashLog> crash_log_;
   scoped_refptr<H5vccRuntime> runtime_;
   scoped_refptr<H5vccSettings> settings_;
-  scoped_refptr<H5vccSso> sso_;
   scoped_refptr<H5vccStorage> storage_;
   scoped_refptr<H5vccSystem> system_;
   scoped_refptr<H5vccTraceEvent> trace_event_;

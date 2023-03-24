@@ -68,12 +68,12 @@ SbMediaAudioSampleType GetSinkAudioSampleType(
 AudioRendererPcm::AudioRendererPcm(
     scoped_ptr<AudioDecoder> decoder,
     scoped_ptr<AudioRendererSink> audio_renderer_sink,
-    const SbMediaAudioSampleInfo& audio_sample_info,
+    const media::AudioStreamInfo& audio_stream_info,
     int max_cached_frames,
     int min_frames_per_append)
     : max_cached_frames_(max_cached_frames),
       min_frames_per_append_(min_frames_per_append),
-      channels_(audio_sample_info.number_of_channels),
+      channels_(audio_stream_info.number_of_channels),
       sink_sample_type_(GetSinkAudioSampleType(audio_renderer_sink.get())),
       bytes_per_frame_(media::GetBytesPerSample(sink_sample_type_) * channels_),
       frame_buffer_(max_cached_frames_ * bytes_per_frame_),
@@ -124,21 +124,20 @@ void AudioRendererPcm::Initialize(const ErrorCB& error_cb,
                        error_cb);
 }
 
-void AudioRendererPcm::WriteSample(
-    const scoped_refptr<InputBuffer>& input_buffer) {
+void AudioRendererPcm::WriteSamples(const InputBuffers& input_buffers) {
   SB_DCHECK(BelongsToCurrentThread());
-  SB_DCHECK(input_buffer);
+  SB_DCHECK(!input_buffers.empty());
   SB_DCHECK(can_accept_more_data_);
 
   if (eos_state_ >= kEOSWrittenToDecoder) {
-    SB_LOG(ERROR) << "Appending audio sample at " << input_buffer->timestamp()
-                  << " after EOS reached.";
+    SB_LOG(ERROR) << "Appending audio samples from "
+                  << input_buffers.front()->timestamp() << " to "
+                  << input_buffers.back()->timestamp() << " after EOS reached.";
     return;
   }
 
   can_accept_more_data_ = false;
-
-  decoder_->Decode(input_buffer,
+  decoder_->Decode(input_buffers,
                    std::bind(&AudioRendererPcm::OnDecoderConsumed, this));
   first_input_written_ = true;
 }

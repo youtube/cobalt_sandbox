@@ -20,6 +20,7 @@
 #include "base/trace_event/trace_event.h"
 #include "cobalt/base/token.h"
 #include "cobalt/base/tokens.h"
+#include "cobalt/cssom/computed_style_utils.h"
 #include "cobalt/cssom/keyword_value.h"
 #include "cobalt/dom/document.h"
 #include "cobalt/dom/html_element.h"
@@ -32,6 +33,8 @@
 #include "cobalt/dom/pointer_state.h"
 #include "cobalt/dom/ui_event.h"
 #include "cobalt/dom/wheel_event.h"
+#include "cobalt/layout/layout_unit.h"
+#include "cobalt/math/rect_f.h"
 #include "cobalt/math/vector2d.h"
 #include "cobalt/math/vector2d_f.h"
 #include "cobalt/web/event.h"
@@ -86,6 +89,10 @@ scoped_refptr<dom::HTMLElement> FindFirstElementWithScrollType(
   auto current_element = target_element;
   bool scrolling_left = !scrolling_right;
   bool scrolling_up = !scrolling_down;
+  bool horizontal_scroll_axis =
+      major_scroll_axis == ui_navigation::scroll_engine::ScrollType::Horizontal;
+  bool vertical_scroll_axis =
+      major_scroll_axis == ui_navigation::scroll_engine::ScrollType::Vertical;
 
   while (true) {
     float scroll_top_lower_bound;
@@ -112,14 +119,43 @@ scoped_refptr<dom::HTMLElement> FindFirstElementWithScrollType(
     bool can_scroll_up = scroll_top_lower_bound < offset_y;
     bool can_scroll_down = scroll_top_upper_bound > offset_y;
 
-    if ((scrolling_left && can_scroll_left) ||
-        (scrolling_right && can_scroll_right) ||
-        (scrolling_up && can_scroll_up) ||
-        (scrolling_down && can_scroll_down)) {
+    if ((scrolling_left && can_scroll_left && horizontal_scroll_axis) ||
+        (scrolling_right && can_scroll_right && horizontal_scroll_axis) ||
+        (scrolling_up && can_scroll_up && vertical_scroll_axis) ||
+        (scrolling_down && can_scroll_down && vertical_scroll_axis)) {
       return current_element;
     }
   }
   return nullptr;
+}
+
+bool TransformCanBeAppliedToBox(const Box* box, math::Vector2dF* coordinate) {
+  return !box->IsTransformed() || box->ApplyTransformActionToCoordinate(
+                                      Box::kEnterTransform, coordinate);
+}
+
+bool CoordinateCanTargetBox(const Box* box, math::Vector2dF* coordinate) {
+  if (!cssom::IsOverflowCropped(box->computed_style())) {
+    return true;
+  }
+  LayoutUnit coordinate_x(coordinate->x());
+  LayoutUnit coordinate_y(coordinate->y());
+
+  bool transform_forms_root = false;
+  auto padding_box = box->GetClampedPaddingBox(transform_forms_root);
+  return padding_box.Contains(coordinate_x, coordinate_y);
+}
+
+bool ShouldConsiderElementAndChildren(dom::Element* element,
+                                      math::Vector2dF* coordinate) {
+  LayoutBoxes* layout_boxes = GetLayoutBoxesIfNotEmpty(element);
+  const Box* box = layout_boxes->boxes().front();
+  if (!box->computed_style()) {
+    return true;
+  }
+
+  return TransformCanBeAppliedToBox(box, coordinate) &&
+         CoordinateCanTargetBox(box, coordinate);
 }
 
 }  // namespace
@@ -129,16 +165,9 @@ void TopmostEventTarget::ConsiderElement(dom::Element* element,
   math::Vector2dF element_coordinate(coordinate);
   LayoutBoxes* layout_boxes = GetLayoutBoxesIfNotEmpty(element);
   if (layout_boxes) {
-    const Box* box = layout_boxes->boxes().front();
-    if (box->computed_style() && box->IsTransformed()) {
-      // Early out if the transform cannot be applied. This can occur if the
-      // transform matrix is not invertible.
-      if (!box->ApplyTransformActionToCoordinate(Box::kEnterTransform,
-                                                 &element_coordinate)) {
-        return;
-      }
+    if (!ShouldConsiderElementAndChildren(element, &element_coordinate)) {
+      return;
     }
-
     scoped_refptr<dom::HTMLElement> html_element = element->AsHTMLElement();
     if (html_element && html_element->CanBeDesignatedByPointerIfDisplayed()) {
       ConsiderBoxes(html_element, layout_boxes, element_coordinate);

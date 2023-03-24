@@ -63,8 +63,6 @@
 #include "cobalt/browser/user_agent_string.h"
 #include "cobalt/cache/cache.h"
 #include "cobalt/configuration/configuration.h"
-#include "cobalt/extension/crash_handler.h"
-#include "cobalt/extension/installation_manager.h"
 #include "cobalt/loader/image/image_decoder.h"
 #include "cobalt/math/size.h"
 #include "cobalt/script/javascript_engine.h"
@@ -76,6 +74,8 @@
 #include "cobalt/watchdog/watchdog.h"
 #include "starboard/configuration.h"
 #include "starboard/event.h"
+#include "starboard/extension/crash_handler.h"
+#include "starboard/extension/installation_manager.h"
 #include "starboard/system.h"
 #include "starboard/time.h"
 #include "url/gurl.h"
@@ -572,6 +572,7 @@ void AddCrashHandlerAnnotations() {
                                             user_agent.c_str())) {
       result = false;
     }
+    // TODO(b/265339522): move crashpad prod and ver setter to starboard.
     if (!crash_handler_extension->SetString("prod", product.c_str())) {
       result = false;
     }

@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <memory>
-
 #include "cobalt/csp/source.h"
+
+#include <memory>
 
 #include "cobalt/csp/content_security_policy.h"
 #include "testing/gtest/include/gtest/gtest.h"
@@ -104,15 +104,14 @@ TEST_F(SourceTest, RedirectMatching) {
 
   Source source(csp_.get(), config);
 
-  EXPECT_TRUE(source.Matches(GURL("http://example.com:8000/"),
-                             ContentSecurityPolicy::kDidRedirect));
-  EXPECT_TRUE(source.Matches(GURL("http://example.com:8000/foo"),
-                             ContentSecurityPolicy::kDidRedirect));
-  EXPECT_TRUE(source.Matches(GURL("https://example.com:8000/foo"),
-                             ContentSecurityPolicy::kDidRedirect));
+  EXPECT_TRUE(source.Matches(GURL("http://example.com:8000/"), kDidRedirect));
+  EXPECT_TRUE(
+      source.Matches(GURL("http://example.com:8000/foo"), kDidRedirect));
+  EXPECT_TRUE(
+      source.Matches(GURL("https://example.com:8000/foo"), kDidRedirect));
 
-  EXPECT_FALSE(source.Matches(GURL("http://not-example.com:8000/foo"),
-                              ContentSecurityPolicy::kDidRedirect));
+  EXPECT_FALSE(
+      source.Matches(GURL("http://not-example.com:8000/foo"), kDidRedirect));
   EXPECT_FALSE(source.Matches(GURL("http://example.com:9000/foo/")));
 }
 

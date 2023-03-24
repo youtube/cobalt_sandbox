@@ -44,7 +44,60 @@ class StatisticsWrapper {
   base::Statistics<SbTime, int, 1024> startup_latency{
       "Media.PlaybackStartupLatency"};
 };
+
+void SetStreamInfo(
+    const SbMediaAudioStreamInfo& stream_info,
+    CobaltExtensionEnhancedAudioMediaAudioSampleInfo* sample_info) {
+  DCHECK(sample_info);
+
+  sample_info->stream_info.codec = stream_info.codec;
+  sample_info->stream_info.mime = stream_info.mime;
+  sample_info->stream_info.number_of_channels = stream_info.number_of_channels;
+  sample_info->stream_info.samples_per_second = stream_info.samples_per_second;
+  sample_info->stream_info.bits_per_sample = stream_info.bits_per_sample;
+  sample_info->stream_info.audio_specific_config_size =
+      stream_info.audio_specific_config_size;
+  sample_info->stream_info.audio_specific_config =
+      stream_info.audio_specific_config;
+}
+
+void SetStreamInfo(const SbMediaAudioStreamInfo& stream_info,
+                   SbMediaAudioSampleInfo* sample_info) {
+  DCHECK(sample_info);
+
+#if SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+  sample_info->stream_info = stream_info;
+#else   // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+  *sample_info = stream_info;
+#endif  // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION}
+}
+
+void SetStreamInfo(
+    const SbMediaVideoStreamInfo& stream_info,
+    CobaltExtensionEnhancedAudioMediaVideoSampleInfo* sample_info) {
+  DCHECK(sample_info);
+
+  sample_info->stream_info.codec = stream_info.codec;
+  sample_info->stream_info.mime = stream_info.mime;
+  sample_info->stream_info.max_video_capabilities =
+      stream_info.max_video_capabilities;
+  sample_info->stream_info.frame_width = stream_info.frame_width;
+  sample_info->stream_info.frame_height = stream_info.frame_height;
+}
+
+void SetStreamInfo(const SbMediaVideoStreamInfo& stream_info,
+                   SbMediaVideoSampleInfo* sample_info) {
+  DCHECK(sample_info);
+
+#if SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+  sample_info->stream_info = stream_info;
+#else   // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+  *sample_info = stream_info;
+#endif  // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION}
+}
+
 }  // namespace
+
 SB_ONCE_INITIALIZE_FUNCTION(StatisticsWrapper, StatisticsWrapper::GetInstance);
 
 SbPlayerBridge::CallbackHelper::CallbackHelper(SbPlayerBridge* player_bridge)
@@ -107,7 +160,8 @@ SbPlayerBridge::SbPlayerBridge(
     bool prefer_decode_to_texture,
     const OnEncryptedMediaInitDataEncounteredCB&
         on_encrypted_media_init_data_encountered_cb,
-    DecodeTargetProvider* const decode_target_provider)
+    DecodeTargetProvider* const decode_target_provider,
+    std::string pipeline_identifier)
     : url_(url),
       sbplayer_interface_(interface),
       task_runner_(task_runner),
@@ -120,6 +174,8 @@ SbPlayerBridge::SbPlayerBridge(
       on_encrypted_media_init_data_encountered_cb_(
           on_encrypted_media_init_data_encountered_cb),
       decode_target_provider_(decode_target_provider),
+      cval_stats_(&interface->cval_stats_),
+      pipeline_identifier_(pipeline_identifier),
       is_url_based_(true) {
   DCHECK(host_);
   DCHECK(set_bounds_helper_);
@@ -146,7 +202,7 @@ SbPlayerBridge::SbPlayerBridge(
     SbPlayerSetBoundsHelper* set_bounds_helper, bool allow_resume_after_suspend,
     bool prefer_decode_to_texture,
     DecodeTargetProvider* const decode_target_provider,
-    const std::string& max_video_capabilities)
+    const std::string& max_video_capabilities, std::string pipeline_identifier)
     : sbplayer_interface_(interface),
       task_runner_(task_runner),
       get_decode_target_graphics_context_provider_func_(
@@ -161,7 +217,9 @@ SbPlayerBridge::SbPlayerBridge(
       audio_config_(audio_config),
       video_config_(video_config),
       decode_target_provider_(decode_target_provider),
-      max_video_capabilities_(max_video_capabilities)
+      max_video_capabilities_(max_video_capabilities),
+      cval_stats_(&interface->cval_stats_),
+      pipeline_identifier_(pipeline_identifier)
 #if SB_HAS(PLAYER_WITH_URL)
       ,
       is_url_based_(false)
@@ -173,8 +231,8 @@ SbPlayerBridge::SbPlayerBridge(
   DCHECK(set_bounds_helper_);
   DCHECK(decode_target_provider_);
 
-  audio_sample_info_.codec = kSbMediaAudioCodecNone;
-  video_sample_info_.codec = kSbMediaVideoCodecNone;
+  audio_stream_info_.codec = kSbMediaAudioCodecNone;
+  video_stream_info_.codec = kSbMediaVideoCodecNone;
 
   if (audio_config.IsValidConfig()) {
     UpdateAudioConfig(audio_config, audio_mime_type);
@@ -206,7 +264,9 @@ SbPlayerBridge::~SbPlayerBridge() {
   decode_target_provider_->ResetGetCurrentSbDecodeTargetFunction();
 
   if (SbPlayerIsValid(player_)) {
+    cval_stats_->StartTimer(MediaTiming::SbPlayerDestroy, pipeline_identifier_);
     sbplayer_interface_->Destroy(player_);
+    cval_stats_->StopTimer(MediaTiming::SbPlayerDestroy, pipeline_identifier_);
   }
 }
 
@@ -220,9 +280,9 @@ void SbPlayerBridge::UpdateAudioConfig(const AudioDecoderConfig& audio_config,
 
   audio_config_ = audio_config;
   audio_mime_type_ = mime_type;
-  audio_sample_info_ = MediaAudioConfigToSbMediaAudioSampleInfo(
+  audio_stream_info_ = MediaAudioConfigToSbMediaAudioStreamInfo(
       audio_config_, audio_mime_type_.c_str());
-  LOG(INFO) << "Converted to SbMediaAudioSampleInfo -- " << audio_sample_info_;
+  LOG(INFO) << "Converted to SbMediaAudioStreamInfo -- " << audio_stream_info_;
 }
 
 void SbPlayerBridge::UpdateVideoConfig(const VideoDecoderConfig& video_config,
@@ -234,39 +294,46 @@ void SbPlayerBridge::UpdateVideoConfig(const VideoDecoderConfig& video_config,
             << video_config.AsHumanReadableString();
 
   video_config_ = video_config;
-  video_sample_info_.frame_width =
+  video_stream_info_.frame_width =
       static_cast<int>(video_config_.natural_size().width());
-  video_sample_info_.frame_height =
+  video_stream_info_.frame_height =
       static_cast<int>(video_config_.natural_size().height());
-  video_sample_info_.codec =
+  video_stream_info_.codec =
       MediaVideoCodecToSbMediaVideoCodec(video_config_.codec());
-  video_sample_info_.color_metadata =
+  video_stream_info_.color_metadata =
       MediaToSbMediaColorMetadata(video_config_.color_space_info(),
                                   video_config_.hdr_metadata(), mime_type);
   video_mime_type_ = mime_type;
-  video_sample_info_.mime = video_mime_type_.c_str();
-  video_sample_info_.max_video_capabilities = max_video_capabilities_.c_str();
-  LOG(INFO) << "Converted to SbMediaVideoSampleInfo -- " << video_sample_info_;
+  video_stream_info_.mime = video_mime_type_.c_str();
+  video_stream_info_.max_video_capabilities = max_video_capabilities_.c_str();
+  LOG(INFO) << "Converted to SbMediaVideoStreamInfo -- " << video_stream_info_;
 }
 
-void SbPlayerBridge::WriteBuffer(DemuxerStream::Type type,
-                                 const scoped_refptr<DecoderBuffer>& buffer) {
+void SbPlayerBridge::WriteBuffers(
+    DemuxerStream::Type type,
+    const std::vector<scoped_refptr<DecoderBuffer>>& buffers) {
   DCHECK(task_runner_->BelongsToCurrentThread());
-  DCHECK(buffer);
 #if SB_HAS(PLAYER_WITH_URL)
   DCHECK(!is_url_based_);
 #endif  // SB_HAS(PLAYER_WITH_URL)
 
   if (allow_resume_after_suspend_) {
-    decoder_buffer_cache_.AddBuffer(type, buffer);
-
-    if (state_ != kSuspended) {
-      WriteNextBufferFromCache(type);
+    for (const auto& buffer : buffers) {
+      DCHECK(buffer);
+      decoder_buffer_cache_.AddBuffer(type, buffer);
     }
-
+    if (state_ != kSuspended) {
+      WriteNextBuffersFromCache(type, buffers.size());
+    }
     return;
   }
-  WriteBufferInternal(type, buffer);
+
+  if (sbplayer_interface_->IsEnhancedAudioExtensionEnabled()) {
+    WriteBuffersInternal<CobaltExtensionEnhancedAudioPlayerSampleInfo>(type,
+                                                                       buffers);
+  } else {
+    WriteBuffersInternal<SbPlayerSampleInfo>(type, buffers);
+  }
 }
 
 void SbPlayerBridge::SetBounds(int z_index, const gfx::Rect& rect) {
@@ -300,6 +367,9 @@ void SbPlayerBridge::Seek(base::TimeDelta time) {
 
   decoder_buffer_cache_.ClearAll();
   seek_pending_ = false;
+
+  pending_audio_eos_buffer_ = false;
+  pending_video_eos_buffer_ = false;
 
   if (state_ == kSuspended) {
     preroll_timestamp_ = time;
@@ -391,8 +461,8 @@ void SbPlayerBridge::GetVideoResolution(int* frame_width, int* frame_height) {
   DCHECK(is_url_based_);
 
   if (state_ == kSuspended) {
-    *frame_width = video_sample_info_.frame_width;
-    *frame_height = video_sample_info_.frame_height;
+    *frame_width = video_stream_info_.frame_width;
+    *frame_height = video_stream_info_.frame_height;
     return;
   }
 
@@ -401,11 +471,11 @@ void SbPlayerBridge::GetVideoResolution(int* frame_width, int* frame_height) {
   SbPlayerInfo2 out_player_info;
   sbplayer_interface_->GetInfo(player_, &out_player_info);
 
-  video_sample_info_.frame_width = out_player_info.frame_width;
-  video_sample_info_.frame_height = out_player_info.frame_height;
+  video_stream_info_.frame_width = out_player_info.frame_width;
+  video_stream_info_.frame_height = out_player_info.frame_height;
 
-  *frame_width = video_sample_info_.frame_width;
-  *frame_height = video_sample_info_.frame_height;
+  *frame_width = video_stream_info_.frame_width;
+  *frame_height = video_stream_info_.frame_height;
 }
 
 base::TimeDelta SbPlayerBridge::GetDuration() {
@@ -472,7 +542,9 @@ void SbPlayerBridge::Suspend() {
       DecodeTargetProvider::kOutputModeInvalid);
   decode_target_provider_->ResetGetCurrentSbDecodeTargetFunction();
 
+  cval_stats_->StartTimer(MediaTiming::SbPlayerDestroy, pipeline_identifier_);
   sbplayer_interface_->Destroy(player_);
+  cval_stats_->StopTimer(MediaTiming::SbPlayerDestroy, pipeline_identifier_);
 
   player_ = kSbPlayerInvalid;
 }
@@ -553,10 +625,12 @@ void SbPlayerBridge::CreateUrlPlayer(const std::string& url) {
 
   player_creation_time_ = SbTimeGetMonotonicNow();
 
+  cval_stats_->StartTimer(MediaTiming::SbPlayerCreate, pipeline_identifier_);
   player_ = sbplayer_interface_->CreateUrlPlayer(
       url.c_str(), window_, &SbPlayerBridge::PlayerStatusCB,
       &SbPlayerBridge::EncryptedMediaInitDataEncounteredCB,
       &SbPlayerBridge::PlayerErrorCB, this);
+  cval_stats_->StopTimer(MediaTiming::SbPlayerCreate, pipeline_identifier_);
   DCHECK(SbPlayerIsValid(player_));
 
   if (output_mode_ == kSbPlayerOutputModeDecodeToTexture) {
@@ -579,9 +653,7 @@ void SbPlayerBridge::CreatePlayer() {
   DCHECK(task_runner_->BelongsToCurrentThread());
 
   bool is_visible = SbWindowIsValid(window_);
-  SbMediaAudioCodec audio_codec = audio_sample_info_.codec;
-
-  bool has_audio = audio_codec != kSbMediaAudioCodecNone;
+  bool has_audio = audio_stream_info_.codec != kSbMediaAudioCodecNone;
 
   is_creating_player_ = true;
 
@@ -593,21 +665,33 @@ void SbPlayerBridge::CreatePlayer() {
 
   SbPlayerCreationParam creation_param = {};
   creation_param.drm_system = drm_system_;
-  creation_param.audio_sample_info = audio_sample_info_;
-  creation_param.video_sample_info = video_sample_info_;
+#if SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+  creation_param.audio_stream_info = audio_stream_info_;
+  creation_param.video_stream_info = video_stream_info_;
+#else   // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+  creation_param.audio_sample_info = audio_stream_info_;
+  creation_param.video_sample_info = video_stream_info_;
+#endif  // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+
   // TODO: This is temporary for supporting background media playback.
   //       Need to be removed with media refactor.
   if (!is_visible) {
+#if SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+    creation_param.video_stream_info.codec = kSbMediaVideoCodecNone;
+#else   // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
     creation_param.video_sample_info.codec = kSbMediaVideoCodecNone;
+#endif  // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
   }
   creation_param.output_mode = output_mode_;
   DCHECK_EQ(sbplayer_interface_->GetPreferredOutputMode(&creation_param),
             output_mode_);
+  cval_stats_->StartTimer(MediaTiming::SbPlayerCreate, pipeline_identifier_);
   player_ = sbplayer_interface_->Create(
       window_, &creation_param, &SbPlayerBridge::DeallocateSampleCB,
       &SbPlayerBridge::DecoderStatusCB, &SbPlayerBridge::PlayerStatusCB,
       &SbPlayerBridge::PlayerErrorCB, this,
       get_decode_target_graphics_context_provider_func_.Run());
+  cval_stats_->StopTimer(MediaTiming::SbPlayerCreate, pipeline_identifier_);
 
   is_creating_player_ = false;
 
@@ -629,89 +713,155 @@ void SbPlayerBridge::CreatePlayer() {
   UpdateBounds_Locked();
 }
 
-void SbPlayerBridge::WriteNextBufferFromCache(DemuxerStream::Type type) {
+void SbPlayerBridge::WriteNextBuffersFromCache(DemuxerStream::Type type,
+                                               int max_buffers_per_write) {
   DCHECK(state_ != kSuspended);
 #if SB_HAS(PLAYER_WITH_URL)
   DCHECK(!is_url_based_);
 #endif  // SB_HAS(PLAYER_WITH_URL)
 
-  const scoped_refptr<DecoderBuffer>& buffer =
-      decoder_buffer_cache_.GetBuffer(type);
-  DCHECK(buffer);
-  decoder_buffer_cache_.AdvanceToNextBuffer(type);
-
   DCHECK(SbPlayerIsValid(player_));
 
-  WriteBufferInternal(type, buffer);
+  std::vector<scoped_refptr<DecoderBuffer>> buffers;
+  buffers.reserve(max_buffers_per_write);
+
+  // TODO: DecoderBufferCache doesn't respect config change during resume
+  // b/243308409
+  for (int i = 0; i < max_buffers_per_write; i++) {
+    const scoped_refptr<DecoderBuffer>& buffer =
+        decoder_buffer_cache_.GetBuffer(type);
+    if (!buffer) {
+      break;
+    }
+    decoder_buffer_cache_.AdvanceToNextBuffer(type);
+    buffers.push_back(buffer);
+  }
+
+  if (sbplayer_interface_->IsEnhancedAudioExtensionEnabled()) {
+    WriteBuffersInternal<CobaltExtensionEnhancedAudioPlayerSampleInfo>(type,
+                                                                       buffers);
+  } else {
+    WriteBuffersInternal<SbPlayerSampleInfo>(type, buffers);
+  }
 }
 
-void SbPlayerBridge::WriteBufferInternal(
-    DemuxerStream::Type type, const scoped_refptr<DecoderBuffer>& buffer) {
+template <typename PlayerSampleInfo>
+void SbPlayerBridge::WriteBuffersInternal(
+    DemuxerStream::Type type,
+    const std::vector<scoped_refptr<DecoderBuffer>>& buffers) {
 #if SB_HAS(PLAYER_WITH_URL)
   DCHECK(!is_url_based_);
 #endif  // SB_HAS(PLAYER_WITH_URL)
 
-  if (buffer->end_of_stream()) {
-    sbplayer_interface_->WriteEndOfStream(player_,
-                                          DemuxerStreamTypeToSbMediaType(type));
-    return;
-  }
-
-  DecodingBuffers::iterator iter = decoding_buffers_.find(buffer->data());
-  if (iter == decoding_buffers_.end()) {
-    decoding_buffers_[buffer->data()] = std::make_pair(buffer, 1);
-  } else {
-    ++iter->second.second;
-  }
-
   auto sample_type = DemuxerStreamTypeToSbMediaType(type);
 
-  if (sample_type == kSbMediaTypeAudio && first_audio_sample_time_ == 0) {
-    first_audio_sample_time_ = SbTimeGetMonotonicNow();
-  } else if (sample_type == kSbMediaTypeVideo &&
-             first_video_sample_time_ == 0) {
-    first_video_sample_time_ = SbTimeGetMonotonicNow();
+  std::vector<PlayerSampleInfo> gathered_sbplayer_sample_infos;
+  std::vector<SbDrmSampleInfo> gathered_sbplayer_sample_infos_drm_info;
+  std::vector<SbDrmSubSampleMapping>
+      gathered_sbplayer_sample_infos_subsample_mapping;
+  std::vector<SbPlayerSampleSideData> gathered_sbplayer_sample_infos_side_data;
+
+  gathered_sbplayer_sample_infos.reserve(buffers.size());
+  gathered_sbplayer_sample_infos_drm_info.reserve(buffers.size());
+  gathered_sbplayer_sample_infos_subsample_mapping.reserve(buffers.size());
+  gathered_sbplayer_sample_infos_side_data.reserve(buffers.size());
+
+  for (int i = 0; i < buffers.size(); i++) {
+    const auto& buffer = buffers[i];
+    if (buffer->end_of_stream()) {
+      DCHECK_EQ(i, buffers.size() - 1);
+      if (buffers.size() > 1) {
+        if (type == DemuxerStream::AUDIO) {
+          pending_audio_eos_buffer_ = true;
+        } else {
+          pending_video_eos_buffer_ = true;
+        }
+
+        DCHECK(!gathered_sbplayer_sample_infos.empty());
+        cval_stats_->StartTimer(MediaTiming::SbPlayerWriteSamples,
+                                pipeline_identifier_);
+        sbplayer_interface_->WriteSamples(
+            player_, sample_type, gathered_sbplayer_sample_infos.data(),
+            gathered_sbplayer_sample_infos.size());
+        cval_stats_->StopTimer(MediaTiming::SbPlayerWriteSamples,
+                               pipeline_identifier_);
+      } else {
+        sbplayer_interface_->WriteEndOfStream(
+            player_, DemuxerStreamTypeToSbMediaType(type));
+      }
+      return;
+    }
+
+    DecodingBuffers::iterator iter = decoding_buffers_.find(buffer->data());
+    if (iter == decoding_buffers_.end()) {
+      decoding_buffers_[buffer->data()] = std::make_pair(buffer, 1);
+    } else {
+      ++iter->second.second;
+    }
+
+    if (sample_type == kSbMediaTypeAudio && first_audio_sample_time_ == 0) {
+      first_audio_sample_time_ = SbTimeGetMonotonicNow();
+    } else if (sample_type == kSbMediaTypeVideo &&
+               first_video_sample_time_ == 0) {
+      first_video_sample_time_ = SbTimeGetMonotonicNow();
+    }
+
+    gathered_sbplayer_sample_infos_drm_info.push_back(SbDrmSampleInfo());
+    SbDrmSampleInfo* drm_info = &gathered_sbplayer_sample_infos_drm_info[i];
+
+    gathered_sbplayer_sample_infos_subsample_mapping.push_back(
+        SbDrmSubSampleMapping());
+    SbDrmSubSampleMapping* subsample_mapping =
+        &gathered_sbplayer_sample_infos_subsample_mapping[i];
+
+    drm_info->subsample_count = 0;
+    if (buffer->decrypt_config()) {
+      FillDrmSampleInfo(buffer, drm_info, subsample_mapping);
+    }
+
+    gathered_sbplayer_sample_infos_side_data.push_back(
+        SbPlayerSampleSideData());
+    SbPlayerSampleSideData* side_data =
+        &gathered_sbplayer_sample_infos_side_data[i];
+
+    PlayerSampleInfo sample_info = {};
+    sample_info.type = sample_type;
+    sample_info.buffer = buffer->data();
+    sample_info.buffer_size = buffer->data_size();
+    sample_info.timestamp = buffer->timestamp().InMicroseconds();
+
+    if (buffer->side_data_size() > 0) {
+      // We only support at most one side data currently.
+      side_data->data = buffer->side_data();
+      side_data->size = buffer->side_data_size();
+      sample_info.side_data = side_data;
+      sample_info.side_data_count = 1;
+    }
+
+    if (sample_type == kSbMediaTypeAudio) {
+      SetStreamInfo(audio_stream_info_, &sample_info.audio_sample_info);
+    } else {
+      DCHECK(sample_type == kSbMediaTypeVideo);
+      SetStreamInfo(video_stream_info_, &sample_info.video_sample_info);
+      sample_info.video_sample_info.is_key_frame = buffer->is_key_frame();
+    }
+    if (drm_info->subsample_count > 0) {
+      sample_info.drm_info = drm_info;
+    } else {
+      sample_info.drm_info = NULL;
+    }
+    gathered_sbplayer_sample_infos.push_back(sample_info);
   }
 
-  SbDrmSampleInfo drm_info;
-  SbDrmSubSampleMapping subsample_mapping;
-  drm_info.subsample_count = 0;
-  if (buffer->decrypt_config()) {
-    FillDrmSampleInfo(buffer, &drm_info, &subsample_mapping);
+  if (!gathered_sbplayer_sample_infos.empty()) {
+    cval_stats_->StartTimer(MediaTiming::SbPlayerWriteSamples,
+                            pipeline_identifier_);
+    sbplayer_interface_->WriteSamples(player_, sample_type,
+                                      gathered_sbplayer_sample_infos.data(),
+                                      gathered_sbplayer_sample_infos.size());
+    cval_stats_->StopTimer(MediaTiming::SbPlayerWriteSamples,
+                           pipeline_identifier_);
   }
-
-  DCHECK_GT(sbplayer_interface_->GetMaximumNumberOfSamplesPerWrite(player_,
-                                                                   sample_type),
-            0);
-
-  SbPlayerSampleSideData side_data = {};
-  SbPlayerSampleInfo sample_info = {};
-  sample_info.type = sample_type;
-  sample_info.buffer = buffer->data();
-  sample_info.buffer_size = buffer->data_size();
-  sample_info.timestamp = buffer->timestamp().InMicroseconds();
-
-  if (buffer->side_data_size() > 0) {
-    // We only support at most one side data currently.
-    side_data.data = buffer->side_data();
-    side_data.size = buffer->side_data_size();
-    sample_info.side_data = &side_data;
-    sample_info.side_data_count = 1;
-  }
-
-  if (sample_type == kSbMediaTypeAudio) {
-    sample_info.audio_sample_info = audio_sample_info_;
-  } else {
-    DCHECK(sample_type == kSbMediaTypeVideo);
-    sample_info.video_sample_info = video_sample_info_;
-    sample_info.video_sample_info.is_key_frame = buffer->is_key_frame();
-  }
-  if (drm_info.subsample_count > 0) {
-    sample_info.drm_info = &drm_info;
-  } else {
-    sample_info.drm_info = NULL;
-  }
-  sbplayer_interface_->WriteSample(player_, sample_type, &sample_info, 1);
 }
 
 SbDecodeTarget SbPlayerBridge::GetCurrentSbDecodeTarget() {
@@ -804,11 +954,24 @@ void SbPlayerBridge::OnDecoderStatus(SbPlayer player, SbMediaType type,
       break;
   }
 
+  DemuxerStream::Type stream_type =
+      ::media::SbMediaTypeToDemuxerStreamType(type);
+
+  if (stream_type == DemuxerStream::AUDIO && pending_audio_eos_buffer_) {
+    SbPlayerWriteEndOfStream(player_, type);
+    pending_audio_eos_buffer_ = false;
+    return;
+  } else if (stream_type == DemuxerStream::VIDEO && pending_video_eos_buffer_) {
+    SbPlayerWriteEndOfStream(player_, type);
+    pending_video_eos_buffer_ = false;
+    return;
+  }
+
+  auto max_number_of_samples_to_write =
+      SbPlayerGetMaximumNumberOfSamplesPerWrite(player_, type);
   if (state_ == kResuming) {
-    DemuxerStream::Type stream_type =
-        ::media::SbMediaTypeToDemuxerStreamType(type);
     if (decoder_buffer_cache_.GetBuffer(stream_type)) {
-      WriteNextBufferFromCache(stream_type);
+      WriteNextBuffersFromCache(stream_type, max_number_of_samples_to_write);
       return;
     }
     if (!decoder_buffer_cache_.GetBuffer(DemuxerStream::AUDIO) &&
@@ -817,7 +980,7 @@ void SbPlayerBridge::OnDecoderStatus(SbPlayer player, SbMediaType type,
     }
   }
 
-  host_->OnNeedData(::media::SbMediaTypeToDemuxerStreamType(type));
+  host_->OnNeedData(stream_type, max_number_of_samples_to_write);
 }
 
 void SbPlayerBridge::OnPlayerStatus(SbPlayer player, SbPlayerState state,
@@ -976,8 +1139,13 @@ SbPlayerOutputMode SbPlayerBridge::ComputeSbPlayerOutputMode(
     bool prefer_decode_to_texture) const {
   SbPlayerCreationParam creation_param = {};
   creation_param.drm_system = drm_system_;
-  creation_param.audio_sample_info = audio_sample_info_;
-  creation_param.video_sample_info = video_sample_info_;
+#if SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+  creation_param.audio_stream_info = audio_stream_info_;
+  creation_param.video_stream_info = video_stream_info_;
+#else   // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+  creation_param.audio_sample_info = audio_stream_info_;
+  creation_param.video_sample_info = video_stream_info_;
+#endif  // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
 
   // Try to choose |kSbPlayerOutputModeDecodeToTexture| when
   // |prefer_decode_to_texture| is true.

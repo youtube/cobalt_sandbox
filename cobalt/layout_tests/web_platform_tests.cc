@@ -25,6 +25,8 @@
 #include "base/strings/string_util.h"
 #include "base/test/scoped_task_environment.h"
 #include "base/values.h"
+#include "cobalt/browser/service_worker_registry.h"
+#include "cobalt/browser/user_agent_platform_info.h"
 #include "cobalt/browser/web_module.h"
 #include "cobalt/cssom/viewport_size.h"
 #include "cobalt/layout_tests/test_utils.h"
@@ -34,6 +36,7 @@
 #include "cobalt/network/network_module.h"
 #include "cobalt/render_tree/resource_provider_stub.h"
 #include "cobalt/web/csp_delegate_factory.h"
+#include "cobalt/web/web_settings.h"
 #include "starboard/window.h"
 #include "testing/gtest/include/gtest/gtest.h"
 #include "url/gurl.h"
@@ -200,6 +203,7 @@ std::string RunWebPlatformTest(const GURL& url, bool* got_results) {
 
   // Media module
   FakeResourceProviderStub resource_provider;
+  web::WebSettingsImpl web_settings;
   std::unique_ptr<media::MediaModule> media_module(
       new media::MediaModule(NULL, &resource_provider));
   std::unique_ptr<media::CanPlayTypeHandler> can_play_type_handler(
@@ -215,6 +219,7 @@ std::string RunWebPlatformTest(const GURL& url, bool* got_results) {
   // we take advantage of the convenience of inline script tags.
   web_module_options.enable_inline_script_warnings = false;
 
+  web_module_options.web_options.web_settings = &web_settings;
   web_module_options.web_options.network_module = &network_module;
 
   // Prepare a slot for our results to be placed when ready.
@@ -223,6 +228,14 @@ std::string RunWebPlatformTest(const GURL& url, bool* got_results) {
 
   // Create the WebModule and wait for a layout to occur.
   browser::WebModule web_module("RunWebPlatformTest");
+
+  // Create Service Worker Registry
+  browser::ServiceWorkerRegistry* service_worker_registry =
+      new browser::ServiceWorkerRegistry(&web_settings, &network_module,
+                                         new browser::UserAgentPlatformInfo());
+  web_module_options.web_options.service_worker_jobs =
+      service_worker_registry->service_worker_jobs();
+
   web_module.Run(
       url, base::kApplicationStateStarted, nullptr /* scroll_engine */,
       base::Bind(&WebModuleOnRenderTreeProducedCallback, &results),

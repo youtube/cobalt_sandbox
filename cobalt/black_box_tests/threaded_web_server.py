@@ -93,7 +93,8 @@ def MakeCustomHeaderRequestHandlerClass(base_path, paths_to_headers):
 
     def do_GET(self):  # pylint: disable=invalid-name
       content = self.get_content()
-      self.wfile.write(content)
+      if content:
+        self.wfile.write(content)
 
     def do_HEAD(self):  # pylint: disable=invalid-name
       # Run get_content to send the headers, but ignore the returned results
@@ -172,8 +173,7 @@ class ThreadedWebServer(object):
     Returns:
       A string containing a HTTP URI.
     """
-    return 'http://{}:{}/{}'.format(self._bound_host, self._bound_port,
-                                    file_name)
+    return f'http://{self._bound_host}:{self._bound_port}/{file_name}'
 
   def __enter__(self):
     self._server_thread = threading.Thread(target=self._server.serve_forever)

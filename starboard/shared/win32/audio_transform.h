@@ -17,6 +17,7 @@
 
 #include "starboard/common/scoped_ptr.h"
 #include "starboard/media.h"
+#include "starboard/shared/starboard/media/media_util.h"
 #include "starboard/shared/win32/media_transform.h"
 
 namespace starboard {
@@ -24,8 +25,7 @@ namespace shared {
 namespace win32 {
 
 scoped_ptr<MediaTransform> CreateAudioTransform(
-    const SbMediaAudioSampleInfo& audio,
-    SbMediaAudioCodec codec);
+    const starboard::media::AudioStreamInfo& audio_stream_info);
 
 }  // namespace win32
 }  // namespace shared

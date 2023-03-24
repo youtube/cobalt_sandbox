@@ -29,7 +29,6 @@ class ServiceWorkerRequestDetector(MakeRequestHandlerClass(_SERVER_ROOT_PATH)):
 
   def end_headers(self):
     self.send_my_headers()
-
     SimpleHTTPServer.SimpleHTTPRequestHandler.end_headers(self)
 
   def send_header(self, header, value):
@@ -43,7 +42,9 @@ class ServiceWorkerRequestDetector(MakeRequestHandlerClass(_SERVER_ROOT_PATH)):
 
   def send_my_headers(self):
     # Add 'Service-Worker-Allowed' header for the main service worker scripts.
-    if self.path.endswith('/service_worker_test_worker.js'):
+    if self.path.endswith(
+        '/service_worker_test_worker.js') or self.path.endswith(
+            '/service_worker_test_persisted_worker.js'):
       self.send_header('Service-Worker-Allowed', '/bar')
 
   def do_GET(self):  # pylint: disable=invalid-name
@@ -58,12 +59,11 @@ class ServiceWorkerRequestDetector(MakeRequestHandlerClass(_SERVER_ROOT_PATH)):
 
       if not (service_worker_request_header
               == expected_service_worker_request_header):
-        raise ValueError('Service-Worker HTTP request header value does not '
-                         'match with expected value.\n'
-                         'Header value:%s\n'
-                         'Expected value:%s' %
-                         (service_worker_request_header,
-                          expected_service_worker_request_header))
+        raise ValueError(
+            'Service-Worker HTTP request header value does not '
+            'match with expected value.\n'
+            f'Header value:{service_worker_request_header}\n'
+            f'Expected value:{expected_service_worker_request_header}')
 
     return SimpleHTTPServer.SimpleHTTPRequestHandler.do_GET(self)
 

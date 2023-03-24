@@ -77,6 +77,7 @@ void VideoDecoder::Reset() {
 
   CancelPendingJobs();
   frames_being_decoded_ = 0;
+  time_sequential_queue_ = TimeSequentialQueue();
 
   ScopedLock lock(decode_target_mutex_);
   frames_ = std::queue<scoped_refptr<CpuVideoFrame>>();
@@ -128,11 +129,12 @@ void VideoDecoder::TeardownCodec() {
   }
 }
 
-void VideoDecoder::WriteInputBuffer(
-    const scoped_refptr<InputBuffer>& input_buffer) {
+void VideoDecoder::WriteInputBuffers(const InputBuffers& input_buffers) {
   SB_DCHECK(BelongsToCurrentThread());
-  SB_DCHECK(input_buffer);
+  SB_DCHECK(input_buffers.size() == 1);
+  SB_DCHECK(input_buffers[0]);
   SB_DCHECK(decoder_status_cb_);
+
   if (stream_ended_) {
     ReportError("WriteInputBuffer() was called after WriteEndOfStream().");
     return;
@@ -141,6 +143,7 @@ void VideoDecoder::WriteInputBuffer(
     decoder_thread_.reset(new JobThread("openh264_video_decoder"));
     SB_DCHECK(decoder_thread_);
   }
+  const auto& input_buffer = input_buffers[0];
   decoder_thread_->job_queue()->Schedule(
       std::bind(&VideoDecoder::DecodeOneBuffer, this, input_buffer));
 }
@@ -150,10 +153,9 @@ void VideoDecoder::DecodeOneBuffer(
   SB_DCHECK(decoder_thread_->job_queue()->BelongsToCurrentThread());
   SB_DCHECK(input_buffer);
 
-  const SbMediaVideoSampleInfo& sample_info = input_buffer->video_sample_info();
-  if (sample_info.is_key_frame) {
-    VideoConfig new_config(sample_info, input_buffer->data(),
-                           input_buffer->size());
+  if (input_buffer->video_sample_info().is_key_frame) {
+    VideoConfig new_config(input_buffer->video_stream_info(),
+                           input_buffer->data(), input_buffer->size());
     if (!video_config_ || video_config_.value() != new_config) {
       video_config_ = new_config;
       if (decoder_) {
@@ -203,6 +205,16 @@ void VideoDecoder::FlushFrames() {
   if (frames_being_decoded_ != 0) {
     SB_LOG(WARNING) << "Inconsistency in the number of input/output frames";
   }
+
+  while (!time_sequential_queue_.empty()) {
+    auto output_frame = time_sequential_queue_.top();
+    if (output_mode_ == kSbPlayerOutputModeDecodeToTexture) {
+      ScopedLock lock(decode_target_mutex_);
+      frames_.push(output_frame);
+    }
+    Schedule(std::bind(decoder_status_cb_, kBufferFull, output_frame));
+    time_sequential_queue_.pop();
+  }
 }
 
 void VideoDecoder::ProcessDecodedImage(unsigned char* decoded_frame[],
@@ -226,14 +238,27 @@ void VideoDecoder::ProcessDecodedImage(unsigned char* decoded_frame[],
       buffer_info.UsrData.sSystemBuffer.iStride[1],
       buffer_info.uiOutYuvTimeStamp, decoded_frame[0], decoded_frame[1],
       decoded_frame[2]);
-  if (output_mode_ == kSbPlayerOutputModeDecodeToTexture) {
-    ScopedLock lock(decode_target_mutex_);
-    frames_.push(frame);
+
+  bool has_new_output = false;
+  while (!time_sequential_queue_.empty() &&
+         time_sequential_queue_.top()->timestamp() < frame->timestamp()) {
+    has_new_output = true;
+    auto output_frame = time_sequential_queue_.top();
+    if (output_mode_ == kSbPlayerOutputModeDecodeToTexture) {
+      ScopedLock lock(decode_target_mutex_);
+      frames_.push(output_frame);
+    }
+    if (flushing) {
+      Schedule(std::bind(decoder_status_cb_, kBufferFull, output_frame));
+    } else {
+      Schedule(std::bind(decoder_status_cb_, kNeedMoreInput, output_frame));
+    }
+    time_sequential_queue_.pop();
   }
-  if (flushing) {
-    Schedule(std::bind(decoder_status_cb_, kBufferFull, frame));
-  } else {
-    Schedule(std::bind(decoder_status_cb_, kNeedMoreInput, frame));
+  time_sequential_queue_.push(frame);
+
+  if (!has_new_output) {
+    Schedule(std::bind(decoder_status_cb_, kNeedMoreInput, nullptr));
   }
 }
 

@@ -20,6 +20,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "starboard/common/condition_variable.h"
@@ -86,8 +87,7 @@ void VideoDecoderTestFixture::Initialize() {
       output_mode, dmp_reader_.video_codec(), kSbDrmSystemInvalid));
 
   PlayerComponents::Factory::CreationParameters creation_parameters(
-      dmp_reader_.video_codec(), GetVideoInputBuffer(0)->video_sample_info(),
-      &player_, output_mode,
+      GetVideoInputBuffer(0)->video_stream_info(), &player_, output_mode,
       fake_graphics_context_provider_->decoder_target_provider(), nullptr);
 
   scoped_ptr<PlayerComponents::Factory> factory;
@@ -232,8 +232,7 @@ void VideoDecoderTestFixture::WriteSingleInput(size_t index) {
     need_more_input_ = false;
     outstanding_inputs_.insert(input_buffer->timestamp());
   }
-
-  video_decoder_->WriteInputBuffer(input_buffer);
+  video_decoder_->WriteInputBuffers({input_buffer});
 }
 
 void VideoDecoderTestFixture::WriteEndOfStream() {
@@ -369,8 +368,7 @@ scoped_refptr<InputBuffer> VideoDecoderTestFixture::GetVideoInputBuffer(
   if (iter != invalid_inputs_.end()) {
     std::vector<uint8_t> content(input_buffer->size(), iter->second);
     // Replace the content with invalid data.
-    input_buffer->SetDecryptedContent(content.data(),
-                                      static_cast<int>(content.size()));
+    input_buffer->SetDecryptedContent(std::move(content));
   }
   return input_buffer;
 }

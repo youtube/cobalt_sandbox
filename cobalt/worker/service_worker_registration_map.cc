@@ -59,6 +59,13 @@ ServiceWorkerRegistrationMap::ServiceWorkerRegistrationMap(
   service_worker_persistent_settings_.reset(
       new ServiceWorkerPersistentSettings(options));
   DCHECK(service_worker_persistent_settings_);
+
+  // TODO(b/259731731) For now do not read from persisted settings until
+  // activation of persisted registrations works.
+  ReadPersistentSettings();
+}
+
+void ServiceWorkerRegistrationMap::ReadPersistentSettings() {
   service_worker_persistent_settings_->ReadServiceWorkerRegistrationMapSettings(
       registration_map_);
 }
@@ -280,12 +287,9 @@ void ServiceWorkerRegistrationMap::HandleUserAgentShutdown(
 }
 
 void ServiceWorkerRegistrationMap::AbortAllActive() {
-  for (auto& entry : registration_map_) {
-    const scoped_refptr<ServiceWorkerRegistrationObject>& registration =
-        entry.second;
-    if (registration->active_worker()) {
-      registration->active_worker()->Abort();
-    }
+  DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
+  for (auto entry : registration_map_) {
+    entry.second->AbortAll();
   }
 }
 

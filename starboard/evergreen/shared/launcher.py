@@ -19,7 +19,6 @@ import shutil
 
 from starboard.tools import abstract_launcher
 from starboard.tools import paths
-from starboard.tools import port_symlink
 
 _BASE_STAGING_DIRECTORY = 'evergreen_staging'
 _CRASHPAD_TARGET = 'crashpad_handler'
@@ -80,9 +79,9 @@ class Launcher(abstract_launcher.AbstractLauncher):
     # The relationship of loader platforms and configurations to evergreen
     # platforms and configurations is many-to-many. We need a separate directory
     # for each of them, i.e. linux-x64x11_debug__evergreen-x64_gold.
-    self.combined_config = '{}_{}__{}_{}'.format(self.loader_platform,
-                                                 self.loader_config, platform,
-                                                 config)
+    loader_build_name = f'{self.loader_platform}_{self.loader_config}'
+    target_build_name = f'{platform}_{config}'
+    self.combined_config = f'{loader_build_name}__{target_build_name}'
 
     self.staging_directory = os.path.join(
         os.path.dirname(self.out_directory), _BASE_STAGING_DIRECTORY,
@@ -94,8 +93,9 @@ class Launcher(abstract_launcher.AbstractLauncher):
 
     # Ensure the path, relative to the content of the ELF Loader, to the
     # Evergreen target and its content are passed as command line switches.
-    library_path_param = '--evergreen_library=app/{}/lib/lib{}'.format(
-        self.target_name, self.target_name)
+    library_path_value = os.path.join('app', self.target_name, 'lib',
+                                      f'lib{self.target_name}')
+    library_path_param = f'--evergreen_library={library_path_value}'
     if self.use_compressed_library:
       if self.target_name != 'cobalt':
         raise ValueError(
@@ -106,7 +106,7 @@ class Launcher(abstract_launcher.AbstractLauncher):
 
     target_command_line_params = [
         library_path_param,
-        '--evergreen_content=app/{}/content'.format(self.target_name)
+        f'--evergreen_content=app/{self.target_name}/content'
     ]
 
     if self.target_command_line_params:
@@ -172,16 +172,13 @@ class Launcher(abstract_launcher.AbstractLauncher):
       shutil.rmtree(self.staging_directory)
     os.makedirs(self.staging_directory)
 
-    if os.path.exists(os.path.join(self.loader_out_directory, 'install')):
-      # TODO: Make the Linux launcher run from the install_directory
-      if 'linux' in self.loader_platform:
-        self._StageTargetsAndContentsGnLinux()
-      else:
-        self._StageTargetsAndContentsGnRaspi()
+    # TODO(b/267568637): Make the Linux launcher run from the install_directory.
+    if 'linux' in self.loader_platform:
+      self._StageTargetsAndContentsLinux()
     else:
-      self._StageTargetsAndContentsGyp()
+      self._StageTargetsAndContentsRaspi()
 
-  def _StageTargetsAndContentsGnLinux(self):
+  def _StageTargetsAndContentsLinux(self):
     """Stage targets and their contents for GN builds for Linux platforms."""
     content_subdir = os.path.join('usr', 'share', 'cobalt')
 
@@ -211,14 +208,14 @@ class Launcher(abstract_launcher.AbstractLauncher):
     target_content_dst = os.path.join(target_staging_dir, 'content')
     shutil.copytree(target_content_src, target_content_dst)
 
-    shlib_name = 'lib{}'.format(self.target_name)
+    shlib_name = f'lib{self.target_name}'
     shlib_name += '.lz4' if self.use_compressed_library else '.so'
     target_binary_src = os.path.join(target_install_path, 'lib', shlib_name)
     target_binary_dst = os.path.join(target_staging_dir, 'lib', shlib_name)
     os.makedirs(os.path.join(target_staging_dir, 'lib'))
     shutil.copy(target_binary_src, target_binary_dst)
 
-  def _StageTargetsAndContentsGnRaspi(self):
+  def _StageTargetsAndContentsRaspi(self):
     """Stage targets and their contents for GN builds for Raspi platforms."""
     # TODO(b/218889313): `content` is hardcoded on raspi and must be in the same
     # directory as the binaries.
@@ -250,7 +247,6 @@ class Launcher(abstract_launcher.AbstractLauncher):
                                        _CRASHPAD_TARGET)
     crashpad_target_dst = os.path.join(staging_directory_loader,
                                        _CRASHPAD_TARGET)
-    os.makedirs(crashpad_target_dst)
     shutil.copy(crashpad_target_src, crashpad_target_dst)
 
     # Copy target content and binary
@@ -265,49 +261,12 @@ class Launcher(abstract_launcher.AbstractLauncher):
     target_content_dst = os.path.join(target_staging_dir, 'content')
     shutil.copytree(target_content_src, target_content_dst)
 
-    shlib_name = 'lib{}'.format(self.target_name)
+    shlib_name = f'lib{self.target_name}'
     shlib_name += '.lz4' if self.use_compressed_library else '.so'
     target_binary_src = os.path.join(target_install_path, 'lib', shlib_name)
     target_binary_dst = os.path.join(target_staging_dir, 'lib', shlib_name)
     os.makedirs(os.path.join(target_staging_dir, 'lib'))
     shutil.copy(target_binary_src, target_binary_dst)
-
-  def _StageTargetsAndContentsGyp(self):
-    """Stage targets and their contents for GYP builds."""
-    # <outpath>/deploy/elf_loader_sandbox
-    staging_directory_loader = os.path.join(self.staging_directory, 'deploy',
-                                            self.loader_target)
-
-    # <outpath>/deploy/elf_loader_sandbox/content/app/nplb/
-    staging_directory_evergreen = os.path.join(staging_directory_loader,
-                                               'content', 'app',
-                                               self.target_name)
-
-    # Make a hard copy of the ELF Loader's install_directory in the location
-    # specified by |staging_directory_loader|. A symbolic link here would cause
-    # future symbolic links to fall through to the original out-directories.
-    shutil.copytree(
-        os.path.join(self.loader_out_directory, 'deploy', self.loader_target),
-        staging_directory_loader)
-    shutil.copy(
-        os.path.join(self.loader_out_directory, 'deploy', _CRASHPAD_TARGET,
-                     _CRASHPAD_TARGET), staging_directory_loader)
-
-    port_symlink.MakeSymLink(
-        os.path.join(self.out_directory, 'deploy', self.target_name),
-        staging_directory_evergreen)
-
-    # TODO: Make the Linux launcher run from the install_directory, no longer
-    #       create these symlinks, and remove the NOTE from the docstring.
-    port_symlink.MakeSymLink(
-        os.path.join(staging_directory_loader, self.loader_target),
-        os.path.join(self.staging_directory, self.loader_target))
-    port_symlink.MakeSymLink(
-        os.path.join(staging_directory_loader, _CRASHPAD_TARGET),
-        os.path.join(self.staging_directory, _CRASHPAD_TARGET))
-    port_symlink.MakeSymLink(
-        os.path.join(staging_directory_loader, 'content'),
-        os.path.join(self.staging_directory, 'content'))
 
   def SupportsSuspendResume(self):
     return self.launcher.SupportsSuspendResume()

@@ -46,6 +46,7 @@ class ServiceWorkerRegistrationMap {
  public:
   explicit ServiceWorkerRegistrationMap(
       const ServiceWorkerPersistentSettings::Options& options);
+  ~ServiceWorkerRegistrationMap() { AbortAllActive(); }
 
   // https://www.w3.org/TR/2022/CRD-service-workers-20220712/#get-registration-algorithm
   scoped_refptr<ServiceWorkerRegistrationObject> GetRegistration(
@@ -77,6 +78,8 @@ class ServiceWorkerRegistrationMap {
   // Registration since these are the cases in which a service worker
   // registration's active_worker or waiting_worker are updated.
   void PersistRegistration(const url::Origin& storage_key, const GURL& scope);
+
+  void ReadPersistentSettings();
 
  private:
   // ThreadChecker for use by the methods operating on the registration map.

@@ -27,8 +27,8 @@
 #include "base/optional.h"
 #include "base/sequence_checker.h"
 #include "base/threading/thread.h"
-#include "cobalt/extension/demuxer.h"
 #include "cobalt/media/progressive/data_source_reader.h"
+#include "starboard/extension/demuxer.h"
 #include "third_party/chromium/media/base/audio_decoder_config.h"
 #include "third_party/chromium/media/base/decoder_buffer.h"
 #include "third_party/chromium/media/base/demuxer.h"
@@ -69,7 +69,7 @@ class DemuxerExtensionStream : public ::media::DemuxerStream {
   size_t GetTotalBufferSize() const;
 
   // DemuxerStream implementation:
-  void Read(ReadCB read_cb) override;
+  void Read(int max_number_of_buffers_to_read, ReadCB read_cb) override;
   ::media::AudioDecoderConfig audio_decoder_config() override;
   ::media::VideoDecoderConfig video_decoder_config() override;
   Type type() const override;

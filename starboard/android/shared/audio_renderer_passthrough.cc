@@ -73,24 +73,24 @@ int ParseAc3SyncframeAudioSampleCount(const uint8_t* buffer, int size) {
 }  // namespace
 
 AudioRendererPassthrough::AudioRendererPassthrough(
-    const SbMediaAudioSampleInfo& audio_sample_info,
+    const AudioStreamInfo& audio_stream_info,
     SbDrmSystem drm_system,
     bool enable_audio_device_callback)
-    : audio_sample_info_(audio_sample_info),
+    : audio_stream_info_(audio_stream_info),
       enable_audio_device_callback_(enable_audio_device_callback) {
-  SB_DCHECK(audio_sample_info_.codec == kSbMediaAudioCodecAc3 ||
-            audio_sample_info_.codec == kSbMediaAudioCodecEac3);
+  SB_DCHECK(audio_stream_info_.codec == kSbMediaAudioCodecAc3 ||
+            audio_stream_info_.codec == kSbMediaAudioCodecEac3);
   if (SbDrmSystemIsValid(drm_system)) {
     SB_LOG(INFO) << "Creating AudioDecoder as decryptor.";
-    scoped_ptr<AudioDecoder> audio_decoder(new AudioDecoder(
-        audio_sample_info_.codec, audio_sample_info, drm_system));
+    scoped_ptr<AudioDecoder> audio_decoder(
+        new AudioDecoder(audio_stream_info, drm_system));
     if (audio_decoder->is_valid()) {
       decoder_.reset(audio_decoder.release());
     }
   } else {
     SB_LOG(INFO) << "Creating AudioDecoderPassthrough.";
     decoder_.reset(
-        new AudioDecoderPassthrough(audio_sample_info_.samples_per_second));
+        new AudioDecoderPassthrough(audio_stream_info_.samples_per_second));
   }
 }
 
@@ -123,10 +123,9 @@ void AudioRendererPassthrough::Initialize(const ErrorCB& error_cb,
       std::bind(&AudioRendererPassthrough::OnDecoderOutput, this), error_cb);
 }
 
-void AudioRendererPassthrough::WriteSample(
-    const scoped_refptr<InputBuffer>& input_buffer) {
+void AudioRendererPassthrough::WriteSamples(const InputBuffers& input_buffers) {
   SB_DCHECK(BelongsToCurrentThread());
-  SB_DCHECK(input_buffer);
+  SB_DCHECK(!input_buffers.empty());
   SB_DCHECK(can_accept_more_data_.load());
 
   if (!audio_track_thread_) {
@@ -138,14 +137,14 @@ void AudioRendererPassthrough::WriteSample(
 
   if (frames_per_input_buffer_ == 0) {
     frames_per_input_buffer_ = ParseAc3SyncframeAudioSampleCount(
-        input_buffer->data(), input_buffer->size());
+        input_buffers.front()->data(), input_buffers.front()->size());
     SB_LOG(INFO) << "Got frames per input buffer " << frames_per_input_buffer_;
   }
 
   can_accept_more_data_.store(false);
 
   decoder_->Decode(
-      input_buffer,
+      input_buffers,
       std::bind(&AudioRendererPassthrough::OnDecoderConsumed, this));
 }
 
@@ -327,12 +326,12 @@ SbTime AudioRendererPassthrough::GetCurrentMediaTime(bool* is_playing,
     SB_DCHECK(now >= stopped_at_);
     auto time_elapsed = now - stopped_at_;
     int64_t frames_played =
-        time_elapsed * audio_sample_info_.samples_per_second / kSbTimeSecond;
+        time_elapsed * audio_stream_info_.samples_per_second / kSbTimeSecond;
     int64_t total_frames_played =
         frames_played + playback_head_position_when_stopped_;
     total_frames_played = std::min(total_frames_played, total_frames_written_);
     return seek_to_time_ + total_frames_played * kSbTimeSecond /
-                               audio_sample_info_.samples_per_second;
+                               audio_stream_info_.samples_per_second;
   }
 
   SbTime updated_at;
@@ -348,7 +347,7 @@ SbTime AudioRendererPassthrough::GetCurrentMediaTime(bool* is_playing,
   //       returned on pause, after an adjusted time has been returned.
   SbTime playback_time =
       seek_to_time_ + playback_head_position * kSbTimeSecond /
-                          audio_sample_info_.samples_per_second;
+                          audio_stream_info_.samples_per_second;
 
   // When underlying AudioTrack is paused, we use returned playback time
   // directly. Note that we should not use |paused_| or |playback_rate_| here.
@@ -392,12 +391,12 @@ void AudioRendererPassthrough::CreateAudioTrackAndStartProcessing() {
   }
 
   std::unique_ptr<AudioTrackBridge> audio_track_bridge(new AudioTrackBridge(
-      audio_sample_info_.codec == kSbMediaAudioCodecAc3
+      audio_stream_info_.codec == kSbMediaAudioCodecAc3
           ? kSbMediaAudioCodingTypeAc3
           : kSbMediaAudioCodingTypeDolbyDigitalPlus,
       optional<SbMediaAudioSampleType>(),  // Not required in passthrough mode
-      audio_sample_info_.number_of_channels,
-      audio_sample_info_.samples_per_second, kPreferredBufferSizeInBytes,
+      audio_stream_info_.number_of_channels,
+      audio_stream_info_.samples_per_second, kPreferredBufferSizeInBytes,
       enable_audio_device_callback_, false /* enable_pcm_content_type_movie */,
       kTunnelModeAudioSessionId, false /* is_web_audio */));
 
@@ -535,14 +534,18 @@ void AudioRendererPassthrough::UpdateStatusAndWriteData(
                  "has likely changed. Restarting playback.";
           error_cb_(kSbPlayerErrorCapabilityChanged,
                     "Audio device capability changed");
-          audio_track_bridge_->PauseAndFlush();
-          return;
+        } else {
+          // `kSbPlayerErrorDecode` is used for general SbPlayer error, there is
+          // no error code corresponding to audio sink.
+          error_cb_(
+              kSbPlayerErrorDecode,
+              FormatString("Error while writing frames: %d", samples_written));
+          SB_LOG(INFO) << "Encountered kSbPlayerErrorDecode while writing "
+                          "frames, error: "
+                       << samples_written;
         }
-        // `kSbPlayerErrorDecode` is used for general SbPlayer error, there is
-        // no error code corresponding to audio sink.
-        error_cb_(
-            kSbPlayerErrorDecode,
-            FormatString("Error while writing frames: %d", samples_written));
+        audio_track_bridge_->PauseAndFlush();
+        return;
       }
       decoded_audio_writing_offset_ += samples_written;
 
@@ -566,7 +569,7 @@ void AudioRendererPassthrough::UpdateStatusAndWriteData(
   if (stop_called_ && !end_of_stream_played_.load()) {
     auto time_elapsed = SbTimeGetMonotonicNow() - stopped_at_;
     auto frames_played =
-        time_elapsed * audio_sample_info_.samples_per_second / kSbTimeSecond;
+        time_elapsed * audio_stream_info_.samples_per_second / kSbTimeSecond;
     if (frames_played + playback_head_position_when_stopped_ >=
         total_frames_written_on_audio_track_thread_) {
       end_of_stream_played_.store(true);

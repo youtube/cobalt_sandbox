@@ -32,28 +32,27 @@ namespace filter {
 
 class StubAudioDecoder : public AudioDecoder, private JobQueue::JobOwner {
  public:
-  StubAudioDecoder(SbMediaAudioCodec audio_codec,
-                   const SbMediaAudioSampleInfo& audio_sample_info);
+  explicit StubAudioDecoder(const media::AudioStreamInfo& audio_stream_info);
   ~StubAudioDecoder() { Reset(); }
 
   void Initialize(const OutputCB& output_cb, const ErrorCB& error_cb) override;
 
-  void Decode(const scoped_refptr<InputBuffer>& input_buffer,
+  void Decode(const InputBuffers& input_buffer,
               const ConsumedCB& consumed_cb) override;
   void WriteEndOfStream() override;
   scoped_refptr<DecodedAudio> Read(int* samples_per_second) override;
   void Reset() override;
 
  private:
-  void DecodeOneBuffer(const scoped_refptr<InputBuffer>& input_buffer,
-                       const ConsumedCB& consumed_cb);
+  void DecodeBuffers(const InputBuffers& input_buffers,
+                     const ConsumedCB& consumed_cb);
+  void DecodeOneBuffer(const scoped_refptr<InputBuffer>& input_buffer);
   void DecodeEndOfStream();
 
   OutputCB output_cb_;
   ErrorCB error_cb_;
   SbMediaAudioSampleType sample_type_;
-  SbMediaAudioCodec audio_codec_;
-  starboard::media::AudioSampleInfo audio_sample_info_;
+  media::AudioStreamInfo audio_stream_info_;
 
   scoped_ptr<starboard::player::JobThread> decoder_thread_;
   Mutex decoded_audios_mutex_;

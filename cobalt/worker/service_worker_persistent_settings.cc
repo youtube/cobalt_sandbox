@@ -29,11 +29,13 @@
 #include "cobalt/script/exception_message.h"
 #include "cobalt/script/promise.h"
 #include "cobalt/script/script_value.h"
+#include "cobalt/web/cache_utils.h"
 #include "cobalt/web/context.h"
 #include "cobalt/web/environment_settings.h"
 #include "cobalt/worker/service_worker_jobs.h"
 #include "cobalt/worker/service_worker_registration_object.h"
 #include "cobalt/worker/service_worker_update_via_cache.h"
+#include "cobalt/worker/worker_global_scope.h"
 #include "net/base/completion_once_callback.h"
 #include "net/disk_cache/cobalt/resource_type.h"
 #include "url/gurl.h"
@@ -54,10 +56,10 @@ const char kSettingsScopeUrlKey[] = "scope_url";
 const char kSettingsUpdateViaCacheModeKey[] = "update_via_cache_mode";
 const char kSettingsWaitingWorkerKey[] = "waiting_worker";
 const char kSettingsActiveWorkerKey[] = "active_worker";
+const char kSettingsLastUpdateCheckTimeKey[] = "last_update_check_time";
 
 // ServicerWorkerObject persistent settings keys.
 const char kSettingsOptionsNameKey[] = "options_name";
-const char kSettingsServiceWorkerStateKey[] = "service_worker_state";
 const char kSettingsScriptUrlKey[] = "script_url";
 const char kSettingsScriptResourceMapScriptUrlsKey[] =
     "script_resource_map_script_urls";
@@ -147,20 +149,32 @@ void ServiceWorkerPersistentSettings::ReadServiceWorkerRegistrationMapSettings(
                               base::Value::Type::DICTIONARY)) {
       worker_key = kSettingsActiveWorkerKey;
       if (!CheckPersistentValue(key_string, worker_key, dict,
-                                base::Value::Type::DICTIONARY)) {
-        // Neither the waiting_worker or active_worker were correctly read
-        // from persistent settings.
+                                base::Value::Type::DICTIONARY))
         continue;
-      }
     }
-    if (!ReadServiceWorkerObjectSettings(registration, key_string,
-                                         std::move(dict[worker_key]),
-                                         worker_key)) {
+    if (!ReadServiceWorkerObjectSettings(
+            registration, key_string, std::move(dict[worker_key]), worker_key))
       continue;
+
+    if (CheckPersistentValue(key_string, kSettingsLastUpdateCheckTimeKey, dict,
+                             base::Value::Type::DOUBLE)) {
+      double last_update_check_time =
+          dict[kSettingsLastUpdateCheckTimeKey]->GetDouble();
+      registration->set_last_update_check_time(
+          base::Time::FromDeltaSinceWindowsEpoch(
+              base::TimeDelta::FromMicroseconds(
+                  (int64_t)dict[kSettingsLastUpdateCheckTimeKey]
+                      ->GetDouble())));
     }
 
+    // Persisted registration and worker are valid, add the registration
+    // to the registration_map and key_set_.
     key_set_.insert(key_string);
     registration_map.insert(std::make_pair(key, registration));
+
+    // TODO(b/228904017)
+    // Not in spec. Run SoftUpdate on the new registration.
+    options_.service_worker_jobs->SoftUpdate(registration);
   }
 }
 
@@ -172,6 +186,7 @@ bool ServiceWorkerPersistentSettings::ReadServiceWorkerObjectSettings(
       kSettingsOptionsNameKey, base::Value::Type::STRING);
   if (options_name_value == nullptr) return false;
   ServiceWorkerObject::Options options(options_name_value->GetString(),
+                                       options_.web_settings,
                                        options_.network_module, registration);
   options.web_options.platform_info = options_.platform_info;
   options.web_options.service_worker_jobs = options_.service_worker_jobs;
@@ -181,11 +196,6 @@ bool ServiceWorkerPersistentSettings::ReadServiceWorkerObjectSettings(
       kSettingsScriptUrlKey, base::Value::Type::STRING);
   if (script_url_value == nullptr) return false;
   worker->set_script_url(GURL(script_url_value->GetString()));
-
-  base::Value* state_value = value_dict->FindKeyOfType(
-      kSettingsServiceWorkerStateKey, base::Value::Type::INTEGER);
-  if (state_value == nullptr) return false;
-  worker->set_state(static_cast<ServiceWorkerState>(state_value->GetInt()));
 
   base::Value* skip_waiting_value = value_dict->FindKeyOfType(
       kSettingsSkipWaitingKey, base::Value::Type::BOOLEAN);
@@ -220,15 +230,17 @@ bool ServiceWorkerPersistentSettings::ReadServiceWorkerObjectSettings(
     if (script_url_value.is_string()) {
       auto script_url_string = script_url_value.GetString();
       auto script_url = GURL(script_url_string);
-      std::unique_ptr<std::vector<uint8_t>> data =
-          cache_->Retrieve(disk_cache::ResourceType::kServiceWorkerScript,
-                           cache_->CreateKey(key_string + script_url_string));
+      std::unique_ptr<std::vector<uint8_t>> data = cache_->Retrieve(
+          disk_cache::ResourceType::kServiceWorkerScript,
+          web::cache_utils::GetKey(key_string + script_url_string));
       if (data == nullptr) {
         return false;
       }
       std::string script_string(data->begin(), data->end());
-      script_resource_map[script_url] =
-          std::make_unique<std::string>(script_string);
+      auto result = script_resource_map.insert(std::make_pair(
+          script_url,
+          ScriptResource(std::make_unique<std::string>(script_string))));
+      DCHECK(result.second);
     }
   }
   if (script_resource_map.size() == 0) {
@@ -236,11 +248,10 @@ bool ServiceWorkerPersistentSettings::ReadServiceWorkerObjectSettings(
   }
   worker->set_script_resource_map(std::move(script_resource_map));
 
-  if (worker_key_string == kSettingsWaitingWorkerKey) {
-    registration->set_waiting_worker(worker);
-  } else {
-    registration->set_active_worker(worker);
-  }
+  options_.service_worker_jobs->UpdateWorkerState(worker,
+                                                  kServiceWorkerStateActivated);
+  registration->set_active_worker(worker);
+
   return true;
 }
 
@@ -298,6 +309,12 @@ void ServiceWorkerPersistentSettings::
       kSettingsUpdateViaCacheModeKey,
       std::make_unique<base::Value>(registration->update_via_cache_mode()));
 
+  dict.try_emplace(kSettingsLastUpdateCheckTimeKey,
+                   std::make_unique<base::Value>(static_cast<double>(
+                       registration->last_update_check_time()
+                           .ToDeltaSinceWindowsEpoch()
+                           .InMicroseconds())));
+
   persistent_settings_->SetPersistentSetting(
       key_string, std::make_unique<base::Value>(dict));
 }
@@ -311,10 +328,6 @@ ServiceWorkerPersistentSettings::WriteServiceWorkerObjectSettings(
   dict.try_emplace(
       kSettingsOptionsNameKey,
       std::make_unique<base::Value>(service_worker_object->options_name()));
-
-  dict.try_emplace(
-      kSettingsServiceWorkerStateKey,
-      std::make_unique<base::Value>(service_worker_object->state()));
 
   dict.try_emplace(kSettingsScriptUrlKey,
                    std::make_unique<base::Value>(
@@ -345,11 +358,12 @@ ServiceWorkerPersistentSettings::WriteServiceWorkerObjectSettings(
     std::string script_url_string = script_resource.first.spec();
     script_urls_value.GetList().push_back(base::Value(script_url_string));
     // Use Cache::Store to persist the script resource.
-    std::string resource = *(script_resource.second.get());
+    std::string resource = *(script_resource.second.content.get());
     std::vector<uint8_t> data(resource.begin(), resource.end());
     cache_->Store(
         disk_cache::ResourceType::kServiceWorkerScript,
-        cache_->CreateKey(registration_key_string + script_url_string), data,
+        web::cache_utils::GetKey(registration_key_string + script_url_string),
+        data,
         /* metadata */ base::nullopt);
   }
   dict.try_emplace(kSettingsScriptResourceMapScriptUrlsKey,
@@ -404,8 +418,9 @@ void ServiceWorkerPersistentSettings::RemoveServiceWorkerObjectSettings(
       auto script_url_value = std::move(script_urls_list[i]);
       if (script_url_value.is_string()) {
         auto script_url_string = script_url_value.GetString();
-        cache_->Delete(disk_cache::ResourceType::kServiceWorkerScript,
-                       cache_->CreateKey(key_string + script_url_string));
+        cache_->Delete(
+            disk_cache::ResourceType::kServiceWorkerScript,
+            web::cache_utils::GetKey(key_string + script_url_string));
       }
     }
   }

@@ -31,29 +31,28 @@
 #include "cobalt/base/tokens.h"
 #include "cobalt/cssom/map_to_mesh_function.h"
 #include "cobalt/dom/document.h"
+#include "cobalt/dom/eme/media_encrypted_event.h"
+#include "cobalt/dom/eme/media_encrypted_event_init.h"
 #include "cobalt/dom/html_element_context.h"
 #include "cobalt/dom/html_video_element.h"
+#include "cobalt/dom/media_settings.h"
 #include "cobalt/dom/media_source.h"
 #include "cobalt/dom/media_source_ready_state.h"
 #include "cobalt/loader/fetcher_factory.h"
 #include "cobalt/media/url_fetcher_data_source.h"
 #include "cobalt/media/web_media_player_factory.h"
 #include "cobalt/script/script_value_factory.h"
+#include "cobalt/web/context.h"
 #include "cobalt/web/csp_delegate.h"
 #include "cobalt/web/dom_exception.h"
 #include "cobalt/web/event.h"
-
-#include "cobalt/dom/eme/media_encrypted_event.h"
-#include "cobalt/dom/eme/media_encrypted_event_init.h"
+#include "cobalt/web/web_settings.h"
 
 namespace cobalt {
 namespace dom {
 
 using media::DataSource;
 using media::WebMediaPlayer;
-
-const char HTMLMediaElement::kMediaSourceUrlProtocol[] = "blob";
-const double HTMLMediaElement::kMaxTimeupdateEventFrequency = 0.25;
 
 namespace {
 
@@ -68,6 +67,9 @@ namespace {
 #define MLOG() EAT_STREAM_PARAMETERS
 
 #endif  // LOG_MEDIA_ELEMENT_ACTIVITIES
+
+constexpr char kMediaSourceUrlProtocol[] = "blob";
+constexpr int kTimeupdateEventIntervalInMilliseconds = 200;
 
 DECLARE_INSTANCE_COUNTER(HTMLMediaElement);
 
@@ -818,8 +820,8 @@ void HTMLMediaElement::LoadResource(const GURL& initial_url,
                                     const std::string& key_system) {
   DLOG(INFO) << "HTMLMediaElement::LoadResource(" << initial_url << ", "
              << content_type << ", " << key_system;
-  DCHECK(player_);
   if (!player_) {
+    LOG(WARNING) << "LoadResource() without player.";
     return;
   }
 
@@ -1024,10 +1026,19 @@ void HTMLMediaElement::StartPlaybackProgressTimer() {
   }
 
   previous_progress_time_ = base::Time::Now().ToDoubleT();
+
+  DCHECK(environment_settings());
+  DCHECK(environment_settings()->context());
+  DCHECK(environment_settings()->context()->web_settings());
+
+  const auto& media_settings =
+      environment_settings()->context()->web_settings()->media_settings();
+  const int interval_in_milliseconds =
+      media_settings.GetMediaElementTimeupdateEventIntervalInMilliseconds()
+          .value_or(kTimeupdateEventIntervalInMilliseconds);
+
   playback_progress_timer_.Start(
-      FROM_HERE,
-      base::TimeDelta::FromMilliseconds(
-          static_cast<int64>(kMaxTimeupdateEventFrequency * 1000)),
+      FROM_HERE, base::TimeDelta::FromMilliseconds(interval_in_milliseconds),
       this, &HTMLMediaElement::OnPlaybackProgressTimer);
 }
 

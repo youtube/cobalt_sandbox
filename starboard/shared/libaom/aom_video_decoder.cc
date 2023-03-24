@@ -58,10 +58,10 @@ void VideoDecoder::Initialize(const DecoderStatusCB& decoder_status_cb,
   error_cb_ = error_cb;
 }
 
-void VideoDecoder::WriteInputBuffer(
-    const scoped_refptr<InputBuffer>& input_buffer) {
+void VideoDecoder::WriteInputBuffers(const InputBuffers& input_buffers) {
   SB_DCHECK(BelongsToCurrentThread());
-  SB_DCHECK(input_buffer);
+  SB_DCHECK(input_buffers.size() == 1);
+  SB_DCHECK(input_buffers[0]);
   SB_DCHECK(decoder_status_cb_);
 
   if (stream_ended_) {
@@ -74,6 +74,7 @@ void VideoDecoder::WriteInputBuffer(
     SB_DCHECK(decoder_thread_);
   }
 
+  auto input_buffer = input_buffers[0];
   decoder_thread_->job_queue()->Schedule(
       std::bind(&VideoDecoder::DecodeOneBuffer, this, input_buffer));
 }
@@ -183,11 +184,11 @@ void VideoDecoder::DecodeOneBuffer(
   SB_DCHECK(decoder_thread_->job_queue()->BelongsToCurrentThread());
   SB_DCHECK(input_buffer);
 
-  const SbMediaVideoSampleInfo& sample_info = input_buffer->video_sample_info();
-  if (!context_ || sample_info.frame_width != current_frame_width_ ||
-      sample_info.frame_height != current_frame_height_) {
-    current_frame_width_ = sample_info.frame_width;
-    current_frame_height_ = sample_info.frame_height;
+  const auto& stream_info = input_buffer->video_stream_info();
+  if (!context_ || stream_info.frame_width != current_frame_width_ ||
+      stream_info.frame_height != current_frame_height_) {
+    current_frame_width_ = stream_info.frame_width;
+    current_frame_height_ = stream_info.frame_height;
     TeardownCodec();
     InitializeCodec();
   }

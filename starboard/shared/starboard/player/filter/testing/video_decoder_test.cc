@@ -76,6 +76,23 @@ class VideoDecoderTest
   VideoDecoderTestFixture fixture_;
 };
 
+std::string GetVideoDecoderTestConfigName(
+    ::testing::TestParamInfo<std::tuple<VideoTestParam, bool>> info) {
+  const char* filename = std::get<0>(std::get<0>(info.param));
+  SbPlayerOutputMode output_mode = std::get<1>(std::get<0>(info.param));
+  bool using_stub_decoder = std::get<1>(info.param);
+
+  std::string config_name(FormatString(
+      "%s_%s%s", filename,
+      output_mode == kSbPlayerOutputModeDecodeToTexture ? "DecodeToTexture"
+                                                        : "Punchout",
+      using_stub_decoder ? "__stub" : ""));
+
+  std::replace(config_name.begin(), config_name.end(), '.', '_');
+
+  return config_name;
+}
+
 TEST_P(VideoDecoderTest, PrerollFrameCount) {
   EXPECT_GT(fixture_.video_decoder()->GetPrerollFrameCount(), 0);
 }
@@ -141,8 +158,7 @@ TEST_P(VideoDecoderTest, ThreeMoreDecoders) {
           SbMediaAudioSampleInfo dummy_audio_sample_info = {
               kSbMediaAudioCodecNone};
           PlayerComponents::Factory::CreationParameters creation_parameters(
-              fixture_.dmp_reader().video_codec(),
-              CreateVideoSampleInfo(fixture_.dmp_reader().video_codec()),
+              CreateVideoStreamInfo(fixture_.dmp_reader().video_codec()),
               &players[i], output_mode,
               fake_graphics_context_provider_.decoder_target_provider(),
               nullptr);
@@ -484,7 +500,8 @@ TEST_P(VideoDecoderTest, DecodeFullGOP) {
 
 INSTANTIATE_TEST_CASE_P(VideoDecoderTests,
                         VideoDecoderTest,
-                        Combine(ValuesIn(GetSupportedVideoTests()), Bool()));
+                        Combine(ValuesIn(GetSupportedVideoTests()), Bool()),
+                        GetVideoDecoderTestConfigName);
 
 }  // namespace
 }  // namespace testing

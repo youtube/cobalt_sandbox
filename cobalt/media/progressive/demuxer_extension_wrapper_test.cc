@@ -25,8 +25,8 @@
 #include "base/threading/platform_thread.h"
 #include "base/threading/sequenced_task_runner_handle.h"
 #include "base/time/time.h"
-#include "cobalt/extension/demuxer.h"
 #include "cobalt/media/decoder_buffer_allocator.h"
+#include "starboard/extension/demuxer.h"
 #include "testing/gmock/include/gmock/gmock.h"
 #include "testing/gtest/include/gtest/gtest.h"
 #include "third_party/chromium/media/base/demuxer.h"
@@ -37,6 +37,7 @@ namespace {
 
 using ::testing::_;
 using ::testing::AtMost;
+using ::testing::ElementsAre;
 using ::testing::ElementsAreArray;
 using ::testing::ExplainMatchResult;
 using ::testing::Invoke;
@@ -548,14 +549,17 @@ TEST_F(DemuxerExtensionWrapperTest, ReadsAudioData) {
                                                                 : streams[1];
 
   base::MockCallback<base::OnceCallback<void(
-      ::media::DemuxerStream::Status, scoped_refptr<::media::DecoderBuffer>)>>
+      ::media::DemuxerStream::Status,
+      const std::vector<scoped_refptr<::media::DecoderBuffer>>&)>>
       read_cb;
   base::WaitableEvent read_done;
+  std::vector<std::vector<uint8_t>> buffers;
+  buffers.push_back(buffer_data);
   EXPECT_CALL(read_cb, Run(::media::DemuxerStream::kOk,
-                           Pointee(BufferHasData(buffer_data))))
+                           ElementsAre(Pointee(BufferHasData(buffer_data)))))
       .WillOnce(InvokeWithoutArgs([&read_done]() { read_done.Signal(); }));
 
-  audio_stream->Read(read_cb.Get());
+  audio_stream->Read(1, read_cb.Get());
   EXPECT_TRUE(WaitForEvent(read_done));
 }
 
@@ -685,14 +689,17 @@ TEST_F(DemuxerExtensionWrapperTest, ReadsVideoData) {
                                                                 : streams[1];
 
   base::MockCallback<base::OnceCallback<void(
-      ::media::DemuxerStream::Status, scoped_refptr<::media::DecoderBuffer>)>>
+      ::media::DemuxerStream::Status,
+      const std::vector<scoped_refptr<::media::DecoderBuffer>>&)>>
       read_cb;
   base::WaitableEvent read_done;
+  std::vector<std::vector<uint8_t>> buffers;
+  buffers.push_back(buffer_data);
   EXPECT_CALL(read_cb, Run(::media::DemuxerStream::kOk,
-                           Pointee(BufferHasData(buffer_data))))
+                           ElementsAre(Pointee(BufferHasData(buffer_data)))))
       .WillOnce(InvokeWithoutArgs([&read_done]() { read_done.Signal(); }));
 
-  video_stream->Read(read_cb.Get());
+  video_stream->Read(1, read_cb.Get());
   EXPECT_TRUE(WaitForEvent(read_done));
 }
 

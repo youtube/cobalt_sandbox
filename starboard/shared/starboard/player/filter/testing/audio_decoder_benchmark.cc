@@ -46,8 +46,8 @@ class AudioDecoderHelper {
                                    kMaxNumberOfInputs)) {
     const bool kUseStubDecoder = false;
     SB_CHECK(number_of_inputs_ > 0);
-    SB_CHECK(CreateAudioComponents(kUseStubDecoder, dmp_reader_.audio_codec(),
-                                   dmp_reader_.audio_sample_info(),
+    SB_CHECK(CreateAudioComponents(kUseStubDecoder,
+                                   dmp_reader_.audio_stream_info(),
                                    &audio_decoder_, &audio_renderer_sink_));
     SB_CHECK(audio_decoder_);
     audio_decoder_->Initialize(std::bind(&AudioDecoderHelper::OnOutput, this),
@@ -92,7 +92,7 @@ class AudioDecoderHelper {
       return;
     }
     if (current_input_buffer_index_ < number_of_inputs_) {
-      audio_decoder_->Decode(GetAudioInputBuffer(current_input_buffer_index_),
+      audio_decoder_->Decode({GetAudioInputBuffer(current_input_buffer_index_)},
                              std::bind(&AudioDecoderHelper::OnConsumed, this));
       ++current_input_buffer_index_;
     } else {

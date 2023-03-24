@@ -70,26 +70,29 @@ void ServiceWorkerGlobalScope::ImportScripts(
             DCHECK(service_worker);
             // 3. Let url be request’s url.
             DCHECK(url.is_valid());
-            std::string* resource = service_worker->LookupScriptResource(url);
+            const ScriptResource* script_resource =
+                service_worker->LookupScriptResource(url);
+            std::string* resource_content =
+                script_resource ? script_resource->content.get() : nullptr;
             // 4. If serviceWorker’s state is not "parsed" or "installing":
             if (service_worker->state() != kServiceWorkerStateParsed &&
                 service_worker->state() != kServiceWorkerStateInstalling) {
               // 4.1. Return map[url] if it exists and a network error
               // otherwise.
-              if (!resource) {
+              if (!resource_content) {
                 web::DOMException::Raise(web::DOMException::kNetworkErr,
                                          exception_state);
               }
-              return resource;
+              return resource_content;
             }
 
             // 5. If map[url] exists:
-            if (resource) {
+            if (resource_content) {
               // 5.1. Append url to serviceWorker’s set of used scripts.
               service_worker->AppendToSetOfUsedScripts(url);
 
               // 5.2. Return map[url].
-              return resource;
+              return resource_content;
             }
 
             // 6. Let registration be serviceWorker’s containing service worker
@@ -106,7 +109,7 @@ void ServiceWorkerGlobalScope::ImportScripts(
             // a separate callback that gets passed to the ScriptLoader for the
             // FetcherFactory.
 
-            return resource;
+            return resource_content;
           },
           service_worker_object_),
       base::Bind(
@@ -188,11 +191,10 @@ script::HandlePromiseVoid ServiceWorkerGlobalScope::SkipWaiting() {
 
 void ServiceWorkerGlobalScope::StartFetch(
     const GURL& url,
-    std::unique_ptr<base::OnceCallback<void(std::unique_ptr<std::string>)>>
-        callback,
-    std::unique_ptr<base::OnceCallback<void(const net::LoadTimingInfo&)>>
+    base::OnceCallback<void(std::unique_ptr<std::string>)> callback,
+    base::OnceCallback<void(const net::LoadTimingInfo&)>
         report_load_timing_info,
-    std::unique_ptr<base::OnceClosure> fallback) {
+    base::OnceClosure fallback) {
   if (base::MessageLoop::current() !=
       environment_settings()->context()->message_loop()) {
     environment_settings()->context()->message_loop()->task_runner()->PostTask(
@@ -204,11 +206,11 @@ void ServiceWorkerGlobalScope::StartFetch(
     return;
   }
   if (!service_worker()) {
-    std::move(*fallback).Run();
+    std::move(fallback).Run();
     return;
   }
   // TODO: handle the following steps in
-  //       https://w3c.github.io/ServiceWorker/#handle-fetch.
+  //       https://www.w3.org/TR/2022/CRD-service-workers-20220712/#handle-fetch.
   // 22. If activeWorker’s state is "activating", wait for activeWorker’s state
   //     to become "activated".
   // 23. If the result of running the Run Service Worker algorithm with
@@ -217,14 +219,15 @@ void ServiceWorkerGlobalScope::StartFetch(
   auto* global_environment = get_global_environment(environment_settings());
   auto* isolate = global_environment->isolate();
   script::v8c::EntryScope entry_scope(isolate);
-  auto request =
-      web::cache_utils::CreateRequest(environment_settings(), url.spec());
+  auto request = web::cache_utils::CreateRequest(isolate, url.spec());
   if (!request) {
-    std::move(*fallback).Run();
+    std::move(fallback).Run();
     return;
   }
+
   FetchEventInit event_init;
-  event_init.set_request(request.value().GetScriptValue());
+  event_init.set_request(
+      web::cache_utils::FromV8Value(isolate, request.value()).GetScriptValue());
   scoped_refptr<FetchEvent> fetch_event =
       new FetchEvent(environment_settings(), base::Tokens::fetch(), event_init,
                      std::move(callback), std::move(report_load_timing_info));
@@ -232,7 +235,7 @@ void ServiceWorkerGlobalScope::StartFetch(
   DispatchEvent(fetch_event);
   // TODO: implement steps 25 and 26.
   if (!fetch_event->respond_with_called()) {
-    std::move(*fallback).Run();
+    std::move(fallback).Run();
   }
 }
 

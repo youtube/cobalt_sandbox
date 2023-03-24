@@ -47,7 +47,6 @@
 #include "cobalt/dom/mutation_observer_task_manager.h"
 #include "cobalt/dom/navigator.h"
 #include "cobalt/dom/window.h"
-#include "cobalt/extension/graphics.h"
 #include "cobalt/h5vcc/h5vcc.h"
 #include "cobalt/input/input_device_manager_fuzzer.h"
 #include "cobalt/math/matrix3_f.h"
@@ -60,6 +59,7 @@
 #include "starboard/atomic.h"
 #include "starboard/common/string.h"
 #include "starboard/configuration.h"
+#include "starboard/extension/graphics.h"
 #include "starboard/system.h"
 #include "starboard/time.h"
 #include "third_party/icu/source/i18n/unicode/timezone.h"
@@ -228,6 +228,7 @@ BrowserModule::BrowserModule(const GURL& url,
       event_dispatcher_(event_dispatcher),
       account_manager_(account_manager),
       is_rendered_(false),
+      is_web_module_rendered_(false),
       can_play_type_handler_(media::MediaModule::CreateCanPlayTypeHandler()),
       network_module_(network_module),
 #if SB_IS(EVERGREEN)
@@ -291,8 +292,8 @@ BrowserModule::BrowserModule(const GURL& url,
   ApplyAutoMemSettings();
 
   platform_info_.reset(new browser::UserAgentPlatformInfo());
-  service_worker_registry_.reset(
-      new ServiceWorkerRegistry(network_module, platform_info_.get()));
+  service_worker_registry_.reset(new ServiceWorkerRegistry(
+      &web_settings_, network_module, platform_info_.get()));
 
 #if SB_HAS(CORE_DUMP_HANDLER_SUPPORT)
   SbCoreDumpRegisterHandler(BrowserModule::CoreDumpHandler, this);
@@ -402,7 +403,7 @@ BrowserModule::BrowserModule(const GURL& url,
       platform_info_.get(), application_state_,
       base::Bind(&BrowserModule::QueueOnDebugConsoleRenderTreeProduced,
                  base::Unretained(this)),
-      network_module_, GetViewportSize(), GetResourceProvider(),
+      &web_settings_, network_module_, GetViewportSize(), GetResourceProvider(),
       kLayoutMaxRefreshFrequencyInHz,
       base::Bind(&BrowserModule::CreateDebugClient, base::Unretained(this)),
       base::Bind(&BrowserModule::OnMaybeFreeze, base::Unretained(this))));
@@ -547,7 +548,7 @@ void BrowserModule::Navigate(const GURL& url_reference) {
           platform_info_.get(), application_state_,
           base::Bind(&BrowserModule::QueueOnSplashScreenRenderTreeProduced,
                      base::Unretained(this)),
-          network_module_, viewport_size, GetResourceProvider(),
+          &web_settings_, network_module_, viewport_size, GetResourceProvider(),
           kLayoutMaxRefreshFrequencyInHz, fallback_splash_screen_url_,
           splash_screen_cache_.get(),
           base::Bind(&BrowserModule::DestroySplashScreen, weak_this_),
@@ -610,6 +611,7 @@ void BrowserModule::Navigate(const GURL& url_reference) {
   options.maybe_freeze_callback =
       base::Bind(&BrowserModule::OnMaybeFreeze, base::Unretained(this));
 
+  options.web_options.web_settings = &web_settings_;
   options.web_options.network_module = network_module_;
   options.web_options.service_worker_jobs =
       service_worker_registry_->service_worker_jobs();
@@ -797,8 +799,9 @@ void BrowserModule::OnRenderTreeProduced(
   // explicitly.
   renderer_submission.timeline_info.id = current_main_web_module_timeline_id_;
 
-  renderer_submission.on_rasterized_callbacks.push_back(base::Bind(
-      &BrowserModule::OnRendererSubmissionRasterized, base::Unretained(this)));
+  renderer_submission.on_rasterized_callbacks.push_back(
+      base::Bind(&BrowserModule::OnWebModuleRendererSubmissionRasterized,
+                 base::Unretained(this)));
 
   if (!splash_screen_) {
     render_tree_combiner_.SetTimelineLayer(main_web_module_layer_.get());
@@ -1516,6 +1519,23 @@ void BrowserModule::OnRendererSubmissionRasterized() {
   }
 }
 
+void BrowserModule::OnWebModuleRendererSubmissionRasterized() {
+  TRACE_EVENT0("cobalt::browser",
+               "BrowserModule::OnFirstWebModuleSubmissionRasterized()");
+  OnRendererSubmissionRasterized();
+  if (!is_web_module_rendered_) {
+    is_web_module_rendered_ = true;
+    const CobaltExtensionGraphicsApi* graphics_extension =
+        static_cast<const CobaltExtensionGraphicsApi*>(
+            SbSystemGetExtension(kCobaltExtensionGraphicsName));
+    if (graphics_extension &&
+        strcmp(graphics_extension->name, kCobaltExtensionGraphicsName) == 0 &&
+        graphics_extension->version >= 6) {
+      graphics_extension->ReportFullyDrawn();
+    }
+  }
+}
+
 #if defined(COBALT_CHECK_RENDER_TIMEOUT)
 void BrowserModule::OnPollForRenderTimeout(const GURL& url) {
   SbTime last_render_timestamp = static_cast<SbTime>(SbAtomicAcquire_Load64(
@@ -2048,8 +2068,9 @@ scoped_refptr<script::Wrappable> BrowserModule::CreateH5vccCallback(
   // The web_module_ member can not be safely used in this function.
 
   h5vcc::H5vcc::Settings h5vcc_settings;
-  h5vcc_settings.set_media_source_setting_func = base::Bind(
-      &WebModule::SetMediaSourceSetting, base::Unretained(web_module));
+  h5vcc_settings.set_web_setting_func =
+      base::Bind(&web::WebSettingsImpl::Set, base::Unretained(&web_settings_));
+  h5vcc_settings.media_module = media_module_.get();
   h5vcc_settings.network_module = network_module_;
 #if SB_IS(EVERGREEN)
   h5vcc_settings.updater_module = updater_module_;

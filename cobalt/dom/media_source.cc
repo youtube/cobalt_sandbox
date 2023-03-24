@@ -57,6 +57,8 @@
 #include "cobalt/base/polymorphic_downcast.h"
 #include "cobalt/base/tokens.h"
 #include "cobalt/dom/dom_settings.h"
+#include "cobalt/dom/media_settings.h"
+#include "cobalt/web/context.h"
 #include "cobalt/web/dom_exception.h"
 #include "cobalt/web/event.h"
 #include "starboard/media.h"
@@ -72,12 +74,13 @@ using ::media::CHUNK_DEMUXER_ERROR_EOS_STATUS_NETWORK_ERROR;
 using ::media::PIPELINE_OK;
 using ::media::PipelineStatus;
 
-auto GetMediaSettings(script::EnvironmentSettings* settings) {
-  DOMSettings* dom_settings =
-      base::polymorphic_downcast<DOMSettings*>(settings);
-  DCHECK(dom_settings);
-  DCHECK(dom_settings->media_source_settings());
-  return dom_settings->media_source_settings();
+const MediaSettings& GetMediaSettings(web::EnvironmentSettings* settings) {
+  DCHECK(settings);
+  DCHECK(settings->context());
+  DCHECK(settings->context()->web_settings());
+
+  const auto& web_settings = settings->context()->web_settings();
+  return web_settings->media_settings();
 }
 
 // If the system has more processors than the specified value, SourceBuffer
@@ -86,10 +89,10 @@ auto GetMediaSettings(script::EnvironmentSettings* settings) {
 // The default value is 1024, which effectively disable offloading by default.
 // Setting to a reasonably low value (say 0 or 2) will enable algorithm
 // offloading.
-bool IsAlgorithmOffloadEnabled(script::EnvironmentSettings* settings) {
+bool IsAlgorithmOffloadEnabled(web::EnvironmentSettings* settings) {
   int min_process_count_to_offload =
       GetMediaSettings(settings)
-          ->GetMinimumProcessorCountToOffloadAlgorithm()
+          .GetMinimumProcessorCountToOffloadAlgorithm()
           .value_or(1024);
   DCHECK_GE(min_process_count_to_offload, 0);
   return SbSystemGetNumberOfProcessors() >= min_process_count_to_offload;
@@ -99,21 +102,20 @@ bool IsAlgorithmOffloadEnabled(script::EnvironmentSettings* settings) {
 // behaviors.  For example, queued events will be dispatached immediately when
 // possible.
 // The default value is false.
-bool IsAsynchronousReductionEnabled(script::EnvironmentSettings* settings) {
-  return GetMediaSettings(settings)->IsAsynchronousReductionEnabled().value_or(
+bool IsAsynchronousReductionEnabled(web::EnvironmentSettings* settings) {
+  return GetMediaSettings(settings).IsAsynchronousReductionEnabled().value_or(
       false);
 }
 
 // If the size of a job that is part of an algorithm is less than or equal to
 // the return value of this function, the implementation will run the job
 // immediately instead of scheduling it to run later to reduce latency.
-// NOTE: This only works when IsAsynchronousReductionEnabled() returns true,
-//       and it is currently only enabled for buffer append.
-// The default value is 16 KB.  Set to 0 will disable immediate job completely.
-int GetMaxSizeForImmediateJob(script::EnvironmentSettings* settings) {
-  const int kDefaultMaxSize = 16 * 1024;
+// NOTE: This is currently only enabled for buffer append.
+// The default value is 0 KB, which disables immediate job completely.
+int GetMaxSizeForImmediateJob(web::EnvironmentSettings* settings) {
+  const int kDefaultMaxSize = 0;
   auto max_size =
-      GetMediaSettings(settings)->GetMaxSizeForImmediateJob().value_or(
+      GetMediaSettings(settings).GetMaxSizeForImmediateJob().value_or(
           kDefaultMaxSize);
   DCHECK_GE(max_size, 0);
   return max_size;
@@ -123,9 +125,12 @@ int GetMaxSizeForImmediateJob(script::EnvironmentSettings* settings) {
 
 MediaSource::MediaSource(script::EnvironmentSettings* settings)
     : web::EventTarget(settings),
-      algorithm_offload_enabled_(IsAlgorithmOffloadEnabled(settings)),
-      asynchronous_reduction_enabled_(IsAsynchronousReductionEnabled(settings)),
-      max_size_for_immediate_job_(GetMaxSizeForImmediateJob(settings)),
+      algorithm_offload_enabled_(
+          IsAlgorithmOffloadEnabled(environment_settings())),
+      asynchronous_reduction_enabled_(
+          IsAsynchronousReductionEnabled(environment_settings())),
+      max_size_for_immediate_job_(
+          GetMaxSizeForImmediateJob(environment_settings())),
       default_algorithm_runner_(asynchronous_reduction_enabled_),
       chunk_demuxer_(NULL),
       ready_state_(kMediaSourceReadyStateClosed),
@@ -577,9 +582,20 @@ bool MediaSource::MediaElementHasMaxVideoCapabilities() const {
 
 SerializedAlgorithmRunner<SourceBufferAlgorithm>*
 MediaSource::GetAlgorithmRunner(int job_size) {
+  if (!asynchronous_reduction_enabled_ &&
+      job_size <= max_size_for_immediate_job_) {
+    // `default_algorithm_runner_` won't run jobs immediately when
+    // `asynchronous_reduction_enabled_` is false, so we use
+    // `immediate_job_algorithm_runner_` instead, which always has asynchronous
+    // reduction enabled.
+    return &immediate_job_algorithm_runner_;
+  }
   if (!offload_algorithm_runner_) {
     return &default_algorithm_runner_;
   }
+  // The logic below is redundant as the code for immediate job can be
+  // consolidated with value of `asynchronous_reduction_enabled_` ignored.  It's
+  // kept as is to leave existing behavior unchanged.
   if (asynchronous_reduction_enabled_ &&
       job_size <= max_size_for_immediate_job_) {
     // Append without posting new tasks is only supported on the default runner.
@@ -599,8 +615,15 @@ void MediaSource::TraceMembers(script::Tracer* tracer) {
 }
 
 void MediaSource::SetReadyState(MediaSourceReadyState ready_state) {
-  if (ready_state == kMediaSourceReadyStateClosed) {
-    chunk_demuxer_ = NULL;
+  if (!offload_algorithm_runner_) {
+    // Setting `chunk_demuxer_` to NULL when there is an active algorithm
+    // running may cause crash.  So `chunk_demuxer_` is reset later in the
+    // function.
+    // When `offload_algorithm_runner_` is null, the logic is kept as is to
+    // ensure that the behavior stays the same when offload is not enabled.
+    if (ready_state == kMediaSourceReadyStateClosed) {
+      chunk_demuxer_ = NULL;
+    }
   }
 
   if (ready_state_ == ready_state) {
@@ -640,6 +663,7 @@ void MediaSource::SetReadyState(MediaSourceReadyState ready_state) {
     algorithm_process_thread_.reset();
   }
   offload_algorithm_runner_.reset();
+  chunk_demuxer_ = NULL;
 }
 
 bool MediaSource::IsUpdating() const {

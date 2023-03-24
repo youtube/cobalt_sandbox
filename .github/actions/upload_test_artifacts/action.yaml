@@ -13,6 +13,8 @@ runs:
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v1
     - name: Configure Environment
+      env:
+        WORKFLOW: ${{ github.workflow }}
       run: |
         set -x
         project_name=$(gcloud config get-value project)
@@ -29,7 +31,7 @@ runs:
         then
           echo "ARCHIVE_FILE=artifacts.tar" >> $GITHUB_ENV
           echo "ARCHIVE_PATH=$GITHUB_WORKSPACE/artifacts.tar" >> $GITHUB_ENV
-          echo "DESTINATION=${project_name}-test-artifacts-tmp/${{github.workflow}}/${GITHUB_RUN_NUMBER}/${{matrix.platform}}_${{matrix.config}}/" >> $GITHUB_ENV
+          echo "DESTINATION=${project_name}-test-artifacts/${WORKFLOW}/${GITHUB_RUN_NUMBER}/${{matrix.platform}}_${{matrix.config}}/" >> $GITHUB_ENV
         elif [ "${{ inputs.type }}" == 'onhost' ]
         then
           if [ "${{ inputs.os }}" == 'linux' ]
@@ -41,7 +43,7 @@ runs:
             echo "ARCHIVE_FILE=${PLATFORM}_${{matrix.config}}.tar.gz" >> $GITHUB_ENV
             echo "ARCHIVE_PATH=$GITHUB_WORKSPACE/${PLATFORM}_${{matrix.config}}.tar.gz" >> $GITHUB_ENV
           fi
-          echo "DESTINATION=${project_name}-test-artifacts-tmp/${{github.workflow}}/${GITHUB_RUN_NUMBER}/${{matrix.platform}}_${{matrix.config}}/" >> $GITHUB_ENV
+          echo "DESTINATION=${project_name}-test-artifacts/${WORKFLOW}/${GITHUB_RUN_NUMBER}/${{matrix.platform}}_${{matrix.config}}/" >> $GITHUB_ENV
         fi
 
         echo "PYTHONPATH=$GITHUB_WORKSPACE" >> $GITHUB_ENV
@@ -70,10 +72,7 @@ runs:
       shell: bash
     - name: Copy Test Files to GCS
       id: upload-test-archive
-      uses: google-github-actions/upload-cloud-storage@v1
-      with:
-        headers: |-
-          content-type: application/x-tar
-        path: ${{env.ARCHIVE_PATH}}
-        destination: ${{env.DESTINATION}}
-        parent: true
+      shell: bash
+      run: |
+        set -eux
+        gsutil -d cp "${ARCHIVE_PATH}" "gs://${DESTINATION}"

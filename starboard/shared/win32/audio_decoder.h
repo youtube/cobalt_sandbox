@@ -39,13 +39,14 @@ class AudioDecoder
       private ::starboard::shared::starboard::player::JobQueue::JobOwner,
       private AudioDecodedCallback {
  public:
-  AudioDecoder(SbMediaAudioCodec audio_codec,
-               const SbMediaAudioSampleInfo& audio_sample_info,
+  typedef starboard::media::AudioStreamInfo AudioStreamInfo;
+
+  AudioDecoder(const AudioStreamInfo& audio_stream_info,
                SbDrmSystem drm_system);
   ~AudioDecoder() override;
 
   void Initialize(const OutputCB& output_cb, const ErrorCB& error_cb) override;
-  void Decode(const scoped_refptr<InputBuffer>& input_buffer,
+  void Decode(const InputBuffers& input_buffers,
               const ConsumedCB& consumed_cb) override;
   void WriteEndOfStream() override;
   scoped_refptr<DecodedAudio> Read(int* samples_per_second) override;
@@ -57,8 +58,7 @@ class AudioDecoder
 
   ::starboard::shared::starboard::ThreadChecker thread_checker_;
 
-  const SbMediaAudioCodec audio_codec_;
-  const starboard::media::AudioSampleInfo audio_sample_info_;
+  const AudioStreamInfo audio_stream_info_;
   SbDrmSystem const drm_system_;
   const SbMediaAudioSampleType sample_type_;
   bool stream_ended_;

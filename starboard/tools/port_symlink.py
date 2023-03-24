@@ -23,6 +23,9 @@ import sys
 from starboard.tools import util
 from starboard.tools import win_symlink
 
+# This file is still executed with Python2 in CI.
+# pylint:disable=consider-using-f-string
+
 
 def IsWindows():
   return sys.platform in ['win32', 'cygwin']
@@ -89,7 +92,7 @@ def Rmtree(path):
   else:
     os.unlink(path)
     return
-  if os.path.exists(path):
+  if os.path.exists(path) or os.path.islink(path):
     func(path)
 
 
@@ -106,7 +109,7 @@ def _CreateArgumentParser():
   class MyParser(argparse.ArgumentParser):
 
     def error(self, message):
-      sys.stderr.write('error: %s\n' % message)
+      sys.stderr.write('error: {}\n'.format(message))
       self.print_help()
       sys.exit(2)
 

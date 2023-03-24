@@ -153,15 +153,11 @@ void NetFetcher::Start() {
     }
     FetchInterceptorCoordinator::GetInstance()->TryIntercept(
         original_url,
-        std::make_unique<
-            base::OnceCallback<void(std::unique_ptr<std::string>)>>(
-            base::BindOnce(&NetFetcher::OnFetchIntercepted,
-                           base::Unretained(this))),
-        std::make_unique<base::OnceCallback<void(const net::LoadTimingInfo&)>>(
-            base::BindOnce(&NetFetcher::ReportLoadTimingInfo,
-                           base::Unretained(this))),
-        std::make_unique<base::OnceClosure>(base::BindOnce(
-            &net::URLFetcher::Start, base::Unretained(url_fetcher_.get()))));
+        base::BindOnce(&NetFetcher::OnFetchIntercepted, base::Unretained(this)),
+        base::BindOnce(&NetFetcher::ReportLoadTimingInfo,
+                       base::Unretained(this)),
+        base::BindOnce(&net::URLFetcher::Start,
+                       base::Unretained(url_fetcher_.get())));
 
   } else {
     std::string msg(base::StringPrintf("URL %s rejected by security policy.",
@@ -205,9 +201,9 @@ void NetFetcher::OnURLFetchResponseStarted(const net::URLFetcher* source) {
   if ((handler()->OnResponseStarted(this, source->GetResponseHeaders()) ==
        kLoadResponseAbort) ||
       (!IsResponseCodeSuccess(source->GetResponseCode()))) {
-    std::string msg(
-        base::StringPrintf("Handler::OnResponseStarted aborted URL %s",
-                           source->GetURL().spec().c_str()));
+    std::string msg(base::StringPrintf("URL %s aborted or failed with code %d",
+                                       source->GetURL().spec().c_str(),
+                                       source->GetResponseCode()));
     return HandleError(msg).InvalidateThis();
   }
 

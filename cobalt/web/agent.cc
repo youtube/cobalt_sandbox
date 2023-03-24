@@ -84,6 +84,7 @@ class Impl : public Context {
     return script_runner_.get();
   }
   Blob::Registry* blob_registry() const final { return blob_registry_.get(); }
+  web::WebSettings* web_settings() const final { return web_settings_; }
   network::NetworkModule* network_module() const final {
     DCHECK(fetcher_factory_);
     return fetcher_factory_->network_module();
@@ -100,9 +101,13 @@ class Impl : public Context {
     }
     environment_settings_.reset(environment_settings);
     if (environment_settings_) environment_settings_->set_context(this);
+    if (service_worker_jobs_) {
+      service_worker_jobs_->SetActiveWorker(environment_settings);
+    }
   }
 
   EnvironmentSettings* environment_settings() const final {
+    DCHECK(environment_settings_);
     DCHECK_EQ(environment_settings_->context(), this);
     return environment_settings_.get();
   }
@@ -144,9 +149,6 @@ class Impl : public Context {
   void set_active_service_worker(
       const scoped_refptr<worker::ServiceWorkerObject>& worker) final {
     active_service_worker_ = worker;
-    // Also hold a reference to the registration that contains this worker.
-    containing_service_worker_registration_ =
-        worker ? worker->containing_service_worker_registration() : nullptr;
   }
   const scoped_refptr<worker::ServiceWorkerObject>& active_service_worker()
       const final {
@@ -171,6 +173,9 @@ class Impl : public Context {
 
   // Name of the web instance.
   std::string name_;
+
+  web::WebSettings* const web_settings_;
+
   // FetcherFactory that is used to create a fetcher according to URL.
   std::unique_ptr<loader::FetcherFactory> fetcher_factory_;
 
@@ -216,15 +221,13 @@ class Impl : public Context {
   // Note: When a service worker is unregistered from the last client, this will
   // hold the last reference until the current page is unloaded.
   scoped_refptr<worker::ServiceWorkerObject> active_service_worker_;
-  scoped_refptr<worker::ServiceWorkerRegistrationObject>
-      containing_service_worker_registration_;
 
   base::ObserverList<Context::EnvironmentSettingsChangeObserver>::Unchecked
       environment_settings_change_observers_;
 };
 
 Impl::Impl(const std::string& name, const Agent::Options& options)
-    : name_(name) {
+    : name_(name), web_settings_(options.web_settings) {
   TRACE_EVENT0("cobalt::web", "Agent::Impl::Impl()");
   service_worker_jobs_ = options.service_worker_jobs;
   platform_info_ = options.platform_info;
@@ -287,7 +290,13 @@ void Impl::ShutDownJavaScriptEngine() {
   blob_registry_.reset();
   script_runner_.reset();
   execution_state_.reset();
-  global_environment_ = NULL;
+
+  // Ensure that global_environment_ is null before it's destroyed.
+  scoped_refptr<script::GlobalEnvironment> global_environment(
+      std::move(global_environment_));
+  DCHECK(!global_environment_);
+  global_environment = nullptr;
+
   javascript_engine_.reset();
   fetcher_factory_.reset();
   script_loader_factory_.reset();
@@ -453,7 +462,7 @@ scoped_refptr<worker::ServiceWorker> Impl::GetServiceWorker(
 
 WindowOrWorkerGlobalScope* Impl::GetWindowOrWorkerGlobalScope() {
   script::Wrappable* global_wrappable =
-      global_environment()->global_wrappable();
+      global_environment_ ? global_environment_->global_wrappable() : nullptr;
   if (!global_wrappable) {
     return nullptr;
   }

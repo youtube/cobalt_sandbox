@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <memory>
-
 #include "cobalt/renderer/pipeline.h"
+
+#include <memory>
 
 #include "base/bind.h"
 #include "base/files/file_path.h"
@@ -24,13 +24,13 @@
 #include "cobalt/base/address_sanitizer.h"
 #include "cobalt/base/cobalt_paths.h"
 #include "cobalt/base/polymorphic_downcast.h"
-#include "cobalt/extension/graphics.h"
 #include "cobalt/math/rect_f.h"
 #include "cobalt/render_tree/clear_rect_node.h"
 #include "cobalt/render_tree/composition_node.h"
 #include "cobalt/render_tree/dump_render_tree_to_string.h"
 #include "cobalt/watchdog/watchdog.h"
 #include "nb/memory_scope.h"
+#include "starboard/extension/graphics.h"
 #include "starboard/system.h"
 
 namespace cobalt {
