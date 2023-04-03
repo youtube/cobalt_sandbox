@@ -92,7 +92,7 @@ function test_successful_registration() {
 function test_persistent_registration() {
     console.log("test_persistent_registration()");
     navigator.serviceWorker.getRegistration(
-        '/bar/registration/scope')
+        '/bar/foo/nope')
         .then(function (registration) {
             console.log('(Expected) getRegistration Succeeded:',
                 registration);
