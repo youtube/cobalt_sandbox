@@ -1,5 +1,6 @@
 # Service Worker API tests
 
+service-worker/no-exist-test.html, PASS
 service-worker/register-default-scope.https.html, PASS
 service-worker/rejections.https.html, PASS
 service-worker/serviceworkerobject-scripturl.https.html, PASS
