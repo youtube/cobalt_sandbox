@@ -14,7 +14,8 @@
 
 ARG BASE_OS
 ARG BASE_OS_TAG
-FROM ${BASE_OS:-gcr.io/cloud-marketplace-containers/google/debian10}:${BASE_OS_TAG:-latest}
+ARG NEEDS_GIT_UPDATE
+FROM ${BASE_OS:-gcr.io/cloud-marketplace-containers/google/debian10}:${BASE_OS_TAG:-latest} as stage1
 
 COPY base/clean-after-apt.sh /opt/clean-after-apt.sh
 
@@ -30,6 +31,22 @@ RUN apt update -qqy \
         python3-six \
         git ccache \
         curl xz-utils \
+        software-properties-common \
     && /opt/clean-after-apt.sh
 
+FROM stage1 as git-update-no
+# Nothing to be done
+
+FROM stage1 as git-update-yes
+# Install git PPA and update
+RUN apt update -qqy \
+    && add-apt-repository -y ppa:git-core/ppa \
+    && apt-get -y install git \
+    && /opt/clean-after-apt.sh
+
+FROM git-update-${NEEDS_GIT_UPDATE}
+RUN echo "Blopx"
+RUN git --version
+
+RUN echo ${gitup}
 CMD ["/usr/bin/python","--version"]

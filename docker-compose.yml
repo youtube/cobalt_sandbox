@@ -97,6 +97,7 @@ services:
     build:
       args:
         - BASE_OS
+        - NEEDS_GIT_UPDATE=no
       context: ./docker/linux
       dockerfile: base/Dockerfile
     image: cobalt-base
@@ -107,6 +108,7 @@ services:
       args:
         - BASE_OS=gcr.io/cloud-marketplace-containers/google/ubuntu1804
         - BASE_OS_TAG=latest
+        - NEEDS_GIT_UPDATE=yes
       context: ./docker/linux
       dockerfile: base/Dockerfile
     image: base-bionic
