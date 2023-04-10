@@ -242,6 +242,7 @@ typedef enum SbMediaTransferId {
   // TODO: Need to store an approximation of the gamma function(s).
   kSbMediaTransferIdCustom,
   kSbMediaTransferIdLast = kSbMediaTransferIdCustom,
+
 } SbMediaTransferId;
 
 typedef enum SbMediaMatrixId {
