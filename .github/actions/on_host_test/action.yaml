@@ -59,7 +59,7 @@ runs:
       shell: bash
       run: |
         echo "PYTHONPATH=$GITHUB_WORKSPACE" >> $GITHUB_ENV
-        echo "TEST_RESULTS_DIR=${GITHUB_WORKSPACE}/unit-test-reports" >> $GITHUB_ENV
+        echo "TEST_RESULTS_DIR=${GITHUB_WORKSPACE}/unit-test-reports/${{matrix.platform}}" >> $GITHUB_ENV
     - name: Run Tests
       shell: bash
       run: |
