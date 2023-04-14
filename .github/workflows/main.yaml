@@ -284,3 +284,14 @@ jobs:
         uses: ./.github/actions/on_host_test
         with:
           os: linux
+
+  # Gets unit test report from on host tests and prints it.
+  on-host-test-report:
+    needs: [on-host-test]
+    permissions: {}
+    if: failure() && needs.initialize.outputs.on_host_test == 'true'
+    runs-on: ubuntu-latest
+    name: ${{matrix.name}}_${{matrix.shard}}_test_report
+    steps:
+      - name: Print unit test report
+        run: echo "${{ needs.on-host-test.outputs.unit_test_report }}"

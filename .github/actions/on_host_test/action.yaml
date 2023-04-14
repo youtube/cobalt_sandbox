@@ -59,6 +59,7 @@ runs:
       shell: bash
       run: |
         echo "PYTHONPATH=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+        echo "TEST_RESULTS_DIR=${GITHUB_WORKSPACE}/unit-test-reports" >> $GITHUB_ENV
     - name: Run Tests
       shell: bash
       run: |
@@ -75,6 +76,17 @@ runs:
           if [[ "${{inputs.os}}" == 'windows' ]]; then
             python3 ${GITHUB_WORKSPACE}/starboard/tools/testing/test_runner.py --platform ${{matrix.target_platform}} --config ${{matrix.config}} -s ${{matrix.shard}} -r
           else
-            xvfb-run -a --server-args="-screen 0 1920x1080x24i +render +extension GLX -noreset" python3 $GITHUB_WORKSPACE/starboard/tools/testing/test_runner.py --platform ${{matrix.target_platform}} --config ${{matrix.config}} -s ${{matrix.shard}} -r ${loader_args}
+            xvfb-run -a --server-args="-screen 0 1920x1080x24i +render +extension GLX -noreset" python3 ${GITHUB_WORKSPACE}/starboard/tools/testing/test_runner.py --platform ${{matrix.target_platform}} --config ${{matrix.config}} -s ${{matrix.shard}} -r ${loader_args} --xml_output_dir=${TEST_RESULTS_DIR}
           fi
         fi
+    - name: Unit test results
+      shell: bash
+      run: |
+        set -x
+        # To pass multiline output a delimiter must be used. The delimiter should be a random string for security reasons.
+        EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+        echo "unit_test_report<<$EOF" >> $GITHUB_ENV
+        echo "$(python3 ${GITHUB_WORKSPACE}/starboard/tools/testing/test_report_parser.py ${TEST_RESULTS_DIR})" >> $GITHUB_ENV
+        echo "$EOF" >> $GITHUB_ENV
+      outputs:
+        unit_test_report: ${{ env.unit_test_report }}
