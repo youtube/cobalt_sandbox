@@ -14,6 +14,8 @@
 # limitations under the License.
 """Wrapper for hook checking that a bug in referenced in the commit message."""
 
+# Test change
+
 import os
 import sys
 try:
