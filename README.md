@@ -11,8 +11,6 @@ the devices that Cobalt supports.
 
 ## Motivation
 
-Another test
-
 The Cobalt Authors originally maintained a port of Chromium called H5VCC, the
 HTML5 Video Container for Consoles, ported to each of the major game consoles,
 designed to run our HTML5-based video browse and play application. This took a
@@ -72,6 +70,8 @@ Chromium, FireFox, and IE:
 
 
 ## Architecture
+
+One more test
 
 The Cobalt Authors forked H5VCC, removed most of the Chromium code -- in
 particular WebCore and the Chrome Renderer and Compositor -- and built up from
