@@ -5,6 +5,7 @@
 Yolo
 One more commit
 And one more
+Yet another
 
 Cobalt is a lightweight application container (i.e. an application runtime, like
 a JVM or the Flash Player) that is compatible with a subset of the W3C HTML5
