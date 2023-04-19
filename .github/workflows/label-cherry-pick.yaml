@@ -25,11 +25,17 @@ jobs:
         run: echo "RUN_FOR_CURRENT_BRANCH=false" >> $GITHUB_ENV
 
       - name: Set RUN_FOR_CURRENT_BRANCH for closed pull_request
-        if: github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name, format('cp-{0}', matrix.target_branch))
+        if: |
+          github.event.action == 'closed' &&
+          github.base_ref != matrix.target_branch &&
+          contains(github.event.pull_request.labels.*.name, format('cp-{0}', matrix.target_branch))
         run: echo "RUN_FOR_CURRENT_BRANCH=true" >> $GITHUB_ENV
 
       - name: Set RUN_FOR_CURRENT_BRANCH for labeled pull_request
-        if: github.event.action == 'labeled' && github.event.label.name == format('cp-{0}', matrix.target_branch)
+        if: |
+          github.event.action == 'labeled' &&
+          github.base_ref != matrix.target_branch &&
+          github.event.label.name == format('cp-{0}', matrix.target_branch)
         run: echo "RUN_FOR_CURRENT_BRANCH=true" >> $GITHUB_ENV
 
       - name: Checkout repository
