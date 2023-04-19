@@ -13,6 +13,7 @@
 
 from cobalt.build import cobalt_configuration
 
+
 # List of paths to directories in which Starboard ports are located. Each path
 # should be represented as a list of directory names whose locations are
 # relative to the location of this file.
