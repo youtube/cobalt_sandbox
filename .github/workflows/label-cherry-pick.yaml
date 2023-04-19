@@ -1,0 +1,65 @@
+name: Label Cherry Pick
+
+on:
+  pull_request_target:
+    types:
+      - labeled
+      - closed
+
+jobs:
+  cherry_pick:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target_branch: ['23.lts.1+', '22.lts.1+', '21.lts.1+', '20.lts.1+', '19.lts.1+', '19.android.1+', 'rc_11', 'COBALT_9']
+    if: |
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.merge_commit_sha != null
+    env:
+      ACCESS_TOKEN: ${{ secrets.CHERRY_PICK_TOKEN }}
+      REPOSITORY: ${{ github.repository }}
+      GITHUB_REF: ${{ github.ref }}
+      MERGE_COMMIT_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+    steps:
+      - name: Default RUN_FOR_CURRENT_BRANCH to false
+        run: echo "RUN_FOR_CURRENT_BRANCH=false" >> $GITHUB_ENV
+
+      - name: Set RUN_FOR_CURRENT_BRANCH for closed pull_request
+        if: github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name, format('cp-{0}', matrix.target_branch))
+        run: echo "RUN_FOR_CURRENT_BRANCH=true" >> $GITHUB_ENV
+
+      - name: Set RUN_FOR_CURRENT_BRANCH for labeled pull_request
+        if: github.event.action == 'labeled' && github.event.label.name == format('cp-{0}', matrix.target_branch)
+        run: echo "RUN_FOR_CURRENT_BRANCH=true" >> $GITHUB_ENV
+
+      - name: Checkout repository
+        if: env.RUN_FOR_CURRENT_BRANCH == 'true'
+        uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0
+        with:
+          ref: ${{ matrix.target_branch }}
+          fetch-depth: 0
+
+      - name: Setup Git
+        if: env.RUN_FOR_CURRENT_BRANCH == 'true'
+        run: |
+          git config --global user.name "GitHub Release Automation"
+          git config --global user.email "github@google.com"
+
+      - name: Cherry pick merge commit
+        if: env.RUN_FOR_CURRENT_BRANCH == 'true'
+        run: |
+          git fetch origin ${{ matrix.target_branch }}
+          git cherry-pick -x $MERGE_COMMIT_SHA
+        
+      - name: Create Pull Request
+        if: env.RUN_FOR_CURRENT_BRANCH == 'true'
+        uses: peter-evans/create-pull-request@2b011faafdcbc9ceb11414d64d0573f37c774b04 # v4.2.3
+        with:
+          token: ${{ secrets.CHERRY_PICK_TOKEN }}
+          base: ${{ matrix.target_branch }}
+          branch: "${{ matrix.target_branch }}-${{ github.event.pull_request.number }}"
+          committer: GitHub Release Automation <github@google.com>
+          reviewers: ${{ github.event.pull_request.user.login }}
+          title: "Cherry pick PR #${{ github.event.pull_request.number }}: ${{ github.event.pull_request.title }}"
+          body: |
+            "Refer to the original PR: https://github.com/${{ github.repository }}/pull/${{ github.event.pull_request.number }}"
