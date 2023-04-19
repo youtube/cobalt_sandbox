@@ -7,6 +7,7 @@ inputs:
   os:
     description: "Host OS (either linux or windows)."
     required: true
+ 
 runs:
   using: "composite"
   steps:
