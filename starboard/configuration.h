@@ -65,6 +65,9 @@
 //   //   exposes functionality for my new feature.
 //   #define SB_MY_EXPERIMENTAL_FEATURE_VERSION SB_EXPERIMENTAL_API_VERSION
 
+// SystemDeviceType enum is converted to a string from enum
+#define SB_SYSTEM_DEVICE_TYPE_AS_STRING_API_VERSION SB_EXPERIMENTAL_API_VERSION
+
 // Improves audio access unit processing.
 //   1.  Abstracted stream specific info from SbMediaAudioSampleInfo and
 //       SbMediaVideoSampleInfo into SbMediaAudioStreamInfo and
