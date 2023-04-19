@@ -44,14 +44,14 @@ jobs:
 
   cherry_pick:
     runs-on: ubuntu-latest
-    needs: prepare_branch_matrix
+    needs: prepare_branch_list
     if: |
-      needs.prepare_branch_matrix.outputs.target_branch != '[]' && 
+      needs.prepare_branch_list.outputs.target_branch != '[]' && 
       github.event.pull_request.merged == true &&
       github.event.pull_request.merge_commit_sha != null
     strategy:
       matrix:
-        target_branch: ${{ fromJson(needs.prepare_branch_matrix.outputs.target_branch) }}
+        target_branch: ${{ fromJson(needs.prepare_branch_list.outputs.target_branch) }}
     env:
       ACCESS_TOKEN: ${{ secrets.CHERRY_PICK_TOKEN }}
       REPOSITORY: ${{ github.repository }}
