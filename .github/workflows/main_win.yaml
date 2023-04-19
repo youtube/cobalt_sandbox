@@ -51,11 +51,10 @@ jobs:
     if: |
       github.event_name != 'pull_request' ||
       (
-        github.event.pull_request.draft == false ||
-        (
-          github.event.action == 'labeled' &&
-          github.event.label.name == 'runtest'
-        )
+        ( github.event.pull_request.draft == false &&
+          github.event.action != 'labeled' ) ||
+        ( github.event.action == 'labeled' &&
+          github.event.label.name == 'runtest' )
       )
     steps:
       - id: Checkout
