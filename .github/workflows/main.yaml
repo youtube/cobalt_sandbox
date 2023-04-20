@@ -32,7 +32,7 @@ env:
   STARBOARD_TOOLCHAINS_DIR: /root/starboard-toolchains
 
 concurrency:
-  group: '${{ github.workflow }}-${{ github.event_name }}-${{ inputs.platform }} @ ${{ github.event.pull_request.number || github.sha }}'
+  group: '${{ github.workflow }}-${{ github.event_name }}-${{ github.event.action }}-${{ inputs.platform }} @ ${{ github.event.pull_request.number || github.sha }}'
   cancel-in-progress: true
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
@@ -50,10 +50,12 @@ jobs:
     if: |
       github.event_name != 'pull_request' ||
       (
-        github.event.pull_request.draft == false ||
+        ( github.event.pull_request.draft == false &&
+          github.event.action != 'labeled' ) ||
         (
           github.event.action == 'labeled' &&
-          github.event.label.name == 'runtest'
+          ( github.event.label.name == 'runtest' ||
+            github.event.label.name == 'on_device' )
         )
       )
     steps:
