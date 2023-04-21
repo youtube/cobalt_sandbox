@@ -1,22 +1,16 @@
-name: stub
+name: repo_vars
 
+# Controls when the workflow will run
 on:
-  pull_request:
-    types: [ready_for_review, opened, reopened, synchronize, labeled]
-    branches:
-      - main
-      - feature/*
+  # Triggers the workflow on push or pull request events but only for the "main" branch
   push:
-    branches:
-      - main
-      - feature/*
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
-    inputs:
-      nightly:
-        description: 'Nightly workflow.'
-        required: true
-        type: boolean
-        default: false
+
 env:
   RUN_ODT_TESTS_ON_NIGHTLY: ${{ vars.RUN_ODT_TESTS_ON_NIGHTLY }}
   RUN_ODT_TESTS_ON_POSTSUBMIT: ${{ vars.RUN_ODT_TESTS_ON_POSTSUBMIT }}
@@ -33,11 +27,3 @@ jobs:
           echo "${{ vars.RUN_ODT_TESTS_ON_POSTSUBMIT }}"
           echo "${{ env.RUN_ODT_TESTS_ON_NIGHTLY }}"
           echo "${{ env.RUN_ODT_TESTS_ON_POSTSUBMIT }}"
-  stub:
-    uses: ./.github/workflows/main.yaml
-    permissions:
-      packages: write
-      pull-requests: write
-    with:
-      platform: stub
-      nightly: 'false'
