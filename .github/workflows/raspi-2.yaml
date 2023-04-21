@@ -11,7 +11,7 @@ on:
       - main
       - feature/*
   schedule:
-    - cron: '0 4 * * *'
+    - cron: '0 7 * * *'
   workflow_dispatch:
     inputs:
       nightly:
@@ -29,11 +29,11 @@ jobs:
     with:
       platform: raspi-2
       nightly: ${{ github.event.inputs.nightly }}
-  raspi-2-skia:
-    uses: ./.github/workflows/main.yaml
-    permissions:
-      packages: write
-      pull-requests: write
-    with:
-      platform: raspi-2-skia
-      nightly: ${{ github.event.inputs.nightly }}
+  # raspi-2-skia:
+  #  uses: ./.github/workflows/main.yaml
+  #  permissions:
+  #    packages: write
+  #    pull-requests: write
+  #  with:
+  #    platform: raspi-2-skia
+  #    nightly: ${{ github.event.inputs.nightly }}
