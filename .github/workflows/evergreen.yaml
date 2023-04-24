@@ -20,7 +20,22 @@ on:
         type: boolean
         default: false
 
+env:
+  RUN_ODT_TESTS_ON_NIGHTLY: ${{ vars.RUN_ODT_TESTS_ON_NIGHTLY }}
+  RUN_ODT_TESTS_ON_POSTSUBMIT: ${{ vars.RUN_ODT_TESTS_ON_POSTSUBMIT }}
+
 jobs:
+  varshow:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run a multi-line script
+        run: |
+          echo Add other actions to build,
+          echo test, and deploy your project.
+          echo "${{ vars.RUN_ODT_TESTS_ON_NIGHTLY }}"
+          echo "${{ vars.RUN_ODT_TESTS_ON_NIGHTLY }}"
+          echo "${{ env.RUN_ODT_TESTS_ON_POSTSUBMIT }}"
+          echo "${{ env.RUN_ODT_TESTS_ON_POSTSUBMIT }}"
   evergreen-x64:
     uses: ./.github/workflows/main.yaml
     permissions:
