@@ -57,6 +57,12 @@ jobs:
         )
       )
     steps:
+      - name: Run a multi-line script
+        run: |
+          echo Add other actions to build,
+          echo test, and deploy your project.
+          echo "${{ vars.RUN_ODT_TESTS_ON_NIGHTLY }}"
+          echo "${{ vars.RUN_ODT_TESTS_ON_POSTSUBMIT }}"
       - id: checkout
         uses: actions/checkout@v3
         with:
@@ -179,6 +185,12 @@ jobs:
       # filesystem, whereas /__w which contains Cobalt source code is on tmpfs.
       TMPDIR: /__w/_temp
     steps:
+      - name: Run a multi-line script
+        run: |
+          echo Add other actions to build,
+          echo test, and deploy your project.
+          echo "${{ vars.RUN_ODT_TESTS_ON_NIGHTLY }}"
+          echo "${{ vars.RUN_ODT_TESTS_ON_POSTSUBMIT }}"
       - name: Checkout
         uses: actions/checkout@v3
         with:
@@ -249,6 +261,12 @@ jobs:
     env:
       COBALT_BOOTLOADER: ${{needs.initialize.outputs.bootloader}}
     steps:
+      - name: Run a multi-line script
+        run: |
+          echo Add other actions to build,
+          echo test, and deploy your project.
+          echo "${{ vars.RUN_ODT_TESTS_ON_NIGHTLY }}"
+          echo "${{ vars.RUN_ODT_TESTS_ON_POSTSUBMIT }}"
       - name: Checkout
         uses: actions/checkout@v3
       - name: Run Tests (${{ matrix.shard }})
