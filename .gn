@@ -12,5 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Create change with merge conflict
+
 # The location of the build configuration file.
 buildconfig = "//starboard/build/config/BUILDCONFIG.gn"
