@@ -12,11 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+<<<<<<< HEAD:starboard/egl_and_gles/egl_and_gles_system_gles2.gyp
 {
   'targets': [
     {
       'target_name': 'egl_and_gles_implementation',
       'type': 'none',
+=======
+# Create change with merge conflict
+
+# The location of the build configuration file.
+buildconfig = "//starboard/build/config/BUILDCONFIG.gn"
+>>>>>>> 4e03cd1e1a (Test CP merge conflict (#411)):.gn
 
       # Use the system-provided implementation of GLES2.
     },
