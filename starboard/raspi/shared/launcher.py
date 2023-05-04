@@ -249,7 +249,9 @@ class Launcher(abstract_launcher.AbstractLauncher):
         backoff=lambda: self.shutdown_initiated.is_set(),
         wrap_exceptions=False)
     def _readloop():
+      count = 0
       while True:
+        count += 1
         # Sanitize the line to remove ansi color codes.
         line = Launcher._PEXPECT_SANITIZE_LINE_RE.sub(
             '', self.pexpect_process.readline())
@@ -262,6 +264,8 @@ class Launcher(abstract_launcher.AbstractLauncher):
           if line.find(self.test_success_tag) != -1:
             self.return_value = 0
           return
+        if count > 100:
+          raise pexpect.TIMEOUT
 
     _readloop()
 
