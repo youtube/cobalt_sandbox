@@ -169,10 +169,6 @@ jobs:
         config: [devel]
         include: ${{ fromJson(needs.initialize.outputs.includes) }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 1
       - name: Run Tests
         uses: ./.github/actions/on_host_test
         with:
