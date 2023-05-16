@@ -33,4 +33,8 @@ runs:
         fi
         gn gen $GITHUB_WORKSPACE/out/${BUILD_PLATFORM}_${{matrix.config}} --args="target_platform=\"${BUILD_PLATFORM}\" ${{matrix.sb_api_version}} ${{matrix.target_os}} ${{matrix.target_cpu}} ${extra_arguments} is_internal_build=false build_type=\"${{matrix.config}}\""
         gn check $GITHUB_WORKSPACE/out/${BUILD_PLATFORM}_${{ matrix.config }}
+        echo we about to break this
+        git clone https://github.com/actions/checkout lol
+        git add lol
+        git commit -m "Uohh" --no-verify
       shell: bash
