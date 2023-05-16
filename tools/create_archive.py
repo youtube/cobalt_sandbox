@@ -39,7 +39,7 @@ import subprocess
 import sys
 import time
 
-import worker_tools
+import tools.worker_tools as worker_tools
 
 # Use strict include filter to pass artifacts to Mobile Harness
 TEST_PATTERNS = [
