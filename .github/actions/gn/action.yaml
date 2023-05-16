@@ -36,5 +36,7 @@ runs:
         echo we about to break this
         git clone https://github.com/actions/checkout lol
         git add lol
+        git config --global user.email "you@example.com"
+        git config --global user.name "Your Name"
         git commit -m "Uohh" --no-verify
       shell: bash
