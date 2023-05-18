@@ -55,6 +55,7 @@ runs:
         GITHUB_EVENT_NUMBER: ${{ github.event.number }}
       if: ${{ (steps.changed-files.outputs.any_changed == 'true') && (github.event_name == 'pull_request') && (github.event.pull_request.head.repo.fork) }}
       run: |
+        set -x
         # Need to login to GCR to be able to push images created by fork based PR workflows.
         PROJECT_NAME=$(gcloud config get-value project)
         METADATA="http://metadata.google.internal./computeMetadata/v1"
