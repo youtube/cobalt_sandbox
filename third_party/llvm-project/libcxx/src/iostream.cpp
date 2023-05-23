@@ -117,21 +117,21 @@ DoIOSInit::DoIOSInit()
 {
     force_locale_initialization();
 
-    istream* cin_ptr  = ::new(cin)  istream(::new(__cin)  __stdinbuf <char>(stdin, &mb_cin));
+    //istream* cin_ptr  = ::new(cin)  istream(::new(__cin)  __stdinbuf <char>(stdin, &mb_cin));
     ostream* cout_ptr = ::new(cout) ostream(::new(__cout) __stdoutbuf<char>(stdout, &mb_cout));
     ostream* cerr_ptr = ::new(cerr) ostream(::new(__cerr) __stdoutbuf<char>(stderr, &mb_cerr));
                         ::new(clog) ostream(cerr_ptr->rdbuf());
-    cin_ptr->tie(cout_ptr);
+    //cin_ptr->tie(cout_ptr);
     _VSTD::unitbuf(*cerr_ptr);
     cerr_ptr->tie(cout_ptr);
 
 #ifndef _LIBCPP_HAS_NO_WIDE_CHARACTERS
-    wistream* wcin_ptr  = ::new(wcin)  wistream(::new(__wcin)  __stdinbuf <wchar_t>(stdin, &mb_wcin));
+    //wistream* wcin_ptr  = ::new(wcin)  wistream(::new(__wcin)  __stdinbuf <wchar_t>(stdin, &mb_wcin));
     wostream* wcout_ptr = ::new(wcout) wostream(::new(__wcout) __stdoutbuf<wchar_t>(stdout, &mb_wcout));
     wostream* wcerr_ptr = ::new(wcerr) wostream(::new(__wcerr) __stdoutbuf<wchar_t>(stderr, &mb_wcerr));
                           ::new(wclog) wostream(wcerr_ptr->rdbuf());
 
-    wcin_ptr->tie(wcout_ptr);
+    //wcin_ptr->tie(wcout_ptr);
     _VSTD::unitbuf(*wcerr_ptr);
     wcerr_ptr->tie(wcout_ptr);
 #endif
