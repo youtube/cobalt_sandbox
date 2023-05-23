@@ -119,10 +119,10 @@ __stdinbuf<_CharT>::__getchar(bool __consume)
     int __nread = _VSTD::max(1, __encoding_);
     for (int __i = 0; __i < __nread; ++__i)
     {
-        int __c = getc(__file_);
-        if (__c == EOF)
-            return traits_type::eof();
-        __extbuf[__i] = static_cast<char>(__c);
+        //int __c = getc(__file_);
+        //if (__c == EOF)
+        return traits_type::eof();
+        //__extbuf[__i] = static_cast<char>(__c);
     }
     char_type __1buf;
     if (__always_noconv_)
@@ -146,10 +146,10 @@ __stdinbuf<_CharT>::__getchar(bool __consume)
                 if (__nread == sizeof(__extbuf))
                     return traits_type::eof();
                 {
-                    int __c = getc(__file_);
-                    if (__c == EOF)
-                        return traits_type::eof();
-                    __extbuf[__nread] = static_cast<char>(__c);
+                    //int __c = getc(__file_);
+                    //if (__c == EOF)
+                    return traits_type::eof();
+                    //__extbuf[__nread] = static_cast<char>(__c);
                 }
                 ++__nread;
                 break;
@@ -165,8 +165,8 @@ __stdinbuf<_CharT>::__getchar(bool __consume)
     {
         for (int __i = __nread; __i > 0;)
         {
-            if (ungetc(traits_type::to_int_type(__extbuf[--__i]), __file_) == EOF)
-                return traits_type::eof();
+            //if (ungetc(traits_type::to_int_type(__extbuf[--__i]), __file_) == EOF)
+            return traits_type::eof();
         }
     }
     else
@@ -208,8 +208,8 @@ __stdinbuf<_CharT>::pbackfail(int_type __c)
             return traits_type::eof();
         }
         while (__enxt > __extbuf)
-            if (ungetc(*--__enxt, __file_) == EOF)
-                return traits_type::eof();
+            //if (ungetc(*--__enxt, __file_) == EOF)
+            return traits_type::eof();
     }
     __last_consumed_ = __c;
     __last_consumed_is_next_ = true;
