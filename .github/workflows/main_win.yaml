@@ -58,11 +58,6 @@ jobs:
         )
       )
     steps:
-      - id: Checkout
-        uses: kaidokert/checkout@v3.5.999 # Temporary version
-        with:
-          fetch-depth: 1
-          persist-credentials: false
       - name: Remove runtest if exists
         if: github.event_name == 'pull_request'
         continue-on-error: true  # Ignore this step if we cannot remove the label.
