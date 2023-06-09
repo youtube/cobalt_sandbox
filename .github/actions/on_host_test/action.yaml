@@ -106,6 +106,8 @@ runs:
         path: ${{env.TEST_REPORT_FILE}}
     - name: Upload coverage html report
       if: ${{matrix.shard}} == 'coverage'
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       uses: actions/upload-artifact@v3
       with:
         name: coverage-report
