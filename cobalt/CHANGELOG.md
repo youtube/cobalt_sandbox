@@ -1,6 +1,9 @@
 # Cobalt Version Changelog
 
 This document records all notable changes made to Cobalt since the last release.
+## Version 24
+
+- ** Test 
 
 ## Version 23
  - **Cobalt now uses GN (Generate Ninja) meta-build system**
