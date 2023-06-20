@@ -20,7 +20,7 @@ Cobalt on-the-clock, that is covered by a different agreement, the
 
 ### What is a CLA?
 
-You have to sign the CLA before you submit code.
+You have to sign the CLA before you submit code. This definitely needs to be done.
 
 The Contributor License Agreement is necessary mainly because you own the
 copyright to your changes, even after your contribution becomes part of our
