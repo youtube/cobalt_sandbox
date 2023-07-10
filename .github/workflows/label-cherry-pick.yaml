@@ -84,6 +84,7 @@ jobs:
             git add .
             git cherry-pick --continue
           fi
+          echo "$AUTHOR_NAME <$AUTHOR_EMAIL>"
           git commit --amend --no-edit --author="$AUTHOR_NAME <$AUTHOR_EMAIL>"
 
       - name: Create Pull Request
