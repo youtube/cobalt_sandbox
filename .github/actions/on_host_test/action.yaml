@@ -94,6 +94,7 @@ runs:
         fi
     - name: Archive unit test report
       uses: actions/upload-artifact@v3
+      # TODO: Should only run for unit-tests
       if: always()
       with:
         name: unit-test-reports
