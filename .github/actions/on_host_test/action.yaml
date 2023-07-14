@@ -97,7 +97,7 @@ runs:
       # TODO: Should only run for unit-tests
       if: always()
       with:
-        name: unit-test-reports
+        name: unit-test-results
         path: ${{env.TEST_RESULTS_DIR}}/
     - name: Archive coverage html report
       if: success() && matrix.shard == 'coverage'

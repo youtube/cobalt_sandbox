@@ -1,12 +1,19 @@
-name: Upload Unit Test Reports
+name: Upload Unit Test Results
 
 on:
   workflow_run:
     workflows:
       - linux
-      # TODO: xml file generation on windows
+      # TODO: Download xml files from GCS
+      # - android
+      # - raspi
+      # TODO: Generate xml files
       # - win32
-      # TODO: Other platforms
+      # TODO: Get xml files from platforms
+      # - atv
+      # - ps
+      # - switch
+      # - xbox
     types:
       - completed
 
@@ -24,10 +31,26 @@ jobs:
         # TODO: Check if artifact exists, or
         # TODO: Always upload a report, empty -> no upload
         - name: Collect Unit Test Reports
-          uses: actions/download-artifact@v3
+          uses: actions/github-script@v3.1.0
           with:
-            name: unit-test-reports
-            path: unit-test-reports/
+            script: |
+              var artifacts = await github.actions.listWorkflowRunArtifacts({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: ${{github.event.workflow_run.id }},
+              });
+              var results = artifacts.data.artifacts.filter((artifact) => {
+                return artifact.name == "unit-test-results"
+              })[0];
+              var download = await github.actions.downloadArtifact({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                artifact_id: results.id,
+                archive_format: 'zip',
+              });
+              var fs = require('fs');
+              fs.writeFileSync('${{github.workspace}}/unit-test-results.zip', Buffer.from(download.data));
+        - run: unzip unit-test-results.zip -d unit-test-results
         - name: Install node
           uses: actions/setup-node@v3
           with:
@@ -40,7 +63,7 @@ jobs:
           shell: bash
           run: |
             # Loop over platform folders in archive
-            for dir in unit-test-reports/*/; do
+            for dir in unit-test-results/*/; do
               echo "Uploading $dir test report"
 
               service="${{ github.event.repository.name }}"
