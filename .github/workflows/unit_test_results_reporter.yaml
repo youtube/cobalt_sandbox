@@ -16,14 +16,13 @@ jobs:
       permissions: {}
       if: always()
       runs-on: ubuntu-latest
-      name: Test Result Report
+      name: Upload Unit Test Reports
       env:
         DATADOG_API_KEY: ${{ secrets.DD_API_KEY }}
         DATADOG_SITE: us5.datadoghq.com
-        DD_TAGS: name:${{matrix.name}},platform:${{matrix.platform}}
       steps:
-        # TODO: Check if artifact exists
-        # TODO: Check if secret is set
+        # TODO: Check if artifact exists, or
+        # TODO: Always upload a report, empty -> no upload
         - name: Collect Unit Test Reports
           uses: actions/download-artifact@v3
           with:
@@ -35,11 +34,21 @@ jobs:
             node-version: 16
         - name: Get Datadog CLI
           shell: bash
+          # TODO: pin version (with checksum?)
           run: npm install -g @datadog/datadog-ci
         - name: Upload the JUnit files
           shell: bash
           run: |
-            datadog-ci junit upload \
-              --service ${{ github.event.repository.name }} \
-              --max-concurrency 20 \
-              unit-test-reports/
+            # Loop over platform folders in archive
+            for dir in unit-test-reports/*/; do
+              echo "Uploading $dir test report"
+
+              service="${{ github.event.repository.name }}"
+              tags=`cat ${dir}TAGS`
+
+              datadog-ci junit upload \
+                        --service $service \
+                        --env ci \
+                        --tags $tags \
+                        $dir
+            done
