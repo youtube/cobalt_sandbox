@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="2" failures="0" disabled="0" errors="0" time="0.01" timestamp="2392-07-09T13:09:54.027" name="AllTests">
+  <testsuite name="AppKeyTest" tests="2" failures="0" disabled="0" skipped="0" errors="0" time="0.004" timestamp="2392-07-09T13:09:54.031">
+    <testcase name="SunnyDayExtractAppKey" file="../../starboard/loader_app/app_key_test.cc" line="665" status="run" result="completed" time="0" timestamp="2392-07-09T13:09:54.032" classname="AppKeyTest" />
+    <testcase name="SunnyDayExtractAppKeySanitizesResult" file="../../starboard/loader_app/app_key_test.cc" line="676" status="run" result="completed" time="0" timestamp="2392-07-09T13:09:54.034" classname="AppKeyTest" />
+  </testsuite>
+</testsuites>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="16" failures="0" disabled="0" errors="0" time="0.044" timestamp="2392-07-09T13:11:59.917" name="AllTests">
+  <testsuite name="EnhancedAudioTest" tests="1" failures="0" disabled="0" skipped="0" errors="0" time="0.002" timestamp="2392-07-09T13:11:59.920">
+    <testcase name="VerifyBinaryLayouts" file="../../starboard/extension/enhanced_audio_test.cc" line="29" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:59.921" classname="EnhancedAudioTest" />
+  </testsuite>
+  <testsuite name="ExtensionTest" tests="15" failures="0" disabled="0" skipped="0" errors="0" time="0.034" timestamp="2392-07-09T13:11:59.925">
+    <testcase name="PlatformService" file="../../starboard/extension/extension_test.cc" line="38" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:59.926" classname="ExtensionTest" />
+    <testcase name="Graphics" file="../../starboard/extension/extension_test.cc" line="62" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:59.928" classname="ExtensionTest" />
+    <testcase name="InstallationManager" file="../../starboard/extension/extension_test.cc" line="123" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:59.930" classname="ExtensionTest" />
+    <testcase name="Configuration" file="../../starboard/extension/extension_test.cc" line="151" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:59.933" classname="ExtensionTest" />
+    <testcase name="MediaSession" file="../../starboard/extension/extension_test.cc" line="199" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:59.935" classname="ExtensionTest" />
+    <testcase name="CrashHandler" file="../../starboard/extension/extension_test.cc" line="219" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:59.937" classname="ExtensionTest" />
+    <testcase name="CWrappers" file="../../starboard/extension/extension_test.cc" line="244" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:59.940" classname="ExtensionTest" />
+    <testcase name="Font" file="../../starboard/extension/extension_test.cc" line="264" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:59.942" classname="ExtensionTest" />
+    <testcase name="JavaScriptCache" file="../../starboard/extension/extension_test.cc" line="284" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:59.944" classname="ExtensionTest" />
+    <testcase name="UrlFetcherObserver" file="../../starboard/extension/extension_test.cc" line="306" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:59.946" classname="ExtensionTest" />
+    <testcase name="UpdaterNotification" file="../../starboard/extension/extension_test.cc" line="328" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:59.949" classname="ExtensionTest" />
+    <testcase name="MemoryMappedFile" file="../../starboard/extension/extension_test.cc" line="348" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:59.951" classname="ExtensionTest" />
+    <testcase name="FreeSpace" file="../../starboard/extension/extension_test.cc" line="368" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:59.953" classname="ExtensionTest" />
+    <testcase name="EnhancedAudio" file="../../starboard/extension/extension_test.cc" line="388" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:59.955" classname="ExtensionTest" />
+    <testcase name="PlatformInfo" file="../../starboard/extension/extension_test.cc" line="420" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:59.958" classname="ExtensionTest" />
+  </testsuite>
+</testsuites>

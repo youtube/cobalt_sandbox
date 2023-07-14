@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="8" failures="0" disabled="0" errors="0" time="0.053" timestamp="2392-07-09T13:17:03.611" name="AllTests">
+  <testsuite name="Savegame" tests="5" failures="0" disabled="0" skipped="0" errors="0" time="0.036" timestamp="2392-07-09T13:17:03.614">
+    <testcase name="Basic" file="../../cobalt/storage/savegame_test.cc" line="42" status="run" result="completed" time="0.006" timestamp="2392-07-09T13:17:03.615" classname="Savegame" />
+    <testcase name="MaxReadExceeded" file="../../cobalt/storage/savegame_test.cc" line="58" status="run" result="completed" time="0.004" timestamp="2392-07-09T13:17:03.624" classname="Savegame" />
+    <testcase name="DoubleRead" file="../../cobalt/storage/savegame_test.cc" line="74" status="run" result="completed" time="0.005" timestamp="2392-07-09T13:17:03.631" classname="Savegame" />
+    <testcase name="ReadAfterDelete" file="../../cobalt/storage/savegame_test.cc" line="92" status="run" result="completed" time="0.004" timestamp="2392-07-09T13:17:03.638" classname="Savegame" />
+    <testcase name="DoubleDelete" file="../../cobalt/storage/savegame_test.cc" line="107" status="run" result="completed" time="0.004" timestamp="2392-07-09T13:17:03.645" classname="Savegame" />
+  </testsuite>
+  <testsuite name="StorageManagerTest" tests="3" failures="0" disabled="0" skipped="0" errors="0" time="0.009" timestamp="2392-07-09T13:17:03.653">
+    <testcase name="WithMemoryStore" file="../../cobalt/storage/storage_manager_test.cc" line="135" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:17:03.654" classname="StorageManagerTest" />
+    <testcase name="WithReadOnlyMemoryStore" file="../../cobalt/storage/storage_manager_test.cc" line="144" status="run" result="completed" time="0" timestamp="2392-07-09T13:17:03.658" classname="StorageManagerTest" />
+    <testcase name="FlushNow" file="../../cobalt/storage/storage_manager_test.cc" line="153" status="run" result="completed" time="0" timestamp="2392-07-09T13:17:03.660" classname="StorageManagerTest" />
+  </testsuite>
+</testsuites>

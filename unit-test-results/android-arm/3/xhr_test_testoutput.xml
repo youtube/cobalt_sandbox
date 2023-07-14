@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="20" failures="0" disabled="0" errors="0" time="0.923" timestamp="2392-07-09T13:18:09.195" name="AllTests">
+  <testsuite name="FetchBufferPoolTest" tests="6" failures="0" disabled="0" skipped="0" errors="0" time="0.488" timestamp="2392-07-09T13:18:09.199">
+    <testcase name="Empty" file="../../cobalt/xhr/fetch_buffer_pool_test.cc" line="43" status="run" result="completed" time="0" timestamp="2392-07-09T13:18:09.200" classname="FetchBufferPoolTest" />
+    <testcase name="SunnyDay" file="../../cobalt/xhr/fetch_buffer_pool_test.cc" line="65" status="run" result="completed" time="0.081" timestamp="2392-07-09T13:18:09.203" classname="FetchBufferPoolTest" />
+    <testcase name="Clear" file="../../cobalt/xhr/fetch_buffer_pool_test.cc" line="89" status="run" result="completed" time="0" timestamp="2392-07-09T13:18:09.286" classname="FetchBufferPoolTest" />
+    <testcase name="IncrementalWriteAndRead" file="../../cobalt/xhr/fetch_buffer_pool_test.cc" line="110" status="run" result="completed" time="0.086" timestamp="2392-07-09T13:18:09.289" classname="FetchBufferPoolTest" />
+    <testcase name="SingleLargeWrite" file="../../cobalt/xhr/fetch_buffer_pool_test.cc" line="139" status="run" result="completed" time="0.099" timestamp="2392-07-09T13:18:09.378" classname="FetchBufferPoolTest" />
+    <testcase name="MixedSizeWrites" file="../../cobalt/xhr/fetch_buffer_pool_test.cc" line="164" status="run" result="completed" time="0.206" timestamp="2392-07-09T13:18:09.480" classname="FetchBufferPoolTest" />
+  </testsuite>
+  <testsuite name="XhrSettingsImplTest" tests="6" failures="0" disabled="0" skipped="0" errors="0" time="0.026" timestamp="2392-07-09T13:18:09.690">
+    <testcase name="Empty" file="../../cobalt/xhr/xhr_settings_test.cc" line="23" status="run" result="completed" time="0" timestamp="2392-07-09T13:18:09.691" classname="XhrSettingsImplTest" />
+    <testcase name="SunnyDay" file="../../cobalt/xhr/xhr_settings_test.cc" line="31" status="run" result="completed" time="0.003" timestamp="2392-07-09T13:18:09.693" classname="XhrSettingsImplTest" />
+    <testcase name="RainyDay" file="../../cobalt/xhr/xhr_settings_test.cc" line="43" status="run" result="completed" time="0" timestamp="2392-07-09T13:18:09.699" classname="XhrSettingsImplTest" />
+    <testcase name="ZeroValuesWork" file="../../cobalt/xhr/xhr_settings_test.cc" line="55" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:18:09.701" classname="XhrSettingsImplTest" />
+    <testcase name="Updatable" file="../../cobalt/xhr/xhr_settings_test.cc" line="66" status="run" result="completed" time="0.007" timestamp="2392-07-09T13:18:09.706" classname="XhrSettingsImplTest" />
+    <testcase name="InvalidSettingNames" file="../../cobalt/xhr/xhr_settings_test.cc" line="82" status="run" result="completed" time="0" timestamp="2392-07-09T13:18:09.715" classname="XhrSettingsImplTest" />
+  </testsuite>
+  <testsuite name="XhrTest" tests="8" failures="0" disabled="0" skipped="0" errors="0" time="0.398" timestamp="2392-07-09T13:18:09.719">
+    <testcase name="InvalidMethod" file="../../cobalt/xhr/xml_http_request_test.cc" line="140" status="run" result="completed" time="0.058" timestamp="2392-07-09T13:18:09.720" classname="XhrTest" />
+    <testcase name="Open" file="../../cobalt/xhr/xml_http_request_test.cc" line="149" status="run" result="completed" time="0.046" timestamp="2392-07-09T13:18:09.780" classname="XhrTest" />
+    <testcase name="OpenFailConnectSrc" file="../../cobalt/xhr/xml_http_request_test.cc" line="167" status="run" result="completed" time="0.044" timestamp="2392-07-09T13:18:09.829" classname="XhrTest" />
+    <testcase name="OverrideMimeType" file="../../cobalt/xhr/xml_http_request_test.cc" line="184" status="run" result="completed" time="0.045" timestamp="2392-07-09T13:18:09.876" classname="XhrTest" />
+    <testcase name="SetResponseType" file="../../cobalt/xhr/xml_http_request_test.cc" line="199" status="run" result="completed" time="0.045" timestamp="2392-07-09T13:18:09.923" classname="XhrTest" />
+    <testcase name="SetRequestHeaderBeforeOpen" file="../../cobalt/xhr/xml_http_request_test.cc" line="211" status="run" result="completed" time="0.046" timestamp="2392-07-09T13:18:09.972" classname="XhrTest" />
+    <testcase name="SetRequestHeader" file="../../cobalt/xhr/xml_http_request_test.cc" line="220" status="run" result="completed" time="0.045" timestamp="2392-07-09T13:18:10.021" classname="XhrTest" />
+    <testcase name="GetResponseHeader" file="../../cobalt/xhr/xml_http_request_test.cc" line="233" status="run" result="completed" time="0.046" timestamp="2392-07-09T13:18:10.069" classname="XhrTest" />
+  </testsuite>
+</testsuites>

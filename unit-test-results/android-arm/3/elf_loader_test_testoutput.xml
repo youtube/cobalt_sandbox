@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="24" failures="0" disabled="0" errors="0" time="0.095" timestamp="2392-07-09T13:11:52.722" name="AllTests">
+  <testsuite name="DynamicSectionTest" tests="6" failures="0" disabled="0" skipped="0" errors="0" time="0.013" timestamp="2392-07-09T13:11:52.726">
+    <testcase name="Initialize" file="../../starboard/elf_loader/dynamic_section_test.cc" line="68" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:52.727" classname="DynamicSectionTest" />
+    <testcase name="CallInit" file="../../starboard/elf_loader/dynamic_section_test.cc" line="80" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:52.729" classname="DynamicSectionTest" />
+    <testcase name="CallConstructors" file="../../starboard/elf_loader/dynamic_section_test.cc" line="97" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:52.732" classname="DynamicSectionTest" />
+    <testcase name="CallDestructors" file="../../starboard/elf_loader/dynamic_section_test.cc" line="125" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:52.734" classname="DynamicSectionTest" />
+    <testcase name="LookupById" file="../../starboard/elf_loader/dynamic_section_test.cc" line="153" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:52.736" classname="DynamicSectionTest" />
+    <testcase name="LookupNameById" file="../../starboard/elf_loader/dynamic_section_test.cc" line="172" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:52.739" classname="DynamicSectionTest" />
+  </testsuite>
+  <testsuite name="ElfHeaderTest" tests="7" failures="0" disabled="0" skipped="0" errors="0" time="0.031" timestamp="2392-07-09T13:11:52.742">
+    <testcase name="Initialize" file="../../starboard/elf_loader/elf_header_test.cc" line="87" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:52.743" classname="ElfHeaderTest" />
+    <testcase name="NegativeBadImage" file="../../starboard/elf_loader/elf_header_test.cc" line="91" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:11:52.746" classname="ElfHeaderTest" />
+    <testcase name="NegativeBadClass" file="../../starboard/elf_loader/elf_header_test.cc" line="98" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:11:52.751" classname="ElfHeaderTest" />
+    <testcase name="NegativeWrongGulliverLilliput" file="../../starboard/elf_loader/elf_header_test.cc" line="105" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:11:52.756" classname="ElfHeaderTest" />
+    <testcase name="NegativeBadType" file="../../starboard/elf_loader/elf_header_test.cc" line="112" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:11:52.761" classname="ElfHeaderTest" />
+    <testcase name="NegativeBadVersion" file="../../starboard/elf_loader/elf_header_test.cc" line="119" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:11:52.765" classname="ElfHeaderTest" />
+    <testcase name="NegativeBadMachine" file="../../starboard/elf_loader/elf_header_test.cc" line="126" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:11:52.770" classname="ElfHeaderTest" />
+  </testsuite>
+  <testsuite name="ElfLoaderTest" tests="1" failures="0" disabled="0" skipped="0" errors="0" time="0.002" timestamp="2392-07-09T13:11:52.775">
+    <testcase name="Initialize" file="../../starboard/elf_loader/elf_loader_test.cc" line="33" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:52.776" classname="ElfLoaderTest" />
+  </testsuite>
+  <testsuite name="LZ4FileImplTest" tests="5" failures="0" disabled="0" skipped="0" errors="0" time="0.013" timestamp="2392-07-09T13:11:52.780">
+    <testcase name="OpenNonExistentFileFails" file="../../starboard/elf_loader/lz4_file_impl_test.cc" line="32" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:52.781" classname="LZ4FileImplTest" />
+    <testcase name="ReadBeforeOpeningFails" file="../../starboard/elf_loader/lz4_file_impl_test.cc" line="37" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:52.783" classname="LZ4FileImplTest" />
+    <testcase name="ReadNegativeOffsetFails" file="../../starboard/elf_loader/lz4_file_impl_test.cc" line="44" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:52.785" classname="LZ4FileImplTest" />
+    <testcase name="FrameHeaderMissingContentSizeDecompressionFails" file="../../starboard/elf_loader/lz4_file_impl_test.cc" line="52" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:11:52.788" classname="LZ4FileImplTest" />
+    <testcase name="ValidFileDecompressionSucceeds" file="../../starboard/elf_loader/lz4_file_impl_test.cc" line="67" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:52.792" classname="LZ4FileImplTest" />
+  </testsuite>
+  <testsuite name="ProgramTableTest" tests="1" failures="0" disabled="0" skipped="0" errors="0" time="0.007" timestamp="2392-07-09T13:11:52.796">
+    <testcase name="LoadSegments" file="../../starboard/elf_loader/program_table_test.cc" line="94" status="run" result="completed" time="0.004" timestamp="2392-07-09T13:11:52.797" classname="ProgramTableTest" />
+  </testsuite>
+  <testsuite name="RelocationsTest" tests="4" failures="0" disabled="0" skipped="0" errors="0" time="0.01" timestamp="2392-07-09T13:11:52.805">
+    <testcase name="R_AARCH64_JUMP_SLOT" file="../../starboard/elf_loader/relocations_test.cc" line="168" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:52.806" classname="RelocationsTest" />
+    <testcase name="R_AARCH64_GLOB_DAT" file="../../starboard/elf_loader/relocations_test.cc" line="182" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:52.809" classname="RelocationsTest" />
+    <testcase name="R_AARCH64_ABS64" file="../../starboard/elf_loader/relocations_test.cc" line="196" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:52.812" classname="RelocationsTest" />
+    <testcase name="R_AARCH64_RELATIVE" file="../../starboard/elf_loader/relocations_test.cc" line="214" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:52.814" classname="RelocationsTest" />
+  </testsuite>
+</testsuites>

@@ -1,0 +1,474 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="385" failures="0" disabled="0" errors="0" time="10.64" timestamp="2392-07-09T13:11:27.655" name="AllTests">
+  <testsuite name="ApplicationLifecycleStateTest" tests="3" failures="0" disabled="0" skipped="0" errors="0" time="0.024" timestamp="2392-07-09T13:11:27.658">
+    <testcase name="DefaultConstructor" file="../../cobalt/dom/application_lifecycle_state_test.cc" line="49" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:27.659" classname="ApplicationLifecycleStateTest" />
+    <testcase name="InitialStateConstructorStarted" file="../../cobalt/dom/application_lifecycle_state_test.cc" line="55" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:27.663" classname="ApplicationLifecycleStateTest" />
+    <testcase name="TransitionsAndObservations" file="../../cobalt/dom/application_lifecycle_state_test.cc" line="61" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:11:27.667" classname="ApplicationLifecycleStateTest" />
+  </testsuite>
+  <testsuite name="CommentTest" tests="5" failures="0" disabled="0" skipped="0" errors="0" time="0.298" timestamp="2392-07-09T13:11:27.685">
+    <testcase name="Duplicate" file="../../cobalt/dom/comment_test.cc" line="70" status="run" result="completed" time="0.065" timestamp="2392-07-09T13:11:27.686" classname="CommentTest" />
+    <testcase name="CommentCheckAttach" file="../../cobalt/dom/comment_test.cc" line="77" status="run" result="completed" time="0.064" timestamp="2392-07-09T13:11:27.754" classname="CommentTest" />
+    <testcase name="NodeValue" file="../../cobalt/dom/comment_test.cc" line="89" status="run" result="completed" time="0.055" timestamp="2392-07-09T13:11:27.821" classname="CommentTest" />
+    <testcase name="TextContent" file="../../cobalt/dom/comment_test.cc" line="94" status="run" result="completed" time="0.049" timestamp="2392-07-09T13:11:27.879" classname="CommentTest" />
+    <testcase name="InnerHTML" file="../../cobalt/dom/comment_test.cc" line="99" status="run" result="completed" time="0.05" timestamp="2392-07-09T13:11:27.932" classname="CommentTest" />
+  </testsuite>
+  <testsuite name="DocumentTest" tests="26" failures="0" disabled="0" skipped="0" errors="0" time="1.344" timestamp="2392-07-09T13:11:27.985">
+    <testcase name="Create" file="../../cobalt/dom/document_test.cc" line="100" status="run" result="completed" time="0.048" timestamp="2392-07-09T13:11:27.987" classname="DocumentTest" />
+    <testcase name="MainDocumentIsNotXMLDocument" file="../../cobalt/dom/document_test.cc" line="116" status="run" result="completed" time="0.048" timestamp="2392-07-09T13:11:28.037" classname="DocumentTest" />
+    <testcase name="NewDocumentIsNotXMLDocument" file="../../cobalt/dom/document_test.cc" line="120" status="run" result="completed" time="0.051" timestamp="2392-07-09T13:11:28.088" classname="DocumentTest" />
+    <testcase name="MainDocumentHasBrowsingContext" file="../../cobalt/dom/document_test.cc" line="126" status="run" result="completed" time="0.048" timestamp="2392-07-09T13:11:28.142" classname="DocumentTest" />
+    <testcase name="NewDocumentHasNoBrowsingContext" file="../../cobalt/dom/document_test.cc" line="130" status="run" result="completed" time="0.053" timestamp="2392-07-09T13:11:28.192" classname="DocumentTest" />
+    <testcase name="DocumentElement" file="../../cobalt/dom/document_test.cc" line="136" status="run" result="completed" time="0.05" timestamp="2392-07-09T13:11:28.248" classname="DocumentTest" />
+    <testcase name="CreateElement" file="../../cobalt/dom/document_test.cc" line="149" status="run" result="completed" time="0.05" timestamp="2392-07-09T13:11:28.301" classname="DocumentTest" />
+    <testcase name="CreateTextNode" file="../../cobalt/dom/document_test.cc" line="166" status="run" result="completed" time="0.049" timestamp="2392-07-09T13:11:28.354" classname="DocumentTest" />
+    <testcase name="CreateComment" file="../../cobalt/dom/document_test.cc" line="177" status="run" result="completed" time="0.048" timestamp="2392-07-09T13:11:28.406" classname="DocumentTest" />
+    <testcase name="CreateEventEvent" file="../../cobalt/dom/document_test.cc" line="188" status="run" result="completed" time="0.049" timestamp="2392-07-09T13:11:28.456" classname="DocumentTest" />
+    <testcase name="CreateEventCustomEvent" file="../../cobalt/dom/document_test.cc" line="213" status="run" result="completed" time="0.05" timestamp="2392-07-09T13:11:28.508" classname="DocumentTest" />
+    <testcase name="CreateEventUIEvent" file="../../cobalt/dom/document_test.cc" line="227" status="run" result="completed" time="0.05" timestamp="2392-07-09T13:11:28.560" classname="DocumentTest" />
+    <testcase name="CreateEventKeyboardEvent" file="../../cobalt/dom/document_test.cc" line="246" status="run" result="completed" time="0.048" timestamp="2392-07-09T13:11:28.613" classname="DocumentTest" />
+    <testcase name="CreateEventMessageEvent" file="../../cobalt/dom/document_test.cc" line="265" status="run" result="completed" time="0.049" timestamp="2392-07-09T13:11:28.664" classname="DocumentTest" />
+    <testcase name="CreateEventMouseEvent" file="../../cobalt/dom/document_test.cc" line="279" status="run" result="completed" time="0.047" timestamp="2392-07-09T13:11:28.715" classname="DocumentTest" />
+    <testcase name="CreateEventEventNotSupported" file="../../cobalt/dom/document_test.cc" line="298" status="run" result="completed" time="0.044" timestamp="2392-07-09T13:11:28.765" classname="DocumentTest" />
+    <testcase name="GetElementsByClassName" file="../../cobalt/dom/document_test.cc" line="316" status="run" result="completed" time="0.047" timestamp="2392-07-09T13:11:28.812" classname="DocumentTest" />
+    <testcase name="GetElementsByTagName" file="../../cobalt/dom/document_test.cc" line="322" status="run" result="completed" time="0.06" timestamp="2392-07-09T13:11:28.861" classname="DocumentTest" />
+    <testcase name="GetElementById" file="../../cobalt/dom/document_test.cc" line="328" status="run" result="completed" time="0.048" timestamp="2392-07-09T13:11:28.924" classname="DocumentTest" />
+    <testcase name="Implementation" file="../../cobalt/dom/document_test.cc" line="362" status="run" result="completed" time="0.046" timestamp="2392-07-09T13:11:28.975" classname="DocumentTest" />
+    <testcase name="Location" file="../../cobalt/dom/document_test.cc" line="368" status="run" result="completed" time="0.05" timestamp="2392-07-09T13:11:29.024" classname="DocumentTest" />
+    <testcase name="StyleSheets" file="../../cobalt/dom/document_test.cc" line="374" status="run" result="completed" time="0.049" timestamp="2392-07-09T13:11:29.077" classname="DocumentTest" />
+    <testcase name="StyleSheetsAddedToFront" file="../../cobalt/dom/document_test.cc" line="420" status="run" result="completed" time="0.049" timestamp="2392-07-09T13:11:29.128" classname="DocumentTest" />
+    <testcase name="HtmlElement" file="../../cobalt/dom/document_test.cc" line="466" status="run" result="completed" time="0.048" timestamp="2392-07-09T13:11:29.180" classname="DocumentTest" />
+    <testcase name="HeadElement" file="../../cobalt/dom/document_test.cc" line="481" status="run" result="completed" time="0.049" timestamp="2392-07-09T13:11:29.231" classname="DocumentTest" />
+    <testcase name="BodyElement" file="../../cobalt/dom/document_test.cc" line="500" status="run" result="completed" time="0.046" timestamp="2392-07-09T13:11:29.283" classname="DocumentTest" />
+  </testsuite>
+  <testsuite name="DocumentTypeTest" tests="1" failures="0" disabled="0" skipped="0" errors="0" time="0.003" timestamp="2392-07-09T13:11:29.332">
+    <testcase name="Duplicate" file="../../cobalt/dom/document_type_test.cc" line="34" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:29.334" classname="DocumentTypeTest" />
+  </testsuite>
+  <testsuite name="DOMImplementationTest" tests="2" failures="0" disabled="0" skipped="0" errors="0" time="0.008" timestamp="2392-07-09T13:11:29.338">
+    <testcase name="CreateDocumentWithEmptyName" file="../../cobalt/dom/dom_implementation_test.cc" line="27" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:29.340" classname="DOMImplementationTest" />
+    <testcase name="CreateDocumentWithName" file="../../cobalt/dom/dom_implementation_test.cc" line="38" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:11:29.343" classname="DOMImplementationTest" />
+  </testsuite>
+  <testsuite name="DOMParserTest" tests="1" failures="0" disabled="0" skipped="0" errors="0" time="0.004" timestamp="2392-07-09T13:11:29.349">
+    <testcase name="ParsesXML" file="../../cobalt/dom/dom_parser_test.cc" line="71" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:29.350" classname="DOMParserTest" />
+  </testsuite>
+  <testsuite name="DOMRectListTest" tests="2" failures="0" disabled="0" skipped="0" errors="0" time="0.004" timestamp="2392-07-09T13:11:29.356">
+    <testcase name="ItemAccess" file="../../cobalt/dom/dom_rect_list_test.cc" line="22" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:29.357" classname="DOMRectListTest" />
+    <testcase name="AppendDOMRectShouldTakeDOMRect" file="../../cobalt/dom/dom_rect_list_test.cc" line="34" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:29.359" classname="DOMRectListTest" />
+  </testsuite>
+  <testsuite name="DOMStringMapTest" tests="8" failures="0" disabled="0" skipped="0" errors="0" time="0.03" timestamp="2392-07-09T13:11:29.362">
+    <testcase name="InvalidPrefix" file="../../cobalt/dom/dom_string_map_test.cc" line="49" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:29.363" classname="DOMStringMapTest" />
+    <testcase name="Empty" file="../../cobalt/dom/dom_string_map_test.cc" line="61" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:29.367" classname="DOMStringMapTest" />
+    <testcase name="OneWord" file="../../cobalt/dom/dom_string_map_test.cc" line="76" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:29.371" classname="DOMStringMapTest" />
+    <testcase name="MultipleWords" file="../../cobalt/dom/dom_string_map_test.cc" line="92" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:29.375" classname="DOMStringMapTest" />
+    <testcase name="ContainsNonLetterAfterHyphen" file="../../cobalt/dom/dom_string_map_test.cc" line="110" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:29.379" classname="DOMStringMapTest" />
+    <testcase name="EndsWithHyphen" file="../../cobalt/dom/dom_string_map_test.cc" line="128" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:29.383" classname="DOMStringMapTest" />
+    <testcase name="ContainsMultipleHyphens" file="../../cobalt/dom/dom_string_map_test.cc" line="144" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:29.387" classname="DOMStringMapTest" />
+    <testcase name="InvalidPropertyName" file="../../cobalt/dom/dom_string_map_test.cc" line="162" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:29.390" classname="DOMStringMapTest" />
+  </testsuite>
+  <testsuite name="DOMTokenListTest" tests="6" failures="0" disabled="0" skipped="0" errors="0" time="0.023" timestamp="2392-07-09T13:11:29.396">
+    <testcase name="DOMTokenListShouldBeAlive" file="../../cobalt/dom/dom_token_list_test.cc" line="49" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:29.397" classname="DOMTokenListTest" />
+    <testcase name="DOMTokenListContains" file="../../cobalt/dom/dom_token_list_test.cc" line="63" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:29.401" classname="DOMTokenListTest" />
+    <testcase name="DOMTokenListAdd" file="../../cobalt/dom/dom_token_list_test.cc" line="75" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:29.404" classname="DOMTokenListTest" />
+    <testcase name="DOMTokenListRemove" file="../../cobalt/dom/dom_token_list_test.cc" line="91" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:29.408" classname="DOMTokenListTest" />
+    <testcase name="DOMTokenListToggle" file="../../cobalt/dom/dom_token_list_test.cc" line="106" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:29.412" classname="DOMTokenListTest" />
+    <testcase name="DOMTokenListAnonymousStringifier" file="../../cobalt/dom/dom_token_list_test.cc" line="130" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:29.416" classname="DOMTokenListTest" />
+  </testsuite>
+  <testsuite name="ElementTest" tests="23" failures="0" disabled="0" skipped="0" errors="0" time="0.102" timestamp="2392-07-09T13:11:29.421">
+    <testcase name="CreateElement" file="../../cobalt/dom/element_test.cc" line="88" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:29.422" classname="ElementTest" />
+    <testcase name="Duplicate" file="../../cobalt/dom/element_test.cc" line="111" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:29.426" classname="ElementTest" />
+    <testcase name="AsElement" file="../../cobalt/dom/element_test.cc" line="123" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:29.430" classname="ElementTest" />
+    <testcase name="TagNameAndLocalName" file="../../cobalt/dom/element_test.cc" line="133" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:29.434" classname="ElementTest" />
+    <testcase name="AttributeMethods" file="../../cobalt/dom/element_test.cc" line="145" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:29.438" classname="ElementTest" />
+    <testcase name="AttributesPropertyGetAndRemove" file="../../cobalt/dom/element_test.cc" line="167" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:29.442" classname="ElementTest" />
+    <testcase name="AttributesPropertySet" file="../../cobalt/dom/element_test.cc" line="236" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:29.446" classname="ElementTest" />
+    <testcase name="AttributesPropertyTransfer" file="../../cobalt/dom/element_test.cc" line="254" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:29.450" classname="ElementTest" />
+    <testcase name="ClassList" file="../../cobalt/dom/element_test.cc" line="292" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:29.454" classname="ElementTest" />
+    <testcase name="GetElementsByClassName" file="../../cobalt/dom/element_test.cc" line="335" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:29.458" classname="ElementTest" />
+    <testcase name="GetElementsByTagName" file="../../cobalt/dom/element_test.cc" line="340" status="run" result="completed" time="0.01" timestamp="2392-07-09T13:11:29.462" classname="ElementTest" />
+    <testcase name="GetBoundingClientRect" file="../../cobalt/dom/element_test.cc" line="345" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:29.475" classname="ElementTest" />
+    <testcase name="ClientTopLeftWidthHeight" file="../../cobalt/dom/element_test.cc" line="359" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:29.479" classname="ElementTest" />
+    <testcase name="InnerHTML" file="../../cobalt/dom/element_test.cc" line="367" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:29.483" classname="ElementTest" />
+    <testcase name="SetInnerHTML" file="../../cobalt/dom/element_test.cc" line="407" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:11:29.487" classname="ElementTest" />
+    <testcase name="InnerHTMLGetterReturnsText" file="../../cobalt/dom/element_test.cc" line="495" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:29.491" classname="ElementTest" />
+    <testcase name="InnerHTMLSetterCreatesElement" file="../../cobalt/dom/element_test.cc" line="501" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:29.495" classname="ElementTest" />
+    <testcase name="InnerHTMLSetterWithTextCreatesTextNode" file="../../cobalt/dom/element_test.cc" line="511" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:29.499" classname="ElementTest" />
+    <testcase name="InnerHTMLSetterAndGetterAreConsistent" file="../../cobalt/dom/element_test.cc" line="521" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:29.503" classname="ElementTest" />
+    <testcase name="InnerHTMLSetterAndGetterAreConsistentWithText" file="../../cobalt/dom/element_test.cc" line="527" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:29.508" classname="ElementTest" />
+    <testcase name="OuterHTML" file="../../cobalt/dom/element_test.cc" line="533" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:11:29.512" classname="ElementTest" />
+    <testcase name="NodeValueAndTextContent" file="../../cobalt/dom/element_test.cc" line="687" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:29.516" classname="ElementTest" />
+    <testcase name="ScrollWidthHeight" file="../../cobalt/dom/element_test.cc" line="728" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:29.520" classname="ElementTest" />
+  </testsuite>
+  <testsuite name="EventQueueTest" tests="4" failures="0" disabled="0" skipped="0" errors="0" time="0.009" timestamp="2392-07-09T13:11:29.526">
+    <testcase name="EventWithoutTargetTest" file="../../cobalt/dom/event_queue_test.cc" line="56" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:29.527" classname="EventQueueTest" />
+    <testcase name="EventWithTargetTest" file="../../cobalt/dom/event_queue_test.cc" line="74" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:29.529" classname="EventQueueTest" />
+    <testcase name="CancelAllEventsTest" file="../../cobalt/dom/event_queue_test.cc" line="93" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:29.532" classname="EventQueueTest" />
+    <testcase name="EventWithDifferentTargetTest" file="../../cobalt/dom/event_queue_test.cc" line="115" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:29.534" classname="EventQueueTest" />
+  </testsuite>
+  <testsuite name="FontCacheTest" tests="2" failures="0" disabled="0" skipped="0" errors="0" time="0.006" timestamp="2392-07-09T13:11:29.538">
+    <testcase name="FindPostscriptFont" file="../../cobalt/dom/font_cache_test.cc" line="99" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:29.539" classname="FontCacheTest" />
+    <testcase name="UseRemote" file="../../cobalt/dom/font_cache_test.cc" line="127" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:29.541" classname="FontCacheTest" />
+  </testsuite>
+  <testsuite name="HTMLElementFactoryTest" tests="1" failures="0" disabled="0" skipped="0" errors="0" time="0.015" timestamp="2392-07-09T13:11:29.546">
+    <testcase name="CreateHTMLElement" file="../../cobalt/dom/html_element_factory_test.cc" line="95" status="run" result="completed" time="0.013" timestamp="2392-07-09T13:11:29.547" classname="HTMLElementFactoryTest" />
+  </testsuite>
+  <testsuite name="HTMLElementTest" tests="23" failures="0" disabled="0" skipped="0" errors="0" time="1.233" timestamp="2392-07-09T13:11:29.564">
+    <testcase name="Dir" file="../../cobalt/dom/html_element_test.cc" line="184" status="run" result="completed" time="0.068" timestamp="2392-07-09T13:11:29.565" classname="HTMLElementTest" />
+    <testcase name="TabIndex" file="../../cobalt/dom/html_element_test.cc" line="210" status="run" result="completed" time="0.088" timestamp="2392-07-09T13:11:29.636" classname="HTMLElementTest" />
+    <testcase name="Focus" file="../../cobalt/dom/html_element_test.cc" line="228" status="run" result="completed" time="0.05" timestamp="2392-07-09T13:11:29.727" classname="HTMLElementTest" />
+    <testcase name="Blur" file="../../cobalt/dom/html_element_test.cc" line="277" status="run" result="completed" time="0.047" timestamp="2392-07-09T13:11:29.780" classname="HTMLElementTest" />
+    <testcase name="RemoveActiveElementShouldRunBlur" file="../../cobalt/dom/html_element_test.cc" line="295" status="run" result="completed" time="0.047" timestamp="2392-07-09T13:11:29.830" classname="HTMLElementTest" />
+    <testcase name="LayoutBoxesGetter" file="../../cobalt/dom/html_element_test.cc" line="313" status="run" result="completed" time="0.044" timestamp="2392-07-09T13:11:29.880" classname="HTMLElementTest" />
+    <testcase name="GetBoundingClientRectWithoutLayoutBox" file="../../cobalt/dom/html_element_test.cc" line="332" status="run" result="completed" time="0.051" timestamp="2392-07-09T13:11:29.926" classname="HTMLElementTest" />
+    <testcase name="ClientTop" file="../../cobalt/dom/html_element_test.cc" line="349" status="run" result="completed" time="0.049" timestamp="2392-07-09T13:11:29.980" classname="HTMLElementTest" />
+    <testcase name="ClientLeft" file="../../cobalt/dom/html_element_test.cc" line="384" status="run" result="completed" time="0.049" timestamp="2392-07-09T13:11:30.032" classname="HTMLElementTest" />
+    <testcase name="ClientWidth" file="../../cobalt/dom/html_element_test.cc" line="419" status="run" result="completed" time="0.048" timestamp="2392-07-09T13:11:30.084" classname="HTMLElementTest" />
+    <testcase name="ClientHeight" file="../../cobalt/dom/html_element_test.cc" line="467" status="run" result="completed" time="0.046" timestamp="2392-07-09T13:11:30.135" classname="HTMLElementTest" />
+    <testcase name="OffsetParent" file="../../cobalt/dom/html_element_test.cc" line="513" status="run" result="completed" time="0.047" timestamp="2392-07-09T13:11:30.183" classname="HTMLElementTest" />
+    <testcase name="OffsetTop" file="../../cobalt/dom/html_element_test.cc" line="570" status="run" result="completed" time="0.046" timestamp="2392-07-09T13:11:30.233" classname="HTMLElementTest" />
+    <testcase name="OffsetLeft" file="../../cobalt/dom/html_element_test.cc" line="619" status="run" result="completed" time="0.062" timestamp="2392-07-09T13:11:30.283" classname="HTMLElementTest" />
+    <testcase name="OffsetWidth" file="../../cobalt/dom/html_element_test.cc" line="668" status="run" result="completed" time="0.05" timestamp="2392-07-09T13:11:30.347" classname="HTMLElementTest" />
+    <testcase name="OffsetHeight" file="../../cobalt/dom/html_element_test.cc" line="692" status="run" result="completed" time="0.046" timestamp="2392-07-09T13:11:30.400" classname="HTMLElementTest" />
+    <testcase name="SetAttributeMatchesGetAttribute" file="../../cobalt/dom/html_element_test.cc" line="714" status="run" result="completed" time="0.046" timestamp="2392-07-09T13:11:30.449" classname="HTMLElementTest" />
+    <testcase name="SetAttributeStyleSetsElementStyle" file="../../cobalt/dom/html_element_test.cc" line="722" status="run" result="completed" time="0.047" timestamp="2392-07-09T13:11:30.498" classname="HTMLElementTest" />
+    <testcase name="SetAttributeStyleReplacesExistingElementStyle" file="../../cobalt/dom/html_element_test.cc" line="733" status="run" result="completed" time="0.048" timestamp="2392-07-09T13:11:30.548" classname="HTMLElementTest" />
+    <testcase name="GetAttributeStyleMatchesSetAttributeStyle" file="../../cobalt/dom/html_element_test.cc" line="760" status="run" result="completed" time="0.049" timestamp="2392-07-09T13:11:30.598" classname="HTMLElementTest" />
+    <testcase name="GetAttributeStyleDoesNotMatchSetAttributeStyleAfterStyleMutation" file="../../cobalt/dom/html_element_test.cc" line="775" status="run" result="completed" time="0.046" timestamp="2392-07-09T13:11:30.650" classname="HTMLElementTest" />
+    <testcase name="GetAttributeStyleMatchesSerializedStyleAfterStyleMutation" file="../../cobalt/dom/html_element_test.cc" line="798" status="run" result="completed" time="0.045" timestamp="2392-07-09T13:11:30.698" classname="HTMLElementTest" />
+    <testcase name="Duplicate" file="../../cobalt/dom/html_element_test.cc" line="820" status="run" result="completed" time="0.049" timestamp="2392-07-09T13:11:30.746" classname="HTMLElementTest" />
+  </testsuite>
+  <testsuite name="HtmlLinkElementTest" tests="3" failures="0" disabled="0" skipped="0" errors="0" time="0.014" timestamp="2392-07-09T13:11:30.800">
+    <testcase name="StylesheetRelAttribute" file="../../cobalt/dom/html_link_element_test.cc" line="83" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:30.801" classname="HtmlLinkElementTest" />
+    <testcase name="SplashScreenRelAttribute" file="../../cobalt/dom/html_link_element_test.cc" line="89" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:30.805" classname="HtmlLinkElementTest" />
+    <testcase name="BadSplashScreenRelAttribute" file="../../cobalt/dom/html_link_element_test.cc" line="101" status="run" result="completed" time="0.005" timestamp="2392-07-09T13:11:30.808" classname="HtmlLinkElementTest" />
+  </testsuite>
+  <testsuite name="IntersectionObserverTest" tests="1" failures="0" disabled="0" skipped="0" errors="0" time="0.003" timestamp="2392-07-09T13:11:30.817">
+    <testcase name="RegisterIntersectionObserverForTarget" file="../../cobalt/dom/intersection_observer_test.cc" line="114" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:30.818" classname="IntersectionObserverTest" />
+  </testsuite>
+  <testsuite name="KeyboardEventTest" tests="9" failures="0" disabled="0" skipped="0" errors="0" time="0.02" timestamp="2392-07-09T13:11:30.823">
+    <testcase name="ShouldHaveBubblesAndCancelableSet" file="../../cobalt/dom/keyboard_event_test.cc" line="40" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:30.824" classname="KeyboardEventTest" />
+    <testcase name="CanGetKeyLocation" file="../../cobalt/dom/keyboard_event_test.cc" line="46" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:30.826" classname="KeyboardEventTest" />
+    <testcase name="CanGetKeyIdentifierAndKeyAndCode" file="../../cobalt/dom/keyboard_event_test.cc" line="66" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:30.829" classname="KeyboardEventTest" />
+    <testcase name="CanGetAltKey" file="../../cobalt/dom/keyboard_event_test.cc" line="148" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:30.831" classname="KeyboardEventTest" />
+    <testcase name="CanGetCtrlKey" file="../../cobalt/dom/keyboard_event_test.cc" line="161" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:30.833" classname="KeyboardEventTest" />
+    <testcase name="CanGetMetaKey" file="../../cobalt/dom/keyboard_event_test.cc" line="174" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:30.835" classname="KeyboardEventTest" />
+    <testcase name="CanGetShiftKey" file="../../cobalt/dom/keyboard_event_test.cc" line="187" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:30.838" classname="KeyboardEventTest" />
+    <testcase name="CanGetModifierState" file="../../cobalt/dom/keyboard_event_test.cc" line="200" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:30.840" classname="KeyboardEventTest" />
+    <testcase name="CanGetRepeat" file="../../cobalt/dom/keyboard_event_test.cc" line="221" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:30.842" classname="KeyboardEventTest" />
+  </testsuite>
+  <testsuite name="LocalStorageDatabaseTest" tests="4" failures="0" disabled="0" skipped="0" errors="0" time="0.024" timestamp="2392-07-09T13:11:30.845">
+    <testcase name="EmptyRead" file="../../cobalt/dom/local_storage_database_test.cc" line="111" status="run" result="completed" time="0.003" timestamp="2392-07-09T13:11:30.847" classname="LocalStorageDatabaseTest" />
+    <testcase name="WritePersists" file="../../cobalt/dom/local_storage_database_test.cc" line="121" status="run" result="completed" time="0.004" timestamp="2392-07-09T13:11:30.853" classname="LocalStorageDatabaseTest" />
+    <testcase name="Delete" file="../../cobalt/dom/local_storage_database_test.cc" line="145" status="run" result="completed" time="0.003" timestamp="2392-07-09T13:11:30.860" classname="LocalStorageDatabaseTest" />
+    <testcase name="Clear" file="../../cobalt/dom/local_storage_database_test.cc" line="166" status="run" result="completed" time="0.003" timestamp="2392-07-09T13:11:30.865" classname="LocalStorageDatabaseTest" />
+  </testsuite>
+  <testsuite name="LocationTest" tests="9" failures="0" disabled="0" skipped="0" errors="0" time="0.033" timestamp="2392-07-09T13:11:30.872">
+    <testcase name="GettersShouldReturnExpectedFormat" file="../../cobalt/dom/location_test.cc" line="155" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:30.873" classname="LocationTest" />
+    <testcase name="SetHref" file="../../cobalt/dom/location_test.cc" line="170" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:30.876" classname="LocationTest" />
+    <testcase name="SetProtocolShouldWorkAsExpected" file="../../cobalt/dom/location_test.cc" line="178" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:30.879" classname="LocationTest" />
+    <testcase name="SetHostShouldWorkAsExpected" file="../../cobalt/dom/location_test.cc" line="186" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:11:30.883" classname="LocationTest" />
+    <testcase name="SetHostnameShouldWorkAsExpected" file="../../cobalt/dom/location_test.cc" line="200" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:30.887" classname="LocationTest" />
+    <testcase name="SetPortShouldWorkAsExpected" file="../../cobalt/dom/location_test.cc" line="209" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:30.891" classname="LocationTest" />
+    <testcase name="SetPathnameShouldWorkAsExpected" file="../../cobalt/dom/location_test.cc" line="218" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:30.894" classname="LocationTest" />
+    <testcase name="SetHashShouldWorkAsExpected" file="../../cobalt/dom/location_test.cc" line="226" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:11:30.898" classname="LocationTest" />
+    <testcase name="SetSearchShouldWorkAsExpected" file="../../cobalt/dom/location_test.cc" line="240" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:11:30.902" classname="LocationTest" />
+  </testsuite>
+  <testsuite name="MediaQueryListTest" tests="3" failures="0" disabled="0" skipped="0" errors="0" time="0.009" timestamp="2392-07-09T13:11:30.908">
+    <testcase name="MediaGetter" file="../../cobalt/dom/media_query_list_test.cc" line="33" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:11:30.909" classname="MediaQueryListTest" />
+    <testcase name="MatchesFalse" file="../../cobalt/dom/media_query_list_test.cc" line="49" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:30.914" classname="MediaQueryListTest" />
+    <testcase name="MatchesTrue" file="../../cobalt/dom/media_query_list_test.cc" line="60" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:30.916" classname="MediaQueryListTest" />
+  </testsuite>
+  <testsuite name="MediaSettingsImplTest" tests="6" failures="0" disabled="0" skipped="0" errors="0" time="0.061" timestamp="2392-07-09T13:11:30.920">
+    <testcase name="Empty" file="../../cobalt/dom/media_settings_test.cc" line="23" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:30.921" classname="MediaSettingsImplTest" />
+    <testcase name="SunnyDay" file="../../cobalt/dom/media_settings_test.cc" line="36" status="run" result="completed" time="0.009" timestamp="2392-07-09T13:11:30.923" classname="MediaSettingsImplTest" />
+    <testcase name="RainyDay" file="../../cobalt/dom/media_settings_test.cc" line="61" status="run" result="completed" time="0.009" timestamp="2392-07-09T13:11:30.935" classname="MediaSettingsImplTest" />
+    <testcase name="ZeroValuesWork" file="../../cobalt/dom/media_settings_test.cc" line="85" status="run" result="completed" time="0.007" timestamp="2392-07-09T13:11:30.947" classname="MediaSettingsImplTest" />
+    <testcase name="Updatable" file="../../cobalt/dom/media_settings_test.cc" line="107" status="run" result="completed" time="0.019" timestamp="2392-07-09T13:11:30.956" classname="MediaSettingsImplTest" />
+    <testcase name="InvalidSettingNames" file="../../cobalt/dom/media_settings_test.cc" line="143" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:11:30.977" classname="MediaSettingsImplTest" />
+  </testsuite>
+  <testsuite name="MutationObserverTest" tests="19" failures="0" disabled="0" skipped="0" errors="0" time="0.078" timestamp="2392-07-09T13:11:30.983">
+    <testcase name="CreateAttributeMutationRecord" file="../../cobalt/dom/mutation_observer_test.cc" line="100" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:30.984" classname="MutationObserverTest" />
+    <testcase name="CreateCharacterDataMutationRecord" file="../../cobalt/dom/mutation_observer_test.cc" line="129" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:30.988" classname="MutationObserverTest" />
+    <testcase name="CreateChildListMutationRecord" file="../../cobalt/dom/mutation_observer_test.cc" line="155" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:30.992" classname="MutationObserverTest" />
+    <testcase name="MutationObserverInit" file="../../cobalt/dom/mutation_observer_test.cc" line="181" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:30.997" classname="MutationObserverTest" />
+    <testcase name="TakeRecords" file="../../cobalt/dom/mutation_observer_test.cc" line="217" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:31.001" classname="MutationObserverTest" />
+    <testcase name="Notify" file="../../cobalt/dom/mutation_observer_test.cc" line="245" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:11:31.005" classname="MutationObserverTest" />
+    <testcase name="ReportMutation" file="../../cobalt/dom/mutation_observer_test.cc" line="296" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:11:31.009" classname="MutationObserverTest" />
+    <testcase name="AttributeFilter" file="../../cobalt/dom/mutation_observer_test.cc" line="337" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:31.013" classname="MutationObserverTest" />
+    <testcase name="RegisteredObserverList" file="../../cobalt/dom/mutation_observer_test.cc" line="375" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:31.017" classname="MutationObserverTest" />
+    <testcase name="LazilySetOptions" file="../../cobalt/dom/mutation_observer_test.cc" line="409" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:31.021" classname="MutationObserverTest" />
+    <testcase name="InvalidOptions" file="../../cobalt/dom/mutation_observer_test.cc" line="431" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:31.025" classname="MutationObserverTest" />
+    <testcase name="InvalidOptionsRaisesException" file="../../cobalt/dom/mutation_observer_test.cc" line="456" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:31.029" classname="MutationObserverTest" />
+    <testcase name="AddChildNodes" file="../../cobalt/dom/mutation_observer_test.cc" line="466" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:11:31.033" classname="MutationObserverTest" />
+    <testcase name="RemoveChildNode" file="../../cobalt/dom/mutation_observer_test.cc" line="509" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:11:31.038" classname="MutationObserverTest" />
+    <testcase name="MutateCharacterData" file="../../cobalt/dom/mutation_observer_test.cc" line="541" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:31.042" classname="MutationObserverTest" />
+    <testcase name="MutateCharacterDataWithOldValue" file="../../cobalt/dom/mutation_observer_test.cc" line="568" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:31.046" classname="MutationObserverTest" />
+    <testcase name="MutateAttribute" file="../../cobalt/dom/mutation_observer_test.cc" line="596" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:31.050" classname="MutationObserverTest" />
+    <testcase name="MutateAttributeWithOldValue" file="../../cobalt/dom/mutation_observer_test.cc" line="626" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:31.055" classname="MutationObserverTest" />
+    <testcase name="Disconnect" file="../../cobalt/dom/mutation_observer_test.cc" line="652" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:31.059" classname="MutationObserverTest" />
+  </testsuite>
+  <testsuite name="NamedNodeMapTest" tests="4" failures="0" disabled="0" skipped="0" errors="0" time="0.015" timestamp="2392-07-09T13:11:31.064">
+    <testcase name="EmptyNamedNodeMap" file="../../cobalt/dom/named_node_map_test.cc" line="53" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:31.065" classname="NamedNodeMapTest" />
+    <testcase name="ShouldBeAlive" file="../../cobalt/dom/named_node_map_test.cc" line="60" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:31.069" classname="NamedNodeMapTest" />
+    <testcase name="CanSetNamedItem" file="../../cobalt/dom/named_node_map_test.cc" line="73" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:31.073" classname="NamedNodeMapTest" />
+    <testcase name="CanRemoveNamedItem" file="../../cobalt/dom/named_node_map_test.cc" line="86" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:31.077" classname="NamedNodeMapTest" />
+  </testsuite>
+  <testsuite name="NavigatorLicensesTest" tests="1" failures="0" disabled="0" skipped="0" errors="0" time="0.014" timestamp="2392-07-09T13:11:31.082">
+    <testcase name="NonEmpty" file="../../cobalt/dom/navigator_licenses_test.cc" line="24" status="run" result="completed" time="0.011" timestamp="2392-07-09T13:11:31.083" classname="NavigatorLicensesTest" />
+  </testsuite>
+  <testsuite name="NavigatorTest" tests="12" failures="0" disabled="0" skipped="0" errors="0" time="0.581" timestamp="2392-07-09T13:11:31.098">
+    <testcase name="Navigator" file="../../cobalt/dom/navigator_test.cc" line="36" status="run" result="completed" time="0.048" timestamp="2392-07-09T13:11:31.099" classname="NavigatorTest" />
+    <testcase name="WindowNavigator" file="../../cobalt/dom/navigator_test.cc" line="46" status="run" result="completed" time="0.047" timestamp="2392-07-09T13:11:31.150" classname="NavigatorTest" />
+    <testcase name="NavigatorID" file="../../cobalt/dom/navigator_test.cc" line="56" status="run" result="completed" time="0.046" timestamp="2392-07-09T13:11:31.200" classname="NavigatorTest" />
+    <testcase name="NavigatorLanguage" file="../../cobalt/dom/navigator_test.cc" line="65" status="run" result="completed" time="0.046" timestamp="2392-07-09T13:11:31.249" classname="NavigatorTest" />
+    <testcase name="NavigatorPluginsPlugins" file="../../cobalt/dom/navigator_test.cc" line="85" status="run" result="completed" time="0.045" timestamp="2392-07-09T13:11:31.297" classname="NavigatorTest" />
+    <testcase name="NavigatorPluginsMimeTypes" file="../../cobalt/dom/navigator_test.cc" line="98" status="run" result="completed" time="0.043" timestamp="2392-07-09T13:11:31.345" classname="NavigatorTest" />
+    <testcase name="NavigatorPluginsJavaEnabled" file="../../cobalt/dom/navigator_test.cc" line="111" status="run" result="completed" time="0.046" timestamp="2392-07-09T13:11:31.390" classname="NavigatorTest" />
+    <testcase name="NavigatorStorageUtils" file="../../cobalt/dom/navigator_test.cc" line="119" status="run" result="completed" time="0.045" timestamp="2392-07-09T13:11:31.439" classname="NavigatorTest" />
+    <testcase name="NavigatorMediaSession" file="../../cobalt/dom/navigator_test.cc" line="127" status="run" result="completed" time="0.046" timestamp="2392-07-09T13:11:31.487" classname="NavigatorTest" />
+    <testcase name="NavigatorSystemCaptionSettings" file="../../cobalt/dom/navigator_test.cc" line="136" status="run" result="completed" time="0.044" timestamp="2392-07-09T13:11:31.536" classname="NavigatorTest" />
+    <testcase name="NavigatorLicenses" file="../../cobalt/dom/navigator_test.cc" line="146" status="run" result="completed" time="0.048" timestamp="2392-07-09T13:11:31.582" classname="NavigatorTest" />
+    <testcase name="NavigatorOnline" file="../../cobalt/dom/navigator_test.cc" line="155" status="run" result="completed" time="0.045" timestamp="2392-07-09T13:11:31.633" classname="NavigatorTest" />
+  </testsuite>
+  <testsuite name="NodeDispatchEventTest" tests="8" failures="0" disabled="0" skipped="0" errors="0" time="0.036" timestamp="2392-07-09T13:11:31.682">
+    <testcase name="NonBubblingEventPropagation" file="../../cobalt/dom/node_dispatch_event_test.cc" line="111" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:11:31.683" classname="NodeDispatchEventTest" />
+    <testcase name="BubblingEventPropagation" file="../../cobalt/dom/node_dispatch_event_test.cc" line="129" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:11:31.688" classname="NodeDispatchEventTest" />
+    <testcase name="StopPropagationAtCapturePhase" file="../../cobalt/dom/node_dispatch_event_test.cc" line="150" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:11:31.693" classname="NodeDispatchEventTest" />
+    <testcase name="StopPropagationAtAtTargetPhase" file="../../cobalt/dom/node_dispatch_event_test.cc" line="163" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:11:31.697" classname="NodeDispatchEventTest" />
+    <testcase name="StopPropagationAtBubblingPhase" file="../../cobalt/dom/node_dispatch_event_test.cc" line="180" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:11:31.702" classname="NodeDispatchEventTest" />
+    <testcase name="StopImmediatePropagation" file="../../cobalt/dom/node_dispatch_event_test.cc" line="200" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:11:31.706" classname="NodeDispatchEventTest" />
+    <testcase name="PreventDefaultOnNonCancelableEvent" file="../../cobalt/dom/node_dispatch_event_test.cc" line="215" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:11:31.711" classname="NodeDispatchEventTest" />
+    <testcase name="PreventDefaultOnCancelableEvent" file="../../cobalt/dom/node_dispatch_event_test.cc" line="229" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:11:31.715" classname="NodeDispatchEventTest" />
+  </testsuite>
+  <testsuite name="NodeListLiveTest" tests="1" failures="0" disabled="0" skipped="0" errors="0" time="0.003" timestamp="2392-07-09T13:11:31.721">
+    <testcase name="NodeListLiveTest" file="../../cobalt/dom/node_list_live_test.cc" line="45" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:31.722" classname="NodeListLiveTest" />
+  </testsuite>
+  <testsuite name="NodeListTest" tests="1" failures="0" disabled="0" skipped="0" errors="0" time="0.003" timestamp="2392-07-09T13:11:31.727">
+    <testcase name="NodeListTest" file="../../cobalt/dom/node_list_test.cc" line="47" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:31.728" classname="NodeListTest" />
+  </testsuite>
+  <testsuite name="NodeTest" tests="17" failures="0" disabled="0" skipped="0" errors="0" time="0.066" timestamp="2392-07-09T13:11:31.733">
+    <testcase name="CreateNode" file="../../cobalt/dom/node_test.cc" line="92" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:31.734" classname="NodeTest" />
+    <testcase name="CloneNode" file="../../cobalt/dom/node_test.cc" line="97" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:31.738" classname="NodeTest" />
+    <testcase name="AppendChild" file="../../cobalt/dom/node_test.cc" line="124" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:31.742" classname="NodeTest" />
+    <testcase name="AppendChildTwice" file="../../cobalt/dom/node_test.cc" line="139" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:31.746" classname="NodeTest" />
+    <testcase name="Contains" file="../../cobalt/dom/node_test.cc" line="152" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:31.750" classname="NodeTest" />
+    <testcase name="AppendChildWithParent" file="../../cobalt/dom/node_test.cc" line="166" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:31.754" classname="NodeTest" />
+    <testcase name="InsertBefore" file="../../cobalt/dom/node_test.cc" line="180" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:31.757" classname="NodeTest" />
+    <testcase name="InsertBeforeTwice" file="../../cobalt/dom/node_test.cc" line="202" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:31.761" classname="NodeTest" />
+    <testcase name="InsertBeforeSelf" file="../../cobalt/dom/node_test.cc" line="214" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:31.765" classname="NodeTest" />
+    <testcase name="InsertIntoAnotherDocument" file="../../cobalt/dom/node_test.cc" line="226" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:31.769" classname="NodeTest" />
+    <testcase name="RemoveChild" file="../../cobalt/dom/node_test.cc" line="235" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:31.773" classname="NodeTest" />
+    <testcase name="ChildNodes" file="../../cobalt/dom/node_test.cc" line="254" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:31.777" classname="NodeTest" />
+    <testcase name="ParentElement" file="../../cobalt/dom/node_test.cc" line="273" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:31.781" classname="NodeTest" />
+    <testcase name="ParentNode" file="../../cobalt/dom/node_test.cc" line="288" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:31.785" classname="NodeTest" />
+    <testcase name="NonDocumentTypeChildNode" file="../../cobalt/dom/node_test.cc" line="326" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:31.789" classname="NodeTest" />
+    <testcase name="OwnerDocumentAndNodeDocument" file="../../cobalt/dom/node_test.cc" line="350" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:31.793" classname="NodeTest" />
+    <testcase name="AdoptIntoDocument" file="../../cobalt/dom/node_test.cc" line="361" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:31.797" classname="NodeTest" />
+  </testsuite>
+  <testsuite name="OnScreenKeyboardTest" tests="18" failures="0" disabled="0" skipped="0" errors="0" time="0.867" timestamp="2392-07-09T13:11:31.802">
+    <testcase name="ObjectExists" file="../../cobalt/dom/on_screen_keyboard_test.cc" line="210" status="run" result="completed" time="0.05" timestamp="2392-07-09T13:11:31.803" classname="OnScreenKeyboardTest" />
+    <testcase name="ShowAndHide" file="../../cobalt/dom/on_screen_keyboard_test.cc" line="248" status="run" result="completed" time="0.048" timestamp="2392-07-09T13:11:31.856" classname="OnScreenKeyboardTest" />
+    <testcase name="ShowAndHideMultipleTimes" file="../../cobalt/dom/on_screen_keyboard_test.cc" line="280" status="run" result="completed" time="0.046" timestamp="2392-07-09T13:11:31.907" classname="OnScreenKeyboardTest" />
+    <testcase name="Data" file="../../cobalt/dom/on_screen_keyboard_test.cc" line="315" status="run" result="completed" time="0.044" timestamp="2392-07-09T13:11:31.955" classname="OnScreenKeyboardTest" />
+    <testcase name="FocusAndBlur" file="../../cobalt/dom/on_screen_keyboard_test.cc" line="330" status="run" result="completed" time="0.045" timestamp="2392-07-09T13:11:32.002" classname="OnScreenKeyboardTest" />
+    <testcase name="FocusAndBlurMultipleTimes" file="../../cobalt/dom/on_screen_keyboard_test.cc" line="349" status="run" result="completed" time="0.044" timestamp="2392-07-09T13:11:32.050" classname="OnScreenKeyboardTest" />
+    <testcase name="ShowEventAttribute" file="../../cobalt/dom/on_screen_keyboard_test.cc" line="379" status="run" result="completed" time="0.045" timestamp="2392-07-09T13:11:32.097" classname="OnScreenKeyboardTest" />
+    <testcase name="ShowEventListeners" file="../../cobalt/dom/on_screen_keyboard_test.cc" line="405" status="run" result="completed" time="0.046" timestamp="2392-07-09T13:11:32.144" classname="OnScreenKeyboardTest" />
+    <testcase name="HideEventAttribute" file="../../cobalt/dom/on_screen_keyboard_test.cc" line="431" status="run" result="completed" time="0.045" timestamp="2392-07-09T13:11:32.193" classname="OnScreenKeyboardTest" />
+    <testcase name="HideEventListeners" file="../../cobalt/dom/on_screen_keyboard_test.cc" line="455" status="run" result="completed" time="0.046" timestamp="2392-07-09T13:11:32.240" classname="OnScreenKeyboardTest" />
+    <testcase name="FocusEventAttribute" file="../../cobalt/dom/on_screen_keyboard_test.cc" line="480" status="run" result="completed" time="0.046" timestamp="2392-07-09T13:11:32.289" classname="OnScreenKeyboardTest" />
+    <testcase name="FocusEventListeners" file="../../cobalt/dom/on_screen_keyboard_test.cc" line="504" status="run" result="completed" time="0.043" timestamp="2392-07-09T13:11:32.338" classname="OnScreenKeyboardTest" />
+    <testcase name="BlurEventAttribute" file="../../cobalt/dom/on_screen_keyboard_test.cc" line="529" status="run" result="completed" time="0.046" timestamp="2392-07-09T13:11:32.384" classname="OnScreenKeyboardTest" />
+    <testcase name="BlurEventListeners" file="../../cobalt/dom/on_screen_keyboard_test.cc" line="553" status="run" result="completed" time="0.044" timestamp="2392-07-09T13:11:32.433" classname="OnScreenKeyboardTest" />
+    <testcase name="BoundingRect" file="../../cobalt/dom/on_screen_keyboard_test.cc" line="578" status="run" result="completed" time="0.044" timestamp="2392-07-09T13:11:32.480" classname="OnScreenKeyboardTest" />
+    <testcase name="KeepFocus" file="../../cobalt/dom/on_screen_keyboard_test.cc" line="588" status="run" result="completed" time="0.044" timestamp="2392-07-09T13:11:32.527" classname="OnScreenKeyboardTest" />
+    <testcase name="SetBackgroundColor" file="../../cobalt/dom/on_screen_keyboard_test.cc" line="611" status="run" result="completed" time="0.045" timestamp="2392-07-09T13:11:32.574" classname="OnScreenKeyboardTest" />
+    <testcase name="SetLightTheme" file="../../cobalt/dom/on_screen_keyboard_test.cc" line="638" status="run" result="completed" time="0.047" timestamp="2392-07-09T13:11:32.622" classname="OnScreenKeyboardTest" />
+  </testsuite>
+  <testsuite name="PerformanceObserverTest" tests="2" failures="0" disabled="0" skipped="0" errors="0" time="0.004" timestamp="2392-07-09T13:11:32.672">
+    <testcase name="Observe" file="../../cobalt/dom/performance_observer_test.cc" line="75" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:32.673" classname="PerformanceObserverTest" />
+    <testcase name="Disconnect" file="../../cobalt/dom/performance_observer_test.cc" line="87" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:32.676" classname="PerformanceObserverTest" />
+  </testsuite>
+  <testsuite name="PerformanceTest" tests="3" failures="0" disabled="0" skipped="0" errors="0" time="0.006" timestamp="2392-07-09T13:11:32.679">
+    <testcase name="Now" file="../../cobalt/dom/performance_test.cc" line="23" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:32.680" classname="PerformanceTest" />
+    <testcase name="MonotonicTimeToDOMHighResTimeStamp" file="../../cobalt/dom/performance_test.cc" line="45" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:32.682" classname="PerformanceTest" />
+    <testcase name="NavigationStart" file="../../cobalt/dom/performance_test.cc" line="66" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:32.684" classname="PerformanceTest" />
+  </testsuite>
+  <testsuite name="RuleMatchingTest" tests="68" failures="0" disabled="0" skipped="0" errors="0" time="3.432" timestamp="2392-07-09T13:11:32.688">
+    <testcase name="UniversalSelectorMatch" file="../../cobalt/dom/rule_matching_test.cc" line="141" status="run" result="completed" time="0.048" timestamp="2392-07-09T13:11:32.689" classname="RuleMatchingTest" />
+    <testcase name="TypeSelectorMatch" file="../../cobalt/dom/rule_matching_test.cc" line="155" status="run" result="completed" time="0.047" timestamp="2392-07-09T13:11:32.739" classname="RuleMatchingTest" />
+    <testcase name="AttributeSelectorMatchNoValue" file="../../cobalt/dom/rule_matching_test.cc" line="169" status="run" result="completed" time="0.048" timestamp="2392-07-09T13:11:32.789" classname="RuleMatchingTest" />
+    <testcase name="AttributeSelectorMatchEquals" file="../../cobalt/dom/rule_matching_test.cc" line="183" status="run" result="completed" time="0.049" timestamp="2392-07-09T13:11:32.840" classname="RuleMatchingTest" />
+    <testcase name="AttributeSelectorMatchesFirstOne" file="../../cobalt/dom/rule_matching_test.cc" line="197" status="run" result="completed" time="0.053" timestamp="2392-07-09T13:11:32.892" classname="RuleMatchingTest" />
+    <testcase name="AttributeSelectorMatchesSecondOne" file="../../cobalt/dom/rule_matching_test.cc" line="211" status="run" result="completed" time="0.055" timestamp="2392-07-09T13:11:32.949" classname="RuleMatchingTest" />
+    <testcase name="AttributeSelectorMatchesLastOne" file="../../cobalt/dom/rule_matching_test.cc" line="226" status="run" result="completed" time="0.069" timestamp="2392-07-09T13:11:33.007" classname="RuleMatchingTest" />
+    <testcase name="AttributeSelectorMatchEqualsWithQuote" file="../../cobalt/dom/rule_matching_test.cc" line="241" status="run" result="completed" time="0.054" timestamp="2392-07-09T13:11:33.079" classname="RuleMatchingTest" />
+    <testcase name="AttributeSelectorNoMatchEquals" file="../../cobalt/dom/rule_matching_test.cc" line="255" status="run" result="completed" time="0.048" timestamp="2392-07-09T13:11:33.135" classname="RuleMatchingTest" />
+    <testcase name="ClassSelectorMatch" file="../../cobalt/dom/rule_matching_test.cc" line="267" status="run" result="completed" time="0.05" timestamp="2392-07-09T13:11:33.187" classname="RuleMatchingTest" />
+    <testcase name="IdSelectorMatch" file="../../cobalt/dom/rule_matching_test.cc" line="281" status="run" result="completed" time="0.048" timestamp="2392-07-09T13:11:33.240" classname="RuleMatchingTest" />
+    <testcase name="EmptyPseudoClassMatch" file="../../cobalt/dom/rule_matching_test.cc" line="295" status="run" result="completed" time="0.048" timestamp="2392-07-09T13:11:33.290" classname="RuleMatchingTest" />
+    <testcase name="EmptyPseudoClassShouldMatchCommentOnly" file="../../cobalt/dom/rule_matching_test.cc" line="309" status="run" result="completed" time="0.046" timestamp="2392-07-09T13:11:33.340" classname="RuleMatchingTest" />
+    <testcase name="EmptyPseudoClassShouldMatchTextOnly" file="../../cobalt/dom/rule_matching_test.cc" line="323" status="run" result="completed" time="0.048" timestamp="2392-07-09T13:11:33.389" classname="RuleMatchingTest" />
+    <testcase name="FocusPseudoClassMatch" file="../../cobalt/dom/rule_matching_test.cc" line="335" status="run" result="completed" time="0.045" timestamp="2392-07-09T13:11:33.439" classname="RuleMatchingTest" />
+    <testcase name="FocusPseudoClassNoMatch" file="../../cobalt/dom/rule_matching_test.cc" line="357" status="run" result="completed" time="0.047" timestamp="2392-07-09T13:11:33.487" classname="RuleMatchingTest" />
+    <testcase name="NotPseudoClassMatch" file="../../cobalt/dom/rule_matching_test.cc" line="373" status="run" result="completed" time="0.045" timestamp="2392-07-09T13:11:33.536" classname="RuleMatchingTest" />
+    <testcase name="NotPseudoClassNoMatch" file="../../cobalt/dom/rule_matching_test.cc" line="387" status="run" result="completed" time="0.047" timestamp="2392-07-09T13:11:33.584" classname="RuleMatchingTest" />
+    <testcase name="TwoNotPseudoClassForSameElementNeitherMatch" file="../../cobalt/dom/rule_matching_test.cc" line="400" status="run" result="completed" time="0.048" timestamp="2392-07-09T13:11:33.635" classname="RuleMatchingTest" />
+    <testcase name="TwoNotPseudoClassForSameElementFirstMatch" file="../../cobalt/dom/rule_matching_test.cc" line="414" status="run" result="completed" time="0.049" timestamp="2392-07-09T13:11:33.685" classname="RuleMatchingTest" />
+    <testcase name="TwoNotPseudoClassForSameElementSecondMatch" file="../../cobalt/dom/rule_matching_test.cc" line="430" status="run" result="completed" time="0.048" timestamp="2392-07-09T13:11:33.737" classname="RuleMatchingTest" />
+    <testcase name="TwoNotPseudoClassForSameElementBothMatch" file="../../cobalt/dom/rule_matching_test.cc" line="447" status="run" result="completed" time="0.049" timestamp="2392-07-09T13:11:33.788" classname="RuleMatchingTest" />
+    <testcase name="AfterPseudoElementMatchGlobal" file="../../cobalt/dom/rule_matching_test.cc" line="465" status="run" result="completed" time="0.046" timestamp="2392-07-09T13:11:33.839" classname="RuleMatchingTest" />
+    <testcase name="AfterPseudoElementSelectorMatch" file="../../cobalt/dom/rule_matching_test.cc" line="494" status="run" result="completed" time="0.045" timestamp="2392-07-09T13:11:33.888" classname="RuleMatchingTest" />
+    <testcase name="AfterPseudoElementSelectorNoMatch" file="../../cobalt/dom/rule_matching_test.cc" line="513" status="run" result="completed" time="0.048" timestamp="2392-07-09T13:11:33.936" classname="RuleMatchingTest" />
+    <testcase name="BeforePseudoElementMatchGlobal" file="../../cobalt/dom/rule_matching_test.cc" line="526" status="run" result="completed" time="0.049" timestamp="2392-07-09T13:11:33.987" classname="RuleMatchingTest" />
+    <testcase name="BeforePseudoElementSelectorMatch" file="../../cobalt/dom/rule_matching_test.cc" line="555" status="run" result="completed" time="0.047" timestamp="2392-07-09T13:11:34.039" classname="RuleMatchingTest" />
+    <testcase name="BeforePseudoElementSelectorNoMatch" file="../../cobalt/dom/rule_matching_test.cc" line="574" status="run" result="completed" time="0.048" timestamp="2392-07-09T13:11:34.088" classname="RuleMatchingTest" />
+    <testcase name="EmptyPseudoClassNotMatchElement" file="../../cobalt/dom/rule_matching_test.cc" line="587" status="run" result="completed" time="0.045" timestamp="2392-07-09T13:11:34.139" classname="RuleMatchingTest" />
+    <testcase name="CompoundSelectorMatch" file="../../cobalt/dom/rule_matching_test.cc" line="599" status="run" result="completed" time="0.046" timestamp="2392-07-09T13:11:34.186" classname="RuleMatchingTest" />
+    <testcase name="CompoundSelectorNoMatch" file="../../cobalt/dom/rule_matching_test.cc" line="613" status="run" result="completed" time="0.051" timestamp="2392-07-09T13:11:34.235" classname="RuleMatchingTest" />
+    <testcase name="ComplexSelectorDescendantCombinatorMatch" file="../../cobalt/dom/rule_matching_test.cc" line="628" status="run" result="completed" time="0.048" timestamp="2392-07-09T13:11:34.289" classname="RuleMatchingTest" />
+    <testcase name="ComplexSelectorDescendantCombinatorNoMatch" file="../../cobalt/dom/rule_matching_test.cc" line="645" status="run" result="completed" time="0.047" timestamp="2392-07-09T13:11:34.340" classname="RuleMatchingTest" />
+    <testcase name="ComplexSelectorChildCombinatorMatch" file="../../cobalt/dom/rule_matching_test.cc" line="659" status="run" result="completed" time="0.047" timestamp="2392-07-09T13:11:34.390" classname="RuleMatchingTest" />
+    <testcase name="ComplexSelectorChildCombinatorNoMatch" file="../../cobalt/dom/rule_matching_test.cc" line="676" status="run" result="completed" time="0.047" timestamp="2392-07-09T13:11:34.440" classname="RuleMatchingTest" />
+    <testcase name="ComplexSelectorNextSiblingCombinatorMatch" file="../../cobalt/dom/rule_matching_test.cc" line="691" status="run" result="completed" time="0.047" timestamp="2392-07-09T13:11:34.490" classname="RuleMatchingTest" />
+    <testcase name="ComplexSelectorNextSiblingCombinatorNoMatch" file="../../cobalt/dom/rule_matching_test.cc" line="704" status="run" result="completed" time="0.047" timestamp="2392-07-09T13:11:34.539" classname="RuleMatchingTest" />
+    <testcase name="ComplexSelectorFollowingSiblingCombinatorMatch" file="../../cobalt/dom/rule_matching_test.cc" line="715" status="run" result="completed" time="0.047" timestamp="2392-07-09T13:11:34.589" classname="RuleMatchingTest" />
+    <testcase name="ComplexSelectorFollowingSiblingCombinatorNoMatch" file="../../cobalt/dom/rule_matching_test.cc" line="728" status="run" result="completed" time="0.047" timestamp="2392-07-09T13:11:34.639" classname="RuleMatchingTest" />
+    <testcase name="SelectorListMatchShouldContainAllMatches" file="../../cobalt/dom/rule_matching_test.cc" line="738" status="run" result="completed" time="0.047" timestamp="2392-07-09T13:11:34.690" classname="RuleMatchingTest" />
+    <testcase name="ComplexSelectorCombinedMatch" file="../../cobalt/dom/rule_matching_test.cc" line="767" status="run" result="completed" time="0.047" timestamp="2392-07-09T13:11:34.740" classname="RuleMatchingTest" />
+    <testcase name="QuerySelectorShouldReturnFirstMatch" file="../../cobalt/dom/rule_matching_test.cc" line="786" status="run" result="completed" time="0.047" timestamp="2392-07-09T13:11:34.790" classname="RuleMatchingTest" />
+    <testcase name="QuerySelectorShouldLimitResultInSubtree" file="../../cobalt/dom/rule_matching_test.cc" line="800" status="run" result="completed" time="0.045" timestamp="2392-07-09T13:11:34.839" classname="RuleMatchingTest" />
+    <testcase name="QuerySelectorShouldMatchCombinatorOutsideSubtree" file="../../cobalt/dom/rule_matching_test.cc" line="816" status="run" result="completed" time="0.047" timestamp="2392-07-09T13:11:34.887" classname="RuleMatchingTest" />
+    <testcase name="QuerySelectorShouldMatchCombinatorsRecursively" file="../../cobalt/dom/rule_matching_test.cc" line="832" status="run" result="completed" time="0.044" timestamp="2392-07-09T13:11:34.936" classname="RuleMatchingTest" />
+    <testcase name="QuerySelectorShouldMatchCombinatorsCombined" file="../../cobalt/dom/rule_matching_test.cc" line="845" status="run" result="completed" time="0.045" timestamp="2392-07-09T13:11:34.983" classname="RuleMatchingTest" />
+    <testcase name="QuerySelectorAllShouldReturnAllMatches" file="../../cobalt/dom/rule_matching_test.cc" line="863" status="run" result="completed" time="0.046" timestamp="2392-07-09T13:11:35.031" classname="RuleMatchingTest" />
+    <testcase name="ElementMatches" file="../../cobalt/dom/rule_matching_test.cc" line="881" status="run" result="completed" time="0.044" timestamp="2392-07-09T13:11:35.080" classname="RuleMatchingTest" />
+    <testcase name="StyleElementRemoval" file="../../cobalt/dom/rule_matching_test.cc" line="888" status="run" result="completed" time="0.049" timestamp="2392-07-09T13:11:35.127" classname="RuleMatchingTest" />
+    <testcase name="StyleElementAddition" file="../../cobalt/dom/rule_matching_test.cc" line="901" status="run" result="completed" time="0.047" timestamp="2392-07-09T13:11:35.178" classname="RuleMatchingTest" />
+    <testcase name="StyleElementReorderingOneMatching" file="../../cobalt/dom/rule_matching_test.cc" line="914" status="run" result="completed" time="0.049" timestamp="2392-07-09T13:11:35.228" classname="RuleMatchingTest" />
+    <testcase name="StyleElementReorderingTwoMatching" file="../../cobalt/dom/rule_matching_test.cc" line="953" status="run" result="completed" time="0.048" timestamp="2392-07-09T13:11:35.279" classname="RuleMatchingTest" />
+    <testcase name="HoverPseudoClassSelectorAddHoverToElement" file="../../cobalt/dom/rule_matching_test.cc" line="993" status="run" result="completed" time="0.047" timestamp="2392-07-09T13:11:35.330" classname="RuleMatchingTest" />
+    <testcase name="HoverPseudoClassSelectorRemoveHoverFromElement" file="../../cobalt/dom/rule_matching_test.cc" line="1018" status="run" result="completed" time="0.047" timestamp="2392-07-09T13:11:35.380" classname="RuleMatchingTest" />
+    <testcase name="HoverPseudoClassSelectorAddHoverToDescendant" file="../../cobalt/dom/rule_matching_test.cc" line="1041" status="run" result="completed" time="0.047" timestamp="2392-07-09T13:11:35.430" classname="RuleMatchingTest" />
+    <testcase name="HoverPseudoClassSelectorRemoveHoverFromDescendant" file="../../cobalt/dom/rule_matching_test.cc" line="1066" status="run" result="completed" time="0.047" timestamp="2392-07-09T13:11:35.479" classname="RuleMatchingTest" />
+    <testcase name="ClassSelectorSetClassOnElement" file="../../cobalt/dom/rule_matching_test.cc" line="1089" status="run" result="completed" time="0.045" timestamp="2392-07-09T13:11:35.529" classname="RuleMatchingTest" />
+    <testcase name="ClassSelectorRemoveClassOnElement" file="../../cobalt/dom/rule_matching_test.cc" line="1111" status="run" result="completed" time="0.048" timestamp="2392-07-09T13:11:35.577" classname="RuleMatchingTest" />
+    <testcase name="ChildMatchingNodeAdded" file="../../cobalt/dom/rule_matching_test.cc" line="1133" status="run" result="completed" time="0.046" timestamp="2392-07-09T13:11:35.627" classname="RuleMatchingTest" />
+    <testcase name="ChildMatchingNodeRemoved" file="../../cobalt/dom/rule_matching_test.cc" line="1158" status="run" result="completed" time="0.047" timestamp="2392-07-09T13:11:35.677" classname="RuleMatchingTest" />
+    <testcase name="DescendantMatchingNodeAdded" file="../../cobalt/dom/rule_matching_test.cc" line="1183" status="run" result="completed" time="0.046" timestamp="2392-07-09T13:11:35.726" classname="RuleMatchingTest" />
+    <testcase name="DescendantMatchingNodeRemoved" file="../../cobalt/dom/rule_matching_test.cc" line="1208" status="run" result="completed" time="0.047" timestamp="2392-07-09T13:11:35.775" classname="RuleMatchingTest" />
+    <testcase name="NextSiblingMatchingNodeAdded" file="../../cobalt/dom/rule_matching_test.cc" line="1233" status="run" result="completed" time="0.047" timestamp="2392-07-09T13:11:35.825" classname="RuleMatchingTest" />
+    <testcase name="NextSiblingMatchingNodeRemoved" file="../../cobalt/dom/rule_matching_test.cc" line="1258" status="run" result="completed" time="0.046" timestamp="2392-07-09T13:11:35.875" classname="RuleMatchingTest" />
+    <testcase name="FollowingSiblingMatchingNodeAdded" file="../../cobalt/dom/rule_matching_test.cc" line="1283" status="run" result="completed" time="0.047" timestamp="2392-07-09T13:11:35.924" classname="RuleMatchingTest" />
+    <testcase name="FollowingSiblingMatchingNodeRemoved" file="../../cobalt/dom/rule_matching_test.cc" line="1309" status="run" result="completed" time="0.046" timestamp="2392-07-09T13:11:35.974" classname="RuleMatchingTest" />
+    <testcase name="AfterPseudoElementMatchingNodeRemoved" file="../../cobalt/dom/rule_matching_test.cc" line="1334" status="run" result="completed" time="0.046" timestamp="2392-07-09T13:11:36.023" classname="RuleMatchingTest" />
+    <testcase name="AfterPseudoElementMatchingNodeAdded" file="../../cobalt/dom/rule_matching_test.cc" line="1371" status="run" result="completed" time="0.047" timestamp="2392-07-09T13:11:36.072" classname="RuleMatchingTest" />
+  </testsuite>
+  <testsuite name="ScreenTest" tests="1" failures="0" disabled="0" skipped="0" errors="0" time="0.002" timestamp="2392-07-09T13:11:36.123">
+    <testcase name="Size" file="../../cobalt/dom/screen_test.cc" line="25" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:36.124" classname="ScreenTest" />
+  </testsuite>
+  <testsuite name="SerializerTest" tests="12" failures="0" disabled="0" skipped="0" errors="0" time="0.046" timestamp="2392-07-09T13:11:36.127">
+    <testcase name="Serialize" file="../../cobalt/dom/serializer_test.cc" line="59" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:36.128" classname="SerializerTest" />
+    <testcase name="SerializeSelfOnly" file="../../cobalt/dom/serializer_test.cc" line="70" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:36.132" classname="SerializerTest" />
+    <testcase name="SerializeDescendantsOnly" file="../../cobalt/dom/serializer_test.cc" line="81" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:36.136" classname="SerializerTest" />
+    <testcase name="Empty" file="../../cobalt/dom/serializer_test.cc" line="92" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:36.140" classname="SerializerTest" />
+    <testcase name="Comment" file="../../cobalt/dom/serializer_test.cc" line="103" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:36.143" classname="SerializerTest" />
+    <testcase name="Document" file="../../cobalt/dom/serializer_test.cc" line="114" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:36.147" classname="SerializerTest" />
+    <testcase name="DocumentType" file="../../cobalt/dom/serializer_test.cc" line="125" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:36.151" classname="SerializerTest" />
+    <testcase name="ElementBothOpeningAndClosingTagShouldBeOutput" file="../../cobalt/dom/serializer_test.cc" line="136" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:36.155" classname="SerializerTest" />
+    <testcase name="ElementAttributesShouldBeSorted" file="../../cobalt/dom/serializer_test.cc" line="147" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:36.159" classname="SerializerTest" />
+    <testcase name="ElementAttributeEmptyValuesShouldBeOmitted" file="../../cobalt/dom/serializer_test.cc" line="158" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:36.163" classname="SerializerTest" />
+    <testcase name="ElementAttributeSpacesShouldBeCollapsed" file="../../cobalt/dom/serializer_test.cc" line="169" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:36.167" classname="SerializerTest" />
+    <testcase name="Text" file="../../cobalt/dom/serializer_test.cc" line="180" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:36.171" classname="SerializerTest" />
+  </testsuite>
+  <testsuite name="StorageAreaTest" tests="6" failures="0" disabled="0" skipped="0" errors="0" time="0.014" timestamp="2392-07-09T13:11:36.177">
+    <testcase name="InitialState" file="../../cobalt/dom/storage_area_test.cc" line="66" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:36.178" classname="StorageAreaTest" />
+    <testcase name="Identifier" file="../../cobalt/dom/storage_area_test.cc" line="72" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:36.181" classname="StorageAreaTest" />
+    <testcase name="SetItem" file="../../cobalt/dom/storage_area_test.cc" line="79" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:36.183" classname="StorageAreaTest" />
+    <testcase name="IndexedKeys" file="../../cobalt/dom/storage_area_test.cc" line="88" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:36.186" classname="StorageAreaTest" />
+    <testcase name="Overwrite" file="../../cobalt/dom/storage_area_test.cc" line="107" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:36.188" classname="StorageAreaTest" />
+    <testcase name="KeyOrder" file="../../cobalt/dom/storage_area_test.cc" line="121" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:36.190" classname="StorageAreaTest" />
+  </testsuite>
+  <testsuite name="TextTest" tests="4" failures="0" disabled="0" skipped="0" errors="0" time="0.015" timestamp="2392-07-09T13:11:36.194">
+    <testcase name="Duplicate" file="../../cobalt/dom/text_test.cc" line="54" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:36.195" classname="TextTest" />
+    <testcase name="CheckAttach" file="../../cobalt/dom/text_test.cc" line="61" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:36.199" classname="TextTest" />
+    <testcase name="NodeValue" file="../../cobalt/dom/text_test.cc" line="72" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:36.203" classname="TextTest" />
+    <testcase name="TextContent" file="../../cobalt/dom/text_test.cc" line="77" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:36.207" classname="TextTest" />
+  </testsuite>
+  <testsuite name="TimeRangesTest" tests="12" failures="0" disabled="0" skipped="0" errors="0" time="0.027" timestamp="2392-07-09T13:11:36.211">
+    <testcase name="Constructors" file="../../cobalt/dom/time_ranges_test.cc" line="40" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:36.213" classname="TimeRangesTest" />
+    <testcase name="IncrementalNonOverlappedAdd" file="../../cobalt/dom/time_ranges_test.cc" line="52" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:36.215" classname="TimeRangesTest" />
+    <testcase name="Contains" file="../../cobalt/dom/time_ranges_test.cc" line="66" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:36.217" classname="TimeRangesTest" />
+    <testcase name="MergeableAdd" file="../../cobalt/dom/time_ranges_test.cc" line="91" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:36.219" classname="TimeRangesTest" />
+    <testcase name="UnorderedAdd" file="../../cobalt/dom/time_ranges_test.cc" line="131" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:36.222" classname="TimeRangesTest" />
+    <testcase name="Nearest" file="../../cobalt/dom/time_ranges_test.cc" line="149" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:36.224" classname="TimeRangesTest" />
+    <testcase name="IndexOutOfRangeException" file="../../cobalt/dom/time_ranges_test.cc" line="173" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:36.226" classname="TimeRangesTest" />
+    <testcase name="Clone" file="../../cobalt/dom/time_ranges_test.cc" line="194" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:36.228" classname="TimeRangesTest" />
+    <testcase name="UnionWithSelf" file="../../cobalt/dom/time_ranges_test.cc" line="214" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:36.231" classname="TimeRangesTest" />
+    <testcase name="UnionWith" file="../../cobalt/dom/time_ranges_test.cc" line="221" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:36.233" classname="TimeRangesTest" />
+    <testcase name="IntersectWithEmptyRange" file="../../cobalt/dom/time_ranges_test.cc" line="260" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:36.235" classname="TimeRangesTest" />
+    <testcase name="IntersectWith" file="../../cobalt/dom/time_ranges_test.cc" line="276" status="run" result="completed" time="0" timestamp="2392-07-09T13:11:36.237" classname="TimeRangesTest" />
+  </testsuite>
+  <testsuite name="UserAgentDataTest" tests="3" failures="0" disabled="0" skipped="0" errors="0" time="0.153" timestamp="2392-07-09T13:11:36.241">
+    <testcase name="Brands" file="../../cobalt/dom/user_agent_data_test.cc" line="106" status="run" result="completed" time="0.054" timestamp="2392-07-09T13:11:36.242" classname="UserAgentDataTest" />
+    <testcase name="Mobile" file="../../cobalt/dom/user_agent_data_test.cc" line="112" status="run" result="completed" time="0.046" timestamp="2392-07-09T13:11:36.298" classname="UserAgentDataTest" />
+    <testcase name="GetHighEntropyValues" file="../../cobalt/dom/user_agent_data_test.cc" line="118" status="run" result="completed" time="0.045" timestamp="2392-07-09T13:11:36.347" classname="UserAgentDataTest" />
+  </testsuite>
+  <testsuite name="WindowTest" tests="37" failures="0" disabled="0" skipped="0" errors="0" time="1.737" timestamp="2392-07-09T13:11:36.397">
+    <testcase name="WindowShouldNotHaveChildren" file="../../cobalt/dom/window_test.cc" line="46" status="run" result="completed" time="0.045" timestamp="2392-07-09T13:11:36.398" classname="WindowTest" />
+    <testcase name="ViewportSize" file="../../cobalt/dom/window_test.cc" line="57" status="run" result="completed" time="0.043" timestamp="2392-07-09T13:11:36.445" classname="WindowTest" />
+    <testcase name="WindowIsWindow" file="../../cobalt/dom/window_test.cc" line="71" status="run" result="completed" time="0.045" timestamp="2392-07-09T13:11:36.491" classname="WindowTest" />
+    <testcase name="SelfIsWindow" file="../../cobalt/dom/window_test.cc" line="86" status="run" result="completed" time="0.042" timestamp="2392-07-09T13:11:36.539" classname="WindowTest" />
+    <testcase name="DocumentIsDocument" file="../../cobalt/dom/window_test.cc" line="95" status="run" result="completed" time="0.043" timestamp="2392-07-09T13:11:36.583" classname="WindowTest" />
+    <testcase name="LocationIsObject" file="../../cobalt/dom/window_test.cc" line="105" status="run" result="completed" time="0.045" timestamp="2392-07-09T13:11:36.629" classname="WindowTest" />
+    <testcase name="HistoryIsHistory" file="../../cobalt/dom/window_test.cc" line="116" status="run" result="completed" time="0.044" timestamp="2392-07-09T13:11:36.676" classname="WindowTest" />
+    <testcase name="FramesIsWindow" file="../../cobalt/dom/window_test.cc" line="126" status="run" result="completed" time="0.045" timestamp="2392-07-09T13:11:36.723" classname="WindowTest" />
+    <testcase name="LengthIsZero" file="../../cobalt/dom/window_test.cc" line="135" status="run" result="completed" time="0.044" timestamp="2392-07-09T13:11:36.771" classname="WindowTest" />
+    <testcase name="TopIsWindow" file="../../cobalt/dom/window_test.cc" line="144" status="run" result="completed" time="0.042" timestamp="2392-07-09T13:11:36.818" classname="WindowTest" />
+    <testcase name="OpenerIsWindow" file="../../cobalt/dom/window_test.cc" line="153" status="run" result="completed" time="0.044" timestamp="2392-07-09T13:11:36.863" classname="WindowTest" />
+    <testcase name="ParentIsWindow" file="../../cobalt/dom/window_test.cc" line="162" status="run" result="completed" time="0.044" timestamp="2392-07-09T13:11:36.909" classname="WindowTest" />
+    <testcase name="NavigatorIsNavigator" file="../../cobalt/dom/window_test.cc" line="171" status="run" result="completed" time="0.044" timestamp="2392-07-09T13:11:36.956" classname="WindowTest" />
+    <testcase name="Btoa" file="../../cobalt/dom/window_test.cc" line="181" status="run" result="completed" time="0.043" timestamp="2392-07-09T13:11:37.003" classname="WindowTest" />
+    <testcase name="Atob" file="../../cobalt/dom/window_test.cc" line="192" status="run" result="completed" time="0.042" timestamp="2392-07-09T13:11:37.049" classname="WindowTest" />
+    <testcase name="Camera3DIsCamera3D" file="../../cobalt/dom/window_test.cc" line="203" status="run" result="completed" time="0.044" timestamp="2392-07-09T13:11:37.094" classname="WindowTest" />
+    <testcase name="Gc" file="../../cobalt/dom/window_test.cc" line="213" status="run" result="completed" time="0.049" timestamp="2392-07-09T13:11:37.141" classname="WindowTest" />
+    <testcase name="Minimize" file="../../cobalt/dom/window_test.cc" line="224" status="run" result="completed" time="0.044" timestamp="2392-07-09T13:11:37.192" classname="WindowTest" />
+    <testcase name="Screenshot" file="../../cobalt/dom/window_test.cc" line="235" status="run" result="completed" time="0.044" timestamp="2392-07-09T13:11:37.239" classname="WindowTest" />
+    <testcase name="ErrorEvent" file="../../cobalt/dom/window_test.cc" line="247" status="run" result="completed" time="0.044" timestamp="2392-07-09T13:11:37.286" classname="WindowTest" />
+    <testcase name="OnErrorEvent" file="../../cobalt/dom/window_test.cc" line="256" status="run" result="completed" time="0.044" timestamp="2392-07-09T13:11:37.332" classname="WindowTest" />
+    <testcase name="BeforeunloadEvent" file="../../cobalt/dom/window_test.cc" line="273" status="run" result="completed" time="0.043" timestamp="2392-07-09T13:11:37.379" classname="WindowTest" />
+    <testcase name="OnBeforeunloadEvent" file="../../cobalt/dom/window_test.cc" line="281" status="run" result="completed" time="0.045" timestamp="2392-07-09T13:11:37.425" classname="WindowTest" />
+    <testcase name="LanguagechangeEvent" file="../../cobalt/dom/window_test.cc" line="298" status="run" result="completed" time="0.044" timestamp="2392-07-09T13:11:37.473" classname="WindowTest" />
+    <testcase name="OnLanguagechangeEvent" file="../../cobalt/dom/window_test.cc" line="306" status="run" result="completed" time="0.045" timestamp="2392-07-09T13:11:37.520" classname="WindowTest" />
+    <testcase name="OfflineEvent" file="../../cobalt/dom/window_test.cc" line="325" status="run" result="completed" time="0.044" timestamp="2392-07-09T13:11:37.567" classname="WindowTest" />
+    <testcase name="OfflineEventDispatch" file="../../cobalt/dom/window_test.cc" line="333" status="run" result="completed" time="0.044" timestamp="2392-07-09T13:11:37.613" classname="WindowTest" />
+    <testcase name="OnOfflineEvent" file="../../cobalt/dom/window_test.cc" line="341" status="run" result="completed" time="0.044" timestamp="2392-07-09T13:11:37.660" classname="WindowTest" />
+    <testcase name="OnlineEvent" file="../../cobalt/dom/window_test.cc" line="358" status="run" result="completed" time="0.044" timestamp="2392-07-09T13:11:37.708" classname="WindowTest" />
+    <testcase name="OnlineEventDispatch" file="../../cobalt/dom/window_test.cc" line="366" status="run" result="completed" time="0.044" timestamp="2392-07-09T13:11:37.755" classname="WindowTest" />
+    <testcase name="OnOnlineEvent" file="../../cobalt/dom/window_test.cc" line="374" status="run" result="completed" time="0.045" timestamp="2392-07-09T13:11:37.801" classname="WindowTest" />
+    <testcase name="RejectionhandledEvent" file="../../cobalt/dom/window_test.cc" line="391" status="run" result="completed" time="0.044" timestamp="2392-07-09T13:11:37.849" classname="WindowTest" />
+    <testcase name="OnRejectionhandledEvent" file="../../cobalt/dom/window_test.cc" line="399" status="run" result="completed" time="0.045" timestamp="2392-07-09T13:11:37.895" classname="WindowTest" />
+    <testcase name="UnhandledrejectionEvent" file="../../cobalt/dom/window_test.cc" line="416" status="run" result="completed" time="0.045" timestamp="2392-07-09T13:11:37.943" classname="WindowTest" />
+    <testcase name="OnUnhandledrejectionEvent" file="../../cobalt/dom/window_test.cc" line="424" status="run" result="completed" time="0.046" timestamp="2392-07-09T13:11:37.991" classname="WindowTest" />
+    <testcase name="UnloadEvent" file="../../cobalt/dom/window_test.cc" line="441" status="run" result="completed" time="0.044" timestamp="2392-07-09T13:11:38.040" classname="WindowTest" />
+    <testcase name="OnUnloadEvent" file="../../cobalt/dom/window_test.cc" line="455" status="run" result="completed" time="0.045" timestamp="2392-07-09T13:11:38.087" classname="WindowTest" />
+  </testsuite>
+  <testsuite name="XMLDocumentTest" tests="2" failures="0" disabled="0" skipped="0" errors="0" time="0.007" timestamp="2392-07-09T13:11:38.136">
+    <testcase name="IsXMLDocument" file="../../cobalt/dom/xml_document_test.cc" line="53" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:38.137" classname="XMLDocumentTest" />
+    <testcase name="HasNoBrowsingContext" file="../../cobalt/dom/xml_document_test.cc" line="59" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:38.141" classname="XMLDocumentTest" />
+  </testsuite>
+  <testsuite name="XMLDocumentTestInWindow" tests="2" failures="0" disabled="0" skipped="0" errors="0" time="0.102" timestamp="2392-07-09T13:11:38.146">
+    <testcase name="IsXMLDocument" file="../../cobalt/dom/xml_document_test.cc" line="65" status="run" result="completed" time="0.047" timestamp="2392-07-09T13:11:38.147" classname="XMLDocumentTestInWindow" />
+    <testcase name="HasNoBrowsingContext" file="../../cobalt/dom/xml_document_test.cc" line="71" status="run" result="completed" time="0.049" timestamp="2392-07-09T13:11:38.197" classname="XMLDocumentTestInWindow" />
+  </testsuite>
+  <testsuite name="LocationTests/LocationTestWithParams" tests="10" failures="0" disabled="0" skipped="0" errors="0" time="0.042" timestamp="2392-07-09T13:11:38.250">
+    <testcase name="SetHash/0" value_param="false" file="../../cobalt/dom/location_test.cc" line="74" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:11:38.251" classname="LocationTests/LocationTestWithParams" />
+    <testcase name="SetHash/1" value_param="true" file="../../cobalt/dom/location_test.cc" line="74" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:38.256" classname="LocationTests/LocationTestWithParams" />
+    <testcase name="SetHost/0" value_param="false" file="../../cobalt/dom/location_test.cc" line="89" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:11:38.260" classname="LocationTests/LocationTestWithParams" />
+    <testcase name="SetHost/1" value_param="true" file="../../cobalt/dom/location_test.cc" line="89" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:38.264" classname="LocationTests/LocationTestWithParams" />
+    <testcase name="SetHostname/0" value_param="false" file="../../cobalt/dom/location_test.cc" line="104" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:11:38.268" classname="LocationTests/LocationTestWithParams" />
+    <testcase name="SetHostname/1" value_param="true" file="../../cobalt/dom/location_test.cc" line="104" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:38.272" classname="LocationTests/LocationTestWithParams" />
+    <testcase name="SetHref/0" value_param="false" file="../../cobalt/dom/location_test.cc" line="119" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:11:38.278" classname="LocationTests/LocationTestWithParams" />
+    <testcase name="SetHref/1" value_param="true" file="../../cobalt/dom/location_test.cc" line="119" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:38.282" classname="LocationTests/LocationTestWithParams" />
+    <testcase name="SetProtocol/0" value_param="false" file="../../cobalt/dom/location_test.cc" line="134" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:11:38.286" classname="LocationTests/LocationTestWithParams" />
+    <testcase name="SetProtocol/1" value_param="true" file="../../cobalt/dom/location_test.cc" line="134" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:11:38.291" classname="LocationTests/LocationTestWithParams" />
+  </testsuite>
+</testsuites>
