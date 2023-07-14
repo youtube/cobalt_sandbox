@@ -13,12 +13,12 @@ runs:
         echo "PYTHONPATH=$GITHUB_WORKSPACE" >> $GITHUB_ENV
         echo "TEST_RESULTS_DIR=${GITHUB_WORKSPACE}/unit-test-results" >> $GITHUB_ENV
         echo "COVERAGE_DIR=${GITHUB_WORKSPACE}/coverage" >> $GITHUB_ENV
-    - name: Archive unit test report
+    - name: Archive unit test results
       uses: actions/upload-artifact@v3
       # TODO: Should only run for unit-tests
       if: always()
       with:
-        name: unit-test-reports
+        name: unit-test-results
         path: ${{env.TEST_RESULTS_DIR}}/
     - name: Archive coverage html report
       if: success() && matrix.shard == 'coverage'
