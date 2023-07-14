@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="13" failures="0" disabled="0" errors="0" time="0.629" timestamp="2392-07-09T14:17:11.788" name="AllTests">
+  <testsuite name="TextDecoderTest" tests="8" failures="0" disabled="0" skipped="0" errors="0" time="0.409" timestamp="2392-07-09T14:17:11.792">
+    <testcase name="Constructors" file="../../cobalt/encoding/text_decoder_test.cc" line="59" status="run" result="completed" time="0.001" timestamp="2392-07-09T14:17:11.793" classname="TextDecoderTest" />
+    <testcase name="DecodeUTF8" file="../../cobalt/encoding/text_decoder_test.cc" line="88" status="run" result="completed" time="0.059" timestamp="2392-07-09T14:17:11.797" classname="TextDecoderTest" />
+    <testcase name="DecodeUTF8Surrogates" file="../../cobalt/encoding/text_decoder_test.cc" line="117" status="run" result="completed" time="0.06" timestamp="2392-07-09T14:17:11.858" classname="TextDecoderTest" />
+    <testcase name="DecodeUTF8Fatal" file="../../cobalt/encoding/text_decoder_test.cc" line="147" status="run" result="completed" time="0.066" timestamp="2392-07-09T14:17:11.922" classname="TextDecoderTest" />
+    <testcase name="DecodeIgnoreBOM" file="../../cobalt/encoding/text_decoder_test.cc" line="214" status="run" result="completed" time="0.06" timestamp="2392-07-09T14:17:11.990" classname="TextDecoderTest" />
+    <testcase name="DecodeUTFStreamSimple" file="../../cobalt/encoding/text_decoder_test.cc" line="289" status="run" result="completed" time="0.049" timestamp="2392-07-09T14:17:12.053" classname="TextDecoderTest" />
+    <testcase name="DecodeUTF16" file="../../cobalt/encoding/text_decoder_test.cc" line="346" status="run" result="completed" time="0.047" timestamp="2392-07-09T14:17:12.105" classname="TextDecoderTest" />
+    <testcase name="DecodeUTF16BE" file="../../cobalt/encoding/text_decoder_test.cc" line="370" status="run" result="completed" time="0.045" timestamp="2392-07-09T14:17:12.155" classname="TextDecoderTest" />
+  </testsuite>
+  <testsuite name="TextEncoderTest" tests="5" failures="0" disabled="0" skipped="0" errors="0" time="0.21" timestamp="2392-07-09T14:17:12.204">
+    <testcase name="Constructor" file="../../cobalt/encoding/text_encoder_test.cc" line="55" status="run" result="completed" time="0" timestamp="2392-07-09T14:17:12.205" classname="TextEncoderTest" />
+    <testcase name="Encode" file="../../cobalt/encoding/text_encoder_test.cc" line="59" status="run" result="completed" time="0.053" timestamp="2392-07-09T14:17:12.208" classname="TextEncoderTest" />
+    <testcase name="EncodeInto" file="../../cobalt/encoding/text_encoder_test.cc" line="85" status="run" result="completed" time="0.05" timestamp="2392-07-09T14:17:12.263" classname="TextEncoderTest" />
+    <testcase name="EncodeIntoInsufficientCapacity" file="../../cobalt/encoding/text_encoder_test.cc" line="127" status="run" result="completed" time="0.05" timestamp="2392-07-09T14:17:12.316" classname="TextEncoderTest" />
+    <testcase name="EncodeIntoExtraCapacity" file="../../cobalt/encoding/text_encoder_test.cc" line="169" status="run" result="completed" time="0.045" timestamp="2392-07-09T14:17:12.369" classname="TextEncoderTest" />
+  </testsuite>
+</testsuites>

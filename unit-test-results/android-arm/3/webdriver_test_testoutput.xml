@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="40" failures="0" disabled="0" errors="0" time="1.33" timestamp="2392-07-09T13:17:41.165" name="AllTests">
+  <testsuite name="ScriptExecutorTest" tests="14" failures="0" disabled="0" skipped="0" errors="0" time="1.152" timestamp="2392-07-09T13:17:41.169">
+    <testcase name="CreateSyncScript" file="../../cobalt/webdriver/execute_test.cc" line="90" status="run" result="completed" time="0.059" timestamp="2392-07-09T13:17:41.170" classname="ScriptExecutorTest" />
+    <testcase name="CreateAsyncScript" file="../../cobalt/webdriver/execute_test.cc" line="101" status="run" result="completed" time="0.069" timestamp="2392-07-09T13:17:41.232" classname="ScriptExecutorTest" />
+    <testcase name="CreateInvalidScript" file="../../cobalt/webdriver/execute_test.cc" line="113" status="run" result="completed" time="0.059" timestamp="2392-07-09T13:17:41.304" classname="ScriptExecutorTest" />
+    <testcase name="ExecuteSync" file="../../cobalt/webdriver/execute_test.cc" line="122" status="run" result="completed" time="0.05" timestamp="2392-07-09T13:17:41.366" classname="ScriptExecutorTest" />
+    <testcase name="FLAKY_ExecuteAsync" file="../../cobalt/webdriver/execute_test.cc" line="132" status="run" result="completed" time="0.251" timestamp="2392-07-09T13:17:41.419" classname="ScriptExecutorTest" />
+    <testcase name="AsyncTimeout" file="../../cobalt/webdriver/execute_test.cc" line="157" status="run" result="completed" time="0.254" timestamp="2392-07-09T13:17:41.672" classname="ScriptExecutorTest" />
+    <testcase name="ScriptThrowsException" file="../../cobalt/webdriver/execute_test.cc" line="182" status="run" result="completed" time="0.05" timestamp="2392-07-09T13:17:41.929" classname="ScriptExecutorTest" />
+    <testcase name="ConvertBoolean" file="../../cobalt/webdriver/execute_test.cc" line="191" status="run" result="completed" time="0.047" timestamp="2392-07-09T13:17:41.981" classname="ScriptExecutorTest" />
+    <testcase name="ConvertNull" file="../../cobalt/webdriver/execute_test.cc" line="208" status="run" result="completed" time="0.047" timestamp="2392-07-09T13:17:42.030" classname="ScriptExecutorTest" />
+    <testcase name="ConvertNumericType" file="../../cobalt/webdriver/execute_test.cc" line="218" status="run" result="completed" time="0.044" timestamp="2392-07-09T13:17:42.080" classname="ScriptExecutorTest" />
+    <testcase name="ConvertString" file="../../cobalt/webdriver/execute_test.cc" line="235" status="run" result="completed" time="0.048" timestamp="2392-07-09T13:17:42.127" classname="ScriptExecutorTest" />
+    <testcase name="ConvertWebElement" file="../../cobalt/webdriver/execute_test.cc" line="245" status="run" result="completed" time="0.044" timestamp="2392-07-09T13:17:42.178" classname="ScriptExecutorTest" />
+    <testcase name="ConvertArray" file="../../cobalt/webdriver/execute_test.cc" line="276" status="run" result="completed" time="0.046" timestamp="2392-07-09T13:17:42.224" classname="ScriptExecutorTest" />
+    <testcase name="ConvertObject" file="../../cobalt/webdriver/execute_test.cc" line="300" status="run" result="completed" time="0.046" timestamp="2392-07-09T13:17:42.273" classname="ScriptExecutorTest" />
+  </testsuite>
+  <testsuite name="GetElementTextTest" tests="8" failures="0" disabled="0" skipped="0" errors="0" time="0.032" timestamp="2392-07-09T13:17:42.323">
+    <testcase name="ZeroSpaceWidthIsRemoved" file="../../cobalt/webdriver/get_element_text_test.cc" line="96" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:17:42.324" classname="GetElementTextTest" />
+    <testcase name="NewLinesAreConvertedToSpaces" file="../../cobalt/webdriver/get_element_text_test.cc" line="101" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:17:42.328" classname="GetElementTextTest" />
+    <testcase name="NoWrapStyle" file="../../cobalt/webdriver/get_element_text_test.cc" line="106" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:17:42.332" classname="GetElementTextTest" />
+    <testcase name="Uppercase" file="../../cobalt/webdriver/get_element_text_test.cc" line="112" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:17:42.336" classname="GetElementTextTest" />
+    <testcase name="BrElementBecomesNewLine" file="../../cobalt/webdriver/get_element_text_test.cc" line="119" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:17:42.340" classname="GetElementTextTest" />
+    <testcase name="Blocks" file="../../cobalt/webdriver/get_element_text_test.cc" line="130" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:17:42.344" classname="GetElementTextTest" />
+    <testcase name="LinesAreTrimmed" file="../../cobalt/webdriver/get_element_text_test.cc" line="141" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:17:42.349" classname="GetElementTextTest" />
+    <testcase name="WholeCodePointsAreProcessed" file="../../cobalt/webdriver/get_element_text_test.cc" line="153" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:17:42.353" classname="GetElementTextTest" />
+  </testsuite>
+  <testsuite name="IsDisplayedTest" tests="8" failures="0" disabled="0" skipped="0" errors="0" time="0.109" timestamp="2392-07-09T13:17:42.358">
+    <testcase name="BodyIsDisplayed" file="../../cobalt/webdriver/is_displayed_test.cc" line="41" status="run" result="completed" time="0.012" timestamp="2392-07-09T13:17:42.359" classname="IsDisplayedTest" />
+    <testcase name="ElementIsShown" file="../../cobalt/webdriver/is_displayed_test.cc" line="47" status="run" result="completed" time="0.011" timestamp="2392-07-09T13:17:42.374" classname="IsDisplayedTest" />
+    <testcase name="HiddenByParentDisplayStyle" file="../../cobalt/webdriver/is_displayed_test.cc" line="59" status="run" result="completed" time="0.011" timestamp="2392-07-09T13:17:42.388" classname="IsDisplayedTest" />
+    <testcase name="ZeroHeightOrWidthIsNotDisplayed" file="../../cobalt/webdriver/is_displayed_test.cc" line="71" status="run" result="completed" time="0.011" timestamp="2392-07-09T13:17:42.401" classname="IsDisplayedTest" />
+    <testcase name="ElementWithNestedBlockLevelElementIsDisplayed" file="../../cobalt/webdriver/is_displayed_test.cc" line="78" status="run" result="completed" time="0.011" timestamp="2392-07-09T13:17:42.415" classname="IsDisplayedTest" />
+    <testcase name="ZeroOpacityIsNotDisplayed" file="../../cobalt/webdriver/is_displayed_test.cc" line="83" status="run" result="completed" time="0.011" timestamp="2392-07-09T13:17:42.429" classname="IsDisplayedTest" />
+    <testcase name="ZeroSizeDivHasDescendantWithSize" file="../../cobalt/webdriver/is_displayed_test.cc" line="88" status="run" result="completed" time="0.011" timestamp="2392-07-09T13:17:42.442" classname="IsDisplayedTest" />
+    <testcase name="ElementHiddenByOverflow" file="../../cobalt/webdriver/is_displayed_test.cc" line="93" status="run" result="completed" time="0.01" timestamp="2392-07-09T13:17:42.456" classname="IsDisplayedTest" />
+  </testsuite>
+  <testsuite name="KeyboardTest" tests="10" failures="0" disabled="0" skipped="0" errors="0" time="0.023" timestamp="2392-07-09T13:17:42.470">
+    <testcase name="LowerCaseCharacter" file="../../cobalt/webdriver/keyboard_test.cc" line="120" status="run" result="completed" time="0" timestamp="2392-07-09T13:17:42.471" classname="KeyboardTest" />
+    <testcase name="UpperCaseCharacter" file="../../cobalt/webdriver/keyboard_test.cc" line="132" status="run" result="completed" time="0" timestamp="2392-07-09T13:17:42.473" classname="KeyboardTest" />
+    <testcase name="ShiftedCharacter" file="../../cobalt/webdriver/keyboard_test.cc" line="153" status="run" result="completed" time="0" timestamp="2392-07-09T13:17:42.476" classname="KeyboardTest" />
+    <testcase name="Modifier" file="../../cobalt/webdriver/keyboard_test.cc" line="174" status="run" result="completed" time="0" timestamp="2392-07-09T13:17:42.478" classname="KeyboardTest" />
+    <testcase name="ModifiersAreKept" file="../../cobalt/webdriver/keyboard_test.cc" line="188" status="run" result="completed" time="0" timestamp="2392-07-09T13:17:42.480" classname="KeyboardTest" />
+    <testcase name="ModifiersAreReleased" file="../../cobalt/webdriver/keyboard_test.cc" line="204" status="run" result="completed" time="0" timestamp="2392-07-09T13:17:42.483" classname="KeyboardTest" />
+    <testcase name="SpecialCharacter" file="../../cobalt/webdriver/keyboard_test.cc" line="223" status="run" result="completed" time="0" timestamp="2392-07-09T13:17:42.485" classname="KeyboardTest" />
+    <testcase name="ModifierIsSticky" file="../../cobalt/webdriver/keyboard_test.cc" line="236" status="run" result="completed" time="0" timestamp="2392-07-09T13:17:42.487" classname="KeyboardTest" />
+    <testcase name="ToggleModifier" file="../../cobalt/webdriver/keyboard_test.cc" line="264" status="run" result="completed" time="0" timestamp="2392-07-09T13:17:42.490" classname="KeyboardTest" />
+    <testcase name="NullClearsModifiers" file="../../cobalt/webdriver/keyboard_test.cc" line="290" status="run" result="completed" time="0" timestamp="2392-07-09T13:17:42.492" classname="KeyboardTest" />
+  </testsuite>
+</testsuites>

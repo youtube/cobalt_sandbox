@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="22" failures="0" disabled="4" errors="0" time="1.029" timestamp="2392-07-09T13:17:50.683" name="AllTests">
+  <testsuite name="WebSocketImplTest" tests="4" failures="0" disabled="4" skipped="0" errors="0" time="0" timestamp="1969-12-31T16:00:00.000">
+    <testcase name="DISABLED_NormalSizeRequest" file="../../cobalt/websocket/web_socket_impl_test.cc" line="116" status="notrun" result="suppressed" time="0" timestamp="1969-12-31T16:00:00.000" classname="WebSocketImplTest" />
+    <testcase name="DISABLED_LargeRequest" file="../../cobalt/websocket/web_socket_impl_test.cc" line="136" status="notrun" result="suppressed" time="0" timestamp="1969-12-31T16:00:00.000" classname="WebSocketImplTest" />
+    <testcase name="DISABLED_OverLimitRequest" file="../../cobalt/websocket/web_socket_impl_test.cc" line="156" status="notrun" result="suppressed" time="0" timestamp="1969-12-31T16:00:00.000" classname="WebSocketImplTest" />
+    <testcase name="DISABLED_ReuseSocketForLargeRequest" file="../../cobalt/websocket/web_socket_impl_test.cc" line="191" status="notrun" result="suppressed" time="0" timestamp="1969-12-31T16:00:00.000" classname="WebSocketImplTest" />
+  </testsuite>
+  <testsuite name="WebSocketTest" tests="18" failures="0" disabled="0" skipped="0" errors="0" time="1.023" timestamp="2392-07-09T13:17:50.686">
+    <testcase name="BadOrigin" file="../../cobalt/websocket/web_socket_test.cc" line="51" status="run" result="completed" time="0.064" timestamp="2392-07-09T13:17:50.688" classname="WebSocketTest" />
+    <testcase name="GoodOrigin" file="../../cobalt/websocket/web_socket_test.cc" line="71" status="run" result="completed" time="0.078" timestamp="2392-07-09T13:17:50.754" classname="WebSocketTest" />
+    <testcase name="TestInitialReadyState" file="../../cobalt/websocket/web_socket_test.cc" line="94" status="run" result="completed" time="0.061" timestamp="2392-07-09T13:17:50.836" classname="WebSocketTest" />
+    <testcase name="SyntaxErrorWhenBadScheme" file="../../cobalt/websocket/web_socket_test.cc" line="100" status="run" result="completed" time="0.049" timestamp="2392-07-09T13:17:50.900" classname="WebSocketTest" />
+    <testcase name="ParseWsAndWssCorrectly" file="../../cobalt/websocket/web_socket_test.cc" line="119" status="run" result="completed" time="0.057" timestamp="2392-07-09T13:17:50.952" classname="WebSocketTest" />
+    <testcase name="CheckSecure" file="../../cobalt/websocket/web_socket_test.cc" line="129" status="run" result="completed" time="0.054" timestamp="2392-07-09T13:17:51.012" classname="WebSocketTest" />
+    <testcase name="SyntaxErrorWhenRelativeUrl" file="../../cobalt/websocket/web_socket_test.cc" line="143" status="run" result="completed" time="0.042" timestamp="2392-07-09T13:17:51.069" classname="WebSocketTest" />
+    <testcase name="URLHasFragments" file="../../cobalt/websocket/web_socket_test.cc" line="161" status="run" result="completed" time="0.051" timestamp="2392-07-09T13:17:51.113" classname="WebSocketTest" />
+    <testcase name="URLHasPort" file="../../cobalt/websocket/web_socket_test.cc" line="179" status="run" result="completed" time="0.057" timestamp="2392-07-09T13:17:51.167" classname="WebSocketTest" />
+    <testcase name="URLHasNoPort" file="../../cobalt/websocket/web_socket_test.cc" line="187" status="run" result="completed" time="0.057" timestamp="2392-07-09T13:17:51.227" classname="WebSocketTest" />
+    <testcase name="ParseHost" file="../../cobalt/websocket/web_socket_test.cc" line="205" status="run" result="completed" time="0.052" timestamp="2392-07-09T13:17:51.286" classname="WebSocketTest" />
+    <testcase name="ParseResourceName" file="../../cobalt/websocket/web_socket_test.cc" line="216" status="run" result="completed" time="0.051" timestamp="2392-07-09T13:17:51.340" classname="WebSocketTest" />
+    <testcase name="ParseEmptyResourceName" file="../../cobalt/websocket/web_socket_test.cc" line="228" status="run" result="completed" time="0.052" timestamp="2392-07-09T13:17:51.394" classname="WebSocketTest" />
+    <testcase name="ParseResourceNameWithQuery" file="../../cobalt/websocket/web_socket_test.cc" line="239" status="run" result="completed" time="0.051" timestamp="2392-07-09T13:17:51.448" classname="WebSocketTest" />
+    <testcase name="FailInsecurePort" file="../../cobalt/websocket/web_socket_test.cc" line="252" status="run" result="completed" time="0.048" timestamp="2392-07-09T13:17:51.502" classname="WebSocketTest" />
+    <testcase name="FailInvalidSubProtocols" file="../../cobalt/websocket/web_socket_test.cc" line="269" status="run" result="completed" time="0.05" timestamp="2392-07-09T13:17:51.553" classname="WebSocketTest" />
+    <testcase name="SubProtocols" file="../../cobalt/websocket/web_socket_test.cc" line="314" status="run" result="completed" time="0.053" timestamp="2392-07-09T13:17:51.606" classname="WebSocketTest" />
+    <testcase name="DuplicatedSubProtocols" file="../../cobalt/websocket/web_socket_test.cc" line="337" status="run" result="completed" time="0.046" timestamp="2392-07-09T13:17:51.662" classname="WebSocketTest" />
+  </testsuite>
+</testsuites>
