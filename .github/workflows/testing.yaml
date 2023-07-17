@@ -1,0 +1,31 @@
+name: testing
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, labeled]
+    branches:
+      - main
+      - feature/*
+  push:
+    branches:
+      - main
+      - feature/*
+  workflow_dispatch:
+    inputs:
+      nightly:
+        description: 'Nightly workflow.'
+        required: true
+        type: boolean
+        default: false
+
+jobs:
+  linux-x64:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Archive unit test report
+        uses: actions/upload-artifact@v3
+        # TODO: Should only run for unit-tests
+        if: always()
+        with:
+          name: unit-test-results
+          path: unit-test-results/

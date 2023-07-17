@@ -4,6 +4,8 @@ on:
   workflow_run:
     workflows:
       - linux
+      # TODO: Temporary testing
+      - testing
       # TODO: Download xml files from GCS
       # - android
       # - raspi
