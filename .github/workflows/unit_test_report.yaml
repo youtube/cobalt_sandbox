@@ -1,0 +1,85 @@
+name: Upload Unit Test Results
+
+on:
+  workflow_run:
+    workflows:
+      - linux
+      # TODO: Download xml files from GCS
+      # - android
+      # - raspi
+      # TODO: Generate xml files
+      # - win32
+      # TODO: Get xml files from platforms
+      # - atv
+      # - ps
+      # - switch
+      # - xbox
+    types:
+      - completed
+
+jobs:
+  # Gets unit test report from artifact storage and uploads them to DataDog.
+    unit-test-report:
+      permissions: {}
+      if: always()
+      runs-on: ubuntu-latest
+      name: Upload Unit Test Reports
+      env:
+        DATADOG_API_KEY: ${{ secrets.DD_API_KEY }}
+        DATADOG_SITE: us5.datadoghq.com
+      steps:
+        - name: Collect Unit Test Reports
+          id: collect-report
+          uses: actions/github-script@v6.4.1
+          with:
+            script: |
+              var artifacts = await github.actions.listWorkflowRunArtifacts({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: ${{github.event.workflow_run.id }},
+              });
+              var results = artifacts.data.artifacts.filter((artifact) => {
+                return artifact.name == "unit-test-results"
+              });
+              if (results.length == 0) {
+                // No reports to upload.
+                return false;
+              }
+              var download = await github.actions.downloadArtifact({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                artifact_id: results.id,
+                archive_format: 'zip',
+              });
+              var fs = require('fs');
+              fs.writeFileSync('${{github.workspace}}/unit-test-results.zip', Buffer.from(download.data));
+              return true;
+        - run: unzip unit-test-results.zip -d unit-test-results
+          if: steps.collect-report.outputs.result
+        - name: Install node
+          if: steps.collect-report.outputs.result
+          uses: actions/setup-node@v3
+          with:
+            node-version: 16
+        - name: Get Datadog CLI
+          if: steps.collect-report.outputs.result
+          shell: bash
+          # TODO: pin version (with checksum?)
+          run: npm install -g @datadog/datadog-ci
+        - name: Upload the JUnit files
+          if: steps.collect-report.outputs.result
+          shell: bash
+          run: |
+            # Loop over platform folders in archive
+            for dir in unit-test-results/*/; do
+              echo "Uploading $dir test report"
+
+              service="${{ github.event.repository.name }}"
+              tags=`cat ${dir}TAGS`
+
+              datadog-ci junit upload \
+                        --service $service \
+                        --env ci \
+                        --tags $tags \
+                        $dir
+            done
