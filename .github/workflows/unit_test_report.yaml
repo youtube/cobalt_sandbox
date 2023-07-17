@@ -35,6 +35,7 @@ jobs:
           uses: actions/github-script@v6
           with:
             script: |
+              console.log(context);
               let allArtifacts = await github.rest.actions.listWorkflowRunArtifacts({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
@@ -45,6 +46,7 @@ jobs:
               });
               if (matchArtifact.length == 0) {
                 // No reports were uploaded.
+                console.log('No unit test reports were uploaded');
                 return false;
               }
               let download = await github.rest.actions.downloadArtifact({
@@ -55,6 +57,7 @@ jobs:
               });
               let fs = require('fs');
               fs.writeFileSync(`${process.env.GITHUB_WORKSPACE}/unit-test-results.zip`, Buffer.from(download.data));
+              console.log(`${process.env.GITHUB_WORKSPACE}/unit-test-results.zip`);
               return true;
         - run: unzip unit-test-results.zip -d unit-test-results
           if: steps.collect-report.outputs.result
