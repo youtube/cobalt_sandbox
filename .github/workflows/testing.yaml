@@ -22,6 +22,10 @@ jobs:
   linux-x64:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: kaidokert/checkout@v3.5.999
+        with:
+          fetch-depth: 1
       - name: Archive unit test report
         uses: actions/upload-artifact@v3
         # TODO: Should only run for unit-tests
