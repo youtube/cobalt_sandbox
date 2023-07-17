@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="78" failures="0" disabled="0" errors="0" time="1.78" timestamp="2392-07-09T13:10:37.949" name="AllTests">
+  <testsuite name="ECPrivateKeyUnitTest" tests="7" failures="0" disabled="0" skipped="0" errors="0" time="0.019" timestamp="2392-07-09T13:10:37.954">
+    <testcase name="InitRandomTest" file="../../crypto/ec_private_key_unittest.cc" line="42" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:10:37.955" classname="ECPrivateKeyUnitTest" />
+    <testcase name="Copy" file="../../crypto/ec_private_key_unittest.cc" line="63" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:37.958" classname="ECPrivateKeyUnitTest" />
+    <testcase name="CreateFromPrivateKeyInfo" file="../../crypto/ec_private_key_unittest.cc" line="73" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:37.961" classname="ECPrivateKeyUnitTest" />
+    <testcase name="RSAPrivateKeyInfo" file="../../crypto/ec_private_key_unittest.cc" line="125" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:10:37.964" classname="ECPrivateKeyUnitTest" />
+    <testcase name="LoadNSSKeyTest" file="../../crypto/ec_private_key_unittest.cc" line="188" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:37.967" classname="ECPrivateKeyUnitTest" />
+    <testcase name="LoadOpenSSLKeyTest" file="../../crypto/ec_private_key_unittest.cc" line="215" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:37.970" classname="ECPrivateKeyUnitTest" />
+    <testcase name="LoadOldOpenSSLKeyTest" file="../../crypto/ec_private_key_unittest.cc" line="275" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:37.972" classname="ECPrivateKeyUnitTest" />
+  </testsuite>
+  <testsuite name="ECSignatureCreatorTest" tests="1" failures="0" disabled="0" skipped="0" errors="0" time="0.003" timestamp="2392-07-09T13:10:37.976">
+    <testcase name="BasicTest" file="../../crypto/ec_signature_creator_unittest.cc" line="19" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:10:37.977" classname="ECSignatureCreatorTest" />
+  </testsuite>
+  <testsuite name="EncryptorTest" tests="14" failures="0" disabled="0" skipped="0" errors="0" time="0.035" timestamp="2392-07-09T13:10:37.981">
+    <testcase name="EncryptDecrypt" file="../../crypto/encryptor_unittest.cc" line="17" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:37.983" classname="EncryptorTest" />
+    <testcase name="DecryptWrongKey" file="../../crypto/encryptor_unittest.cc" line="41" status="run" result="completed" time="0.003" timestamp="2392-07-09T13:10:37.986" classname="EncryptorTest" />
+    <testcase name="EncryptAES128CTR" file="../../crypto/encryptor_unittest.cc" line="252" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:37.991" classname="EncryptorTest" />
+    <testcase name="EncryptAES256CTR" file="../../crypto/encryptor_unittest.cc" line="260" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:37.993" classname="EncryptorTest" />
+    <testcase name="EncryptAES128CTR_MultipleDecrypt" file="../../crypto/encryptor_unittest.cc" line="268" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:37.995" classname="EncryptorTest" />
+    <testcase name="EncryptAES256CTR_MultipleDecrypt" file="../../crypto/encryptor_unittest.cc" line="276" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:37.997" classname="EncryptorTest" />
+    <testcase name="EncryptDecryptCTR" file="../../crypto/encryptor_unittest.cc" line="284" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:38.000" classname="EncryptorTest" />
+    <testcase name="CTRCounter" file="../../crypto/encryptor_unittest.cc" line="315" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:38.002" classname="EncryptorTest" />
+    <testcase name="EncryptAES256CBC" file="../../crypto/encryptor_unittest.cc" line="363" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:38.004" classname="EncryptorTest" />
+    <testcase name="EncryptAES128CBCRegression" file="../../crypto/encryptor_unittest.cc" line="434" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:38.007" classname="EncryptorTest" />
+    <testcase name="UnsupportedKeySize" file="../../crypto/encryptor_unittest.cc" line="463" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:38.009" classname="EncryptorTest" />
+    <testcase name="UnsupportedIV" file="../../crypto/encryptor_unittest.cc" line="477" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:38.011" classname="EncryptorTest" />
+    <testcase name="EmptyEncrypt" file="../../crypto/encryptor_unittest.cc" line="488" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:38.013" classname="EncryptorTest" />
+    <testcase name="CipherTextNotMultipleOfBlockSize" file="../../crypto/encryptor_unittest.cc" line="509" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:38.015" classname="EncryptorTest" />
+  </testsuite>
+  <testsuite name="HMACTest" tests="7" failures="0" disabled="0" skipped="0" errors="0" time="0.015" timestamp="2392-07-09T13:10:38.019">
+    <testcase name="HmacSafeBrowsingResponseTest" file="../../crypto/hmac_unittest.cc" line="38" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:38.020" classname="HMACTest" />
+    <testcase name="RFC2202TestCases" file="../../crypto/hmac_unittest.cc" line="90" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:38.022" classname="HMACTest" />
+    <testcase name="RFC4231TestCase6" file="../../crypto/hmac_unittest.cc" line="161" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:38.024" classname="HMACTest" />
+    <testcase name="NSSFIPSPowerUpSelfTest" file="../../crypto/hmac_unittest.cc" line="187" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:38.026" classname="HMACTest" />
+    <testcase name="HMACObjectReuse" file="../../crypto/hmac_unittest.cc" line="244" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:38.029" classname="HMACTest" />
+    <testcase name="Verify" file="../../crypto/hmac_unittest.cc" line="259" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:38.031" classname="HMACTest" />
+    <testcase name="EmptyKey" file="../../crypto/hmac_unittest.cc" line="287" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:38.033" classname="HMACTest" />
+  </testsuite>
+  <testsuite name="MutualAuth" tests="4" failures="0" disabled="0" skipped="0" errors="0" time="0.288" timestamp="2392-07-09T13:10:38.036">
+    <testcase name="CorrectAuth" file="../../crypto/p224_spake_unittest.cc" line="60" status="run" result="completed" time="0.006" timestamp="2392-07-09T13:10:38.038" classname="MutualAuth" />
+    <testcase name="IncorrectPassword" file="../../crypto/p224_spake_unittest.cc" line="70" status="run" result="completed" time="0.006" timestamp="2392-07-09T13:10:38.047" classname="MutualAuth" />
+    <testcase name="ExpectedValues" file="../../crypto/p224_spake_unittest.cc" line="81" status="run" result="completed" time="0.01" timestamp="2392-07-09T13:10:38.056" classname="MutualAuth" />
+    <testcase name="Fuzz" file="../../crypto/p224_spake_unittest.cc" line="117" status="run" result="completed" time="0.255" timestamp="2392-07-09T13:10:38.069" classname="MutualAuth" />
+  </testsuite>
+  <testsuite name="RandBytes" tests="1" failures="0" disabled="0" skipped="0" errors="0" time="0.002" timestamp="2392-07-09T13:10:38.327">
+    <testcase name="RandBytes" file="../../crypto/random_unittest.cc" line="26" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:38.328" classname="RandBytes" />
+  </testsuite>
+  <testsuite name="RSAPrivateKeyUnitTest" tests="7" failures="0" disabled="0" skipped="0" errors="0" time="0.986" timestamp="2392-07-09T13:10:38.332">
+    <testcase name="InitRandomTest" file="../../crypto/rsa_private_key_unittest.cc" line="78" status="run" result="completed" time="0.957" timestamp="2392-07-09T13:10:38.333" classname="RSAPrivateKeyUnitTest" />
+    <testcase name="CopyTest" file="../../crypto/rsa_private_key_unittest.cc" line="117" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:39.292" classname="RSAPrivateKeyUnitTest" />
+    <testcase name="ExtraData" file="../../crypto/rsa_private_key_unittest.cc" line="134" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:39.295" classname="RSAPrivateKeyUnitTest" />
+    <testcase name="NotRsaKey" file="../../crypto/rsa_private_key_unittest.cc" line="146" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:39.298" classname="RSAPrivateKeyUnitTest" />
+    <testcase name="PublicKeyTest" file="../../crypto/rsa_private_key_unittest.cc" line="175" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:39.300" classname="RSAPrivateKeyUnitTest" />
+    <testcase name="ShortIntegers" file="../../crypto/rsa_private_key_unittest.cc" line="220" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:10:39.303" classname="RSAPrivateKeyUnitTest" />
+    <testcase name="CreateFromKeyTest" file="../../crypto/rsa_private_key_unittest.cc" line="362" status="run" result="completed" time="0.011" timestamp="2392-07-09T13:10:39.306" classname="RSAPrivateKeyUnitTest" />
+  </testsuite>
+  <testsuite name="SecureHashTest" tests="4" failures="0" disabled="0" skipped="0" errors="0" time="0.01" timestamp="2392-07-09T13:10:39.321">
+    <testcase name="TestUpdate" file="../../crypto/secure_hash_unittest.cc" line="15" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:10:39.322" classname="SecureHashTest" />
+    <testcase name="TestClone" file="../../crypto/secure_hash_unittest.cc" line="35" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:39.326" classname="SecureHashTest" />
+    <testcase name="TestLength" file="../../crypto/secure_hash_unittest.cc" line="78" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:39.328" classname="SecureHashTest" />
+    <testcase name="Equality" file="../../crypto/secure_hash_unittest.cc" line="84" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:39.330" classname="SecureHashTest" />
+  </testsuite>
+  <testsuite name="Sha256Test" tests="4" failures="0" disabled="0" skipped="0" errors="0" time="0.012" timestamp="2392-07-09T13:10:39.334">
+    <testcase name="Test1" file="../../crypto/sha2_unittest.cc" line="10" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:39.335" classname="Sha256Test" />
+    <testcase name="Test1_String" file="../../crypto/sha2_unittest.cc" line="34" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:39.337" classname="Sha256Test" />
+    <testcase name="Test2" file="../../crypto/sha2_unittest.cc" line="53" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:39.339" classname="Sha256Test" />
+    <testcase name="Test3" file="../../crypto/sha2_unittest.cc" line="78" status="run" result="completed" time="0.003" timestamp="2392-07-09T13:10:39.342" classname="Sha256Test" />
+  </testsuite>
+  <testsuite name="SignatureCreatorTest" tests="3" failures="0" disabled="0" skipped="0" errors="0" time="0.154" timestamp="2392-07-09T13:10:39.348">
+    <testcase name="BasicTest" file="../../crypto/signature_creator_unittest.cc" line="18" status="run" result="completed" time="0.038" timestamp="2392-07-09T13:10:39.350" classname="SignatureCreatorTest" />
+    <testcase name="SignDigestTest" file="../../crypto/signature_creator_unittest.cc" line="53" status="run" result="completed" time="0.045" timestamp="2392-07-09T13:10:39.391" classname="SignatureCreatorTest" />
+    <testcase name="SignSHA256DigestTest" file="../../crypto/signature_creator_unittest.cc" line="85" status="run" result="completed" time="0.062" timestamp="2392-07-09T13:10:39.439" classname="SignatureCreatorTest" />
+  </testsuite>
+  <testsuite name="SignatureVerifierTest" tests="2" failures="0" disabled="0" skipped="0" errors="0" time="0.005" timestamp="2392-07-09T13:10:39.505">
+    <testcase name="BasicTest" file="../../crypto/signature_verifier_unittest.cc" line="14" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:39.506" classname="SignatureVerifierTest" />
+    <testcase name="VerifyRSAPSS" file="../../crypto/signature_verifier_unittest.cc" line="372" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:39.509" classname="SignatureVerifierTest" />
+  </testsuite>
+  <testsuite name="SymmetricKeyTest" tests="3" failures="0" disabled="0" skipped="0" errors="0" time="0.007" timestamp="2392-07-09T13:10:39.513">
+    <testcase name="GenerateRandomKey" file="../../crypto/symmetric_key_unittest.cc" line="14" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:39.514" classname="SymmetricKeyTest" />
+    <testcase name="ImportGeneratedKey" file="../../crypto/symmetric_key_unittest.cc" line="29" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:39.516" classname="SymmetricKeyTest" />
+    <testcase name="ImportDerivedKey" file="../../crypto/symmetric_key_unittest.cc" line="41" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:39.519" classname="SymmetricKeyTest" />
+  </testsuite>
+  <testsuite name="AeadTest" tests="6" failures="0" disabled="0" skipped="0" errors="0" time="0.013" timestamp="2392-07-09T13:10:39.522">
+    <testcase name="SealOpen/0" value_param="0" file="../../crypto/aead_unittest.cc" line="22" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:39.523" classname="AeadTest" />
+    <testcase name="SealOpen/1" value_param="1" file="../../crypto/aead_unittest.cc" line="22" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:39.526" classname="AeadTest" />
+    <testcase name="SealOpen/2" value_param="2" file="../../crypto/aead_unittest.cc" line="22" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:39.528" classname="AeadTest" />
+    <testcase name="SealOpenWrongKey/0" value_param="0" file="../../crypto/aead_unittest.cc" line="40" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:39.530" classname="AeadTest" />
+    <testcase name="SealOpenWrongKey/1" value_param="1" file="../../crypto/aead_unittest.cc" line="40" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:39.533" classname="AeadTest" />
+    <testcase name="SealOpenWrongKey/2" value_param="2" file="../../crypto/aead_unittest.cc" line="40" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:39.535" classname="AeadTest" />
+  </testsuite>
+  <testsuite name="SymmetricKeyDeriveKeyFromPasswordUsingPbkdf2Test" tests="12" failures="0" disabled="0" skipped="0" errors="0" time="0.032" timestamp="2392-07-09T13:10:39.538">
+    <testcase name="DeriveKeyFromPasswordUsingPbkdf2/0" value_param="40-byte object &lt;01-00 00-00 00-00 00-00 21-18 05-11 26-00 00-00 15-07 05-11 26-00 00-00 01-00 00-00 A0-00 00-00 CD-A9 05-11 26-00 00-00&gt;" file="../../crypto/symmetric_key_unittest.cc" line="81" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:39.539" classname="SymmetricKeyDeriveKeyFromPasswordUsingPbkdf2Test" />
+    <testcase name="DeriveKeyFromPasswordUsingPbkdf2/1" value_param="40-byte object &lt;01-00 00-00 00-00 00-00 21-18 05-11 26-00 00-00 15-07 05-11 26-00 00-00 02-00 00-00 A0-00 00-00 74-C3 05-11 26-00 00-00&gt;" file="../../crypto/symmetric_key_unittest.cc" line="81" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:39.542" classname="SymmetricKeyDeriveKeyFromPasswordUsingPbkdf2Test" />
+    <testcase name="DeriveKeyFromPasswordUsingPbkdf2/2" value_param="40-byte object &lt;01-00 00-00 00-00 00-00 21-18 05-11 26-00 00-00 15-07 05-11 26-00 00-00 00-10 00-00 A0-00 00-00 DC-4F 05-11 26-00 00-00&gt;" file="../../crypto/symmetric_key_unittest.cc" line="81" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:10:39.544" classname="SymmetricKeyDeriveKeyFromPasswordUsingPbkdf2Test" />
+    <testcase name="DeriveKeyFromPasswordUsingPbkdf2/3" value_param="40-byte object &lt;01-00 00-00 00-00 00-00 21-18 05-11 26-00 00-00 0B-0A 06-11 26-00 00-00 01-00 00-00 A0-00 00-00 19-35 05-11 26-00 00-00&gt;" file="../../crypto/symmetric_key_unittest.cc" line="81" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:39.548" classname="SymmetricKeyDeriveKeyFromPasswordUsingPbkdf2Test" />
+    <testcase name="DeriveKeyFromPasswordUsingPbkdf2/4" value_param="40-byte object &lt;01-00 00-00 00-00 00-00 21-18 05-11 26-00 00-00 0B-0A 06-11 26-00 00-00 02-00 00-00 A0-00 00-00 0D-CE 05-11 26-00 00-00&gt;" file="../../crypto/symmetric_key_unittest.cc" line="81" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:39.551" classname="SymmetricKeyDeriveKeyFromPasswordUsingPbkdf2Test" />
+    <testcase name="DeriveKeyFromPasswordUsingPbkdf2/5" value_param="40-byte object &lt;01-00 00-00 00-00 00-00 21-18 05-11 26-00 00-00 0B-0A 06-11 26-00 00-00 B0-04 00-00 A0-00 00-00 7C-93 06-11 26-00 00-00&gt;" file="../../crypto/symmetric_key_unittest.cc" line="81" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:39.553" classname="SymmetricKeyDeriveKeyFromPasswordUsingPbkdf2Test" />
+    <testcase name="DeriveKeyFromPasswordUsingPbkdf2/6" value_param="40-byte object &lt;01-00 00-00 00-00 00-00 21-18 05-11 26-00 00-00 E6-76 05-11 26-00 00-00 05-00 00-00 A0-00 00-00 9D-C3 05-11 26-00 00-00&gt;" file="../../crypto/symmetric_key_unittest.cc" line="81" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:39.556" classname="SymmetricKeyDeriveKeyFromPasswordUsingPbkdf2Test" />
+    <testcase name="DeriveKeyFromPasswordUsingPbkdf2/7" value_param="40-byte object &lt;01-00 00-00 00-00 00-00 E4-20 06-11 26-00 00-00 2A-18 05-11 26-00 00-00 B0-04 00-00 A0-00 00-00 71-78 06-11 26-00 00-00&gt;" file="../../crypto/symmetric_key_unittest.cc" line="81" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:39.559" classname="SymmetricKeyDeriveKeyFromPasswordUsingPbkdf2Test" />
+    <testcase name="DeriveKeyFromPasswordUsingPbkdf2/8" value_param="40-byte object &lt;01-00 00-00 00-00 00-00 1A-07 05-11 26-00 00-00 05-50 05-11 26-00 00-00 B0-04 00-00 A0-00 00-00 A1-DD 05-11 26-00 00-00&gt;" file="../../crypto/symmetric_key_unittest.cc" line="81" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:39.562" classname="SymmetricKeyDeriveKeyFromPasswordUsingPbkdf2Test" />
+    <testcase name="DeriveKeyFromPasswordUsingPbkdf2/9" value_param="40-byte object &lt;01-00 00-00 00-00 00-00 A5-93 06-11 26-00 00-00 97-FD 05-11 26-00 00-00 32-00 00-00 A0-00 00-00 C4-43 05-11 26-00 00-00&gt;" file="../../crypto/symmetric_key_unittest.cc" line="81" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:39.565" classname="SymmetricKeyDeriveKeyFromPasswordUsingPbkdf2Test" />
+    <testcase name="DeriveKeyFromPasswordUsingPbkdf2/10" value_param="40-byte object &lt;00-00 00-00 00-00 00-00 ED-43 05-11 26-00 00-00 47-15 06-11 26-00 00-00 01-00 00-00 00-01 00-00 50-15 06-11 26-00 00-00&gt;" file="../../crypto/symmetric_key_unittest.cc" line="81" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:39.567" classname="SymmetricKeyDeriveKeyFromPasswordUsingPbkdf2Test" />
+    <testcase name="DeriveKeyFromPasswordUsingPbkdf2/11" value_param="40-byte object &lt;00-00 00-00 00-00 00-00 1A-07 05-11 26-00 00-00 05-50 05-11 26-00 00-00 14-00 00-00 00-01 00-00 A5-F0 05-11 26-00 00-00&gt;" file="../../crypto/symmetric_key_unittest.cc" line="81" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:39.569" classname="SymmetricKeyDeriveKeyFromPasswordUsingPbkdf2Test" />
+  </testsuite>
+  <testsuite name="SymmetricKeyDeriveKeyFromPasswordUsingScryptTest" tests="3" failures="0" disabled="0" skipped="0" errors="0" time="0.154" timestamp="2392-07-09T13:10:39.573">
+    <testcase name="DeriveKeyFromPasswordUsingScrypt/0" value_param="48-byte object &lt;01-00 00-00 00-00 00-00 41-5D 06-11 26-00 00-00 41-5D 06-11 26-00 00-00 10-00 00-00 01-00 00-00 01-00 00-00 00-02 00-00 8F-9F 05-11 26-00 00-00&gt;" file="../../crypto/symmetric_key_unittest.cc" line="97" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:39.574" classname="SymmetricKeyDeriveKeyFromPasswordUsingScryptTest" />
+    <testcase name="DeriveKeyFromPasswordUsingScrypt/1" value_param="48-byte object &lt;01-00 00-00 00-00 00-00 21-18 05-11 26-00 00-00 48-18 05-11 26-00 00-00 00-04 00-00 08-00 00-00 10-00 00-00 00-02 00-00 5C-2D 06-11 26-00 00-00&gt;" file="../../crypto/symmetric_key_unittest.cc" line="97" status="run" result="completed" time="0.069" timestamp="2392-07-09T13:10:39.577" classname="SymmetricKeyDeriveKeyFromPasswordUsingScryptTest" />
+    <testcase name="DeriveKeyFromPasswordUsingScrypt/2" value_param="48-byte object &lt;01-00 00-00 00-00 00-00 EF-76 05-11 26-00 00-00 CA-DD 05-11 26-00 00-00 00-40 00-00 08-00 00-00 01-00 00-00 00-02 00-00 DD-2D 06-11 26-00 00-00&gt;" file="../../crypto/symmetric_key_unittest.cc" line="97" status="run" result="completed" time="0.077" timestamp="2392-07-09T13:10:39.648" classname="SymmetricKeyDeriveKeyFromPasswordUsingScryptTest" />
+  </testsuite>
+</testsuites>

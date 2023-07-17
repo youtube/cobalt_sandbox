@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="18" failures="0" disabled="0" errors="0" time="0.054" timestamp="2392-07-09T13:13:02.814" name="AllTests">
+  <testsuite name="AudioParameters" tests="5" failures="0" disabled="0" skipped="0" errors="0" time="0.011" timestamp="2392-07-09T13:13:02.817">
+    <testcase name="Constructor_ParametersValues" file="../../cobalt/media_stream/audio_parameters_test.cc" line="21" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:02.818" classname="AudioParameters" />
+    <testcase name="AsHumanReadableString" file="../../cobalt/media_stream/audio_parameters_test.cc" line="32" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:02.821" classname="AudioParameters" />
+    <testcase name="IsValid_Parameterized" file="../../cobalt/media_stream/audio_parameters_test.cc" line="42" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:02.823" classname="AudioParameters" />
+    <testcase name="GetBitsPerSecond" file="../../cobalt/media_stream/audio_parameters_test.cc" line="50" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:02.825" classname="AudioParameters" />
+    <testcase name="Compare" file="../../cobalt/media_stream/audio_parameters_test.cc" line="58" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:02.828" classname="AudioParameters" />
+  </testsuite>
+  <testsuite name="MediaStreamAudioSourceTest" tests="5" failures="0" disabled="0" skipped="0" errors="0" time="0.011" timestamp="2392-07-09T13:13:02.831">
+    <testcase name="SourceCanStart" file="../../cobalt/media_stream/media_stream_audio_source_test.cc" line="52" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:02.832" classname="MediaStreamAudioSourceTest" />
+    <testcase name="SourceCannotStart" file="../../cobalt/media_stream/media_stream_audio_source_test.cc" line="63" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:02.834" classname="MediaStreamAudioSourceTest" />
+    <testcase name="CallStopCallback" file="../../cobalt/media_stream/media_stream_audio_source_test.cc" line="72" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:02.837" classname="MediaStreamAudioSourceTest" />
+    <testcase name="EmptyStopCallback" file="../../cobalt/media_stream/media_stream_audio_source_test.cc" line="87" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:02.839" classname="MediaStreamAudioSourceTest" />
+    <testcase name="AddMultipleTracks" file="../../cobalt/media_stream/media_stream_audio_source_test.cc" line="97" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:02.841" classname="MediaStreamAudioSourceTest" />
+  </testsuite>
+  <testsuite name="MediaStreamAudioTrackTest" tests="7" failures="0" disabled="0" skipped="0" errors="0" time="0.016" timestamp="2392-07-09T13:13:02.845">
+    <testcase name="OnSetFormatAndData" file="../../cobalt/media_stream/media_stream_audio_track_test.cc" line="52" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:02.846" classname="MediaStreamAudioTrackTest" />
+    <testcase name="OneTrackMultipleSinks" file="../../cobalt/media_stream/media_stream_audio_track_test.cc" line="80" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:02.849" classname="MediaStreamAudioTrackTest" />
+    <testcase name="TwoTracksWithOneSinkEach" file="../../cobalt/media_stream/media_stream_audio_track_test.cc" line="113" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:02.851" classname="MediaStreamAudioTrackTest" />
+    <testcase name="AddRemoveSink" file="../../cobalt/media_stream/media_stream_audio_track_test.cc" line="150" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:02.853" classname="MediaStreamAudioTrackTest" />
+    <testcase name="Stop" file="../../cobalt/media_stream/media_stream_audio_track_test.cc" line="176" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:02.856" classname="MediaStreamAudioTrackTest" />
+    <testcase name="ReadyStateEndedNotifyIfAlreadyStopped" file="../../cobalt/media_stream/media_stream_audio_track_test.cc" line="198" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:02.858" classname="MediaStreamAudioTrackTest" />
+    <testcase name="ReadyStateEndedNotifyIfNeverStarted" file="../../cobalt/media_stream/media_stream_audio_track_test.cc" line="210" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:02.860" classname="MediaStreamAudioTrackTest" />
+  </testsuite>
+  <testsuite name="MediaStreamTest" tests="1" failures="0" disabled="0" skipped="0" errors="0" time="0.002" timestamp="2392-07-09T13:13:02.864">
+    <testcase name="TestConstruction" file="../../cobalt/media_stream/media_stream_test.cc" line="33" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:02.865" classname="MediaStreamTest" />
+  </testsuite>
+</testsuites>

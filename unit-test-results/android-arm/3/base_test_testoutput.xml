@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="96" failures="0" disabled="0" errors="0" time="0.389" timestamp="2392-07-09T14:10:09.307" name="AllTests">
+  <testsuite name="CValCollectionEntryStatsTest" tests="5" failures="0" disabled="0" skipped="0" errors="0" time="0.011" timestamp="2392-07-09T14:10:09.310">
+    <testcase name="DefaultValues" file="../../cobalt/base/c_val_collection_entry_stats_test.cc" line="28" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.312" classname="CValCollectionEntryStatsTest" />
+    <testcase name="NoFlush" file="../../cobalt/base/c_val_collection_entry_stats_test.cc" line="79" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.314" classname="CValCollectionEntryStatsTest" />
+    <testcase name="MaxSizeFlush" file="../../cobalt/base/c_val_collection_entry_stats_test.cc" line="135" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.316" classname="CValCollectionEntryStatsTest" />
+    <testcase name="ManualFlush" file="../../cobalt/base/c_val_collection_entry_stats_test.cc" line="192" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.319" classname="CValCollectionEntryStatsTest" />
+    <testcase name="TwoManualFlushes" file="../../cobalt/base/c_val_collection_entry_stats_test.cc" line="250" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.321" classname="CValCollectionEntryStatsTest" />
+  </testsuite>
+  <testsuite name="CValCollectionTimerStatsTest" tests="5" failures="0" disabled="0" skipped="0" errors="0" time="0.011" timestamp="2392-07-09T14:10:09.325">
+    <testcase name="DefaultValues" file="../../cobalt/base/c_val_collection_timer_stats_test.cc" line="29" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.326" classname="CValCollectionTimerStatsTest" />
+    <testcase name="NoFlush" file="../../cobalt/base/c_val_collection_timer_stats_test.cc" line="80" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.328" classname="CValCollectionTimerStatsTest" />
+    <testcase name="MaxSizeFlush" file="../../cobalt/base/c_val_collection_timer_stats_test.cc" line="140" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.330" classname="CValCollectionTimerStatsTest" />
+    <testcase name="ManualFlush" file="../../cobalt/base/c_val_collection_timer_stats_test.cc" line="203" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.333" classname="CValCollectionTimerStatsTest" />
+    <testcase name="TwoManualFlushes" file="../../cobalt/base/c_val_collection_timer_stats_test.cc" line="266" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.335" classname="CValCollectionTimerStatsTest" />
+  </testsuite>
+  <testsuite name="CValTest" tests="45" failures="0" disabled="0" skipped="0" errors="0" time="0.123" timestamp="2392-07-09T14:10:09.339">
+    <testcase name="GetCValManagerInstance" file="../../cobalt/base/c_val_test.cc" line="32" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.340" classname="CValTest" />
+    <testcase name="InitiallyEmpty" file="../../cobalt/base/c_val_test.cc" line="37" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.342" classname="CValTest" />
+    <testcase name="RegisterAndUnregisterCVal" file="../../cobalt/base/c_val_test.cc" line="45" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.344" classname="CValTest" />
+    <testcase name="RegisterAndPrintBoolTrue" file="../../cobalt/base/c_val_test.cc" line="62" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.347" classname="CValTest" />
+    <testcase name="RegisterAndPrintBoolFalse" file="../../cobalt/base/c_val_test.cc" line="72" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.349" classname="CValTest" />
+    <testcase name="RegisterAndPrintU32" file="../../cobalt/base/c_val_test.cc" line="82" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.351" classname="CValTest" />
+    <testcase name="RegisterAndPrintU32Zero" file="../../cobalt/base/c_val_test.cc" line="92" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.353" classname="CValTest" />
+    <testcase name="RegisterAndPrintU32K" file="../../cobalt/base/c_val_test.cc" line="102" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.355" classname="CValTest" />
+    <testcase name="RegisterAndPrintU64" file="../../cobalt/base/c_val_test.cc" line="112" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.358" classname="CValTest" />
+    <testcase name="RegisterAndPrintS32" file="../../cobalt/base/c_val_test.cc" line="122" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.360" classname="CValTest" />
+    <testcase name="RegisterAndPrintS64" file="../../cobalt/base/c_val_test.cc" line="132" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.362" classname="CValTest" />
+    <testcase name="RegisterAndPrintSizeInBytesB" file="../../cobalt/base/c_val_test.cc" line="142" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.364" classname="CValTest" />
+    <testcase name="RegisterAndPrintSizeInBytesZero" file="../../cobalt/base/c_val_test.cc" line="152" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.367" classname="CValTest" />
+    <testcase name="RegisterAndPrintSizeInBytesKB" file="../../cobalt/base/c_val_test.cc" line="162" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.369" classname="CValTest" />
+    <testcase name="RegisterAndPrintSizeInBytesMB" file="../../cobalt/base/c_val_test.cc" line="172" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.371" classname="CValTest" />
+    <testcase name="RegisterAndPrintSizeInBytesGB" file="../../cobalt/base/c_val_test.cc" line="182" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.373" classname="CValTest" />
+    <testcase name="RegisterAndPrintTimeDeltaMicroseconds" file="../../cobalt/base/c_val_test.cc" line="192" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.375" classname="CValTest" />
+    <testcase name="RegisterAndPrintTimeDeltaZero" file="../../cobalt/base/c_val_test.cc" line="202" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.378" classname="CValTest" />
+    <testcase name="RegisterAndPrintTimeDeltaMilliseconds" file="../../cobalt/base/c_val_test.cc" line="212" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.380" classname="CValTest" />
+    <testcase name="RegisterAndPrintTimeDeltaMillisecondsSingleDigit" file="../../cobalt/base/c_val_test.cc" line="222" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.382" classname="CValTest" />
+    <testcase name="RegisterAndPrintTimeDeltaMillisecondsFraction" file="../../cobalt/base/c_val_test.cc" line="232" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.384" classname="CValTest" />
+    <testcase name="RegisterAndPrintTimeDeltaSeconds" file="../../cobalt/base/c_val_test.cc" line="242" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.387" classname="CValTest" />
+    <testcase name="RegisterAndPrintTimeDeltaSecondsSingleDigit" file="../../cobalt/base/c_val_test.cc" line="252" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.389" classname="CValTest" />
+    <testcase name="RegisterAndPrintTimeDeltaSecondsFraction" file="../../cobalt/base/c_val_test.cc" line="262" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.391" classname="CValTest" />
+    <testcase name="RegisterAndPrintTimeDeltaMinutes" file="../../cobalt/base/c_val_test.cc" line="272" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.394" classname="CValTest" />
+    <testcase name="RegisterAndPrintTimeDeltaMinutesSingleDigit" file="../../cobalt/base/c_val_test.cc" line="282" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.396" classname="CValTest" />
+    <testcase name="RegisterAndPrintTimeDeltaMinutesAndSeconds" file="../../cobalt/base/c_val_test.cc" line="292" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.398" classname="CValTest" />
+    <testcase name="RegisterAndPrintTimeDeltaHours" file="../../cobalt/base/c_val_test.cc" line="302" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.401" classname="CValTest" />
+    <testcase name="RegisterAndPrintTimeDeltaHoursSingleDigit" file="../../cobalt/base/c_val_test.cc" line="312" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.403" classname="CValTest" />
+    <testcase name="RegisterAndPrintTimeDeltaHoursAndMinutes" file="../../cobalt/base/c_val_test.cc" line="322" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.406" classname="CValTest" />
+    <testcase name="RegisterAndPrintTimeDeltaHoursAndMinutesAndSeconds" file="../../cobalt/base/c_val_test.cc" line="332" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.408" classname="CValTest" />
+    <testcase name="RegisterAndPrintTimeDeltaHoursAndSeconds" file="../../cobalt/base/c_val_test.cc" line="342" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.410" classname="CValTest" />
+    <testcase name="RegisterAndPrintTimeDeltaNegativeMicroseconds" file="../../cobalt/base/c_val_test.cc" line="352" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.413" classname="CValTest" />
+    <testcase name="RegisterAndPrintTimeDeltaNegativeMilliseconds" file="../../cobalt/base/c_val_test.cc" line="362" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.415" classname="CValTest" />
+    <testcase name="RegisterAndPrintTimeDeltaNegativeSeconds" file="../../cobalt/base/c_val_test.cc" line="372" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.417" classname="CValTest" />
+    <testcase name="RegisterAndPrintTimeDeltaNegativeMinutes" file="../../cobalt/base/c_val_test.cc" line="382" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.419" classname="CValTest" />
+    <testcase name="RegisterAndPrintTimeDeltaNegativeHours" file="../../cobalt/base/c_val_test.cc" line="392" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.422" classname="CValTest" />
+    <testcase name="RegisterAndPrintFloat" file="../../cobalt/base/c_val_test.cc" line="402" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.425" classname="CValTest" />
+    <testcase name="RegisterAndPrintDouble" file="../../cobalt/base/c_val_test.cc" line="412" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.432" classname="CValTest" />
+    <testcase name="RegisterAndPrintString" file="../../cobalt/base/c_val_test.cc" line="422" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.434" classname="CValTest" />
+    <testcase name="GetOrderedCValNames" file="../../cobalt/base/c_val_test.cc" line="432" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.437" classname="CValTest" />
+    <testcase name="ValueChangedCallback" file="../../cobalt/base/c_val_test.cc" line="457" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.439" classname="CValTest" />
+    <testcase name="HookReceiver" file="../../cobalt/base/c_val_test.cc" line="482" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.442" classname="CValTest" />
+    <testcase name="NativeType" file="../../cobalt/base/c_val_test.cc" line="557" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.445" classname="CValTest" />
+    <testcase name="RemoveAndRead" file="../../cobalt/base/c_val_test.cc" line="667" status="run" result="completed" time="0.013" timestamp="2392-07-09T14:10:09.448" classname="CValTest" />
+  </testsuite>
+  <testsuite name="CValTimeIntervalEntryStatsTest" tests="4" failures="0" disabled="0" skipped="0" errors="0" time="0.009" timestamp="2392-07-09T14:10:09.465">
+    <testcase name="DefaultValues" file="../../cobalt/base/c_val_time_interval_entry_stats_test.cc" line="28" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.466" classname="CValTimeIntervalEntryStatsTest" />
+    <testcase name="NoTimeout" file="../../cobalt/base/c_val_time_interval_entry_stats_test.cc" line="58" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.468" classname="CValTimeIntervalEntryStatsTest" />
+    <testcase name="OneTimeout" file="../../cobalt/base/c_val_time_interval_entry_stats_test.cc" line="92" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.471" classname="CValTimeIntervalEntryStatsTest" />
+    <testcase name="TwoTimeouts" file="../../cobalt/base/c_val_time_interval_entry_stats_test.cc" line="129" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.473" classname="CValTimeIntervalEntryStatsTest" />
+  </testsuite>
+  <testsuite name="CValTimeIntervalTimerStatsTest" tests="4" failures="0" disabled="0" skipped="0" errors="0" time="0.008" timestamp="2392-07-09T14:10:09.476">
+    <testcase name="DefaultValues" file="../../cobalt/base/c_val_time_interval_timer_stats_test.cc" line="29" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.477" classname="CValTimeIntervalTimerStatsTest" />
+    <testcase name="NoTimeout" file="../../cobalt/base/c_val_time_interval_timer_stats_test.cc" line="59" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.480" classname="CValTimeIntervalTimerStatsTest" />
+    <testcase name="OneTimeout" file="../../cobalt/base/c_val_time_interval_timer_stats_test.cc" line="97" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.482" classname="CValTimeIntervalTimerStatsTest" />
+    <testcase name="TwoTimeouts" file="../../cobalt/base/c_val_time_interval_timer_stats_test.cc" line="139" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.484" classname="CValTimeIntervalTimerStatsTest" />
+  </testsuite>
+  <testsuite name="CircularBufferShellTest" tests="17" failures="0" disabled="0" skipped="0" errors="0" time="0.038" timestamp="2392-07-09T14:10:09.488">
+    <testcase name="Construct" file="../../cobalt/base/circular_buffer_shell_unittest.cc" line="87" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.489" classname="CircularBufferShellTest" />
+    <testcase name="SimpleWriteAndRead" file="../../cobalt/base/circular_buffer_shell_unittest.cc" line="93" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.491" classname="CircularBufferShellTest" />
+    <testcase name="ReadWriteOverBoundary" file="../../cobalt/base/circular_buffer_shell_unittest.cc" line="106" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.493" classname="CircularBufferShellTest" />
+    <testcase name="ExpandWhileNotWrapped" file="../../cobalt/base/circular_buffer_shell_unittest.cc" line="130" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.496" classname="CircularBufferShellTest" />
+    <testcase name="ExpandWhileNotWrapped2" file="../../cobalt/base/circular_buffer_shell_unittest.cc" line="145" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.498" classname="CircularBufferShellTest" />
+    <testcase name="ExpandWhileWrapped" file="../../cobalt/base/circular_buffer_shell_unittest.cc" line="164" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.500" classname="CircularBufferShellTest" />
+    <testcase name="WriteTooMuch" file="../../cobalt/base/circular_buffer_shell_unittest.cc" line="187" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.502" classname="CircularBufferShellTest" />
+    <testcase name="ReadEmpty" file="../../cobalt/base/circular_buffer_shell_unittest.cc" line="201" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.505" classname="CircularBufferShellTest" />
+    <testcase name="ReadToNull" file="../../cobalt/base/circular_buffer_shell_unittest.cc" line="227" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.508" classname="CircularBufferShellTest" />
+    <testcase name="Peek" file="../../cobalt/base/circular_buffer_shell_unittest.cc" line="239" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.510" classname="CircularBufferShellTest" />
+    <testcase name="Skip" file="../../cobalt/base/circular_buffer_shell_unittest.cc" line="298" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.512" classname="CircularBufferShellTest" />
+    <testcase name="PeekWrapped" file="../../cobalt/base/circular_buffer_shell_unittest.cc" line="315" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.514" classname="CircularBufferShellTest" />
+    <testcase name="SkipWrapped" file="../../cobalt/base/circular_buffer_shell_unittest.cc" line="337" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.516" classname="CircularBufferShellTest" />
+    <testcase name="Basic" file="../../cobalt/base/circular_buffer_shell_unittest.cc" line="359" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.519" classname="CircularBufferShellTest" />
+    <testcase name="CycleReadWrite" file="../../cobalt/base/circular_buffer_shell_unittest.cc" line="422" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.521" classname="CircularBufferShellTest" />
+    <testcase name="IncreaseMaxCapacityTo" file="../../cobalt/base/circular_buffer_shell_unittest.cc" line="451" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.523" classname="CircularBufferShellTest" />
+    <testcase name="IncreaseMaxCapacityToWrapped" file="../../cobalt/base/circular_buffer_shell_unittest.cc" line="489" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.525" classname="CircularBufferShellTest" />
+  </testsuite>
+  <testsuite name="CacheTest" tests="4" failures="0" disabled="0" skipped="0" errors="0" time="0.008" timestamp="2392-07-09T14:10:09.529">
+    <testcase name="Create" file="../../cobalt/base/fixed_size_lru_cache_test.cc" line="31" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.530" classname="CacheTest" />
+    <testcase name="Add3" file="../../cobalt/base/fixed_size_lru_cache_test.cc" line="36" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.532" classname="CacheTest" />
+    <testcase name="Replacement" file="../../cobalt/base/fixed_size_lru_cache_test.cc" line="50" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.534" classname="CacheTest" />
+    <testcase name="Evict" file="../../cobalt/base/fixed_size_lru_cache_test.cc" line="62" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.536" classname="CacheTest" />
+  </testsuite>
+  <testsuite name="StatisticsTest" tests="7" failures="0" disabled="0" skipped="0" errors="0" time="0.015" timestamp="2392-07-09T14:10:09.540">
+    <testcase name="ZeroSamples" file="../../cobalt/base/statistics_test.cc" line="22" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.541" classname="StatisticsTest" />
+    <testcase name="SingleSample" file="../../cobalt/base/statistics_test.cc" line="33" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.543" classname="StatisticsTest" />
+    <testcase name="NotCrashOnZeroDivisor" file="../../cobalt/base/statistics_test.cc" line="46" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.545" classname="StatisticsTest" />
+    <testcase name="MultipleSamples" file="../../cobalt/base/statistics_test.cc" line="60" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.548" classname="StatisticsTest" />
+    <testcase name="MultipleSamplesDifferentOrders" file="../../cobalt/base/statistics_test.cc" line="85" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.550" classname="StatisticsTest" />
+    <testcase name="MoreSamplesThanCapacity" file="../../cobalt/base/statistics_test.cc" line="107" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.552" classname="StatisticsTest" />
+    <testcase name="MedianWithOverflow" file="../../cobalt/base/statistics_test.cc" line="147" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.555" classname="StatisticsTest" />
+  </testsuite>
+  <testsuite name="TokenTest" tests="5" failures="0" disabled="0" skipped="0" errors="0" time="0.136" timestamp="2392-07-09T14:10:09.558">
+    <testcase name="Create" file="../../cobalt/base/token_test.cc" line="28" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.559" classname="TokenTest" />
+    <testcase name="CompareEqual" file="../../cobalt/base/token_test.cc" line="38" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.562" classname="TokenTest" />
+    <testcase name="CompareUnequal" file="../../cobalt/base/token_test.cc" line="50" status="run" result="completed" time="0" timestamp="2392-07-09T14:10:09.564" classname="TokenTest" />
+    <testcase name="CompareSorted" file="../../cobalt/base/token_test.cc" line="58" status="run" result="completed" time="0.001" timestamp="2392-07-09T14:10:09.566" classname="TokenTest" />
+    <testcase name="Collision" file="../../cobalt/base/token_test.cc" line="102" status="run" result="completed" time="0.122" timestamp="2392-07-09T14:10:09.571" classname="TokenTest" />
+  </testsuite>
+</testsuites>

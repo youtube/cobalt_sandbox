@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="12" failures="0" disabled="0" errors="0" time="1.186" timestamp="2392-07-09T13:15:43.905" name="AllTests">
+  <testsuite name="PersistentSettingTest" tests="12" failures="0" disabled="0" skipped="0" errors="0" time="1.181" timestamp="2392-07-09T13:15:43.908">
+    <testcase name="GetDefaultBool" file="../../cobalt/persistent_storage/persistent_settings_test.cc" line="71" status="run" result="completed" time="0.01" timestamp="2392-07-09T13:15:43.909" classname="PersistentSettingTest" />
+    <testcase name="GetSetBool" file="../../cobalt/persistent_storage/persistent_settings_test.cc" line="94" status="run" result="completed" time="0.008" timestamp="2392-07-09T13:15:43.923" classname="PersistentSettingTest" />
+    <testcase name="GetDefaultInt" file="../../cobalt/persistent_storage/persistent_settings_test.cc" line="132" status="run" result="completed" time="0.006" timestamp="2392-07-09T13:15:43.933" classname="PersistentSettingTest" />
+    <testcase name="GetSetInt" file="../../cobalt/persistent_storage/persistent_settings_test.cc" line="156" status="run" result="completed" time="0.008" timestamp="2392-07-09T13:15:43.942" classname="PersistentSettingTest" />
+    <testcase name="GetDefaultString" file="../../cobalt/persistent_storage/persistent_settings_test.cc" line="197" status="run" result="completed" time="0.017" timestamp="2392-07-09T13:15:43.952" classname="PersistentSettingTest" />
+    <testcase name="GetSetString" file="../../cobalt/persistent_storage/persistent_settings_test.cc" line="227" status="run" result="completed" time="0.03" timestamp="2392-07-09T13:15:43.972" classname="PersistentSettingTest" />
+    <testcase name="GetSetList" file="../../cobalt/persistent_storage/persistent_settings_test.cc" line="301" status="run" result="completed" time="0.008" timestamp="2392-07-09T13:15:44.005" classname="PersistentSettingTest" />
+    <testcase name="GetSetDictionary" file="../../cobalt/persistent_storage/persistent_settings_test.cc" line="368" status="run" result="completed" time="0.008" timestamp="2392-07-09T13:15:44.016" classname="PersistentSettingTest" />
+    <testcase name="URLAsKey" file="../../cobalt/persistent_storage/persistent_settings_test.cc" line="415" status="run" result="completed" time="0.008" timestamp="2392-07-09T13:15:44.027" classname="PersistentSettingTest" />
+    <testcase name="RemoveSetting" file="../../cobalt/persistent_storage/persistent_settings_test.cc" line="463" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:15:44.037" classname="PersistentSettingTest" />
+    <testcase name="DeleteSettings" file="../../cobalt/persistent_storage/persistent_settings_test.cc" line="501" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:15:44.054" classname="PersistentSettingTest" />
+    <testcase name="InvalidSettings" file="../../cobalt/persistent_storage/persistent_settings_test.cc" line="539" status="run" result="completed" time="1.017" timestamp="2392-07-09T13:15:44.071" classname="PersistentSettingTest" />
+  </testsuite>
+</testsuites>

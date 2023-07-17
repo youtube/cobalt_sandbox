@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="77" failures="0" disabled="0" errors="0" time="0.271" timestamp="2392-07-09T13:10:30.506" name="AllTests">
+  <testsuite name="ClientHintHeadersTest" tests="1" failures="0" disabled="0" skipped="0" errors="0" time="0.003" timestamp="2392-07-09T13:10:30.510">
+    <testcase name="GetClientHintHeaders" file="../../cobalt/browser/client_hint_headers_test.cc" line="28" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:10:30.511" classname="ClientHintHeadersTest" />
+  </testsuite>
+  <testsuite name="DeviceAuthenticationTest" tests="4" failures="0" disabled="0" skipped="0" errors="0" time="0.009" timestamp="2392-07-09T13:10:30.516">
+    <testcase name="ComputeMessageTest" file="../../cobalt/browser/device_authentication_test.cc" line="63" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.517" classname="DeviceAuthenticationTest" />
+    <testcase name="ComputeSignatureWithProvidedSecretTest" file="../../cobalt/browser/device_authentication_test.cc" line="85" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.519" classname="DeviceAuthenticationTest" />
+    <testcase name="GetDeviceAuthenticationSignedURLQueryStringFromComponentsTest" file="../../cobalt/browser/device_authentication_test.cc" line="115" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.521" classname="DeviceAuthenticationTest" />
+    <testcase name="NoCertSignatureImpliesNoQueryParameters" file="../../cobalt/browser/device_authentication_test.cc" line="141" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.524" classname="DeviceAuthenticationTest" />
+  </testsuite>
+  <testsuite name="AutoMemSettingsTest" tests="11" failures="0" disabled="0" skipped="0" errors="0" time="0.034" timestamp="2392-07-09T13:10:30.528">
+    <testcase name="InitialState" file="../../cobalt/browser/memory_settings/auto_mem_settings_test.cc" line="110" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.529" classname="AutoMemSettingsTest" />
+    <testcase name="ParseIntegers" file="../../cobalt/browser/memory_settings/auto_mem_settings_test.cc" line="128" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:10:30.531" classname="AutoMemSettingsTest" />
+    <testcase name="ParseDimensionsLower" file="../../cobalt/browser/memory_settings/auto_mem_settings_test.cc" line="177" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.536" classname="AutoMemSettingsTest" />
+    <testcase name="ParseDimensionsOne" file="../../cobalt/browser/memory_settings/auto_mem_settings_test.cc" line="181" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:10:30.538" classname="AutoMemSettingsTest" />
+    <testcase name="ParseDimensionsOneX" file="../../cobalt/browser/memory_settings/auto_mem_settings_test.cc" line="185" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:10:30.541" classname="AutoMemSettingsTest" />
+    <testcase name="ParseDimensionsTwoX" file="../../cobalt/browser/memory_settings/auto_mem_settings_test.cc" line="189" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:10:30.545" classname="AutoMemSettingsTest" />
+    <testcase name="ParseDimensionsBadNum1" file="../../cobalt/browser/memory_settings/auto_mem_settings_test.cc" line="193" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:10:30.549" classname="AutoMemSettingsTest" />
+    <testcase name="ParseDimensionsBadNum2" file="../../cobalt/browser/memory_settings/auto_mem_settings_test.cc" line="197" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:10:30.552" classname="AutoMemSettingsTest" />
+    <testcase name="ParseDimensionsUpper" file="../../cobalt/browser/memory_settings/auto_mem_settings_test.cc" line="201" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.556" classname="AutoMemSettingsTest" />
+    <testcase name="ParseDimensionsBpp" file="../../cobalt/browser/memory_settings/auto_mem_settings_test.cc" line="205" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.558" classname="AutoMemSettingsTest" />
+    <testcase name="ParseDimensionsAuto" file="../../cobalt/browser/memory_settings/auto_mem_settings_test.cc" line="212" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.560" classname="AutoMemSettingsTest" />
+  </testsuite>
+  <testsuite name="AutoMem" tests="6" failures="0" disabled="0" skipped="0" errors="0" time="0.026" timestamp="2392-07-09T13:10:30.564">
+    <testcase name="CommandLineOverrides" file="../../cobalt/browser/memory_settings/auto_mem_test.cc" line="54" status="run" result="completed" time="0.003" timestamp="2392-07-09T13:10:30.565" classname="AutoMem" />
+    <testcase name="CommandLineSpecifiesAutoset" file="../../cobalt/browser/memory_settings/auto_mem_test.cc" line="91" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:10:30.570" classname="AutoMem" />
+    <testcase name="SkiaGlyphAtlasTextureSize" file="../../cobalt/browser/memory_settings/auto_mem_test.cc" line="111" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:10:30.574" classname="AutoMem" />
+    <testcase name="SkiaCacheSizeInBytes" file="../../cobalt/browser/memory_settings/auto_mem_test.cc" line="141" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:10:30.579" classname="AutoMem" />
+    <testcase name="AllMemorySettingsAreOrderedByName" file="../../cobalt/browser/memory_settings/auto_mem_test.cc" line="162" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:10:30.584" classname="AutoMem" />
+    <testcase name="NoDefaultGpuMemory" file="../../cobalt/browser/memory_settings/auto_mem_test.cc" line="178" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:10:30.588" classname="AutoMem" />
+  </testsuite>
+  <testsuite name="MemoryCalculations" tests="3" failures="0" disabled="0" skipped="0" errors="0" time="0.006" timestamp="2392-07-09T13:10:30.593">
+    <testcase name="CalculateImageCacheSizeWithDecodingToMultiPlane" file="../../cobalt/browser/memory_settings/calculations_test.cc" line="93" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.594" classname="MemoryCalculations" />
+    <testcase name="CalculateImageCacheSizeWithoutDecodingToMultiPlane" file="../../cobalt/browser/memory_settings/calculations_test.cc" line="115" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.596" classname="MemoryCalculations" />
+    <testcase name="CalculateSkiaGlyphAtlasTextureSize" file="../../cobalt/browser/memory_settings/calculations_test.cc" line="136" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.599" classname="MemoryCalculations" />
+  </testsuite>
+  <testsuite name="MemorySettingsTest" tests="2" failures="0" disabled="0" skipped="0" errors="0" time="0.004" timestamp="2392-07-09T13:10:30.602">
+    <testcase name="IntSetting" file="../../cobalt/browser/memory_settings/memory_settings_test.cc" line="29" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.603" classname="MemorySettingsTest" />
+    <testcase name="DimensionSetting" file="../../cobalt/browser/memory_settings/memory_settings_test.cc" line="38" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.606" classname="MemorySettingsTest" />
+  </testsuite>
+  <testsuite name="MemorySettingsPrettyPrint" tests="4" failures="0" disabled="0" skipped="0" errors="0" time="0.009" timestamp="2392-07-09T13:10:30.610">
+    <testcase name="GeneratePrettyPrintTable" file="../../cobalt/browser/memory_settings/pretty_print_test.cc" line="59" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.611" classname="MemorySettingsPrettyPrint" />
+    <testcase name="GenerateMemoryTableWithUnsetGpuMemory" file="../../cobalt/browser/memory_settings/pretty_print_test.cc" line="76" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.613" classname="MemorySettingsPrettyPrint" />
+    <testcase name="GenerateMemoryTableWithGpuMemory" file="../../cobalt/browser/memory_settings/pretty_print_test.cc" line="96" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.615" classname="MemorySettingsPrettyPrint" />
+    <testcase name="GenerateMemoryWithInvalidGpuMemoryConsumption" file="../../cobalt/browser/memory_settings/pretty_print_test.cc" line="117" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.618" classname="MemorySettingsPrettyPrint" />
+  </testsuite>
+  <testsuite name="TablePrinter" tests="2" failures="0" disabled="0" skipped="0" errors="0" time="0.004" timestamp="2392-07-09T13:10:30.624">
+    <testcase name="ToString" file="../../cobalt/browser/memory_settings/table_printer_test.cc" line="58" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.625" classname="TablePrinter" />
+    <testcase name="ToStringWithColor" file="../../cobalt/browser/memory_settings/table_printer_test.cc" line="69" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.628" classname="TablePrinter" />
+  </testsuite>
+  <testsuite name="MemoryTrackerToolTest" tests="2" failures="0" disabled="0" skipped="0" errors="0" time="0.004" timestamp="2392-07-09T13:10:30.631">
+    <testcase name="AllocationSizeBinner" file="../../cobalt/browser/memory_tracker/tool/tool_impl_test.cc" line="31" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.632" classname="MemoryTrackerToolTest" />
+    <testcase name="FindTopSizes" file="../../cobalt/browser/memory_tracker/tool/tool_impl_test.cc" line="81" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.635" classname="MemoryTrackerToolTest" />
+  </testsuite>
+  <testsuite name="UtilTest" tests="7" failures="0" disabled="0" skipped="0" errors="0" time="0.018" timestamp="2392-07-09T13:10:30.638">
+    <testcase name="RemoveString" file="../../cobalt/browser/memory_tracker/tool/util_test.cc" line="51" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.639" classname="UtilTest" />
+    <testcase name="InsertCommasIntoNumberString" file="../../cobalt/browser/memory_tracker/tool/util_test.cc" line="59" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.642" classname="UtilTest" />
+    <testcase name="NumberFormatWithCommas" file="../../cobalt/browser/memory_tracker/tool/util_test.cc" line="66" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.646" classname="UtilTest" />
+    <testcase name="RemoveOddElements" file="../../cobalt/browser/memory_tracker/tool/util_test.cc" line="75" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.649" classname="UtilTest" />
+    <testcase name="GetLinearFit" file="../../cobalt/browser/memory_tracker/tool/util_test.cc" line="108" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.651" classname="UtilTest" />
+    <testcase name="BaseNameFast" file="../../cobalt/browser/memory_tracker/tool/util_test.cc" line="123" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.653" classname="UtilTest" />
+    <testcase name="TimerUse" file="../../cobalt/browser/memory_tracker/tool/util_test.cc" line="131" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.655" classname="UtilTest" />
+  </testsuite>
+  <testsuite name="Segment" tests="4" failures="0" disabled="0" skipped="0" errors="0" time="0.012" timestamp="2392-07-09T13:10:30.659">
+    <testcase name="SplitAcrossPageBoundaries_Simple" file="../../cobalt/browser/memory_tracker/tool/util_test.cc" line="157" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.663" classname="Segment" />
+    <testcase name="SplitAcrossPageBoundaries_WholePage" file="../../cobalt/browser/memory_tracker/tool/util_test.cc" line="171" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.665" classname="Segment" />
+    <testcase name="SplitAcrossPageBoundaries_Across" file="../../cobalt/browser/memory_tracker/tool/util_test.cc" line="185" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.668" classname="Segment" />
+    <testcase name="SplitAcrossPageBoundaries_Many" file="../../cobalt/browser/memory_tracker/tool/util_test.cc" line="205" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.670" classname="Segment" />
+  </testsuite>
+  <testsuite name="UserAgentStringFactoryTest" tests="25" failures="0" disabled="0" skipped="0" errors="0" time="0.085" timestamp="2392-07-09T13:10:30.673">
+    <testcase name="StartsWithMozilla" file="../../cobalt/browser/user_agent_string_test.cc" line="56" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:10:30.674" classname="UserAgentStringFactoryTest" />
+    <testcase name="ContainsCobalt" file="../../cobalt/browser/user_agent_string_test.cc" line="62" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.678" classname="UserAgentStringFactoryTest" />
+    <testcase name="WithOSNameAndVersion" file="../../cobalt/browser/user_agent_string_test.cc" line="68" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.681" classname="UserAgentStringFactoryTest" />
+    <testcase name="WithCobaltVersionAndConfiguration" file="../../cobalt/browser/user_agent_string_test.cc" line="74" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.684" classname="UserAgentStringFactoryTest" />
+    <testcase name="SanitizedStarboardVersion" file="../../cobalt/browser/user_agent_string_test.cc" line="132" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.687" classname="UserAgentStringFactoryTest" />
+    <testcase name="SanitizedOsNameAndVersion" file="../../cobalt/browser/user_agent_string_test.cc" line="142" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:10:30.690" classname="UserAgentStringFactoryTest" />
+    <testcase name="SanitizedOriginalDesignManufacturer" file="../../cobalt/browser/user_agent_string_test.cc" line="154" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:10:30.695" classname="UserAgentStringFactoryTest" />
+    <testcase name="SanitizedChipsetModelNumber" file="../../cobalt/browser/user_agent_string_test.cc" line="164" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.699" classname="UserAgentStringFactoryTest" />
+    <testcase name="SanitizedModelYear" file="../../cobalt/browser/user_agent_string_test.cc" line="174" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.702" classname="UserAgentStringFactoryTest" />
+    <testcase name="SanitizedFirmwareVersion" file="../../cobalt/browser/user_agent_string_test.cc" line="185" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.705" classname="UserAgentStringFactoryTest" />
+    <testcase name="SanitizedBrand" file="../../cobalt/browser/user_agent_string_test.cc" line="194" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:10:30.709" classname="UserAgentStringFactoryTest" />
+    <testcase name="SanitizedModel" file="../../cobalt/browser/user_agent_string_test.cc" line="206" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:10:30.712" classname="UserAgentStringFactoryTest" />
+    <testcase name="SanitizedAuxField" file="../../cobalt/browser/user_agent_string_test.cc" line="218" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:10:30.716" classname="UserAgentStringFactoryTest" />
+    <testcase name="SanitizedJavascriptEngineVersion" file="../../cobalt/browser/user_agent_string_test.cc" line="228" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.719" classname="UserAgentStringFactoryTest" />
+    <testcase name="SanitizedRasterizerType" file="../../cobalt/browser/user_agent_string_test.cc" line="238" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.722" classname="UserAgentStringFactoryTest" />
+    <testcase name="SanitizedEvergreenVersion" file="../../cobalt/browser/user_agent_string_test.cc" line="248" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:10:30.725" classname="UserAgentStringFactoryTest" />
+    <testcase name="SanitizedEvergreenType" file="../../cobalt/browser/user_agent_string_test.cc" line="257" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:10:30.729" classname="UserAgentStringFactoryTest" />
+    <testcase name="SanitizedEvergreenFileType" file="../../cobalt/browser/user_agent_string_test.cc" line="267" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:10:30.732" classname="UserAgentStringFactoryTest" />
+    <testcase name="SanitizedCobaltVersion" file="../../cobalt/browser/user_agent_string_test.cc" line="277" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:10:30.736" classname="UserAgentStringFactoryTest" />
+    <testcase name="SanitizedCobaltBuildVersionNumber" file="../../cobalt/browser/user_agent_string_test.cc" line="286" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:10:30.739" classname="UserAgentStringFactoryTest" />
+    <testcase name="SanitizedCobaltBuildConfiguration" file="../../cobalt/browser/user_agent_string_test.cc" line="295" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:10:30.744" classname="UserAgentStringFactoryTest" />
+    <testcase name="WithPlatformInfo" file="../../cobalt/browser/user_agent_string_test.cc" line="304" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:10:30.747" classname="UserAgentStringFactoryTest" />
+    <testcase name="WithOnlyBrandModelAndDeviceType" file="../../cobalt/browser/user_agent_string_test.cc" line="324" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:10:30.750" classname="UserAgentStringFactoryTest" />
+    <testcase name="WithStarboardVersion" file="../../cobalt/browser/user_agent_string_test.cc" line="337" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.754" classname="UserAgentStringFactoryTest" />
+    <testcase name="WithJavaScriptVersion" file="../../cobalt/browser/user_agent_string_test.cc" line="348" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:10:30.757" classname="UserAgentStringFactoryTest" />
+  </testsuite>
+  <testsuite name="GetUserAgentInputMapTest" tests="6" failures="0" disabled="0" skipped="0" errors="0" time="0.013" timestamp="2392-07-09T13:10:30.761">
+    <testcase name="DelimitParamsBySemicolon" file="../../cobalt/browser/user_agent_string_test.cc" line="356" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.762" classname="GetUserAgentInputMapTest" />
+    <testcase name="HandleSpecialChar" file="../../cobalt/browser/user_agent_string_test.cc" line="372" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.765" classname="GetUserAgentInputMapTest" />
+    <testcase name="EscapeSemicolonInValue" file="../../cobalt/browser/user_agent_string_test.cc" line="386" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.767" classname="GetUserAgentInputMapTest" />
+    <testcase name="OmitEscapeSemicolonInField" file="../../cobalt/browser/user_agent_string_test.cc" line="400" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.769" classname="GetUserAgentInputMapTest" />
+    <testcase name="HandleEmptyFieldValue" file="../../cobalt/browser/user_agent_string_test.cc" line="412" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.771" classname="GetUserAgentInputMapTest" />
+    <testcase name="FailSafeWithInvalidInput" file="../../cobalt/browser/user_agent_string_test.cc" line="426" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:30.773" classname="GetUserAgentInputMapTest" />
+  </testsuite>
+</testsuites>

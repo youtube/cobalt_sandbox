@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="2" failures="0" disabled="0" errors="0" time="0.931" timestamp="2392-07-09T13:12:07.094" name="AllTests">
+  <testsuite name="GraphicsSystemTest" tests="2" failures="0" disabled="0" skipped="0" errors="0" time="0.925" timestamp="2392-07-09T13:12:07.098">
+    <testcase name="FLAKY_GraphicsSystemCanBeInitializedOften" file="../../cobalt/renderer/backend/graphics_system_test.cc" line="36" status="run" result="completed" time="0.283" timestamp="2392-07-09T13:12:07.099" classname="GraphicsSystemTest" />
+    <testcase name="FLAKY_GraphicsContextCanBeInitializedOften" file="../../cobalt/renderer/backend/graphics_system_test.cc" line="73" status="run" result="completed" time="0.637" timestamp="2392-07-09T13:12:07.385" classname="GraphicsSystemTest" />
+  </testsuite>
+</testsuites>

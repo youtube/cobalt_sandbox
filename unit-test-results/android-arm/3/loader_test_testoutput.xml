@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="56" failures="0" disabled="0" errors="0" time="0.228" timestamp="2392-07-09T13:12:29.879" name="AllTests">
+  <testsuite name="BlobFetcherTest" tests="3" failures="0" disabled="0" skipped="0" errors="0" time="0.007" timestamp="2392-07-09T13:12:29.883">
+    <testcase name="NonExistentBlobURL" file="../../cobalt/loader/blob_fetcher_test.cc" line="64" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:29.884" classname="BlobFetcherTest" />
+    <testcase name="EmptyBlob" file="../../cobalt/loader/blob_fetcher_test.cc" line="82" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:29.887" classname="BlobFetcherTest" />
+    <testcase name="ValidBlob" file="../../cobalt/loader/blob_fetcher_test.cc" line="106" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:29.889" classname="BlobFetcherTest" />
+  </testsuite>
+  <testsuite name="FetcherFactoryTest" tests="4" failures="0" disabled="0" skipped="0" errors="0" time="0.017" timestamp="2392-07-09T13:12:29.893">
+    <testcase name="InvalidURL" file="../../cobalt/loader/fetcher_factory_test.cc" line="83" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:12:29.894" classname="FetcherFactoryTest" />
+    <testcase name="EmptyFileURL" file="../../cobalt/loader/fetcher_factory_test.cc" line="97" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:12:29.898" classname="FetcherFactoryTest" />
+    <testcase name="FileURLCannotConvertToFilePath" file="../../cobalt/loader/fetcher_factory_test.cc" line="111" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:12:29.901" classname="FetcherFactoryTest" />
+    <testcase name="MultipleCreations" file="../../cobalt/loader/fetcher_factory_test.cc" line="125" status="run" result="completed" time="0.003" timestamp="2392-07-09T13:12:29.905" classname="FetcherFactoryTest" />
+  </testsuite>
+  <testsuite name="FileFetcherTest" tests="5" failures="0" disabled="0" skipped="0" errors="0" time="0.013" timestamp="2392-07-09T13:12:29.912">
+    <testcase name="NonExistingPath" file="../../cobalt/loader/file_fetcher_test.cc" line="56" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:29.913" classname="FileFetcherTest" />
+    <testcase name="EmptyFile" file="../../cobalt/loader/file_fetcher_test.cc" line="73" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:29.916" classname="FileFetcherTest" />
+    <testcase name="ValidFile" file="../../cobalt/loader/file_fetcher_test.cc" line="96" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:29.918" classname="FileFetcherTest" />
+    <testcase name="ReadWithOffset" file="../../cobalt/loader/file_fetcher_test.cc" line="128" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:29.921" classname="FileFetcherTest" />
+    <testcase name="ReadWithOffsetAndSize" file="../../cobalt/loader/file_fetcher_test.cc" line="163" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:29.924" classname="FileFetcherTest" />
+  </testsuite>
+  <testsuite name="TypefaceDecoderTest" tests="8" failures="0" disabled="0" skipped="0" errors="0" time="0.026" timestamp="2392-07-09T13:12:29.928">
+    <testcase name="DecodeTtfTypeface" file="../../cobalt/loader/font/typeface_decoder_test.cc" line="134" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:29.929" classname="TypefaceDecoderTest" />
+    <testcase name="DecodeTtfTypefaceWithMultipleChunks" file="../../cobalt/loader/font/typeface_decoder_test.cc" line="148" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:29.932" classname="TypefaceDecoderTest" />
+    <testcase name="DecodeWoffTypeface" file="../../cobalt/loader/font/typeface_decoder_test.cc" line="167" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:12:29.935" classname="TypefaceDecoderTest" />
+    <testcase name="DecodeWoffTypefaceWithMultipleChunks" file="../../cobalt/loader/font/typeface_decoder_test.cc" line="181" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:12:29.939" classname="TypefaceDecoderTest" />
+    <testcase name="DecodeWoff2Typeface" file="../../cobalt/loader/font/typeface_decoder_test.cc" line="200" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:12:29.942" classname="TypefaceDecoderTest" />
+    <testcase name="DecodeWoff2TypefaceWithMultipleChunks" file="../../cobalt/loader/font/typeface_decoder_test.cc" line="214" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:12:29.946" classname="TypefaceDecoderTest" />
+    <testcase name="DecodeTooLargeTypeface" file="../../cobalt/loader/font/typeface_decoder_test.cc" line="235" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:29.950" classname="TypefaceDecoderTest" />
+    <testcase name="DecodeTooLargeTypefaceWithMultipleChunks" file="../../cobalt/loader/font/typeface_decoder_test.cc" line="252" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:29.953" classname="TypefaceDecoderTest" />
+  </testsuite>
+  <testsuite name="ImageDecoderTest" tests="22" failures="0" disabled="0" skipped="0" errors="0" time="0.099" timestamp="2392-07-09T13:12:29.956">
+    <testcase name="DecodeImageWithContentLength0" file="../../cobalt/loader/image/image_decoder_test.cc" line="167" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:29.957" classname="ImageDecoderTest" />
+    <testcase name="DecodeNonImageTypeWithContentLength0" file="../../cobalt/loader/image/image_decoder_test.cc" line="193" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:29.960" classname="ImageDecoderTest" />
+    <testcase name="DecodeNonImageType" file="../../cobalt/loader/image/image_decoder_test.cc" line="219" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:29.962" classname="ImageDecoderTest" />
+    <testcase name="DecodeNoContentType" file="../../cobalt/loader/image/image_decoder_test.cc" line="246" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:29.965" classname="ImageDecoderTest" />
+    <testcase name="DecodeImageWithNoContent" file="../../cobalt/loader/image/image_decoder_test.cc" line="272" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:29.967" classname="ImageDecoderTest" />
+    <testcase name="DecodeImageWithLessThanHeaderBytes" file="../../cobalt/loader/image/image_decoder_test.cc" line="298" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:29.970" classname="ImageDecoderTest" />
+    <testcase name="FailedToDecodeImage" file="../../cobalt/loader/image/image_decoder_test.cc" line="312" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:12:29.972" classname="ImageDecoderTest" />
+    <testcase name="UnsupportedImageFormat" file="../../cobalt/loader/image/image_decoder_test.cc" line="328" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:29.976" classname="ImageDecoderTest" />
+    <testcase name="DecodePNGImage" file="../../cobalt/loader/image/image_decoder_test.cc" line="343" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:29.978" classname="ImageDecoderTest" />
+    <testcase name="DecodePNGImageWithMultipleChunks" file="../../cobalt/loader/image/image_decoder_test.cc" line="379" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:29.981" classname="ImageDecoderTest" />
+    <testcase name="DecodeInterlacedPNGImage" file="../../cobalt/loader/image/image_decoder_test.cc" line="419" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:12:29.984" classname="ImageDecoderTest" />
+    <testcase name="DecodeInterlacedPNGImageWithMultipleChunks" file="../../cobalt/loader/image/image_decoder_test.cc" line="455" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:12:29.987" classname="ImageDecoderTest" />
+    <testcase name="DecodeJPEGImage" file="../../cobalt/loader/image/image_decoder_test.cc" line="495" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:29.991" classname="ImageDecoderTest" />
+    <testcase name="DecodeJPEGImageWithMultipleChunks" file="../../cobalt/loader/image/image_decoder_test.cc" line="523" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:29.994" classname="ImageDecoderTest" />
+    <testcase name="DecodeProgressiveJPEGImage" file="../../cobalt/loader/image/image_decoder_test.cc" line="555" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:29.997" classname="ImageDecoderTest" />
+    <testcase name="DecodeProgressiveJPEGImageWithMultipleChunks" file="../../cobalt/loader/image/image_decoder_test.cc" line="584" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:29.999" classname="ImageDecoderTest" />
+    <testcase name="DecodeProgressiveJPEGImageToSinglePlane" file="../../cobalt/loader/image/image_decoder_test.cc" line="617" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:30.002" classname="ImageDecoderTest" />
+    <testcase name="DecodeProgressiveJPEGImageWithMultipleChunksToSinglePlane" file="../../cobalt/loader/image/image_decoder_test.cc" line="650" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:30.005" classname="ImageDecoderTest" />
+    <testcase name="DecodeWEBPImage" file="../../cobalt/loader/image/image_decoder_test.cc" line="685" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:30.008" classname="ImageDecoderTest" />
+    <testcase name="DecodeWEBPImageWithMultipleChunks" file="../../cobalt/loader/image/image_decoder_test.cc" line="720" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:12:30.011" classname="ImageDecoderTest" />
+    <testcase name="DecodeAnimatedWEBPImage" file="../../cobalt/loader/image/image_decoder_test.cc" line="758" status="run" result="completed" time="0.02" timestamp="2392-07-09T13:12:30.015" classname="ImageDecoderTest" />
+    <testcase name="DecodeAnimatedWEBPImageWithMultipleChunks" file="../../cobalt/loader/image/image_decoder_test.cc" line="789" status="run" result="completed" time="0.016" timestamp="2392-07-09T13:12:30.038" classname="ImageDecoderTest" />
+  </testsuite>
+  <testsuite name="ImageDecoderUnitTest" tests="2" failures="0" disabled="0" skipped="0" errors="0" time="0.004" timestamp="2392-07-09T13:12:30.058">
+    <testcase name="ValidImageType" file="../../cobalt/loader/image/image_decoder_unit_test.cc" line="23" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:30.059" classname="ImageDecoderUnitTest" />
+    <testcase name="InvalidImageType" file="../../cobalt/loader/image/image_decoder_unit_test.cc" line="47" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:30.062" classname="ImageDecoderUnitTest" />
+  </testsuite>
+  <testsuite name="LoaderTest" tests="5" failures="0" disabled="0" skipped="0" errors="0" time="0.015" timestamp="2392-07-09T13:12:30.065">
+    <testcase name="FetcherError" file="../../cobalt/loader/loader_test.cc" line="167" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:12:30.066" classname="LoaderTest" />
+    <testcase name="FetcherSuspendAbort" file="../../cobalt/loader/loader_test.cc" line="182" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:12:30.070" classname="LoaderTest" />
+    <testcase name="FetcherSuspendResumeDone" file="../../cobalt/loader/loader_test.cc" line="199" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:30.074" classname="LoaderTest" />
+    <testcase name="FetcherReceiveDone" file="../../cobalt/loader/loader_test.cc" line="224" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:30.076" classname="LoaderTest" />
+    <testcase name="ValidFileEndToEndTest" file="../../cobalt/loader/loader_test.cc" line="243" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:30.080" classname="LoaderTest" />
+  </testsuite>
+  <testsuite name="MeshDecoderTest" tests="5" failures="0" disabled="0" skipped="0" errors="0" time="0.015" timestamp="2392-07-09T13:12:30.083">
+    <testcase name="DecodeMesh" file="../../cobalt/loader/mesh/mesh_decoder_test.cc" line="132" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:12:30.084" classname="MeshDecoderTest" />
+    <testcase name="DecodeMeshWithMultipleChunks" file="../../cobalt/loader/mesh/mesh_decoder_test.cc" line="173" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:12:30.089" classname="MeshDecoderTest" />
+    <testcase name="DoNotDecodeEmptyProjectionBoxBuffer" file="../../cobalt/loader/mesh/mesh_decoder_test.cc" line="190" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:30.092" classname="MeshDecoderTest" />
+    <testcase name="DoNotDecodeInvalidProjectionBox" file="../../cobalt/loader/mesh/mesh_decoder_test.cc" line="203" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:30.096" classname="MeshDecoderTest" />
+    <testcase name="DoNotDecodeProjectionBoxWithInvalidMeshes" file="../../cobalt/loader/mesh/mesh_decoder_test.cc" line="217" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:30.098" classname="MeshDecoderTest" />
+  </testsuite>
+  <testsuite name="TextDecoderTest" tests="2" failures="0" disabled="0" skipped="0" errors="0" time="0.004" timestamp="2392-07-09T13:12:30.101">
+    <testcase name="EmptyString" file="../../cobalt/loader/text_decoder_test.cc" line="39" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:30.102" classname="TextDecoderTest" />
+    <testcase name="NonEmptyString" file="../../cobalt/loader/text_decoder_test.cc" line="51" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:30.105" classname="TextDecoderTest" />
+  </testsuite>
+</testsuites>

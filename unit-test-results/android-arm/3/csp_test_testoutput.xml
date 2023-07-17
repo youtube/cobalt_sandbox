@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="42" failures="0" disabled="0" errors="0" time="0.107" timestamp="2392-07-09T13:10:46.814" name="AllTests">
+  <testsuite name="CspTest" tests="4" failures="0" disabled="0" skipped="0" errors="0" time="0.01" timestamp="2392-07-09T13:10:46.818">
+    <testcase name="UrlMatchesSelf" file="../../cobalt/csp/content_security_policy_test.cc" line="32" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:46.819" classname="CspTest" />
+    <testcase name="SecureSchemeMatchesSelf" file="../../cobalt/csp/content_security_policy_test.cc" line="47" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:46.822" classname="CspTest" />
+    <testcase name="FileSchemeDoesNotMatchSelf" file="../../cobalt/csp/content_security_policy_test.cc" line="60" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:46.825" classname="CspTest" />
+    <testcase name="InsecureSchemeMatchesSelf" file="../../cobalt/csp/content_security_policy_test.cc" line="66" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:46.827" classname="CspTest" />
+  </testsuite>
+  <testsuite name="SourceListTest" tests="30" failures="0" disabled="0" skipped="0" errors="0" time="0.068" timestamp="2392-07-09T13:10:46.831">
+    <testcase name="BasicMatchingNone" file="../../cobalt/csp/source_list_test.cc" line="59" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:46.832" classname="SourceListTest" />
+    <testcase name="BasicMatchingStar" file="../../cobalt/csp/source_list_test.cc" line="68" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:46.834" classname="SourceListTest" />
+    <testcase name="BasicMatchingSelf" file="../../cobalt/csp/source_list_test.cc" line="84" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:46.836" classname="SourceListTest" />
+    <testcase name="BlobMatchingSelf" file="../../cobalt/csp/source_list_test.cc" line="94" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:46.839" classname="SourceListTest" />
+    <testcase name="BlobMatchingBlob" file="../../cobalt/csp/source_list_test.cc" line="107" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:46.841" classname="SourceListTest" />
+    <testcase name="BasicMatching" file="../../cobalt/csp/source_list_test.cc" line="116" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:46.843" classname="SourceListTest" />
+    <testcase name="WildcardMatching" file="../../cobalt/csp/source_list_test.cc" line="132" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:46.845" classname="SourceListTest" />
+    <testcase name="RedirectMatching" file="../../cobalt/csp/source_list_test.cc" line="159" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:46.848" classname="SourceListTest" />
+    <testcase name="TestInsecureLocalhostDefaultInsecureV4" file="../../cobalt/csp/source_list_test.cc" line="181" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:46.850" classname="SourceListTest" />
+    <testcase name="TestInsecureLocalhostDefaultInsecureV6" file="../../cobalt/csp/source_list_test.cc" line="228" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:46.852" classname="SourceListTest" />
+    <testcase name="TestInsecureLocalhostInsecureV4" file="../../cobalt/csp/source_list_test.cc" line="264" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:46.855" classname="SourceListTest" />
+    <testcase name="TestInsecureLocalhostInsecureV6" file="../../cobalt/csp/source_list_test.cc" line="284" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:46.857" classname="SourceListTest" />
+    <testcase name="TestInsecureLocalhostSecureV4" file="../../cobalt/csp/source_list_test.cc" line="304" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:46.859" classname="SourceListTest" />
+    <testcase name="TestInsecureLocalhostSecureV6" file="../../cobalt/csp/source_list_test.cc" line="335" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:46.862" classname="SourceListTest" />
+    <testcase name="TestInsecurePrivateRangeDefaultV4" file="../../cobalt/csp/source_list_test.cc" line="358" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:46.864" classname="SourceListTest" />
+    <testcase name="TestInsecurePrivateRangeDefaultV6" file="../../cobalt/csp/source_list_test.cc" line="375" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:46.866" classname="SourceListTest" />
+    <testcase name="TestInsecurePrivateRangeV4Private" file="../../cobalt/csp/source_list_test.cc" line="391" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:46.869" classname="SourceListTest" />
+    <testcase name="TestInsecurePrivateRangeV4NotPrivate" file="../../cobalt/csp/source_list_test.cc" line="402" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:46.871" classname="SourceListTest" />
+    <testcase name="TestInsecurePrivateRangeV4Secure" file="../../cobalt/csp/source_list_test.cc" line="411" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:46.873" classname="SourceListTest" />
+    <testcase name="TestInsecurePrivateRangeV6ULA" file="../../cobalt/csp/source_list_test.cc" line="424" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:46.876" classname="SourceListTest" />
+    <testcase name="TestInsecurePrivateRangeV6NotULA" file="../../cobalt/csp/source_list_test.cc" line="434" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:46.878" classname="SourceListTest" />
+    <testcase name="TestInsecurePrivateRangeV6Secure" file="../../cobalt/csp/source_list_test.cc" line="442" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:46.880" classname="SourceListTest" />
+    <testcase name="TestInsecureLocalNetworkDefaultV4Local" file="../../cobalt/csp/source_list_test.cc" line="455" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:46.882" classname="SourceListTest" />
+    <testcase name="TestInsecureLocalNetworkDefaultV4NotLocal" file="../../cobalt/csp/source_list_test.cc" line="467" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:46.885" classname="SourceListTest" />
+    <testcase name="TestInsecureLocalNetworkDefaultV4Secure" file="../../cobalt/csp/source_list_test.cc" line="476" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:46.887" classname="SourceListTest" />
+    <testcase name="TestInsecureLocalNetworkDefaultV6Local" file="../../cobalt/csp/source_list_test.cc" line="489" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:46.889" classname="SourceListTest" />
+    <testcase name="TestInsecureLocalNetworkDefaultV6NotLocal" file="../../cobalt/csp/source_list_test.cc" line="502" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:46.891" classname="SourceListTest" />
+    <testcase name="TestInsecureLocalNetworkDefaultV6Secure" file="../../cobalt/csp/source_list_test.cc" line="515" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:46.893" classname="SourceListTest" />
+    <testcase name="TestInvalidHash" file="../../cobalt/csp/source_list_test.cc" line="529" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:46.896" classname="SourceListTest" />
+    <testcase name="TestValidHash" file="../../cobalt/csp/source_list_test.cc" line="544" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:46.898" classname="SourceListTest" />
+  </testsuite>
+  <testsuite name="SourceTest" tests="8" failures="0" disabled="0" skipped="0" errors="0" time="0.018" timestamp="2392-07-09T13:10:46.901">
+    <testcase name="BasicMatching" file="../../cobalt/csp/source_test.cc" line="36" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:46.902" classname="SourceTest" />
+    <testcase name="SpecificPath" file="../../cobalt/csp/source_test.cc" line="57" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:46.905" classname="SourceTest" />
+    <testcase name="WildcardMatching" file="../../cobalt/csp/source_test.cc" line="74" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:46.907" classname="SourceTest" />
+    <testcase name="RedirectMatching" file="../../cobalt/csp/source_test.cc" line="98" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:46.909" classname="SourceTest" />
+    <testcase name="InsecureSourceMatchesSecure" file="../../cobalt/csp/source_test.cc" line="118" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:46.912" classname="SourceTest" />
+    <testcase name="SecureSourceDoesntMatchInsecure" file="../../cobalt/csp/source_test.cc" line="133" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:46.914" classname="SourceTest" />
+    <testcase name="InsecureHostMatchesSecure" file="../../cobalt/csp/source_test.cc" line="148" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:46.916" classname="SourceTest" />
+    <testcase name="SecureHostDoesntMatchesInsecure" file="../../cobalt/csp/source_test.cc" line="163" status="run" result="completed" time="0" timestamp="2392-07-09T13:10:46.919" classname="SourceTest" />
+  </testsuite>
+</testsuites>

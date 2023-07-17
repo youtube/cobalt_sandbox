@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="121" failures="0" disabled="0" errors="0" time="0.317" timestamp="2392-07-09T13:12:37.274" name="AllTests">
+  <testsuite name="BoxTest" tests="8" failures="0" disabled="0" skipped="0" errors="0" time="0.018" timestamp="2392-07-09T13:12:37.278">
+    <testcase name="Constructors" file="../../cobalt/math/box_unittest.cc" line="13" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.279" classname="BoxTest" />
+    <testcase name="IsEmpty" file="../../cobalt/math/box_unittest.cc" line="27" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.281" classname="BoxTest" />
+    <testcase name="Union" file="../../cobalt/math/box_unittest.cc" line="49" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.284" classname="BoxTest" />
+    <testcase name="ExpandTo" file="../../cobalt/math/box_unittest.cc" line="76" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.286" classname="BoxTest" />
+    <testcase name="Scale" file="../../cobalt/math/box_unittest.cc" line="109" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.288" classname="BoxTest" />
+    <testcase name="Equals" file="../../cobalt/math/box_unittest.cc" line="130" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.291" classname="BoxTest" />
+    <testcase name="NotEquals" file="../../cobalt/math/box_unittest.cc" line="142" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.293" classname="BoxTest" />
+    <testcase name="Offset" file="../../cobalt/math/box_unittest.cc" line="154" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.295" classname="BoxTest" />
+  </testsuite>
+  <testsuite name="CubicBezierTest" tests="4" failures="0" disabled="0" skipped="0" errors="0" time="0.008" timestamp="2392-07-09T13:12:37.299">
+    <testcase name="Basic" file="../../cobalt/math/cubic_bezier_unittest.cc" line="15" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.300" classname="CubicBezierTest" />
+    <testcase name="UnclampedYValues" file="../../cobalt/math/cubic_bezier_unittest.cc" line="43" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.302" classname="CubicBezierTest" />
+    <testcase name="Range" file="../../cobalt/math/cubic_bezier_unittest.cc" line="71" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.304" classname="CubicBezierTest" />
+    <testcase name="Slope" file="../../cobalt/math/cubic_bezier_unittest.cc" line="141" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.307" classname="CubicBezierTest" />
+  </testsuite>
+  <testsuite name="InsetsTest" tests="6" failures="0" disabled="0" skipped="0" errors="0" time="0.013" timestamp="2392-07-09T13:12:37.310">
+    <testcase name="InsetsDefault" file="../../cobalt/math/insets_unittest.cc" line="12" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.311" classname="InsetsTest" />
+    <testcase name="Insets" file="../../cobalt/math/insets_unittest.cc" line="20" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.313" classname="InsetsTest" />
+    <testcase name="SetInsets" file="../../cobalt/math/insets_unittest.cc" line="28" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.316" classname="InsetsTest" />
+    <testcase name="Add" file="../../cobalt/math/insets_unittest.cc" line="37" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.318" classname="InsetsTest" />
+    <testcase name="Equality" file="../../cobalt/math/insets_unittest.cc" line="47" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.320" classname="InsetsTest" />
+    <testcase name="ToString" file="../../cobalt/math/insets_unittest.cc" line="60" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.322" classname="InsetsTest" />
+  </testsuite>
+  <testsuite name="LinearInterpolator" tests="8" failures="0" disabled="0" skipped="0" errors="0" time="0.017" timestamp="2392-07-09T13:12:37.326">
+    <testcase name="SimpleInterpolation" file="../../cobalt/math/linear_interpolator_unittest.cc" line="26" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.327" classname="LinearInterpolator" />
+    <testcase name="Clear" file="../../cobalt/math/linear_interpolator_unittest.cc" line="40" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.329" classname="LinearInterpolator" />
+    <testcase name="InterpolateSingularValue" file="../../cobalt/math/linear_interpolator_unittest.cc" line="53" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.331" classname="LinearInterpolator" />
+    <testcase name="Discontinuity" file="../../cobalt/math/linear_interpolator_unittest.cc" line="64" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.333" classname="LinearInterpolator" />
+    <testcase name="ExtrapolationForbidden" file="../../cobalt/math/linear_interpolator_unittest.cc" line="82" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.336" classname="LinearInterpolator" />
+    <testcase name="UseComplexFloat" file="../../cobalt/math/linear_interpolator_unittest.cc" line="94" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.338" classname="LinearInterpolator" />
+    <testcase name="UseIntegerKeyWithFloatValue" file="../../cobalt/math/linear_interpolator_unittest.cc" line="107" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.340" classname="LinearInterpolator" />
+    <testcase name="UseIntegerKeyWithIntegerValue" file="../../cobalt/math/linear_interpolator_unittest.cc" line="120" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.342" classname="LinearInterpolator" />
+  </testsuite>
+  <testsuite name="Matrix3fTest" tests="11" failures="0" disabled="0" skipped="0" errors="0" time="0.024" timestamp="2392-07-09T13:12:37.346">
+    <testcase name="Constructors" file="../../cobalt/math/matrix3_unittest.cc" line="17" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.347" classname="Matrix3fTest" />
+    <testcase name="DataAccess" file="../../cobalt/math/matrix3_unittest.cc" line="46" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.349" classname="Matrix3fTest" />
+    <testcase name="Determinant" file="../../cobalt/math/matrix3_unittest.cc" line="60" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.351" classname="Matrix3fTest" />
+    <testcase name="Inverse" file="../../cobalt/math/matrix3_unittest.cc" line="79" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.353" classname="Matrix3fTest" />
+    <testcase name="EigenvectorsIdentity" file="../../cobalt/math/matrix3_unittest.cc" line="99" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.356" classname="Matrix3fTest" />
+    <testcase name="EigenvectorsDiagonal" file="../../cobalt/math/matrix3_unittest.cc" line="106" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.358" classname="Matrix3fTest" />
+    <testcase name="EigenvectorsNiceNotPositive" file="../../cobalt/math/matrix3_unittest.cc" line="122" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.360" classname="Matrix3fTest" />
+    <testcase name="EigenvectorsPositiveDefinite" file="../../cobalt/math/matrix3_unittest.cc" line="148" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.363" classname="Matrix3fTest" />
+    <testcase name="MatrixMultiplyIdentityByIdentity" file="../../cobalt/math/matrix3_unittest.cc" line="165" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.365" classname="Matrix3fTest" />
+    <testcase name="MatrixMultiplyIdentityByArbitrary" file="../../cobalt/math/matrix3_unittest.cc" line="171" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.367" classname="Matrix3fTest" />
+    <testcase name="MatrixMultiplyArbitraryByArbitrary" file="../../cobalt/math/matrix3_unittest.cc" line="180" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.369" classname="Matrix3fTest" />
+  </testsuite>
+  <testsuite name="MatrixInterpolationTest" tests="7" failures="0" disabled="0" skipped="0" errors="0" time="0.016" timestamp="2392-07-09T13:12:37.373">
+    <testcase name="DecomposeAndRecomposeIsIdentityForXShear" file="../../cobalt/math/matrix_interpolation_unittest.cc" line="30" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.374" classname="MatrixInterpolationTest" />
+    <testcase name="DecomposeAndRecomposeIsIdentityForYShear" file="../../cobalt/math/matrix_interpolation_unittest.cc" line="36" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.376" classname="MatrixInterpolationTest" />
+    <testcase name="DecomposeAndRecomposeIsIdentityForRotation" file="../../cobalt/math/matrix_interpolation_unittest.cc" line="42" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.379" classname="MatrixInterpolationTest" />
+    <testcase name="DecomposeAndRecomposeIsIdentityForScale" file="../../cobalt/math/matrix_interpolation_unittest.cc" line="48" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.381" classname="MatrixInterpolationTest" />
+    <testcase name="DecomposeAndRecomposeIsIdentityForTranslation" file="../../cobalt/math/matrix_interpolation_unittest.cc" line="54" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.383" classname="MatrixInterpolationTest" />
+    <testcase name="DecomposeAndRecomposeIsIdentityForShearAndTranslation" file="../../cobalt/math/matrix_interpolation_unittest.cc" line="61" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.385" classname="MatrixInterpolationTest" />
+    <testcase name="InterpolatingIdentitiesGivesIdentity" file="../../cobalt/math/matrix_interpolation_unittest.cc" line="72" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.388" classname="MatrixInterpolationTest" />
+  </testsuite>
+  <testsuite name="Point3Test" tests="3" failures="0" disabled="0" skipped="0" errors="0" time="0.007" timestamp="2392-07-09T13:12:37.391">
+    <testcase name="VectorArithmetic" file="../../cobalt/math/point3_unittest.cc" line="13" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.393" classname="Point3Test" />
+    <testcase name="VectorFromPoints" file="../../cobalt/math/point3_unittest.cc" line="39" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.395" classname="Point3Test" />
+    <testcase name="Scale" file="../../cobalt/math/point3_unittest.cc" line="47" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.397" classname="Point3Test" />
+  </testsuite>
+  <testsuite name="PointTest" tests="8" failures="0" disabled="0" skipped="0" errors="0" time="0.019" timestamp="2392-07-09T13:12:37.401">
+    <testcase name="ToPointF" file="../../cobalt/math/point_unittest.cc" line="22" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.402" classname="PointTest" />
+    <testcase name="IsOrigin" file="../../cobalt/math/point_unittest.cc" line="33" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.405" classname="PointTest" />
+    <testcase name="VectorArithmetic" file="../../cobalt/math/point_unittest.cc" line="51" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.407" classname="PointTest" />
+    <testcase name="OffsetFromPoint" file="../../cobalt/math/point_unittest.cc" line="71" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.410" classname="PointTest" />
+    <testcase name="ToRoundedPoint" file="../../cobalt/math/point_unittest.cc" line="77" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.412" classname="PointTest" />
+    <testcase name="Scale" file="../../cobalt/math/point_unittest.cc" line="97" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.414" classname="PointTest" />
+    <testcase name="ClampPoint" file="../../cobalt/math/point_unittest.cc" line="118" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.417" classname="PointTest" />
+    <testcase name="ClampPointF" file="../../cobalt/math/point_unittest.cc" line="144" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.419" classname="PointTest" />
+  </testsuite>
+  <testsuite name="QuadTest" tests="7" failures="0" disabled="0" skipped="0" errors="0" time="0.017" timestamp="2392-07-09T13:12:37.423">
+    <testcase name="Construction" file="../../cobalt/math/quad_unittest.cc" line="14" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.424" classname="QuadTest" />
+    <testcase name="AddingVectors" file="../../cobalt/math/quad_unittest.cc" line="55" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.426" classname="QuadTest" />
+    <testcase name="IsRectilinear" file="../../cobalt/math/quad_unittest.cc" line="85" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.428" classname="QuadTest" />
+    <testcase name="IsCounterClockwise" file="../../cobalt/math/quad_unittest.cc" line="156" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.431" classname="QuadTest" />
+    <testcase name="BoundingBox" file="../../cobalt/math/quad_unittest.cc" line="210" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.434" classname="QuadTest" />
+    <testcase name="ContainsPoint" file="../../cobalt/math/quad_unittest.cc" line="226" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.436" classname="QuadTest" />
+    <testcase name="Scale" file="../../cobalt/math/quad_unittest.cc" line="311" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.439" classname="QuadTest" />
+  </testsuite>
+  <testsuite name="RectTest" tests="28" failures="0" disabled="0" skipped="0" errors="0" time="0.063" timestamp="2392-07-09T13:12:37.442">
+    <testcase name="Contains" file="../../cobalt/math/rect_unittest.cc" line="44" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.443" classname="RectTest" />
+    <testcase name="Intersects" file="../../cobalt/math/rect_unittest.cc" line="72" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.446" classname="RectTest" />
+    <testcase name="Intersect" file="../../cobalt/math/rect_unittest.cc" line="101" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.448" classname="RectTest" />
+    <testcase name="Union" file="../../cobalt/math/rect_unittest.cc" line="139" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.450" classname="RectTest" />
+    <testcase name="Equals" file="../../cobalt/math/rect_unittest.cc" line="174" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.452" classname="RectTest" />
+    <testcase name="AdjustToFit" file="../../cobalt/math/rect_unittest.cc" line="183" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.455" classname="RectTest" />
+    <testcase name="RoundFromRectF" file="../../cobalt/math/rect_unittest.cc" line="215" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:12:37.457" classname="RectTest" />
+    <testcase name="PreserveBordersRoundFromRectF" file="../../cobalt/math/rect_unittest.cc" line="237" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.460" classname="RectTest" />
+    <testcase name="Subtract" file="../../cobalt/math/rect_unittest.cc" line="249" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.463" classname="RectTest" />
+    <testcase name="IsEmpty" file="../../cobalt/math/rect_unittest.cc" line="315" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.465" classname="RectTest" />
+    <testcase name="SplitVertically" file="../../cobalt/math/rect_unittest.cc" line="326" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.467" classname="RectTest" />
+    <testcase name="CenterPoint" file="../../cobalt/math/rect_unittest.cc" line="350" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.469" classname="RectTest" />
+    <testcase name="CenterPointF" file="../../cobalt/math/rect_unittest.cc" line="380" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.471" classname="RectTest" />
+    <testcase name="SharesEdgeWith" file="../../cobalt/math/rect_unittest.cc" line="410" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.474" classname="RectTest" />
+    <testcase name="ScaleRect" file="../../cobalt/math/rect_unittest.cc" line="452" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.476" classname="RectTest" />
+    <testcase name="ToEnclosedRect" file="../../cobalt/math/rect_unittest.cc" line="487" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.478" classname="RectTest" />
+    <testcase name="ToEnclosingRect" file="../../cobalt/math/rect_unittest.cc" line="525" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.480" classname="RectTest" />
+    <testcase name="ToNearestRect" file="../../cobalt/math/rect_unittest.cc" line="564" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.482" classname="RectTest" />
+    <testcase name="ToFlooredRect" file="../../cobalt/math/rect_unittest.cc" line="575" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.485" classname="RectTest" />
+    <testcase name="ScaleToEnclosedRect" file="../../cobalt/math/rect_unittest.cc" line="604" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.487" classname="RectTest" />
+    <testcase name="ScaleToEnclosingRect" file="../../cobalt/math/rect_unittest.cc" line="638" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.489" classname="RectTest" />
+    <testcase name="ToRectF" file="../../cobalt/math/rect_unittest.cc" line="672" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.491" classname="RectTest" />
+    <testcase name="BoundingRect" file="../../cobalt/math/rect_unittest.cc" line="684" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.494" classname="RectTest" />
+    <testcase name="IsExpressibleAsRect" file="../../cobalt/math/rect_unittest.cc" line="740" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.496" classname="RectTest" />
+    <testcase name="Offset" file="../../cobalt/math/rect_unittest.cc" line="770" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.498" classname="RectTest" />
+    <testcase name="Corners" file="../../cobalt/math/rect_unittest.cc" line="791" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.500" classname="RectTest" />
+    <testcase name="ManhattanDistanceToPoint" file="../../cobalt/math/rect_unittest.cc" line="806" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.503" classname="RectTest" />
+    <testcase name="ManhattanInternalDistance" file="../../cobalt/math/rect_unittest.cc" line="834" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.505" classname="RectTest" />
+  </testsuite>
+  <testsuite name="SafeIntegerConversions" tests="4" failures="0" disabled="0" skipped="0" errors="0" time="0.008" timestamp="2392-07-09T13:12:37.508">
+    <testcase name="ClampToInt" file="../../cobalt/math/safe_integer_conversions_unittest.cc" line="14" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.509" classname="SafeIntegerConversions" />
+    <testcase name="ToFlooredInt" file="../../cobalt/math/safe_integer_conversions_unittest.cc" line="37" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.511" classname="SafeIntegerConversions" />
+    <testcase name="ToCeiledInt" file="../../cobalt/math/safe_integer_conversions_unittest.cc" line="60" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.514" classname="SafeIntegerConversions" />
+    <testcase name="ToRoundedInt" file="../../cobalt/math/safe_integer_conversions_unittest.cc" line="83" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.516" classname="SafeIntegerConversions" />
+  </testsuite>
+  <testsuite name="SizeTest" tests="7" failures="0" disabled="0" skipped="0" errors="0" time="0.015" timestamp="2392-07-09T13:12:37.519">
+    <testcase name="ToSizeF" file="../../cobalt/math/size_unittest.cc" line="21" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.521" classname="SizeTest" />
+    <testcase name="NegativeSize" file="../../cobalt/math/size_unittest.cc" line="33" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.523" classname="SizeTest" />
+    <testcase name="ToFlooredSize" file="../../cobalt/math/size_unittest.cc" line="39" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.525" classname="SizeTest" />
+    <testcase name="ToCeiledSize" file="../../cobalt/math/size_unittest.cc" line="53" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.527" classname="SizeTest" />
+    <testcase name="ToRoundedSize" file="../../cobalt/math/size_unittest.cc" line="67" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.529" classname="SizeTest" />
+    <testcase name="ClampSize" file="../../cobalt/math/size_unittest.cc" line="81" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.532" classname="SizeTest" />
+    <testcase name="ClampSizeF" file="../../cobalt/math/size_unittest.cc" line="107" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.534" classname="SizeTest" />
+  </testsuite>
+  <testsuite name="Transform2DTest" tests="4" failures="0" disabled="0" skipped="0" errors="0" time="0.008" timestamp="2392-07-09T13:12:37.537">
+    <testcase name="Translation" file="../../cobalt/math/transform_2d_test.cc" line="22" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.538" classname="Transform2DTest" />
+    <testcase name="AnisotropicScale" file="../../cobalt/math/transform_2d_test.cc" line="32" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.541" classname="Transform2DTest" />
+    <testcase name="IsotropicScale" file="../../cobalt/math/transform_2d_test.cc" line="42" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.543" classname="Transform2DTest" />
+    <testcase name="Rotation" file="../../cobalt/math/transform_2d_test.cc" line="52" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.545" classname="Transform2DTest" />
+  </testsuite>
+  <testsuite name="Vector2dTest" tests="8" failures="0" disabled="0" skipped="0" errors="0" time="0.017" timestamp="2392-07-09T13:12:37.548">
+    <testcase name="ConversionToFloat" file="../../cobalt/math/vector2d_unittest.cc" line="17" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.549" classname="Vector2dTest" />
+    <testcase name="IsZero" file="../../cobalt/math/vector2d_unittest.cc" line="23" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.552" classname="Vector2dTest" />
+    <testcase name="Add" file="../../cobalt/math/vector2d_unittest.cc" line="35" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.554" classname="Vector2dTest" />
+    <testcase name="Negative" file="../../cobalt/math/vector2d_unittest.cc" line="65" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.556" classname="Vector2dTest" />
+    <testcase name="Scale" file="../../cobalt/math/vector2d_unittest.cc" line="92" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.558" classname="Vector2dTest" />
+    <testcase name="Length" file="../../cobalt/math/vector2d_unittest.cc" line="140" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.561" classname="Vector2dTest" />
+    <testcase name="ClampVector2d" file="../../cobalt/math/vector2d_unittest.cc" line="181" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.563" classname="Vector2dTest" />
+    <testcase name="ClampVector2dF" file="../../cobalt/math/vector2d_unittest.cc" line="207" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.565" classname="Vector2dTest" />
+  </testsuite>
+  <testsuite name="Vector3dTest" tests="7" failures="0" disabled="0" skipped="0" errors="0" time="0.016" timestamp="2392-07-09T13:12:37.568">
+    <testcase name="IsZero" file="../../cobalt/math/vector3d_unittest.cc" line="16" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.570" classname="Vector3dTest" />
+    <testcase name="Add" file="../../cobalt/math/vector3d_unittest.cc" line="24" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.572" classname="Vector3dTest" />
+    <testcase name="Negative" file="../../cobalt/math/vector3d_unittest.cc" line="41" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.575" classname="Vector3dTest" />
+    <testcase name="Scale" file="../../cobalt/math/vector3d_unittest.cc" line="58" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.577" classname="Vector3dTest" />
+    <testcase name="Length" file="../../cobalt/math/vector3d_unittest.cc" line="128" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.579" classname="Vector3dTest" />
+    <testcase name="DotProduct" file="../../cobalt/math/vector3d_unittest.cc" line="163" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.581" classname="Vector3dTest" />
+    <testcase name="CrossProduct" file="../../cobalt/math/vector3d_unittest.cc" line="183" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.583" classname="Vector3dTest" />
+  </testsuite>
+  <testsuite name="Vector3dFTest" tests="1" failures="0" disabled="0" skipped="0" errors="0" time="0.002" timestamp="2392-07-09T13:12:37.587">
+    <testcase name="ClampVector3dF" file="../../cobalt/math/vector3d_unittest.cc" line="209" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:37.588" classname="Vector3dFTest" />
+  </testsuite>
+</testsuites>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="16" failures="0" disabled="0" errors="0" time="1.015" timestamp="2392-07-09T13:12:45.276" name="AllTests">
+  <testsuite name="GetUserMediaTest" tests="7" failures="0" disabled="0" skipped="0" errors="0" time="0.568" timestamp="2392-07-09T13:12:45.279">
+    <testcase name="TestEmptyParameters" file="../../cobalt/media_capture/get_user_media_test.cc" line="52" status="run" result="completed" time="0.064" timestamp="2392-07-09T13:12:45.280" classname="GetUserMediaTest" />
+    <testcase name="NoMediaSources" file="../../cobalt/media_capture/get_user_media_test.cc" line="60" status="run" result="completed" time="0.059" timestamp="2392-07-09T13:12:45.347" classname="GetUserMediaTest" />
+    <testcase name="PendingPromise" file="../../cobalt/media_capture/get_user_media_test.cc" line="70" status="run" result="completed" time="0.112" timestamp="2392-07-09T13:12:45.410" classname="GetUserMediaTest" />
+    <testcase name="MicrophoneStoppedRejectedPromise" file="../../cobalt/media_capture/get_user_media_test.cc" line="80" status="run" result="completed" time="0.079" timestamp="2392-07-09T13:12:45.524" classname="GetUserMediaTest" />
+    <testcase name="MicrophoneErrorRejectedPromise" file="../../cobalt/media_capture/get_user_media_test.cc" line="93" status="run" result="completed" time="0.076" timestamp="2392-07-09T13:12:45.606" classname="GetUserMediaTest" />
+    <testcase name="MicrophoneSuccessFulfilledPromise" file="../../cobalt/media_capture/get_user_media_test.cc" line="107" status="run" result="completed" time="0.082" timestamp="2392-07-09T13:12:45.685" classname="GetUserMediaTest" />
+    <testcase name="MultipleMicrophoneSuccessFulfilledPromise" file="../../cobalt/media_capture/get_user_media_test.cc" line="121" status="run" result="completed" time="0.076" timestamp="2392-07-09T13:12:45.770" classname="GetUserMediaTest" />
+  </testsuite>
+  <testsuite name="MediaRecorderTest" tests="9" failures="0" disabled="0" skipped="0" errors="0" time="0.438" timestamp="2392-07-09T13:12:45.850">
+    <testcase name="CanSupportMimeType" file="../../cobalt/media_capture/media_recorder_test.cc" line="115" status="run" result="completed" time="0.045" timestamp="2392-07-09T13:12:45.851" classname="MediaRecorderTest" />
+    <testcase name="StartStopStartStop" file="../../cobalt/media_capture/media_recorder_test.cc" line="128" status="run" result="completed" time="0.046" timestamp="2392-07-09T13:12:45.898" classname="MediaRecorderTest" />
+    <testcase name="ExceptionOnStartingTwiceWithoutStop" file="../../cobalt/media_capture/media_recorder_test.cc" line="136" status="run" result="completed" time="0.047" timestamp="2392-07-09T13:12:45.947" classname="MediaRecorderTest" />
+    <testcase name="ExceptionOnStoppingTwiceWithoutStartingInBetween" file="../../cobalt/media_capture/media_recorder_test.cc" line="153" status="run" result="completed" time="0.047" timestamp="2392-07-09T13:12:45.996" classname="MediaRecorderTest" />
+    <testcase name="RecordL16Frames" file="../../cobalt/media_capture/media_recorder_test.cc" line="171" status="run" result="completed" time="0.047" timestamp="2392-07-09T13:12:46.046" classname="MediaRecorderTest" />
+    <testcase name="DifferentThreadForAudioSource" file="../../cobalt/media_capture/media_recorder_test.cc" line="208" status="run" result="completed" time="0.049" timestamp="2392-07-09T13:12:46.096" classname="MediaRecorderTest" />
+    <testcase name="StartEvent" file="../../cobalt/media_capture/media_recorder_test.cc" line="241" status="run" result="completed" time="0.045" timestamp="2392-07-09T13:12:46.149" classname="MediaRecorderTest" />
+    <testcase name="StopEvent" file="../../cobalt/media_capture/media_recorder_test.cc" line="255" status="run" result="completed" time="0.045" timestamp="2392-07-09T13:12:46.196" classname="MediaRecorderTest" />
+    <testcase name="ReleaseRecorderBeforeStoppingSource" file="../../cobalt/media_capture/media_recorder_test.cc" line="271" status="run" result="completed" time="0.043" timestamp="2392-07-09T13:12:46.244" classname="MediaRecorderTest" />
+  </testsuite>
+</testsuites>

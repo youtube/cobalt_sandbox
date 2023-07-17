@@ -1,0 +1,473 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="324" failures="0" disabled="2" errors="0" time="6.037" timestamp="2392-07-09T13:10:17.102" name="AllTests">
+  <testsuite name="AnyBindingsTest" tests="1" failures="0" disabled="0" skipped="0" errors="0" time="0.037" timestamp="2392-07-09T13:10:17.106">
+    <testcase name="All" file="../../cobalt/bindings/testing/any_bindings_test.cc" line="31" status="run" result="completed" time="0.035" timestamp="2392-07-09T13:10:17.107" classname="AnyBindingsTest" />
+  </testsuite>
+  <testsuite name="AnyDictionaryBindingsTest" tests="1" failures="0" disabled="0" skipped="0" errors="0" time="0.02" timestamp="2392-07-09T13:10:17.146">
+    <testcase name="All" file="../../cobalt/bindings/testing/any_dictionary_bindings_test.cc" line="32" status="run" result="completed" time="0.018" timestamp="2392-07-09T13:10:17.147" classname="AnyDictionaryBindingsTest" />
+  </testsuite>
+  <testsuite name="ArrayBufferTest" tests="5" failures="0" disabled="0" skipped="0" errors="0" time="0.118" timestamp="2392-07-09T13:10:17.168">
+    <testcase name="ArrayBufferTest" file="../../cobalt/bindings/testing/array_buffers_test.cc" line="42" status="run" result="completed" time="0.017" timestamp="2392-07-09T13:10:17.170" classname="ArrayBufferTest" />
+    <testcase name="UnusedPreallocatedDataReleases" file="../../cobalt/bindings/testing/array_buffers_test.cc" line="84" status="run" result="completed" time="0.018" timestamp="2392-07-09T13:10:17.190" classname="ArrayBufferTest" />
+    <testcase name="ArrayBufferViewTest" file="../../cobalt/bindings/testing/array_buffers_test.cc" line="90" status="run" result="completed" time="0.023" timestamp="2392-07-09T13:10:17.210" classname="ArrayBufferTest" />
+    <testcase name="DataViewTest" file="../../cobalt/bindings/testing/array_buffers_test.cc" line="95" status="run" result="completed" time="0.028" timestamp="2392-07-09T13:10:17.236" classname="ArrayBufferTest" />
+    <testcase name="TypedArrays" file="../../cobalt/bindings/testing/array_buffers_test.cc" line="148" status="run" result="completed" time="0.019" timestamp="2392-07-09T13:10:17.267" classname="ArrayBufferTest" />
+  </testsuite>
+  <testsuite name="BooleanTypeBindingsTest" tests="4" failures="0" disabled="0" skipped="0" errors="0" time="0.09" timestamp="2392-07-09T13:10:17.289">
+    <testcase name="GetBooleanProperty" file="../../cobalt/bindings/testing/boolean_type_bindings_test.cc" line="34" status="run" result="completed" time="0.024" timestamp="2392-07-09T13:10:17.290" classname="BooleanTypeBindingsTest" />
+    <testcase name="BooleanReturnValue" file="../../cobalt/bindings/testing/boolean_type_bindings_test.cc" line="57" status="run" result="completed" time="0.019" timestamp="2392-07-09T13:10:17.317" classname="BooleanTypeBindingsTest" />
+    <testcase name="SetBooleanProperty" file="../../cobalt/bindings/testing/boolean_type_bindings_test.cc" line="82" status="run" result="completed" time="0.019" timestamp="2392-07-09T13:10:17.339" classname="BooleanTypeBindingsTest" />
+    <testcase name="BooleanArgumentOperation" file="../../cobalt/bindings/testing/boolean_type_bindings_test.cc" line="120" status="run" result="completed" time="0.018" timestamp="2392-07-09T13:10:17.360" classname="BooleanTypeBindingsTest" />
+  </testsuite>
+  <testsuite name="BytestringTypeBindingsTest" tests="2" failures="0" disabled="0" skipped="0" errors="0" time="0.042" timestamp="2392-07-09T13:10:17.382">
+    <testcase name="BytestringReturnValue" file="../../cobalt/bindings/testing/bytestring_type_bindings_test.cc" line="30" status="run" result="completed" time="0.017" timestamp="2392-07-09T13:10:17.383" classname="BytestringTypeBindingsTest" />
+    <testcase name="BytestringArgumentOperation" file="../../cobalt/bindings/testing/bytestring_type_bindings_test.cc" line="42" status="run" result="completed" time="0.019" timestamp="2392-07-09T13:10:17.404" classname="BytestringTypeBindingsTest" />
+  </testsuite>
+  <testsuite name="CallbackFunctionTest" tests="12" failures="0" disabled="0" skipped="0" errors="0" time="0.236" timestamp="2392-07-09T13:10:17.427">
+    <testcase name="ScriptCallbackCanBeCalledFromC" file="../../cobalt/bindings/testing/callback_function_test.cc" line="36" status="run" result="completed" time="0.017" timestamp="2392-07-09T13:10:17.428" classname="CallbackFunctionTest" />
+    <testcase name="ScriptCallbackWithReturnValue" file="../../cobalt/bindings/testing/callback_function_test.cc" line="54" status="run" result="completed" time="0.016" timestamp="2392-07-09T13:10:17.448" classname="CallbackFunctionTest" />
+    <testcase name="ScriptCallbackWithException" file="../../cobalt/bindings/testing/callback_function_test.cc" line="69" status="run" result="completed" time="0.017" timestamp="2392-07-09T13:10:17.467" classname="CallbackFunctionTest" />
+    <testcase name="ScriptFunctionIsNotGarbageCollected" file="../../cobalt/bindings/testing/callback_function_test.cc" line="83" status="run" result="completed" time="0.019" timestamp="2392-07-09T13:10:17.486" classname="CallbackFunctionTest" />
+    <testcase name="CallbackWithOneParameter" file="../../cobalt/bindings/testing/callback_function_test.cc" line="110" status="run" result="completed" time="0.016" timestamp="2392-07-09T13:10:17.508" classname="CallbackFunctionTest" />
+    <testcase name="CallbackWithSeveralParameters" file="../../cobalt/bindings/testing/callback_function_test.cc" line="133" status="run" result="completed" time="0.016" timestamp="2392-07-09T13:10:17.526" classname="CallbackFunctionTest" />
+    <testcase name="CallbackWithNullableParameters" file="../../cobalt/bindings/testing/callback_function_test.cc" line="170" status="run" result="completed" time="0.018" timestamp="2392-07-09T13:10:17.545" classname="CallbackFunctionTest" />
+    <testcase name="CallbackAttribute" file="../../cobalt/bindings/testing/callback_function_test.cc" line="206" status="run" result="completed" time="0.019" timestamp="2392-07-09T13:10:17.567" classname="CallbackFunctionTest" />
+    <testcase name="SetNullableCallbackAttribute" file="../../cobalt/bindings/testing/callback_function_test.cc" line="246" status="run" result="completed" time="0.017" timestamp="2392-07-09T13:10:17.589" classname="CallbackFunctionTest" />
+    <testcase name="GetNullableCallbackAttribute" file="../../cobalt/bindings/testing/callback_function_test.cc" line="265" status="run" result="completed" time="0.016" timestamp="2392-07-09T13:10:17.608" classname="CallbackFunctionTest" />
+    <testcase name="SetNonFunction" file="../../cobalt/bindings/testing/callback_function_test.cc" line="279" status="run" result="completed" time="0.016" timestamp="2392-07-09T13:10:17.627" classname="CallbackFunctionTest" />
+    <testcase name="SetNullToNonNullable" file="../../cobalt/bindings/testing/callback_function_test.cc" line="285" status="run" result="completed" time="0.016" timestamp="2392-07-09T13:10:17.646" classname="CallbackFunctionTest" />
+  </testsuite>
+  <testsuite name="CallbackInterfaceTest" tests="11" failures="0" disabled="0" skipped="0" errors="0" time="0.2" timestamp="2392-07-09T13:10:17.666">
+    <testcase name="ObjectCanImplementInterface" file="../../cobalt/bindings/testing/callback_interface_test.cc" line="48" status="run" result="completed" time="0.016" timestamp="2392-07-09T13:10:17.667" classname="CallbackInterfaceTest" />
+    <testcase name="FunctionCanImplementInterface" file="../../cobalt/bindings/testing/callback_interface_test.cc" line="86" status="run" result="completed" time="0.016" timestamp="2392-07-09T13:10:17.686" classname="CallbackInterfaceTest" />
+    <testcase name="PropertyOnObjectIsNotCallable" file="../../cobalt/bindings/testing/callback_interface_test.cc" line="115" status="run" result="completed" time="0.016" timestamp="2392-07-09T13:10:17.705" classname="CallbackInterfaceTest" />
+    <testcase name="ObjectThatDoesNotImplementInterface" file="../../cobalt/bindings/testing/callback_interface_test.cc" line="137" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:17.724" classname="CallbackInterfaceTest" />
+    <testcase name="NotAnObjectOrFunction" file="../../cobalt/bindings/testing/callback_interface_test.cc" line="162" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:17.741" classname="CallbackInterfaceTest" />
+    <testcase name="ExceptionInCallback" file="../../cobalt/bindings/testing/callback_interface_test.cc" line="169" status="run" result="completed" time="0.016" timestamp="2392-07-09T13:10:17.759" classname="CallbackInterfaceTest" />
+    <testcase name="FunctionsAreEqual" file="../../cobalt/bindings/testing/callback_interface_test.cc" line="194" status="run" result="completed" time="0.016" timestamp="2392-07-09T13:10:17.778" classname="CallbackInterfaceTest" />
+    <testcase name="FunctionsAreNotEqual" file="../../cobalt/bindings/testing/callback_interface_test.cc" line="216" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:17.796" classname="CallbackInterfaceTest" />
+    <testcase name="ObjectsAreEqual" file="../../cobalt/bindings/testing/callback_interface_test.cc" line="239" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:17.814" classname="CallbackInterfaceTest" />
+    <testcase name="ObjectsAreNotEqual" file="../../cobalt/bindings/testing/callback_interface_test.cc" line="261" status="run" result="completed" time="0.016" timestamp="2392-07-09T13:10:17.831" classname="CallbackInterfaceTest" />
+    <testcase name="GetAndSetAttribute" file="../../cobalt/bindings/testing/callback_interface_test.cc" line="284" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:17.850" classname="CallbackInterfaceTest" />
+  </testsuite>
+  <testsuite name="ConditionalInterfaceTest" tests="3" failures="0" disabled="0" skipped="0" errors="0" time="0.055" timestamp="2392-07-09T13:10:17.869">
+    <testcase name="HasInterfaceObject" file="../../cobalt/bindings/testing/conditional_attribute_test.cc" line="31" status="run" result="completed" time="0.016" timestamp="2392-07-09T13:10:17.870" classname="ConditionalInterfaceTest" />
+    <testcase name="HasConditionalProperties" file="../../cobalt/bindings/testing/conditional_attribute_test.cc" line="36" status="run" result="completed" time="0.016" timestamp="2392-07-09T13:10:17.888" classname="ConditionalInterfaceTest" />
+    <testcase name="DoesNotHaveDisabledProperties" file="../../cobalt/bindings/testing/conditional_attribute_test.cc" line="43" status="run" result="completed" time="0.016" timestamp="2392-07-09T13:10:17.907" classname="ConditionalInterfaceTest" />
+  </testsuite>
+  <testsuite name="DisabledInterfaceTest" tests="1" failures="0" disabled="0" skipped="0" errors="0" time="0.018" timestamp="2392-07-09T13:10:17.926">
+    <testcase name="NoInterfaceObject" file="../../cobalt/bindings/testing/conditional_attribute_test.cc" line="50" status="run" result="completed" time="0.016" timestamp="2392-07-09T13:10:17.928" classname="DisabledInterfaceTest" />
+  </testsuite>
+  <testsuite name="ConstantsBindingsTest" tests="3" failures="0" disabled="0" skipped="0" errors="0" time="0.054" timestamp="2392-07-09T13:10:17.948">
+    <testcase name="DefinedOnConstructor" file="../../cobalt/bindings/testing/constants_bindings_test.cc" line="30" status="run" result="completed" time="0.016" timestamp="2392-07-09T13:10:17.949" classname="ConstantsBindingsTest" />
+    <testcase name="DefinedOnPrototype" file="../../cobalt/bindings/testing/constants_bindings_test.cc" line="41" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:17.967" classname="ConstantsBindingsTest" />
+    <testcase name="ReadOnly" file="../../cobalt/bindings/testing/constants_bindings_test.cc" line="52" status="run" result="completed" time="0.016" timestamp="2392-07-09T13:10:17.985" classname="ConstantsBindingsTest" />
+  </testsuite>
+  <testsuite name="ConstructorBindingsTest" tests="8" failures="0" disabled="0" skipped="0" errors="0" time="0.14" timestamp="2392-07-09T13:10:18.005">
+    <testcase name="CanConstructNewObject" file="../../cobalt/bindings/testing/constructor_bindings_test.cc" line="29" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:18.006" classname="ConstructorBindingsTest" />
+    <testcase name="CanConstructNewObjectWithArguments" file="../../cobalt/bindings/testing/constructor_bindings_test.cc" line="41" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:18.023" classname="ConstructorBindingsTest" />
+    <testcase name="LengthPropertyIsSet" file="../../cobalt/bindings/testing/constructor_bindings_test.cc" line="62" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:18.041" classname="ConstructorBindingsTest" />
+    <testcase name="OverloadedConstructor" file="../../cobalt/bindings/testing/constructor_bindings_test.cc" line="75" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:18.059" classname="ConstructorBindingsTest" />
+    <testcase name="NamedConstructor" file="../../cobalt/bindings/testing/constructor_bindings_test.cc" line="85" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:18.077" classname="ConstructorBindingsTest" />
+    <testcase name="NamedConstructorHasCorrectName" file="../../cobalt/bindings/testing/constructor_bindings_test.cc" line="91" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:18.094" classname="ConstructorBindingsTest" />
+    <testcase name="NamedConstructorHasCorrectPrototype" file="../../cobalt/bindings/testing/constructor_bindings_test.cc" line="97" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:18.112" classname="ConstructorBindingsTest" />
+    <testcase name="IllegalConstructorThrows" file="../../cobalt/bindings/testing/constructor_bindings_test.cc" line="106" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:18.129" classname="ConstructorBindingsTest" />
+  </testsuite>
+  <testsuite name="ConvertSimpleObjectTest" tests="5" failures="0" disabled="0" skipped="0" errors="0" time="0.088" timestamp="2392-07-09T13:10:18.147">
+    <testcase name="ValidObjectAllStrings" file="../../cobalt/bindings/testing/convert_simple_object_test.cc" line="27" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:18.148" classname="ConvertSimpleObjectTest" />
+    <testcase name="ValidObjectWithNumber" file="../../cobalt/bindings/testing/convert_simple_object_test.cc" line="40" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:18.165" classname="ConvertSimpleObjectTest" />
+    <testcase name="ValidObjectWithBool" file="../../cobalt/bindings/testing/convert_simple_object_test.cc" line="53" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:18.182" classname="ConvertSimpleObjectTest" />
+    <testcase name="InvalidValue" file="../../cobalt/bindings/testing/convert_simple_object_test.cc" line="66" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:18.200" classname="ConvertSimpleObjectTest" />
+    <testcase name="InvalidObjectValues" file="../../cobalt/bindings/testing/convert_simple_object_test.cc" line="85" status="run" result="completed" time="0.016" timestamp="2392-07-09T13:10:18.218" classname="ConvertSimpleObjectTest" />
+  </testsuite>
+  <testsuite name="DateBindingsTest" tests="4" failures="0" disabled="0" skipped="0" errors="0" time="0.074" timestamp="2392-07-09T13:10:18.238">
+    <testcase name="NiceDates" file="../../cobalt/bindings/testing/date_bindings_test.cc" line="32" status="run" result="completed" time="0.017" timestamp="2392-07-09T13:10:18.239" classname="DateBindingsTest" />
+    <testcase name="PosixEpoch" file="../../cobalt/bindings/testing/date_bindings_test.cc" line="76" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:18.258" classname="DateBindingsTest" />
+    <testcase name="StarboardTimeZone" file="../../cobalt/bindings/testing/date_bindings_test.cc" line="85" status="run" result="completed" time="0.018" timestamp="2392-07-09T13:10:18.275" classname="DateBindingsTest" />
+    <testcase name="TimezoneOffset" file="../../cobalt/bindings/testing/date_bindings_test.cc" line="107" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:18.296" classname="DateBindingsTest" />
+  </testsuite>
+  <testsuite name="DependentInterfaceTest" tests="2" failures="0" disabled="0" skipped="0" errors="0" time="0.034" timestamp="2392-07-09T13:10:18.314">
+    <testcase name="PartialInterfaceFunctionExists" file="../../cobalt/bindings/testing/dependent_interface_test.cc" line="30" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:18.315" classname="DependentInterfaceTest" />
+    <testcase name="ImplementedInterfaceFunctionExists" file="../../cobalt/bindings/testing/dependent_interface_test.cc" line="35" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:18.333" classname="DependentInterfaceTest" />
+  </testsuite>
+  <testsuite name="DictionaryTest" tests="12" failures="0" disabled="0" skipped="0" errors="0" time="0.21" timestamp="2392-07-09T13:10:18.351">
+    <testcase name="NoValuesSet" file="../../cobalt/bindings/testing/dictionary_test.cc" line="35" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:18.352" classname="DictionaryTest" />
+    <testcase name="BooleanMember" file="../../cobalt/bindings/testing/dictionary_test.cc" line="59" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:18.370" classname="DictionaryTest" />
+    <testcase name="ClampMember" file="../../cobalt/bindings/testing/dictionary_test.cc" line="77" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:18.387" classname="DictionaryTest" />
+    <testcase name="LongMember" file="../../cobalt/bindings/testing/dictionary_test.cc" line="93" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:18.404" classname="DictionaryTest" />
+    <testcase name="DoubleMember" file="../../cobalt/bindings/testing/dictionary_test.cc" line="104" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:18.421" classname="DictionaryTest" />
+    <testcase name="StringMember" file="../../cobalt/bindings/testing/dictionary_test.cc" line="115" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:18.438" classname="DictionaryTest" />
+    <testcase name="ArbitraryInterfaceMember" file="../../cobalt/bindings/testing/dictionary_test.cc" line="126" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:18.455" classname="DictionaryTest" />
+    <testcase name="OverrideDefault" file="../../cobalt/bindings/testing/dictionary_test.cc" line="139" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:18.472" classname="DictionaryTest" />
+    <testcase name="AnyMember" file="../../cobalt/bindings/testing/dictionary_test.cc" line="148" status="run" result="completed" time="0.016" timestamp="2392-07-09T13:10:18.489" classname="DictionaryTest" />
+    <testcase name="OverrideAnyMemberWithDefault" file="../../cobalt/bindings/testing/dictionary_test.cc" line="167" status="run" result="completed" time="0.016" timestamp="2392-07-09T13:10:18.508" classname="DictionaryTest" />
+    <testcase name="DerivedDictionaryMember" file="../../cobalt/bindings/testing/dictionary_test.cc" line="181" status="run" result="completed" time="0.016" timestamp="2392-07-09T13:10:18.527" classname="DictionaryTest" />
+    <testcase name="BaseDictionaryMemberOfDerivedDictionary" file="../../cobalt/bindings/testing/dictionary_test.cc" line="190" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:18.545" classname="DictionaryTest" />
+  </testsuite>
+  <testsuite name="DOMStringBindingsTest" tests="27" failures="0" disabled="0" skipped="0" errors="0" time="0.471" timestamp="2392-07-09T13:10:18.564">
+    <testcase name="GetProperty" file="../../cobalt/bindings/testing/dom_string_bindings_test.cc" line="30" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:18.565" classname="DOMStringBindingsTest" />
+    <testcase name="SetProperty" file="../../cobalt/bindings/testing/dom_string_bindings_test.cc" line="38" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:18.582" classname="DOMStringBindingsTest" />
+    <testcase name="SetPropertyWithJapanese" file="../../cobalt/bindings/testing/dom_string_bindings_test.cc" line="46" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:18.600" classname="DOMStringBindingsTest" />
+    <testcase name="SetPropertyWithChinese" file="../../cobalt/bindings/testing/dom_string_bindings_test.cc" line="54" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:18.617" classname="DOMStringBindingsTest" />
+    <testcase name="GetReadOnlyProperty" file="../../cobalt/bindings/testing/dom_string_bindings_test.cc" line="62" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:18.634" classname="DOMStringBindingsTest" />
+    <testcase name="GetReadOnlyPropertyWithKorean" file="../../cobalt/bindings/testing/dom_string_bindings_test.cc" line="70" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:18.651" classname="DOMStringBindingsTest" />
+    <testcase name="SetReadOnlyProperty" file="../../cobalt/bindings/testing/dom_string_bindings_test.cc" line="78" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:18.668" classname="DOMStringBindingsTest" />
+    <testcase name="GetReadOnlyTokenProperty" file="../../cobalt/bindings/testing/dom_string_bindings_test.cc" line="83" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:18.685" classname="DOMStringBindingsTest" />
+    <testcase name="SetNull" file="../../cobalt/bindings/testing/dom_string_bindings_test.cc" line="92" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:18.703" classname="DOMStringBindingsTest" />
+    <testcase name="SetUndefined" file="../../cobalt/bindings/testing/dom_string_bindings_test.cc" line="100" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:18.720" classname="DOMStringBindingsTest" />
+    <testcase name="SetBoolean" file="../../cobalt/bindings/testing/dom_string_bindings_test.cc" line="108" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:18.738" classname="DOMStringBindingsTest" />
+    <testcase name="SetNaN" file="../../cobalt/bindings/testing/dom_string_bindings_test.cc" line="116" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:18.755" classname="DOMStringBindingsTest" />
+    <testcase name="SetPositiveZero" file="../../cobalt/bindings/testing/dom_string_bindings_test.cc" line="122" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:18.772" classname="DOMStringBindingsTest" />
+    <testcase name="SetNegativeZero" file="../../cobalt/bindings/testing/dom_string_bindings_test.cc" line="128" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:18.790" classname="DOMStringBindingsTest" />
+    <testcase name="SetNumber" file="../../cobalt/bindings/testing/dom_string_bindings_test.cc" line="134" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:18.808" classname="DOMStringBindingsTest" />
+    <testcase name="SetInfinity" file="../../cobalt/bindings/testing/dom_string_bindings_test.cc" line="142" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:18.825" classname="DOMStringBindingsTest" />
+    <testcase name="SetNegativeInfinity" file="../../cobalt/bindings/testing/dom_string_bindings_test.cc" line="148" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:18.842" classname="DOMStringBindingsTest" />
+    <testcase name="SetNullAsEmptyString" file="../../cobalt/bindings/testing/dom_string_bindings_test.cc" line="154" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:18.860" classname="DOMStringBindingsTest" />
+    <testcase name="SetUndefinedAsEmptyString" file="../../cobalt/bindings/testing/dom_string_bindings_test.cc" line="159" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:18.877" classname="DOMStringBindingsTest" />
+    <testcase name="StringContainingNull" file="../../cobalt/bindings/testing/dom_string_bindings_test.cc" line="170" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:18.895" classname="DOMStringBindingsTest" />
+    <testcase name="ForeignStringContainingNull" file="../../cobalt/bindings/testing/dom_string_bindings_test.cc" line="179" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:18.913" classname="DOMStringBindingsTest" />
+    <testcase name="ReplaceUT8SanityCheck" file="../../cobalt/bindings/testing/dom_string_bindings_test.cc" line="192" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:18.930" classname="DOMStringBindingsTest" />
+    <testcase name="ReplaceUT8SurrogateLow" file="../../cobalt/bindings/testing/dom_string_bindings_test.cc" line="201" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:18.947" classname="DOMStringBindingsTest" />
+    <testcase name="ReplaceUT8SurrogateHigh" file="../../cobalt/bindings/testing/dom_string_bindings_test.cc" line="210" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:18.965" classname="DOMStringBindingsTest" />
+    <testcase name="ReplaceUT8SurrogateLowInString" file="../../cobalt/bindings/testing/dom_string_bindings_test.cc" line="219" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:18.982" classname="DOMStringBindingsTest" />
+    <testcase name="ReplaceUT8SurrogateHighInString" file="../../cobalt/bindings/testing/dom_string_bindings_test.cc" line="232" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:19.000" classname="DOMStringBindingsTest" />
+    <testcase name="ReplaceUT8WrongOrder" file="../../cobalt/bindings/testing/dom_string_bindings_test.cc" line="245" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:19.018" classname="DOMStringBindingsTest" />
+  </testsuite>
+  <testsuite name="EnumerationBindingsTest" tests="3" failures="0" disabled="0" skipped="0" errors="0" time="0.052" timestamp="2392-07-09T13:10:19.037">
+    <testcase name="SetEnumeration" file="../../cobalt/bindings/testing/enumeration_bindings_test.cc" line="32" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:19.038" classname="EnumerationBindingsTest" />
+    <testcase name="GetEnumeration" file="../../cobalt/bindings/testing/enumeration_bindings_test.cc" line="45" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:19.056" classname="EnumerationBindingsTest" />
+    <testcase name="SetInvalidValue" file="../../cobalt/bindings/testing/enumeration_bindings_test.cc" line="64" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:19.074" classname="EnumerationBindingsTest" />
+  </testsuite>
+  <testsuite name="EvaluateScriptTest" tests="2" failures="0" disabled="0" skipped="0" errors="0" time="0.034" timestamp="2392-07-09T13:10:19.092">
+    <testcase name="TwoArguments" file="../../cobalt/bindings/testing/evaluate_script_test.cc" line="35" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:19.093" classname="EvaluateScriptTest" />
+    <testcase name="ThreeArguments" file="../../cobalt/bindings/testing/evaluate_script_test.cc" line="53" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:19.111" classname="EvaluateScriptTest" />
+  </testsuite>
+  <testsuite name="ExceptionsBindingsTest" tests="5" failures="0" disabled="0" skipped="0" errors="0" time="0.088" timestamp="2392-07-09T13:10:19.129">
+    <testcase name="ThrowExceptionFromConstructor" file="../../cobalt/bindings/testing/exceptions_bindings_test.cc" line="64" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:19.131" classname="ExceptionsBindingsTest" />
+    <testcase name="ThrowExceptionFromOperation" file="../../cobalt/bindings/testing/exceptions_bindings_test.cc" line="76" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:19.148" classname="ExceptionsBindingsTest" />
+    <testcase name="ThrowExceptionFromGetter" file="../../cobalt/bindings/testing/exceptions_bindings_test.cc" line="86" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:19.166" classname="ExceptionsBindingsTest" />
+    <testcase name="ThrowExceptionFromSetter" file="../../cobalt/bindings/testing/exceptions_bindings_test.cc" line="98" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:19.183" classname="ExceptionsBindingsTest" />
+    <testcase name="ThrowExceptionObject" file="../../cobalt/bindings/testing/exceptions_bindings_test.cc" line="110" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:19.201" classname="ExceptionsBindingsTest" />
+  </testsuite>
+  <testsuite name="ExtendedAttributesTest" tests="4" failures="0" disabled="0" skipped="0" errors="0" time="0.069" timestamp="2392-07-09T13:10:19.220">
+    <testcase name="CallWithEnvironmentSettings" file="../../cobalt/bindings/testing/extended_attributes_test.cc" line="34" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:19.221" classname="ExtendedAttributesTest" />
+    <testcase name="ClampArgument" file="../../cobalt/bindings/testing/extended_attributes_test.cc" line="39" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:19.238" classname="ExtendedAttributesTest" />
+    <testcase name="ImplementedAsAttributeGetter" file="../../cobalt/bindings/testing/extended_attributes_test.cc" line="47" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:19.256" classname="ExtendedAttributesTest" />
+    <testcase name="ImplementedAsAttributeSetter" file="../../cobalt/bindings/testing/extended_attributes_test.cc" line="68" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:19.273" classname="ExtendedAttributesTest" />
+  </testsuite>
+  <testsuite name="GarbageCollectionTest" tests="5" failures="0" disabled="0" skipped="0" errors="0" time="0.111" timestamp="2392-07-09T13:10:19.292">
+    <testcase name="JSObjectHoldsReferenceToPlatformObject" file="../../cobalt/bindings/testing/garbage_collection_test.cc" line="33" status="run" result="completed" time="0.021" timestamp="2392-07-09T13:10:19.293" classname="GarbageCollectionTest" />
+    <testcase name="PreventGarbageCollection" file="../../cobalt/bindings/testing/garbage_collection_test.cc" line="52" status="run" result="completed" time="0.019" timestamp="2392-07-09T13:10:19.317" classname="GarbageCollectionTest" />
+    <testcase name="ReachableObjectsKeptAlive" file="../../cobalt/bindings/testing/garbage_collection_test.cc" line="81" status="run" result="completed" time="0.021" timestamp="2392-07-09T13:10:19.338" classname="GarbageCollectionTest" />
+    <testcase name="ReachableScriptValuesKeptAlive" file="../../cobalt/bindings/testing/garbage_collection_test.cc" line="109" status="run" result="completed" time="0.018" timestamp="2392-07-09T13:10:19.363" classname="GarbageCollectionTest" />
+    <testcase name="JSObjectRetainsCustomProperty" file="../../cobalt/bindings/testing/garbage_collection_test.cc" line="134" status="run" result="completed" time="0.018" timestamp="2392-07-09T13:10:19.384" classname="GarbageCollectionTest" />
+  </testsuite>
+  <testsuite name="ScriptValueGarbageCollectionTest" tests="1" failures="0" disabled="0" skipped="0" errors="0" time="0.03" timestamp="2392-07-09T13:10:19.406">
+    <testcase name="ScriptHandleConstructors" file="../../cobalt/bindings/testing/garbage_collection_test.cc" line="154" status="run" result="completed" time="0.028" timestamp="2392-07-09T13:10:19.407" classname="ScriptValueGarbageCollectionTest" />
+  </testsuite>
+  <testsuite name="GetOwnPropertyDescriptorTest" tests="2" failures="0" disabled="0" skipped="0" errors="0" time="0.036" timestamp="2392-07-09T13:10:19.438">
+    <testcase name="DoesNotHaveArbitraryPropertyPropertyDescriptor" file="../../cobalt/bindings/testing/get_own_property_descriptor.cc" line="29" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:19.440" classname="GetOwnPropertyDescriptorTest" />
+    <testcase name="GetPropertyDescriptorFromPrototype" file="../../cobalt/bindings/testing/get_own_property_descriptor.cc" line="39" status="run" result="completed" time="0.016" timestamp="2392-07-09T13:10:19.457" classname="GetOwnPropertyDescriptorTest" />
+  </testsuite>
+  <testsuite name="GetterSetterBindingsTest" tests="2" failures="0" disabled="0" skipped="0" errors="0" time="0.035" timestamp="2392-07-09T13:10:19.477">
+    <testcase name="GetterCanHandleAllValueTypes" file="../../cobalt/bindings/testing/getter_setter_test.cc" line="90" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:19.479" classname="GetterSetterBindingsTest" />
+    <testcase name="SetterCanHandleAllValueTypes" file="../../cobalt/bindings/testing/getter_setter_test.cc" line="107" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:19.497" classname="GetterSetterBindingsTest" />
+  </testsuite>
+  <testsuite name="IndexedGetterBindingsTest" tests="7" failures="0" disabled="0" skipped="0" errors="0" time="0.121" timestamp="2392-07-09T13:10:19.516">
+    <testcase name="IndexedGetter" file="../../cobalt/bindings/testing/getter_setter_test.cc" line="124" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:19.517" classname="IndexedGetterBindingsTest" />
+    <testcase name="IndexIsOwnProperty" file="../../cobalt/bindings/testing/getter_setter_test.cc" line="139" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:19.534" classname="IndexedGetterBindingsTest" />
+    <testcase name="IndexedGetterOutOfRange" file="../../cobalt/bindings/testing/getter_setter_test.cc" line="148" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:19.551" classname="IndexedGetterBindingsTest" />
+    <testcase name="IndexedSetter" file="../../cobalt/bindings/testing/getter_setter_test.cc" line="163" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:19.569" classname="IndexedGetterBindingsTest" />
+    <testcase name="IndexedDeleter" file="../../cobalt/bindings/testing/getter_setter_test.cc" line="175" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:19.587" classname="IndexedGetterBindingsTest" />
+    <testcase name="IndexedDeleterOutOfRange" file="../../cobalt/bindings/testing/getter_setter_test.cc" line="181" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:19.604" classname="IndexedGetterBindingsTest" />
+    <testcase name="IndexedSetterOutOfRange" file="../../cobalt/bindings/testing/getter_setter_test.cc" line="188" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:19.621" classname="IndexedGetterBindingsTest" />
+  </testsuite>
+  <testsuite name="NamedGetterBindingsTest" tests="8" failures="0" disabled="0" skipped="0" errors="0" time="0.14" timestamp="2392-07-09T13:10:19.640">
+    <testcase name="NamedGetter" file="../../cobalt/bindings/testing/getter_setter_test.cc" line="199" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:19.641" classname="NamedGetterBindingsTest" />
+    <testcase name="NamedPropertyIsOwnProperty" file="../../cobalt/bindings/testing/getter_setter_test.cc" line="218" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:19.659" classname="NamedGetterBindingsTest" />
+    <testcase name="NamedGetterUnsupportedName" file="../../cobalt/bindings/testing/getter_setter_test.cc" line="228" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:19.677" classname="NamedGetterBindingsTest" />
+    <testcase name="NamedSetter" file="../../cobalt/bindings/testing/getter_setter_test.cc" line="238" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:19.694" classname="NamedGetterBindingsTest" />
+    <testcase name="NamedDeleter" file="../../cobalt/bindings/testing/getter_setter_test.cc" line="252" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:19.712" classname="NamedGetterBindingsTest" />
+    <testcase name="NamedDeleterUnsupportedName" file="../../cobalt/bindings/testing/getter_setter_test.cc" line="264" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:19.729" classname="NamedGetterBindingsTest" />
+    <testcase name="NamedDeleterIndexProperty" file="../../cobalt/bindings/testing/getter_setter_test.cc" line="275" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:19.747" classname="NamedGetterBindingsTest" />
+    <testcase name="IndexConvertsToNamedProperty" file="../../cobalt/bindings/testing/getter_setter_test.cc" line="284" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:19.764" classname="NamedGetterBindingsTest" />
+  </testsuite>
+  <testsuite name="NamedIndexedGetterBindingsTest" tests="1" failures="0" disabled="0" skipped="0" errors="0" time="0.017" timestamp="2392-07-09T13:10:19.783">
+    <testcase name="NamedGetterDoesNotShadowBuiltIns" file="../../cobalt/bindings/testing/getter_setter_test.cc" line="301" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:19.784" classname="NamedIndexedGetterBindingsTest" />
+  </testsuite>
+  <testsuite name="AnonymousNamedIndexedGetterBindingsTest" tests="1" failures="0" disabled="0" skipped="0" errors="0" time="0.017" timestamp="2392-07-09T13:10:19.802">
+    <testcase name="EnumeratedPropertiesOrdering" file="../../cobalt/bindings/testing/getter_setter_test.cc" line="310" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:19.803" classname="AnonymousNamedIndexedGetterBindingsTest" />
+  </testsuite>
+  <testsuite name="AnonymousIndexedGetterBindingsTest" tests="3" failures="0" disabled="0" skipped="0" errors="0" time="0.052" timestamp="2392-07-09T13:10:19.823">
+    <testcase name="EnumerateIndexedProperties" file="../../cobalt/bindings/testing/getter_setter_test.cc" line="340" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:19.824" classname="AnonymousIndexedGetterBindingsTest" />
+    <testcase name="IndexedGetter" file="../../cobalt/bindings/testing/getter_setter_test.cc" line="387" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:19.842" classname="AnonymousIndexedGetterBindingsTest" />
+    <testcase name="IndexedSetter" file="../../cobalt/bindings/testing/getter_setter_test.cc" line="399" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:19.859" classname="AnonymousIndexedGetterBindingsTest" />
+  </testsuite>
+  <testsuite name="AnonymousNamedGetterBindingsTest" tests="4" failures="0" disabled="0" skipped="0" errors="0" time="0.081" timestamp="2392-07-09T13:10:19.878">
+    <testcase name="EnumerateNamedProperties" file="../../cobalt/bindings/testing/getter_setter_test.cc" line="363" status="run" result="completed" time="0.023" timestamp="2392-07-09T13:10:19.879" classname="AnonymousNamedGetterBindingsTest" />
+    <testcase name="NamedGetter" file="../../cobalt/bindings/testing/getter_setter_test.cc" line="411" status="run" result="completed" time="0.017" timestamp="2392-07-09T13:10:19.904" classname="AnonymousNamedGetterBindingsTest" />
+    <testcase name="NamedGetterUnsupportedName" file="../../cobalt/bindings/testing/getter_setter_test.cc" line="423" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:19.924" classname="AnonymousNamedGetterBindingsTest" />
+    <testcase name="NamedSetter" file="../../cobalt/bindings/testing/getter_setter_test.cc" line="433" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:19.942" classname="AnonymousNamedGetterBindingsTest" />
+  </testsuite>
+  <testsuite name="DerivedGetterSetterBindingsTest" tests="3" failures="0" disabled="0" skipped="0" errors="0" time="0.054" timestamp="2392-07-09T13:10:19.961">
+    <testcase name="OverridesGetterAndSetter" file="../../cobalt/bindings/testing/getter_setter_test.cc" line="443" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:19.962" classname="DerivedGetterSetterBindingsTest" />
+    <testcase name="NamedGetterDoesNotShadowProperties" file="../../cobalt/bindings/testing/getter_setter_test.cc" line="458" status="run" result="completed" time="0.016" timestamp="2392-07-09T13:10:19.980" classname="DerivedGetterSetterBindingsTest" />
+    <testcase name="NamedSetterDoesNotShadowProperties" file="../../cobalt/bindings/testing/getter_setter_test.cc" line="477" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:19.999" classname="DerivedGetterSetterBindingsTest" />
+  </testsuite>
+  <testsuite name="GlobalInterfaceBindingsTest" tests="10" failures="0" disabled="1" skipped="0" errors="0" time="0.159" timestamp="2392-07-09T13:10:20.018">
+    <testcase name="GlobalWindowIsThis" file="../../cobalt/bindings/testing/global_interface_bindings_test.cc" line="39" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.019" classname="GlobalInterfaceBindingsTest" />
+    <testcase name="GlobalOperation" file="../../cobalt/bindings/testing/global_interface_bindings_test.cc" line="45" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.036" classname="GlobalInterfaceBindingsTest" />
+    <testcase name="GlobalProperty" file="../../cobalt/bindings/testing/global_interface_bindings_test.cc" line="50" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.054" classname="GlobalInterfaceBindingsTest" />
+    <testcase name="GlobalPrototypeIsSet" file="../../cobalt/bindings/testing/global_interface_bindings_test.cc" line="61" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.072" classname="GlobalInterfaceBindingsTest" />
+    <testcase name="GlobalInterfaceConstructorIsSet" file="../../cobalt/bindings/testing/global_interface_bindings_test.cc" line="68" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.089" classname="GlobalInterfaceBindingsTest" />
+    <testcase name="DISABLED_PropertiesAndOperationsAreOwnProperties" file="../../cobalt/bindings/testing/global_interface_bindings_test.cc" line="79" status="notrun" result="suppressed" time="0" timestamp="1969-12-31T16:00:00.000" classname="GlobalInterfaceBindingsTest" />
+    <testcase name="ConstructorExists" file="../../cobalt/bindings/testing/global_interface_bindings_test.cc" line="95" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.108" classname="GlobalInterfaceBindingsTest" />
+    <testcase name="ConstructorPrototype" file="../../cobalt/bindings/testing/global_interface_bindings_test.cc" line="102" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.125" classname="GlobalInterfaceBindingsTest" />
+    <testcase name="ConstructorForNoInterfaceObjectDoesNotExists" file="../../cobalt/bindings/testing/global_interface_bindings_test.cc" line="110" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.143" classname="GlobalInterfaceBindingsTest" />
+    <testcase name="CallParentInterfaceOperation" file="../../cobalt/bindings/testing/global_interface_bindings_test.cc" line="117" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.160" classname="GlobalInterfaceBindingsTest" />
+  </testsuite>
+  <testsuite name="ImplementedAsInterfaceTest" tests="1" failures="0" disabled="0" skipped="0" errors="0" time="0.017" timestamp="2392-07-09T13:10:20.179">
+    <testcase name="ImplementedAsInterfaceFunctionExists" file="../../cobalt/bindings/testing/implemented_as_interface_test.cc" line="30" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.180" classname="ImplementedAsInterfaceTest" />
+  </testsuite>
+  <testsuite name="InterfaceObjectTest" tests="7" failures="0" disabled="0" skipped="0" errors="0" time="0.122" timestamp="2392-07-09T13:10:20.199">
+    <testcase name="InterfaceObjectIsGlobalProperty" file="../../cobalt/bindings/testing/interface_object_test.cc" line="37" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.200" classname="InterfaceObjectTest" />
+    <testcase name="InterfaceObjectIsFunctionObject" file="../../cobalt/bindings/testing/interface_object_test.cc" line="45" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.217" classname="InterfaceObjectTest" />
+    <testcase name="PrototypePropertyIsSet" file="../../cobalt/bindings/testing/interface_object_test.cc" line="54" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.235" classname="InterfaceObjectTest" />
+    <testcase name="NamePropertyIsSet" file="../../cobalt/bindings/testing/interface_object_test.cc" line="67" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.252" classname="InterfaceObjectTest" />
+    <testcase name="ConstructorPropertyExists" file="../../cobalt/bindings/testing/interface_object_test.cc" line="75" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.270" classname="InterfaceObjectTest" />
+    <testcase name="ConstructorPropertyIsInterfaceObject" file="../../cobalt/bindings/testing/interface_object_test.cc" line="87" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.287" classname="InterfaceObjectTest" />
+    <testcase name="FunctionCanHandleAllJavaScriptValueTypes" file="../../cobalt/bindings/testing/interface_object_test.cc" line="103" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.305" classname="InterfaceObjectTest" />
+  </testsuite>
+  <testsuite name="NoInterfaceObjectTest" tests="1" failures="0" disabled="0" skipped="0" errors="0" time="0.017" timestamp="2392-07-09T13:10:20.324">
+    <testcase name="NoInterfaceObjectGlobalProperty" file="../../cobalt/bindings/testing/interface_object_test.cc" line="96" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.325" classname="NoInterfaceObjectTest" />
+  </testsuite>
+  <testsuite name="NullableTypesBindingsTest" tests="8" failures="0" disabled="0" skipped="0" errors="0" time="0.146" timestamp="2392-07-09T13:10:20.343">
+    <testcase name="GetNullProperty" file="../../cobalt/bindings/testing/nullable_types_bindings_test.cc" line="69" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.345" classname="NullableTypesBindingsTest" />
+    <testcase name="GetNonNullProperty" file="../../cobalt/bindings/testing/nullable_types_bindings_test.cc" line="102" status="run" result="completed" time="0.016" timestamp="2392-07-09T13:10:20.362" classname="NullableTypesBindingsTest" />
+    <testcase name="ReturnNullFromOperation" file="../../cobalt/bindings/testing/nullable_types_bindings_test.cc" line="139" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.381" classname="NullableTypesBindingsTest" />
+    <testcase name="ReturnNonNullFromOperation" file="../../cobalt/bindings/testing/nullable_types_bindings_test.cc" line="174" status="run" result="completed" time="0.016" timestamp="2392-07-09T13:10:20.399" classname="NullableTypesBindingsTest" />
+    <testcase name="SetNullProperty" file="../../cobalt/bindings/testing/nullable_types_bindings_test.cc" line="212" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.417" classname="NullableTypesBindingsTest" />
+    <testcase name="SetNonNullProperty" file="../../cobalt/bindings/testing/nullable_types_bindings_test.cc" line="236" status="run" result="completed" time="0.016" timestamp="2392-07-09T13:10:20.436" classname="NullableTypesBindingsTest" />
+    <testcase name="PassNullArgument" file="../../cobalt/bindings/testing/nullable_types_bindings_test.cc" line="267" status="run" result="completed" time="0.016" timestamp="2392-07-09T13:10:20.454" classname="NullableTypesBindingsTest" />
+    <testcase name="PassNonNullArgument" file="../../cobalt/bindings/testing/nullable_types_bindings_test.cc" line="289" status="run" result="completed" time="0.016" timestamp="2392-07-09T13:10:20.472" classname="NullableTypesBindingsTest" />
+  </testsuite>
+  <testsuite name="NumericTypeBindingsTest/0" tests="2" failures="0" disabled="0" skipped="0" errors="0" time="0.035" timestamp="2392-07-09T13:10:20.492">
+    <testcase name="PropertyIsNumber" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="95" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.493" classname="NumericTypeBindingsTest/0" />
+    <testcase name="ReturnValueIsNumber" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="104" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.511" classname="NumericTypeBindingsTest/0" />
+  </testsuite>
+  <testsuite name="NumericTypeBindingsTest/1" tests="2" failures="0" disabled="0" skipped="0" errors="0" time="0.034" timestamp="2392-07-09T13:10:20.529">
+    <testcase name="PropertyIsNumber" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="95" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.531" classname="NumericTypeBindingsTest/1" />
+    <testcase name="ReturnValueIsNumber" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="104" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.548" classname="NumericTypeBindingsTest/1" />
+  </testsuite>
+  <testsuite name="NumericTypeBindingsTest/2" tests="2" failures="0" disabled="0" skipped="0" errors="0" time="0.034" timestamp="2392-07-09T13:10:20.567">
+    <testcase name="PropertyIsNumber" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="95" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:20.568" classname="NumericTypeBindingsTest/2" />
+    <testcase name="ReturnValueIsNumber" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="104" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.585" classname="NumericTypeBindingsTest/2" />
+  </testsuite>
+  <testsuite name="NumericTypeBindingsTest/3" tests="2" failures="0" disabled="0" skipped="0" errors="0" time="0.034" timestamp="2392-07-09T13:10:20.604">
+    <testcase name="PropertyIsNumber" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="95" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:20.605" classname="NumericTypeBindingsTest/3" />
+    <testcase name="ReturnValueIsNumber" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="104" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.622" classname="NumericTypeBindingsTest/3" />
+  </testsuite>
+  <testsuite name="NumericTypeBindingsTest/4" tests="2" failures="0" disabled="0" skipped="0" errors="0" time="0.034" timestamp="2392-07-09T13:10:20.640">
+    <testcase name="PropertyIsNumber" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="95" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.641" classname="NumericTypeBindingsTest/4" />
+    <testcase name="ReturnValueIsNumber" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="104" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.659" classname="NumericTypeBindingsTest/4" />
+  </testsuite>
+  <testsuite name="NumericTypeBindingsTest/5" tests="2" failures="0" disabled="0" skipped="0" errors="0" time="0.035" timestamp="2392-07-09T13:10:20.677">
+    <testcase name="PropertyIsNumber" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="95" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.679" classname="NumericTypeBindingsTest/5" />
+    <testcase name="ReturnValueIsNumber" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="104" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.696" classname="NumericTypeBindingsTest/5" />
+  </testsuite>
+  <testsuite name="NumericTypeBindingsTest/6" tests="2" failures="0" disabled="0" skipped="0" errors="0" time="0.035" timestamp="2392-07-09T13:10:20.715">
+    <testcase name="PropertyIsNumber" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="95" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.716" classname="NumericTypeBindingsTest/6" />
+    <testcase name="ReturnValueIsNumber" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="104" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.734" classname="NumericTypeBindingsTest/6" />
+  </testsuite>
+  <testsuite name="NumericTypeBindingsTest/7" tests="2" failures="0" disabled="0" skipped="0" errors="0" time="0.034" timestamp="2392-07-09T13:10:20.752">
+    <testcase name="PropertyIsNumber" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="95" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.754" classname="NumericTypeBindingsTest/7" />
+    <testcase name="ReturnValueIsNumber" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="104" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.771" classname="NumericTypeBindingsTest/7" />
+  </testsuite>
+  <testsuite name="NumericTypeBindingsTest/8" tests="2" failures="0" disabled="0" skipped="0" errors="0" time="0.034" timestamp="2392-07-09T13:10:20.790">
+    <testcase name="PropertyIsNumber" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="95" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.791" classname="NumericTypeBindingsTest/8" />
+    <testcase name="ReturnValueIsNumber" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="104" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.808" classname="NumericTypeBindingsTest/8" />
+  </testsuite>
+  <testsuite name="IntegerTypeBindingsTest/0" tests="6" failures="0" disabled="0" skipped="0" errors="0" time="0.107" timestamp="2392-07-09T13:10:20.826">
+    <testcase name="PropertyValueRange" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="113" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.828" classname="IntegerTypeBindingsTest/0" />
+    <testcase name="ReturnValueRange" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="135" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.846" classname="IntegerTypeBindingsTest/0" />
+    <testcase name="SetPropertyRange" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="157" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.864" classname="IntegerTypeBindingsTest/0" />
+    <testcase name="ArgumentOperationRange" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="177" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.882" classname="IntegerTypeBindingsTest/0" />
+    <testcase name="OutOfRangeBehaviour" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="209" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.899" classname="IntegerTypeBindingsTest/0" />
+    <testcase name="ClampedOutOfRangeBehaviour" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="245" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.917" classname="IntegerTypeBindingsTest/0" />
+  </testsuite>
+  <testsuite name="IntegerTypeBindingsTest/1" tests="6" failures="0" disabled="0" skipped="0" errors="0" time="0.104" timestamp="2392-07-09T13:10:20.936">
+    <testcase name="PropertyValueRange" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="113" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.937" classname="IntegerTypeBindingsTest/1" />
+    <testcase name="ReturnValueRange" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="135" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.955" classname="IntegerTypeBindingsTest/1" />
+    <testcase name="SetPropertyRange" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="157" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.972" classname="IntegerTypeBindingsTest/1" />
+    <testcase name="ArgumentOperationRange" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="177" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:20.990" classname="IntegerTypeBindingsTest/1" />
+    <testcase name="OutOfRangeBehaviour" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="209" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:21.007" classname="IntegerTypeBindingsTest/1" />
+    <testcase name="ClampedOutOfRangeBehaviour" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="245" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:21.024" classname="IntegerTypeBindingsTest/1" />
+  </testsuite>
+  <testsuite name="IntegerTypeBindingsTest/2" tests="6" failures="0" disabled="0" skipped="0" errors="0" time="0.101" timestamp="2392-07-09T13:10:21.042">
+    <testcase name="PropertyValueRange" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="113" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:21.043" classname="IntegerTypeBindingsTest/2" />
+    <testcase name="ReturnValueRange" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="135" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:21.060" classname="IntegerTypeBindingsTest/2" />
+    <testcase name="SetPropertyRange" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="157" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:21.077" classname="IntegerTypeBindingsTest/2" />
+    <testcase name="ArgumentOperationRange" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="177" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:21.094" classname="IntegerTypeBindingsTest/2" />
+    <testcase name="OutOfRangeBehaviour" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="209" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:21.111" classname="IntegerTypeBindingsTest/2" />
+    <testcase name="ClampedOutOfRangeBehaviour" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="245" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:21.128" classname="IntegerTypeBindingsTest/2" />
+  </testsuite>
+  <testsuite name="IntegerTypeBindingsTest/3" tests="6" failures="0" disabled="0" skipped="0" errors="0" time="0.103" timestamp="2392-07-09T13:10:21.146">
+    <testcase name="PropertyValueRange" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="113" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:21.148" classname="IntegerTypeBindingsTest/3" />
+    <testcase name="ReturnValueRange" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="135" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:21.164" classname="IntegerTypeBindingsTest/3" />
+    <testcase name="SetPropertyRange" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="157" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:21.181" classname="IntegerTypeBindingsTest/3" />
+    <testcase name="ArgumentOperationRange" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="177" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:21.198" classname="IntegerTypeBindingsTest/3" />
+    <testcase name="OutOfRangeBehaviour" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="209" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:21.216" classname="IntegerTypeBindingsTest/3" />
+    <testcase name="ClampedOutOfRangeBehaviour" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="245" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:21.234" classname="IntegerTypeBindingsTest/3" />
+  </testsuite>
+  <testsuite name="IntegerTypeBindingsTest/4" tests="6" failures="0" disabled="0" skipped="0" errors="0" time="0.104" timestamp="2392-07-09T13:10:21.253">
+    <testcase name="PropertyValueRange" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="113" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:21.254" classname="IntegerTypeBindingsTest/4" />
+    <testcase name="ReturnValueRange" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="135" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:21.271" classname="IntegerTypeBindingsTest/4" />
+    <testcase name="SetPropertyRange" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="157" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:21.288" classname="IntegerTypeBindingsTest/4" />
+    <testcase name="ArgumentOperationRange" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="177" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:21.306" classname="IntegerTypeBindingsTest/4" />
+    <testcase name="OutOfRangeBehaviour" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="209" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:21.323" classname="IntegerTypeBindingsTest/4" />
+    <testcase name="ClampedOutOfRangeBehaviour" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="245" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:21.341" classname="IntegerTypeBindingsTest/4" />
+  </testsuite>
+  <testsuite name="IntegerTypeBindingsTest/5" tests="6" failures="0" disabled="0" skipped="0" errors="0" time="0.104" timestamp="2392-07-09T13:10:21.360">
+    <testcase name="PropertyValueRange" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="113" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:21.361" classname="IntegerTypeBindingsTest/5" />
+    <testcase name="ReturnValueRange" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="135" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:21.378" classname="IntegerTypeBindingsTest/5" />
+    <testcase name="SetPropertyRange" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="157" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:21.395" classname="IntegerTypeBindingsTest/5" />
+    <testcase name="ArgumentOperationRange" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="177" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:21.413" classname="IntegerTypeBindingsTest/5" />
+    <testcase name="OutOfRangeBehaviour" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="209" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:21.430" classname="IntegerTypeBindingsTest/5" />
+    <testcase name="ClampedOutOfRangeBehaviour" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="245" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:21.448" classname="IntegerTypeBindingsTest/5" />
+  </testsuite>
+  <testsuite name="LargeIntegerTypeBindingsTest/0" tests="4" failures="0" disabled="0" skipped="0" errors="0" time="0.07" timestamp="2392-07-09T13:10:21.466">
+    <testcase name="PropertyValueRange" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="278" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:21.467" classname="LargeIntegerTypeBindingsTest/0" />
+    <testcase name="ReturnValueRange" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="305" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:21.486" classname="LargeIntegerTypeBindingsTest/0" />
+    <testcase name="SetPropertyRange" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="378" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:21.503" classname="LargeIntegerTypeBindingsTest/0" />
+    <testcase name="ArgumentOperationRange" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="423" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:21.521" classname="LargeIntegerTypeBindingsTest/0" />
+  </testsuite>
+  <testsuite name="LargeIntegerTypeBindingsTest/1" tests="4" failures="0" disabled="0" skipped="0" errors="0" time="0.068" timestamp="2392-07-09T13:10:21.539">
+    <testcase name="PropertyValueRange" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="278" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:21.540" classname="LargeIntegerTypeBindingsTest/1" />
+    <testcase name="ReturnValueRange" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="305" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:21.557" classname="LargeIntegerTypeBindingsTest/1" />
+    <testcase name="SetPropertyRange" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="378" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:21.575" classname="LargeIntegerTypeBindingsTest/1" />
+    <testcase name="ArgumentOperationRange" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="423" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:21.592" classname="LargeIntegerTypeBindingsTest/1" />
+  </testsuite>
+  <testsuite name="FloatingPointTypeBindingsTest/0" tests="1" failures="0" disabled="0" skipped="0" errors="0" time="0.017" timestamp="2392-07-09T13:10:21.610">
+    <testcase name="NonFiniteValues" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="470" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:21.611" classname="FloatingPointTypeBindingsTest/0" />
+  </testsuite>
+  <testsuite name="FloatingPointTypeBindingsTest/1" tests="1" failures="0" disabled="0" skipped="0" errors="0" time="0.016" timestamp="2392-07-09T13:10:21.630">
+    <testcase name="NonFiniteValues" type_param="&lt;type&gt;" file="../../cobalt/bindings/testing/numeric_type_bindings_test.cc" line="470" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:21.631" classname="FloatingPointTypeBindingsTest/1" />
+  </testsuite>
+  <testsuite name="PlatformObjectBindingsTest" tests="11" failures="0" disabled="0" skipped="0" errors="0" time="0.188" timestamp="2392-07-09T13:10:21.649">
+    <testcase name="InstanceOfObject" file="../../cobalt/bindings/testing/object_type_bindings_test.cc" line="69" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:21.650" classname="PlatformObjectBindingsTest" />
+    <testcase name="Prototype" file="../../cobalt/bindings/testing/object_type_bindings_test.cc" line="78" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:21.667" classname="PlatformObjectBindingsTest" />
+    <testcase name="PropertyIsDefinedOnPrototype" file="../../cobalt/bindings/testing/object_type_bindings_test.cc" line="89" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:21.684" classname="PlatformObjectBindingsTest" />
+    <testcase name="MemberFunctionIsPrototypeProperty" file="../../cobalt/bindings/testing/object_type_bindings_test.cc" line="100" status="run" result="completed" time="0.016" timestamp="2392-07-09T13:10:21.701" classname="PlatformObjectBindingsTest" />
+    <testcase name="DerivedProto" file="../../cobalt/bindings/testing/object_type_bindings_test.cc" line="119" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:21.720" classname="PlatformObjectBindingsTest" />
+    <testcase name="PropertyOnBaseClass" file="../../cobalt/bindings/testing/object_type_bindings_test.cc" line="130" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:21.737" classname="PlatformObjectBindingsTest" />
+    <testcase name="OperationOnBaseClass" file="../../cobalt/bindings/testing/object_type_bindings_test.cc" line="140" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:21.754" classname="PlatformObjectBindingsTest" />
+    <testcase name="PropertyOnDerivedClass" file="../../cobalt/bindings/testing/object_type_bindings_test.cc" line="147" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:21.771" classname="PlatformObjectBindingsTest" />
+    <testcase name="OperationOnDerivedClass" file="../../cobalt/bindings/testing/object_type_bindings_test.cc" line="158" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:21.788" classname="PlatformObjectBindingsTest" />
+    <testcase name="ReturnDerivedClassWrapper" file="../../cobalt/bindings/testing/object_type_bindings_test.cc" line="166" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:21.804" classname="PlatformObjectBindingsTest" />
+    <testcase name="ReturnCorrectWrapperForObjectType" file="../../cobalt/bindings/testing/object_type_bindings_test.cc" line="183" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:21.821" classname="PlatformObjectBindingsTest" />
+  </testsuite>
+  <testsuite name="UserObjectBindingsTest" tests="7" failures="0" disabled="0" skipped="0" errors="0" time="0.119" timestamp="2392-07-09T13:10:21.839">
+    <testcase name="PassUserObjectforObjectType" file="../../cobalt/bindings/testing/object_type_bindings_test.cc" line="203" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:21.840" classname="UserObjectBindingsTest" />
+    <testcase name="NullObject" file="../../cobalt/bindings/testing/object_type_bindings_test.cc" line="218" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:21.857" classname="UserObjectBindingsTest" />
+    <testcase name="NonObjectType" file="../../cobalt/bindings/testing/object_type_bindings_test.cc" line="231" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:21.874" classname="UserObjectBindingsTest" />
+    <testcase name="SetNonObject" file="../../cobalt/bindings/testing/object_type_bindings_test.cc" line="246" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:21.892" classname="UserObjectBindingsTest" />
+    <testcase name="SetUndefinedObject" file="../../cobalt/bindings/testing/object_type_bindings_test.cc" line="252" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:21.909" classname="UserObjectBindingsTest" />
+    <testcase name="SetWrongObjectType" file="../../cobalt/bindings/testing/object_type_bindings_test.cc" line="258" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:21.925" classname="UserObjectBindingsTest" />
+    <testcase name="CallWrongObjectType" file="../../cobalt/bindings/testing/object_type_bindings_test.cc" line="268" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:21.942" classname="UserObjectBindingsTest" />
+  </testsuite>
+  <testsuite name="OperationsBindingsTest" tests="15" failures="0" disabled="0" skipped="0" errors="0" time="0.255" timestamp="2392-07-09T13:10:21.961">
+    <testcase name="OperationIsPrototypeProperty" file="../../cobalt/bindings/testing/operations_bindings_test.cc" line="34" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:21.962" classname="OperationsBindingsTest" />
+    <testcase name="LengthPropertyIsSet" file="../../cobalt/bindings/testing/operations_bindings_test.cc" line="46" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:21.979" classname="OperationsBindingsTest" />
+    <testcase name="VoidFunction" file="../../cobalt/bindings/testing/operations_bindings_test.cc" line="55" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:21.996" classname="OperationsBindingsTest" />
+    <testcase name="LongFunction" file="../../cobalt/bindings/testing/operations_bindings_test.cc" line="61" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:22.013" classname="OperationsBindingsTest" />
+    <testcase name="StringFunction" file="../../cobalt/bindings/testing/operations_bindings_test.cc" line="69" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:22.030" classname="OperationsBindingsTest" />
+    <testcase name="ObjectFunction" file="../../cobalt/bindings/testing/operations_bindings_test.cc" line="78" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:22.048" classname="OperationsBindingsTest" />
+    <testcase name="VoidFunctionStringArg" file="../../cobalt/bindings/testing/operations_bindings_test.cc" line="89" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:22.065" classname="OperationsBindingsTest" />
+    <testcase name="VoidFunctionLongArg" file="../../cobalt/bindings/testing/operations_bindings_test.cc" line="95" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:22.082" classname="OperationsBindingsTest" />
+    <testcase name="VoidFunctionObjectArg" file="../../cobalt/bindings/testing/operations_bindings_test.cc" line="100" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:22.099" classname="OperationsBindingsTest" />
+    <testcase name="OptionalArguments" file="../../cobalt/bindings/testing/operations_bindings_test.cc" line="111" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:22.116" classname="OperationsBindingsTest" />
+    <testcase name="OverloadedOperationByNumberOfArguments" file="../../cobalt/bindings/testing/operations_bindings_test.cc" line="128" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:22.133" classname="OperationsBindingsTest" />
+    <testcase name="OverloadedOperationInvalidNumberOfArguments" file="../../cobalt/bindings/testing/operations_bindings_test.cc" line="144" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:22.150" classname="OperationsBindingsTest" />
+    <testcase name="OverloadedOperationByType" file="../../cobalt/bindings/testing/operations_bindings_test.cc" line="158" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:22.167" classname="OperationsBindingsTest" />
+    <testcase name="StaticMethodNotPartOfOverloadSet" file="../../cobalt/bindings/testing/operations_bindings_test.cc" line="168" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:22.184" classname="OperationsBindingsTest" />
+    <testcase name="OverloadedOperationByOptionality" file="../../cobalt/bindings/testing/operations_bindings_test.cc" line="182" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:22.201" classname="OperationsBindingsTest" />
+  </testsuite>
+  <testsuite name="OptionalArgumentsBindingsTest" tests="6" failures="0" disabled="0" skipped="0" errors="0" time="0.106" timestamp="2392-07-09T13:10:22.219">
+    <testcase name="SetNoOptionalArguments" file="../../cobalt/bindings/testing/optional_arguments_bindings_test.cc" line="32" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:22.220" classname="OptionalArgumentsBindingsTest" />
+    <testcase name="SetOneOptionalArguments" file="../../cobalt/bindings/testing/optional_arguments_bindings_test.cc" line="37" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:22.236" classname="OptionalArgumentsBindingsTest" />
+    <testcase name="SetAllOptionalArguments" file="../../cobalt/bindings/testing/optional_arguments_bindings_test.cc" line="42" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:22.253" classname="OptionalArgumentsBindingsTest" />
+    <testcase name="OptionalArgumentWithDefault" file="../../cobalt/bindings/testing/optional_arguments_bindings_test.cc" line="47" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:22.271" classname="OptionalArgumentsBindingsTest" />
+    <testcase name="SetOptionalArgumentWithDefault" file="../../cobalt/bindings/testing/optional_arguments_bindings_test.cc" line="52" status="run" result="completed" time="0.016" timestamp="2392-07-09T13:10:22.289" classname="OptionalArgumentsBindingsTest" />
+    <testcase name="OptionalNullableArgumentsWithDefaults" file="../../cobalt/bindings/testing/optional_arguments_bindings_test.cc" line="57" status="run" result="completed" time="0.016" timestamp="2392-07-09T13:10:22.308" classname="OptionalArgumentsBindingsTest" />
+  </testsuite>
+  <testsuite name="PromiseTest" tests="7" failures="0" disabled="0" skipped="0" errors="0" time="0.14" timestamp="2392-07-09T13:10:22.328">
+    <testcase name="ResolveVoidPromise" file="../../cobalt/bindings/testing/promise_test.cc" line="55" status="run" result="completed" time="0.017" timestamp="2392-07-09T13:10:22.329" classname="PromiseTest" />
+    <testcase name="RejectVoidPromise" file="../../cobalt/bindings/testing/promise_test.cc" line="70" status="run" result="completed" time="0.018" timestamp="2392-07-09T13:10:22.349" classname="PromiseTest" />
+    <testcase name="RejectWithExceptionObject" file="../../cobalt/bindings/testing/promise_test.cc" line="85" status="run" result="completed" time="0.018" timestamp="2392-07-09T13:10:22.370" classname="PromiseTest" />
+    <testcase name="RejectWithSimpleException" file="../../cobalt/bindings/testing/promise_test.cc" line="107" status="run" result="completed" time="0.017" timestamp="2392-07-09T13:10:22.390" classname="PromiseTest" />
+    <testcase name="BooleanPromise" file="../../cobalt/bindings/testing/promise_test.cc" line="126" status="run" result="completed" time="0.017" timestamp="2392-07-09T13:10:22.410" classname="PromiseTest" />
+    <testcase name="StringPromise" file="../../cobalt/bindings/testing/promise_test.cc" line="145" status="run" result="completed" time="0.017" timestamp="2392-07-09T13:10:22.430" classname="PromiseTest" />
+    <testcase name="InterfacePromise" file="../../cobalt/bindings/testing/promise_test.cc" line="165" status="run" result="completed" time="0.017" timestamp="2392-07-09T13:10:22.450" classname="PromiseTest" />
+  </testsuite>
+  <testsuite name="PutForwardsTest" tests="2" failures="0" disabled="0" skipped="0" errors="0" time="0.039" timestamp="2392-07-09T13:10:22.470">
+    <testcase name="ForwardsToInterface" file="../../cobalt/bindings/testing/put_forwards_test.cc" line="35" status="run" result="completed" time="0.017" timestamp="2392-07-09T13:10:22.472" classname="PutForwardsTest" />
+    <testcase name="StaticForwardsToInterface" file="../../cobalt/bindings/testing/put_forwards_test.cc" line="44" status="run" result="completed" time="0.017" timestamp="2392-07-09T13:10:22.491" classname="PutForwardsTest" />
+  </testsuite>
+  <testsuite name="NestedPutForwardsTest" tests="1" failures="0" disabled="0" skipped="0" errors="0" time="0.019" timestamp="2392-07-09T13:10:22.512">
+    <testcase name="ForwardsToNestedInterface" file="../../cobalt/bindings/testing/put_forwards_test.cc" line="55" status="run" result="completed" time="0.017" timestamp="2392-07-09T13:10:22.513" classname="NestedPutForwardsTest" />
+  </testsuite>
+  <testsuite name="SequenceBindingsTest" tests="7" failures="0" disabled="0" skipped="0" errors="0" time="0.141" timestamp="2392-07-09T13:10:22.534">
+    <testcase name="InterfaceSequence" file="../../cobalt/bindings/testing/sequence_bindings_test.cc" line="33" status="run" result="completed" time="0.018" timestamp="2392-07-09T13:10:22.535" classname="SequenceBindingsTest" />
+    <testcase name="InterfaceSequenceSequenceSequence" file="../../cobalt/bindings/testing/sequence_bindings_test.cc" line="99" status="run" result="completed" time="0.02" timestamp="2392-07-09T13:10:22.556" classname="SequenceBindingsTest" />
+    <testcase name="LongSequence" file="../../cobalt/bindings/testing/sequence_bindings_test.cc" line="247" status="run" result="completed" time="0.016" timestamp="2392-07-09T13:10:22.580" classname="SequenceBindingsTest" />
+    <testcase name="StringSequence" file="../../cobalt/bindings/testing/sequence_bindings_test.cc" line="290" status="run" result="completed" time="0.017" timestamp="2392-07-09T13:10:22.600" classname="SequenceBindingsTest" />
+    <testcase name="StringSequenceSequence" file="../../cobalt/bindings/testing/sequence_bindings_test.cc" line="356" status="run" result="completed" time="0.016" timestamp="2392-07-09T13:10:22.619" classname="SequenceBindingsTest" />
+    <testcase name="UnionOfStringAndStringSequence" file="../../cobalt/bindings/testing/sequence_bindings_test.cc" line="423" status="run" result="completed" time="0.016" timestamp="2392-07-09T13:10:22.638" classname="SequenceBindingsTest" />
+    <testcase name="SequenceUnion" file="../../cobalt/bindings/testing/sequence_bindings_test.cc" line="507" status="run" result="completed" time="0.016" timestamp="2392-07-09T13:10:22.657" classname="SequenceBindingsTest" />
+  </testsuite>
+  <testsuite name="SerializeScriptValueTest" tests="1" failures="0" disabled="0" skipped="0" errors="0" time="0.02" timestamp="2392-07-09T13:10:22.677">
+    <testcase name="Serialize" file="../../cobalt/bindings/testing/serialize_script_value_test.cc" line="36" status="run" result="completed" time="0.018" timestamp="2392-07-09T13:10:22.679" classname="SerializeScriptValueTest" />
+  </testsuite>
+  <testsuite name="StackTraceTest" tests="3" failures="0" disabled="0" skipped="0" errors="0" time="0.063" timestamp="2392-07-09T13:10:22.700">
+    <testcase name="GetStackTrace" file="../../cobalt/bindings/testing/stack_trace_test.cc" line="27" status="run" result="completed" time="0.017" timestamp="2392-07-09T13:10:22.702" classname="StackTraceTest" />
+    <testcase name="UnnamedFunction" file="../../cobalt/bindings/testing/stack_trace_test.cc" line="67" status="run" result="completed" time="0.02" timestamp="2392-07-09T13:10:22.722" classname="StackTraceTest" />
+    <testcase name="GetStackTraceColumns" file="../../cobalt/bindings/testing/stack_trace_test.cc" line="85" status="run" result="completed" time="0.017" timestamp="2392-07-09T13:10:22.745" classname="StackTraceTest" />
+  </testsuite>
+  <testsuite name="StaticPropertiesBindingsTest" tests="5" failures="0" disabled="0" skipped="0" errors="0" time="0.095" timestamp="2392-07-09T13:10:22.766">
+    <testcase name="StaticFunction" file="../../cobalt/bindings/testing/static_properties_bindings_test.cc" line="35" status="run" result="completed" time="0.017" timestamp="2392-07-09T13:10:22.767" classname="StaticPropertiesBindingsTest" />
+    <testcase name="StaticOverloadedOperationByNumberOfArguments" file="../../cobalt/bindings/testing/static_properties_bindings_test.cc" line="43" status="run" result="completed" time="0.017" timestamp="2392-07-09T13:10:22.787" classname="StaticPropertiesBindingsTest" />
+    <testcase name="StaticOverloadedOperationByType" file="../../cobalt/bindings/testing/static_properties_bindings_test.cc" line="65" status="run" result="completed" time="0.017" timestamp="2392-07-09T13:10:22.806" classname="StaticPropertiesBindingsTest" />
+    <testcase name="GetStaticAttribute" file="../../cobalt/bindings/testing/static_properties_bindings_test.cc" line="79" status="run" result="completed" time="0.016" timestamp="2392-07-09T13:10:22.826" classname="StaticPropertiesBindingsTest" />
+    <testcase name="SetStaticAttribute" file="../../cobalt/bindings/testing/static_properties_bindings_test.cc" line="88" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:22.845" classname="StaticPropertiesBindingsTest" />
+  </testsuite>
+  <testsuite name="StringifierAttributeBindingsTest" tests="1" failures="0" disabled="0" skipped="0" errors="0" time="0.017" timestamp="2392-07-09T13:10:22.863">
+    <testcase name="CallsGetter" file="../../cobalt/bindings/testing/stringifier_bindings_test.cc" line="40" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:22.865" classname="StringifierAttributeBindingsTest" />
+  </testsuite>
+  <testsuite name="StringifierOperationBindingsTest" tests="1" failures="0" disabled="0" skipped="0" errors="0" time="0.017" timestamp="2392-07-09T13:10:22.883">
+    <testcase name="CallsFunction" file="../../cobalt/bindings/testing/stringifier_bindings_test.cc" line="53" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:22.884" classname="StringifierOperationBindingsTest" />
+  </testsuite>
+  <testsuite name="StringifierAnonymousOperationBindingsTest" tests="1" failures="0" disabled="0" skipped="0" errors="0" time="0.018" timestamp="2392-07-09T13:10:22.902">
+    <testcase name="CallsFunction" file="../../cobalt/bindings/testing/stringifier_bindings_test.cc" line="66" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:22.903" classname="StringifierAnonymousOperationBindingsTest" />
+  </testsuite>
+  <testsuite name="UnionTypesBindingsTest" tests="9" failures="0" disabled="0" skipped="0" errors="0" time="0.158" timestamp="2392-07-09T13:10:22.923">
+    <testcase name="ConvertToJS" file="../../cobalt/bindings/testing/union_type_bindings_test.cc" line="34" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:22.924" classname="UnionTypesBindingsTest" />
+    <testcase name="ConvertFromJS" file="../../cobalt/bindings/testing/union_type_bindings_test.cc" line="66" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:22.942" classname="UnionTypesBindingsTest" />
+    <testcase name="ConvertFromJSInvalid" file="../../cobalt/bindings/testing/union_type_bindings_test.cc" line="96" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:22.959" classname="UnionTypesBindingsTest" />
+    <testcase name="ConvertFromJSInherit" file="../../cobalt/bindings/testing/union_type_bindings_test.cc" line="116" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:22.976" classname="UnionTypesBindingsTest" />
+    <testcase name="SetNullableUnion" file="../../cobalt/bindings/testing/union_type_bindings_test.cc" line="137" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:22.993" classname="UnionTypesBindingsTest" />
+    <testcase name="GetNullableUnion" file="../../cobalt/bindings/testing/union_type_bindings_test.cc" line="153" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:23.011" classname="UnionTypesBindingsTest" />
+    <testcase name="ConvertDictFromJS" file="../../cobalt/bindings/testing/union_type_bindings_test.cc" line="169" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:23.029" classname="UnionTypesBindingsTest" />
+    <testcase name="ConvertDictToJS" file="../../cobalt/bindings/testing/union_type_bindings_test.cc" line="216" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:23.047" classname="UnionTypesBindingsTest" />
+    <testcase name="ConvertDictFromJSInvalid" file="../../cobalt/bindings/testing/union_type_bindings_test.cc" line="255" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:23.065" classname="UnionTypesBindingsTest" />
+  </testsuite>
+  <testsuite name="InterfaceWithUnsupportedPropertiesTest" tests="1" failures="0" disabled="1" skipped="0" errors="0" time="0" timestamp="1969-12-31T16:00:00.000">
+    <testcase name="DISABLED_DoesNotHaveUnsupportedProperty" file="../../cobalt/bindings/testing/unsupported_test.cc" line="35" status="notrun" result="suppressed" time="0" timestamp="1969-12-31T16:00:00.000" classname="InterfaceWithUnsupportedPropertiesTest" />
+  </testsuite>
+  <testsuite name="UnsupportedInterfaceTest" tests="1" failures="0" disabled="0" skipped="0" errors="0" time="0.016" timestamp="2392-07-09T13:10:23.083">
+    <testcase name="InterfaceObjectDoesNotExist" file="../../cobalt/bindings/testing/unsupported_test.cc" line="55" status="run" result="completed" time="0.014" timestamp="2392-07-09T13:10:23.084" classname="UnsupportedInterfaceTest" />
+  </testsuite>
+  <testsuite name="VariadicArgumentsBindingsTest" tests="2" failures="0" disabled="0" skipped="0" errors="0" time="0.034" timestamp="2392-07-09T13:10:23.102">
+    <testcase name="SetVariadicPrimitiveArguments" file="../../cobalt/bindings/testing/variadic_arguments_bindings_test.cc" line="35" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:23.103" classname="VariadicArgumentsBindingsTest" />
+    <testcase name="SetVariadicStringArgumentsAfterOptionalArgument" file="../../cobalt/bindings/testing/variadic_arguments_bindings_test.cc" line="56" status="run" result="completed" time="0.015" timestamp="2392-07-09T13:10:23.121" classname="VariadicArgumentsBindingsTest" />
+  </testsuite>
+</testsuites>

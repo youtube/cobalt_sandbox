@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="8" failures="0" disabled="0" errors="0" time="0.316" timestamp="2392-07-09T13:12:55.138" name="AllTests">
+  <testsuite name="MediaSessionTest" tests="8" failures="0" disabled="0" skipped="0" errors="0" time="0.308" timestamp="2392-07-09T13:12:55.141">
+    <testcase name="MediaSessionTest" file="../../cobalt/media_session/media_session_test.cc" line="108" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:55.143" classname="MediaSessionTest" />
+    <testcase name="ActualPlaybackState" file="../../cobalt/media_session/media_session_test.cc" line="127" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:12:55.145" classname="MediaSessionTest" />
+    <testcase name="NullActionClears" file="../../cobalt/media_session/media_session_test.cc" line="191" status="run" result="completed" time="0.251" timestamp="2392-07-09T13:12:55.150" classname="MediaSessionTest" />
+    <testcase name="AvailableActions" file="../../cobalt/media_session/media_session_test.cc" line="237" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:12:55.404" classname="MediaSessionTest" />
+    <testcase name="InvokeAction" file="../../cobalt/media_session/media_session_test.cc" line="344" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:55.408" classname="MediaSessionTest" />
+    <testcase name="SeekDetails" file="../../cobalt/media_session/media_session_test.cc" line="364" status="run" result="completed" time="0" timestamp="2392-07-09T13:12:55.411" classname="MediaSessionTest" />
+    <testcase name="PositionState" file="../../cobalt/media_session/media_session_test.cc" line="413" status="run" result="completed" time="0.004" timestamp="2392-07-09T13:12:55.415" classname="MediaSessionTest" />
+    <testcase name="Metadata" file="../../cobalt/media_session/media_session_test.cc" line="517" status="run" result="completed" time="0.021" timestamp="2392-07-09T13:12:55.427" classname="MediaSessionTest" />
+  </testsuite>
+</testsuites>

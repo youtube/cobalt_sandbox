@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="92" failures="0" disabled="0" errors="0" time="3.06" timestamp="2392-07-09T13:13:24.439" name="AllTests">
+  <testsuite name="AtomicStringAllocationGroupMap" tests="1" failures="0" disabled="0" skipped="0" errors="0" time="0.002" timestamp="2392-07-09T13:13:24.442">
+    <testcase name="Use" file="../../nb/analytics/memory_tracker_helpers_test.cc" line="25" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:24.443" classname="AtomicStringAllocationGroupMap" />
+  </testsuite>
+  <testsuite name="AtomicAllocationMap" tests="1" failures="0" disabled="0" skipped="0" errors="0" time="0.002" timestamp="2392-07-09T13:13:24.454">
+    <testcase name="AddHasRemove" file="../../nb/analytics/memory_tracker_helpers_test.cc" line="34" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:24.456" classname="AtomicAllocationMap" />
+  </testsuite>
+  <testsuite name="ConcurrentAllocationMap" tests="1" failures="0" disabled="0" skipped="0" errors="0" time="0.002" timestamp="2392-07-09T13:13:24.459">
+    <testcase name="AddHasRemove" file="../../nb/analytics/memory_tracker_helpers_test.cc" line="78" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:24.460" classname="ConcurrentAllocationMap" />
+  </testsuite>
+  <testsuite name="MemoryTrackerImplTest" tests="14" failures="0" disabled="0" skipped="0" errors="0" time="2.376" timestamp="2392-07-09T13:13:24.465">
+    <testcase name="NoMemTracking" file="../../nb/analytics/memory_tracker_impl_test.cc" line="295" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:24.466" classname="MemoryTrackerImplTest" />
+    <testcase name="RemovePointerOnNoMemoryTracking" file="../../nb/analytics/memory_tracker_impl_test.cc" line="320" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:24.469" classname="MemoryTrackerImplTest" />
+    <testcase name="NewDeleteOverriddenTest" file="../../nb/analytics/memory_tracker_impl_test.cc" line="334" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:24.471" classname="MemoryTrackerImplTest" />
+    <testcase name="TotalAllocationBytes" file="../../nb/analytics/memory_tracker_impl_test.cc" line="346" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:24.474" classname="MemoryTrackerImplTest" />
+    <testcase name="NoStackOverflow" file="../../nb/analytics/memory_tracker_impl_test.cc" line="360" status="run" result="completed" time="0.128" timestamp="2392-07-09T13:13:24.476" classname="MemoryTrackerImplTest" />
+    <testcase name="MacrosPushPop" file="../../nb/analytics/memory_tracker_impl_test.cc" line="398" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:24.607" classname="MemoryTrackerImplTest" />
+    <testcase name="RespectsNonCachedHandle" file="../../nb/analytics/memory_tracker_impl_test.cc" line="427" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:24.609" classname="MemoryTrackerImplTest" />
+    <testcase name="PushAllocGroupCachedHandle" file="../../nb/analytics/memory_tracker_impl_test.cc" line="453" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:24.612" classname="MemoryTrackerImplTest" />
+    <testcase name="MacrosGroupAccounting" file="../../nb/analytics/memory_tracker_impl_test.cc" line="475" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:24.614" classname="MemoryTrackerImplTest" />
+    <testcase name="MemoryTrackerDebugCallback" file="../../nb/analytics/memory_tracker_impl_test.cc" line="542" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:24.620" classname="MemoryTrackerImplTest" />
+    <testcase name="VisitorAccess" file="../../nb/analytics/memory_tracker_impl_test.cc" line="601" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:24.623" classname="MemoryTrackerImplTest" />
+    <testcase name="MultiThreadedStressAddTest" file="../../nb/analytics/memory_tracker_impl_test.cc" line="635" status="run" result="completed" time="0.195" timestamp="2392-07-09T13:13:24.625" classname="MemoryTrackerImplTest" />
+    <testcase name="MultiThreadedMemoryScope" file="../../nb/analytics/memory_tracker_impl_test.cc" line="683" status="run" result="completed" time="1" timestamp="2392-07-09T13:13:24.824" classname="MemoryTrackerImplTest" />
+    <testcase name="MultiThreadedStressUseTest" file="../../nb/analytics/memory_tracker_impl_test.cc" line="715" status="run" result="completed" time="1.013" timestamp="2392-07-09T13:13:25.827" classname="MemoryTrackerImplTest" />
+  </testsuite>
+  <testsuite name="MemoryTrackerTest" tests="2" failures="0" disabled="0" skipped="0" errors="0" time="0.005" timestamp="2392-07-09T13:13:27.094">
+    <testcase name="MacrosScopedObject" file="../../nb/analytics/memory_tracker_test.cc" line="139" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.095" classname="MemoryTrackerTest" />
+    <testcase name="Visitor" file="../../nb/analytics/memory_tracker_test.cc" line="199" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.098" classname="MemoryTrackerTest" />
+  </testsuite>
+  <testsuite name="BidirectionalFitReuseAllocatorTest" tests="7" failures="0" disabled="0" skipped="0" errors="0" time="0.017" timestamp="2392-07-09T13:13:27.152">
+    <testcase name="AlignmentCheck" file="../../nb/bidirectional_fit_reuse_allocator_test.cc" line="58" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.153" classname="BidirectionalFitReuseAllocatorTest" />
+    <testcase name="FreeBlockMergingLeft" file="../../nb/bidirectional_fit_reuse_allocator_test.cc" line="72" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.155" classname="BidirectionalFitReuseAllocatorTest" />
+    <testcase name="FreeBlockMergingRight" file="../../nb/bidirectional_fit_reuse_allocator_test.cc" line="90" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.157" classname="BidirectionalFitReuseAllocatorTest" />
+    <testcase name="InitialCapacity" file="../../nb/bidirectional_fit_reuse_allocator_test.cc" line="110" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.160" classname="BidirectionalFitReuseAllocatorTest" />
+    <testcase name="AllocationIncrement" file="../../nb/bidirectional_fit_reuse_allocator_test.cc" line="116" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.162" classname="BidirectionalFitReuseAllocatorTest" />
+    <testcase name="FallbackBlockMerge" file="../../nb/bidirectional_fit_reuse_allocator_test.cc" line="125" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.164" classname="BidirectionalFitReuseAllocatorTest" />
+    <testcase name="AllocationsWithThreshold" file="../../nb/bidirectional_fit_reuse_allocator_test.cc" line="141" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:13:27.166" classname="BidirectionalFitReuseAllocatorTest" />
+  </testsuite>
+  <testsuite name="ConcurrentMap" tests="9" failures="0" disabled="0" skipped="0" errors="0" time="0.044" timestamp="2392-07-09T13:13:27.171">
+    <testcase name="SetIfMissing" file="../../nb/concurrent_map_test.cc" line="39" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.172" classname="ConcurrentMap" />
+    <testcase name="Set" file="../../nb/concurrent_map_test.cc" line="57" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.175" classname="ConcurrentMap" />
+    <testcase name="GetOrCreate" file="../../nb/concurrent_map_test.cc" line="71" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.177" classname="ConcurrentMap" />
+    <testcase name="GetConst" file="../../nb/concurrent_map_test.cc" line="95" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.179" classname="ConcurrentMap" />
+    <testcase name="Remove" file="../../nb/concurrent_map_test.cc" line="109" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.181" classname="ConcurrentMap" />
+    <testcase name="RemoveUsingHandle" file="../../nb/concurrent_map_test.cc" line="120" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.184" classname="ConcurrentMap" />
+    <testcase name="Clear" file="../../nb/concurrent_map_test.cc" line="139" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.187" classname="ConcurrentMap" />
+    <testcase name="ForEach" file="../../nb/concurrent_map_test.cc" line="152" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.189" classname="ConcurrentMap" />
+    <testcase name="MultiThreadTest" file="../../nb/concurrent_map_test.cc" line="189" status="run" result="completed" time="0.022" timestamp="2392-07-09T13:13:27.192" classname="ConcurrentMap" />
+  </testsuite>
+  <testsuite name="ConcurrentPtr" tests="5" failures="0" disabled="0" skipped="0" errors="0" time="0.113" timestamp="2392-07-09T13:13:27.218">
+    <testcase name="nullptr" file="../../nb/concurrent_ptr_test.cc" line="45" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.219" classname="ConcurrentPtr" />
+    <testcase name="UseSingleThreaded" file="../../nb/concurrent_ptr_test.cc" line="56" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.221" classname="ConcurrentPtr" />
+    <testcase name="ResetDeltesInternalObject" file="../../nb/concurrent_ptr_test.cc" line="73" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.223" classname="ConcurrentPtr" />
+    <testcase name="UsePointerOperators" file="../../nb/concurrent_ptr_test.cc" line="84" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.226" classname="ConcurrentPtr" />
+    <testcase name="ThreadStressTest" file="../../nb/concurrent_ptr_test.cc" line="146" status="run" result="completed" time="0.102" timestamp="2392-07-09T13:13:27.228" classname="ConcurrentPtr" />
+  </testsuite>
+  <testsuite name="FirstFitReuseAllocatorTest" tests="6" failures="0" disabled="0" skipped="0" errors="0" time="0.013" timestamp="2392-07-09T13:13:27.334">
+    <testcase name="AlignmentCheck" file="../../nb/first_fit_reuse_allocator_test.cc" line="55" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.335" classname="FirstFitReuseAllocatorTest" />
+    <testcase name="FreeBlockMergingLeft" file="../../nb/first_fit_reuse_allocator_test.cc" line="69" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.337" classname="FirstFitReuseAllocatorTest" />
+    <testcase name="FreeBlockMergingRight" file="../../nb/first_fit_reuse_allocator_test.cc" line="87" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.339" classname="FirstFitReuseAllocatorTest" />
+    <testcase name="InitialCapacity" file="../../nb/first_fit_reuse_allocator_test.cc" line="107" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.342" classname="FirstFitReuseAllocatorTest" />
+    <testcase name="AllocationIncrement" file="../../nb/first_fit_reuse_allocator_test.cc" line="113" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.344" classname="FirstFitReuseAllocatorTest" />
+    <testcase name="FallbackBlockMerge" file="../../nb/first_fit_reuse_allocator_test.cc" line="122" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.346" classname="FirstFitReuseAllocatorTest" />
+  </testsuite>
+  <testsuite name="FixedNoFreeAllocatorTest" tests="5" failures="0" disabled="0" skipped="0" errors="0" time="0.011" timestamp="2392-07-09T13:13:27.350">
+    <testcase name="CanDoSimpleAllocations" file="../../nb/fixed_no_free_allocator_test.cc" line="42" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.351" classname="FixedNoFreeAllocatorTest" />
+    <testcase name="CanDoMultipleAllocationsProperly" file="../../nb/fixed_no_free_allocator_test.cc" line="51" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.353" classname="FixedNoFreeAllocatorTest" />
+    <testcase name="CanDoMultipleAllocationsAndFreesProperly" file="../../nb/fixed_no_free_allocator_test.cc" line="74" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.355" classname="FixedNoFreeAllocatorTest" />
+    <testcase name="CanHandleOutOfMemory" file="../../nb/fixed_no_free_allocator_test.cc" line="87" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.358" classname="FixedNoFreeAllocatorTest" />
+    <testcase name="CanHandleAlignedMemory" file="../../nb/fixed_no_free_allocator_test.cc" line="105" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.360" classname="FixedNoFreeAllocatorTest" />
+  </testsuite>
+  <testsuite name="MemoryScopeReportingTest" tests="2" failures="0" disabled="0" skipped="0" errors="0" time="0.004" timestamp="2392-07-09T13:13:27.363">
+    <testcase name="PushPop" file="../../nb/memory_scope_test.cc" line="152" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.364" classname="MemoryScopeReportingTest" />
+    <testcase name="Macros" file="../../nb/memory_scope_test.cc" line="182" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.366" classname="MemoryScopeReportingTest" />
+  </testsuite>
+  <testsuite name="MultipartAllocatorAllocationsTest" tests="11" failures="0" disabled="0" skipped="0" errors="0" time="0.024" timestamp="2392-07-09T13:13:27.370">
+    <testcase name="DefaultCtor" file="../../nb/multipart_allocator_test.cc" line="32" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.371" classname="MultipartAllocatorAllocationsTest" />
+    <testcase name="CopyCtor" file="../../nb/multipart_allocator_test.cc" line="40" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.373" classname="MultipartAllocatorAllocationsTest" />
+    <testcase name="AssignmentOperator" file="../../nb/multipart_allocator_test.cc" line="84" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.375" classname="MultipartAllocatorAllocationsTest" />
+    <testcase name="SingleBuffer" file="../../nb/multipart_allocator_test.cc" line="131" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.378" classname="MultipartAllocatorAllocationsTest" />
+    <testcase name="SingleBufferShrunk" file="../../nb/multipart_allocator_test.cc" line="141" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.380" classname="MultipartAllocatorAllocationsTest" />
+    <testcase name="SingleBufferWrite" file="../../nb/multipart_allocator_test.cc" line="158" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.382" classname="MultipartAllocatorAllocationsTest" />
+    <testcase name="SingleBufferRead" file="../../nb/multipart_allocator_test.cc" line="183" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.384" classname="MultipartAllocatorAllocationsTest" />
+    <testcase name="MultipleBuffers" file="../../nb/multipart_allocator_test.cc" line="197" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.387" classname="MultipartAllocatorAllocationsTest" />
+    <testcase name="MultipleBuffersShrink" file="../../nb/multipart_allocator_test.cc" line="215" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.389" classname="MultipartAllocatorAllocationsTest" />
+    <testcase name="MultipleBuffersWrite" file="../../nb/multipart_allocator_test.cc" line="256" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.391" classname="MultipartAllocatorAllocationsTest" />
+    <testcase name="MultipleBuffersRead" file="../../nb/multipart_allocator_test.cc" line="299" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.393" classname="MultipartAllocatorAllocationsTest" />
+  </testsuite>
+  <testsuite name="RewindableVector" tests="3" failures="0" disabled="0" skipped="0" errors="0" time="0.006" timestamp="2392-07-09T13:13:27.397">
+    <testcase name="rewind" file="../../nb/rewindable_vector_test.cc" line="26" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.398" classname="RewindableVector" />
+    <testcase name="rewindAll" file="../../nb/rewindable_vector_test.cc" line="44" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.400" classname="RewindableVector" />
+    <testcase name="push_pop_back" file="../../nb/rewindable_vector_test.cc" line="62" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.402" classname="RewindableVector" />
+  </testsuite>
+  <testsuite name="SimpleProfilerTest" tests="3" failures="0" disabled="0" skipped="0" errors="0" time="0.006" timestamp="2392-07-09T13:13:27.406">
+    <testcase name="IsEnabledByDefault" file="../../nb/simple_profiler_test.cc" line="64" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.407" classname="SimpleProfilerTest" />
+    <testcase name="CallChain" file="../../nb/simple_profiler_test.cc" line="73" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.409" classname="SimpleProfilerTest" />
+    <testcase name="EnableScopeDisabled" file="../../nb/simple_profiler_test.cc" line="88" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.411" classname="SimpleProfilerTest" />
+  </testsuite>
+  <testsuite name="StdAllocator" tests="2" failures="0" disabled="0" skipped="0" errors="0" time="0.004" timestamp="2392-07-09T13:13:27.415">
+    <testcase name="vector" file="../../nb/std_allocator_test.cc" line="51" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.416" classname="StdAllocator" />
+    <testcase name="map" file="../../nb/std_allocator_test.cc" line="79" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.418" classname="StdAllocator" />
+  </testsuite>
+  <testsuite name="StdDynamicAllocator" tests="4" failures="0" disabled="0" skipped="0" errors="0" time="0.008" timestamp="2392-07-09T13:13:27.421">
+    <testcase name="vector" file="../../nb/std_allocator_test.cc" line="150" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.422" classname="StdDynamicAllocator" />
+    <testcase name="map" file="../../nb/std_allocator_test.cc" line="178" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.425" classname="StdDynamicAllocator" />
+    <testcase name="vector_copy" file="../../nb/std_allocator_test.cc" line="207" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.427" classname="StdDynamicAllocator" />
+    <testcase name="map_copy" file="../../nb/std_allocator_test.cc" line="247" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.429" classname="StdDynamicAllocator" />
+  </testsuite>
+  <testsuite name="StringInternerTest/0" tests="4" failures="0" disabled="0" skipped="0" errors="0" time="0.021" timestamp="2392-07-09T13:13:27.433">
+    <testcase name="Intern" type_param="&lt;type&gt;" file="../../nb/string_interner_test.cc" line="48" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.434" classname="StringInternerTest/0" />
+    <testcase name="InternStdString" type_param="&lt;type&gt;" file="../../nb/string_interner_test.cc" line="59" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.436" classname="StringInternerTest/0" />
+    <testcase name="InternBothStrings" type_param="&lt;type&gt;" file="../../nb/string_interner_test.cc" line="74" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.438" classname="StringInternerTest/0" />
+    <testcase name="LoadLotsOfUniqueStrings" type_param="&lt;type&gt;" file="../../nb/string_interner_test.cc" line="88" status="run" result="completed" time="0.012" timestamp="2392-07-09T13:13:27.440" classname="StringInternerTest/0" />
+  </testsuite>
+  <testsuite name="StringInternerTest/1" tests="4" failures="0" disabled="0" skipped="0" errors="0" time="0.02" timestamp="2392-07-09T13:13:27.456">
+    <testcase name="Intern" type_param="&lt;type&gt;" file="../../nb/string_interner_test.cc" line="48" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.457" classname="StringInternerTest/1" />
+    <testcase name="InternStdString" type_param="&lt;type&gt;" file="../../nb/string_interner_test.cc" line="59" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.459" classname="StringInternerTest/1" />
+    <testcase name="InternBothStrings" type_param="&lt;type&gt;" file="../../nb/string_interner_test.cc" line="74" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.462" classname="StringInternerTest/1" />
+    <testcase name="LoadLotsOfUniqueStrings" type_param="&lt;type&gt;" file="../../nb/string_interner_test.cc" line="88" status="run" result="completed" time="0.011" timestamp="2392-07-09T13:13:27.464" classname="StringInternerTest/1" />
+  </testsuite>
+  <testsuite name="ThreadLocalObject" tests="8" failures="0" disabled="0" skipped="0" errors="0" time="0.018" timestamp="2392-07-09T13:13:27.479">
+    <testcase name="MainThread" file="../../nb/thread_local_object_test.cc" line="77" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.480" classname="ThreadLocalObject" />
+    <testcase name="MainThreadWithArg" file="../../nb/thread_local_object_test.cc" line="89" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.482" classname="ThreadLocalObject" />
+    <testcase name="MainThreadComplexObject" file="../../nb/thread_local_object_test.cc" line="101" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.484" classname="ThreadLocalObject" />
+    <testcase name="MainThreadComplexObjectWithArg" file="../../nb/thread_local_object_test.cc" line="117" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.487" classname="ThreadLocalObject" />
+    <testcase name="DestroysObjectOnTLODestruction" file="../../nb/thread_local_object_test.cc" line="132" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.489" classname="ThreadLocalObject" />
+    <testcase name="ReleasesObject" file="../../nb/thread_local_object_test.cc" line="150" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.491" classname="ThreadLocalObject" />
+    <testcase name="ThreadJoinDestroysObject" file="../../nb/thread_local_object_test.cc" line="173" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.493" classname="ThreadLocalObject" />
+    <testcase name="NoLeaksOnMainThread" file="../../nb/thread_local_object_test.cc" line="196" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:27.496" classname="ThreadLocalObject" />
+  </testsuite>
+</testsuites>

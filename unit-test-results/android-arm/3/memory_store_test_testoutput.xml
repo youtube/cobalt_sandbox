@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="10" failures="0" disabled="0" errors="0" time="0.029" timestamp="2392-07-09T13:13:10.066" name="AllTests">
+  <testsuite name="MemoryStoreTest" tests="10" failures="0" disabled="0" skipped="0" errors="0" time="0.023" timestamp="2392-07-09T13:13:10.070">
+    <testcase name="Initialize" file="../../cobalt/storage/store/memory_store_test.cc" line="90" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:10.071" classname="MemoryStoreTest" />
+    <testcase name="Serialize" file="../../cobalt/storage/store/memory_store_test.cc" line="94" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:10.073" classname="MemoryStoreTest" />
+    <testcase name="GetAllCookies" file="../../cobalt/storage/store/memory_store_test.cc" line="100" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:10.076" classname="MemoryStoreTest" />
+    <testcase name="AddCookie" file="../../cobalt/storage/store/memory_store_test.cc" line="108" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:10.078" classname="MemoryStoreTest" />
+    <testcase name="UpdateCookieAccessTime" file="../../cobalt/storage/store/memory_store_test.cc" line="125" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:10.081" classname="MemoryStoreTest" />
+    <testcase name="DeleteCookie" file="../../cobalt/storage/store/memory_store_test.cc" line="136" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:10.083" classname="MemoryStoreTest" />
+    <testcase name="ReadWriteToLocalStorage" file="../../cobalt/storage/store/memory_store_test.cc" line="148" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:10.085" classname="MemoryStoreTest" />
+    <testcase name="DeleteFromLocalStorage" file="../../cobalt/storage/store/memory_store_test.cc" line="163" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:10.087" classname="MemoryStoreTest" />
+    <testcase name="ClearLocalStorage" file="../../cobalt/storage/store/memory_store_test.cc" line="181" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:10.090" classname="MemoryStoreTest" />
+    <testcase name="EmptyStorage" file="../../cobalt/storage/store/memory_store_test.cc" line="198" status="run" result="completed" time="0" timestamp="2392-07-09T13:13:10.092" classname="MemoryStoreTest" />
+  </testsuite>
+</testsuites>

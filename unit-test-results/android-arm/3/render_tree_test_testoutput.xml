@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="28" failures="0" disabled="0" errors="0" time="0.075" timestamp="2392-07-09T13:15:59.723" name="AllTests">
+  <testsuite name="AnimateNodeTest" tests="13" failures="0" disabled="0" skipped="0" errors="0" time="0.029" timestamp="2392-07-09T13:15:59.727">
+    <testcase name="EnsureSingleTextNodeAnimates" file="../../cobalt/render_tree/animations/animate_node_test.cc" line="76" status="run" result="completed" time="0" timestamp="2392-07-09T13:15:59.728" classname="AnimateNodeTest" />
+    <testcase name="EnsureSingleImageNodeAnimates" file="../../cobalt/render_tree/animations/animate_node_test.cc" line="96" status="run" result="completed" time="0" timestamp="2392-07-09T13:15:59.730" classname="AnimateNodeTest" />
+    <testcase name="EnsureSingleRectNodeAnimates" file="../../cobalt/render_tree/animations/animate_node_test.cc" line="115" status="run" result="completed" time="0" timestamp="2392-07-09T13:15:59.732" classname="AnimateNodeTest" />
+    <testcase name="SingleImageNodeAnimatesOverTimeRepeatedlyCorrectly" file="../../cobalt/render_tree/animations/animate_node_test.cc" line="141" status="run" result="completed" time="0" timestamp="2392-07-09T13:15:59.735" classname="AnimateNodeTest" />
+    <testcase name="MultipleAnimationsTargetingOneNodeApplyInCorrectOrder" file="../../cobalt/render_tree/animations/animate_node_test.cc" line="185" status="run" result="completed" time="0" timestamp="2392-07-09T13:15:59.737" classname="AnimateNodeTest" />
+    <testcase name="AnimatingTransformNodeDoesNotAffectSourceChild" file="../../cobalt/render_tree/animations/animate_node_test.cc" line="222" status="run" result="completed" time="0" timestamp="2392-07-09T13:15:59.739" classname="AnimateNodeTest" />
+    <testcase name="AnimatingCompositionChildNodeAffectsParentAsWellButNotSibling" file="../../cobalt/render_tree/animations/animate_node_test.cc" line="247" status="run" result="completed" time="0" timestamp="2392-07-09T13:15:59.742" classname="AnimateNodeTest" />
+    <testcase name="SimpleSubAnimateNode" file="../../cobalt/render_tree/animations/animate_node_test.cc" line="280" status="run" result="completed" time="0" timestamp="2392-07-09T13:15:59.744" classname="AnimateNodeTest" />
+    <testcase name="SubAnimateNodeWithTwoAncestors" file="../../cobalt/render_tree/animations/animate_node_test.cc" line="312" status="run" result="completed" time="0" timestamp="2392-07-09T13:15:59.746" classname="AnimateNodeTest" />
+    <testcase name="AnimationBounds" file="../../cobalt/render_tree/animations/animate_node_test.cc" line="354" status="run" result="completed" time="0" timestamp="2392-07-09T13:15:59.748" classname="AnimateNodeTest" />
+    <testcase name="AnimationBoundsExpiration" file="../../cobalt/render_tree/animations/animate_node_test.cc" line="384" status="run" result="completed" time="0" timestamp="2392-07-09T13:15:59.751" classname="AnimateNodeTest" />
+    <testcase name="AnimationBoundsUnionsMultipleAnimations" file="../../cobalt/render_tree/animations/animate_node_test.cc" line="434" status="run" result="completed" time="0" timestamp="2392-07-09T13:15:59.753" classname="AnimateNodeTest" />
+    <testcase name="AnimationBoundsWorksForCompoundedTransformations" file="../../cobalt/render_tree/animations/animate_node_test.cc" line="473" status="run" result="completed" time="0" timestamp="2392-07-09T13:15:59.755" classname="AnimateNodeTest" />
+  </testsuite>
+  <testsuite name="BrushVisitorTest" tests="3" failures="0" disabled="0" skipped="0" errors="0" time="0.006" timestamp="2392-07-09T13:15:59.759">
+    <testcase name="VisitsSolidColorBrush" file="../../cobalt/render_tree/brush_visitor_test.cc" line="32" status="run" result="completed" time="0" timestamp="2392-07-09T13:15:59.760" classname="BrushVisitorTest" />
+    <testcase name="VisitsLinearGradientBrush" file="../../cobalt/render_tree/brush_visitor_test.cc" line="39" status="run" result="completed" time="0" timestamp="2392-07-09T13:15:59.762" classname="BrushVisitorTest" />
+    <testcase name="VisitsRadialGradientBrush" file="../../cobalt/render_tree/brush_visitor_test.cc" line="48" status="run" result="completed" time="0" timestamp="2392-07-09T13:15:59.764" classname="BrushVisitorTest" />
+  </testsuite>
+  <testsuite name="ColorRGBA" tests="1" failures="0" disabled="0" skipped="0" errors="0" time="0.002" timestamp="2392-07-09T13:15:59.768">
+    <testcase name="ConstructFromInteger" file="../../cobalt/render_tree/color_rgba_test.cc" line="22" status="run" result="completed" time="0" timestamp="2392-07-09T13:15:59.769" classname="ColorRGBA" />
+  </testsuite>
+  <testsuite name="NodeVisitorTest" tests="11" failures="0" disabled="0" skipped="0" errors="0" time="0.024" timestamp="2392-07-09T13:15:59.772">
+    <testcase name="VisitsClearRect" file="../../cobalt/render_tree/node_visitor_test.cc" line="78" status="run" result="completed" time="0" timestamp="2392-07-09T13:15:59.773" classname="NodeVisitorTest" />
+    <testcase name="VisitsComposition" file="../../cobalt/render_tree/node_visitor_test.cc" line="86" status="run" result="completed" time="0" timestamp="2392-07-09T13:15:59.775" classname="NodeVisitorTest" />
+    <testcase name="VisitsFilter" file="../../cobalt/render_tree/node_visitor_test.cc" line="94" status="run" result="completed" time="0" timestamp="2392-07-09T13:15:59.778" classname="NodeVisitorTest" />
+    <testcase name="VisitsAnimate" file="../../cobalt/render_tree/node_visitor_test.cc" line="123" status="run" result="completed" time="0" timestamp="2392-07-09T13:15:59.780" classname="NodeVisitorTest" />
+    <testcase name="VisitsImage" file="../../cobalt/render_tree/node_visitor_test.cc" line="133" status="run" result="completed" time="0" timestamp="2392-07-09T13:15:59.782" classname="NodeVisitorTest" />
+    <testcase name="VisitsMatrixTransform3D" file="../../cobalt/render_tree/node_visitor_test.cc" line="141" status="run" result="completed" time="0" timestamp="2392-07-09T13:15:59.785" classname="NodeVisitorTest" />
+    <testcase name="VisitsMatrixTransform" file="../../cobalt/render_tree/node_visitor_test.cc" line="150" status="run" result="completed" time="0" timestamp="2392-07-09T13:15:59.787" classname="NodeVisitorTest" />
+    <testcase name="VisitsPunchThroughVideo" file="../../cobalt/render_tree/node_visitor_test.cc" line="158" status="run" result="completed" time="0" timestamp="2392-07-09T13:15:59.789" classname="NodeVisitorTest" />
+    <testcase name="VisitsRect" file="../../cobalt/render_tree/node_visitor_test.cc" line="168" status="run" result="completed" time="0" timestamp="2392-07-09T13:15:59.791" classname="NodeVisitorTest" />
+    <testcase name="VisitsRectShadow" file="../../cobalt/render_tree/node_visitor_test.cc" line="176" status="run" result="completed" time="0" timestamp="2392-07-09T13:15:59.794" classname="NodeVisitorTest" />
+    <testcase name="VisitsText" file="../../cobalt/render_tree/node_visitor_test.cc" line="186" status="run" result="completed" time="0" timestamp="2392-07-09T13:15:59.796" classname="NodeVisitorTest" />
+  </testsuite>
+</testsuites>

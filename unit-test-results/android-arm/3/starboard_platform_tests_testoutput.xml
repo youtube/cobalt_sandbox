@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="105" failures="0" disabled="0" errors="0" time="0.371" timestamp="2392-07-09T13:16:55.910" name="AllTests">
+  <testsuite name="AvcParameterSetsTest" tests="16" failures="0" disabled="0" skipped="0" errors="0" time="0.062" timestamp="2392-07-09T13:16:55.914">
+    <testcase name="Ctor" file="../../starboard/shared/starboard/media/avc_util_test.cc" line="186" status="run" result="completed" time="0.003" timestamp="2392-07-09T13:16:55.915" classname="AvcParameterSetsTest" />
+    <testcase name="SingleSpsAndPps" file="../../starboard/shared/starboard/media/avc_util_test.cc" line="200" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:55.921" classname="AvcParameterSetsTest" />
+    <testcase name="MultipleSpsAndPps" file="../../starboard/shared/starboard/media/avc_util_test.cc" line="213" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:55.924" classname="AvcParameterSetsTest" />
+    <testcase name="SpsWithoutPps" file="../../starboard/shared/starboard/media/avc_util_test.cc" line="245" status="run" result="completed" time="0.005" timestamp="2392-07-09T13:16:55.926" classname="AvcParameterSetsTest" />
+    <testcase name="PpsWithoutSps" file="../../starboard/shared/starboard/media/avc_util_test.cc" line="270" status="run" result="completed" time="0.005" timestamp="2392-07-09T13:16:55.934" classname="AvcParameterSetsTest" />
+    <testcase name="MultipleSpsAndPpsWithoutPayload" file="../../starboard/shared/starboard/media/avc_util_test.cc" line="295" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:55.942" classname="AvcParameterSetsTest" />
+    <testcase name="SpsAfterIdr" file="../../starboard/shared/starboard/media/avc_util_test.cc" line="325" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:55.945" classname="AvcParameterSetsTest" />
+    <testcase name="PpsAfterIdr" file="../../starboard/shared/starboard/media/avc_util_test.cc" line="336" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:55.947" classname="AvcParameterSetsTest" />
+    <testcase name="SpsAndPpsAfterIdrWithoutSpsAndPps" file="../../starboard/shared/starboard/media/avc_util_test.cc" line="347" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:16:55.949" classname="AvcParameterSetsTest" />
+    <testcase name="Nullptr" file="../../starboard/shared/starboard/media/avc_util_test.cc" line="355" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:55.953" classname="AvcParameterSetsTest" />
+    <testcase name="NaluHeaderWithoutType" file="../../starboard/shared/starboard/media/avc_util_test.cc" line="366" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:16:55.955" classname="AvcParameterSetsTest" />
+    <testcase name="InvalidNaluHeader" file="../../starboard/shared/starboard/media/avc_util_test.cc" line="393" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:16:55.958" classname="AvcParameterSetsTest" />
+    <testcase name="MultiNalusWithoutSpsPps" file="../../starboard/shared/starboard/media/avc_util_test.cc" line="432" status="run" result="completed" time="0.007" timestamp="2392-07-09T13:16:55.962" classname="AvcParameterSetsTest" />
+    <testcase name="ConvertAnnexBToAvcc" file="../../starboard/shared/starboard/media/avc_util_test.cc" line="445" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:55.971" classname="AvcParameterSetsTest" />
+    <testcase name="ConvertAnnexBToAvccEmptyNalus" file="../../starboard/shared/starboard/media/avc_util_test.cc" line="476" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:55.973" classname="AvcParameterSetsTest" />
+    <testcase name="ConvertAnnexBToAvccInvalidNalus" file="../../starboard/shared/starboard/media/avc_util_test.cc" line="496" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:55.976" classname="AvcParameterSetsTest" />
+  </testsuite>
+  <testsuite name="VideoConfigTest" tests="7" failures="0" disabled="0" skipped="0" errors="0" time="0.018" timestamp="2392-07-09T13:16:55.979">
+    <testcase name="CtorWithVideoStreamInfo" file="../../starboard/shared/starboard/media/codec_util_test.cc" line="45" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:55.980" classname="VideoConfigTest" />
+    <testcase name="IsValid" file="../../starboard/shared/starboard/media/codec_util_test.cc" line="62" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:16:55.982" classname="VideoConfigTest" />
+    <testcase name="SelfComparison" file="../../starboard/shared/starboard/media/codec_util_test.cc" line="95" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:55.987" classname="VideoConfigTest" />
+    <testcase name="H264" file="../../starboard/shared/starboard/media/codec_util_test.cc" line="112" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:55.989" classname="VideoConfigTest" />
+    <testcase name="H264MultiSpsPps" file="../../starboard/shared/starboard/media/codec_util_test.cc" line="144" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:55.991" classname="VideoConfigTest" />
+    <testcase name="Vp9" file="../../starboard/shared/starboard/media/codec_util_test.cc" line="184" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:55.994" classname="VideoConfigTest" />
+    <testcase name="H264VsVp9" file="../../starboard/shared/starboard/media/codec_util_test.cc" line="204" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:55.996" classname="VideoConfigTest" />
+  </testsuite>
+  <testsuite name="AudioStreamInfoTest" tests="4" failures="0" disabled="0" skipped="0" errors="0" time="0.009" timestamp="2392-07-09T13:16:56.000">
+    <testcase name="DefaultCtor" file="../../starboard/shared/starboard/media/media_util_test.cc" line="38" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.001" classname="AudioStreamInfoTest" />
+    <testcase name="CodecNone" file="../../starboard/shared/starboard/media/media_util_test.cc" line="48" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.003" classname="AudioStreamInfoTest" />
+    <testcase name="SbMediaAudioStreamInfo" file="../../starboard/shared/starboard/media/media_util_test.cc" line="59" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.005" classname="AudioStreamInfoTest" />
+    <testcase name="CobaltExtensionEnhancedAudioMediaAudioStreamInfo" file="../../starboard/shared/starboard/media/media_util_test.cc" line="82" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.007" classname="AudioStreamInfoTest" />
+  </testsuite>
+  <testsuite name="VideoStreamInfoTest" tests="4" failures="0" disabled="0" skipped="0" errors="0" time="0.009" timestamp="2392-07-09T13:16:56.011">
+    <testcase name="DefaultCtor" file="../../starboard/shared/starboard/media/media_util_test.cc" line="105" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.012" classname="VideoStreamInfoTest" />
+    <testcase name="CodecNone" file="../../starboard/shared/starboard/media/media_util_test.cc" line="115" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.014" classname="VideoStreamInfoTest" />
+    <testcase name="SbMediaVideoStreamInfo" file="../../starboard/shared/starboard/media/media_util_test.cc" line="126" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.017" classname="VideoStreamInfoTest" />
+    <testcase name="CobaltExtensionEnhancedAudioMediaVideoStreamInfo" file="../../starboard/shared/starboard/media/media_util_test.cc" line="146" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.019" classname="VideoStreamInfoTest" />
+  </testsuite>
+  <testsuite name="AudioSampleInfoTest" tests="3" failures="0" disabled="0" skipped="0" errors="0" time="0.006" timestamp="2392-07-09T13:16:56.022">
+    <testcase name="DefaultCtor" file="../../starboard/shared/starboard/media/media_util_test.cc" line="166" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.023" classname="AudioSampleInfoTest" />
+    <testcase name="SbMediaAudioSampleInfo" file="../../starboard/shared/starboard/media/media_util_test.cc" line="176" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.026" classname="AudioSampleInfoTest" />
+    <testcase name="CobaltExtensionEnhancedAudioMediaAudioSampleInfo" file="../../starboard/shared/starboard/media/media_util_test.cc" line="207" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.028" classname="AudioSampleInfoTest" />
+  </testsuite>
+  <testsuite name="VideoSampleInfoTest" tests="3" failures="0" disabled="0" skipped="0" errors="0" time="0.006" timestamp="2392-07-09T13:16:56.031">
+    <testcase name="DefaultCtor" file="../../starboard/shared/starboard/media/media_util_test.cc" line="235" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.033" classname="VideoSampleInfoTest" />
+    <testcase name="SbMediaVideoSampleInfo" file="../../starboard/shared/starboard/media/media_util_test.cc" line="245" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.035" classname="VideoSampleInfoTest" />
+    <testcase name="CobaltExtensionEnhancedAudioMediaVideoSampleInfo" file="../../starboard/shared/starboard/media/media_util_test.cc" line="274" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.037" classname="VideoSampleInfoTest" />
+  </testsuite>
+  <testsuite name="MediaUtilTest" tests="2" failures="0" disabled="0" skipped="0" errors="0" time="0.008" timestamp="2392-07-09T13:16:56.040">
+    <testcase name="AudioDurationToFrames" file="../../starboard/shared/starboard/media/media_util_test.cc" line="300" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.045" classname="MediaUtilTest" />
+    <testcase name="AudioFramesToDuration" file="../../starboard/shared/starboard/media/media_util_test.cc" line="307" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.048" classname="MediaUtilTest" />
+  </testsuite>
+  <testsuite name="MimeTypeTest" tests="27" failures="0" disabled="0" skipped="0" errors="0" time="0.065" timestamp="2392-07-09T13:16:56.052">
+    <testcase name="EmptyString" file="../../starboard/shared/starboard/media/mime_type_test.cc" line="25" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.053" classname="MimeTypeTest" />
+    <testcase name="InvalidMimeType" file="../../starboard/shared/starboard/media/mime_type_test.cc" line="31" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.055" classname="MimeTypeTest" />
+    <testcase name="ValidContentTypeWithTypeAndSubtypeOnly" file="../../starboard/shared/starboard/media/mime_type_test.cc" line="90" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.057" classname="MimeTypeTest" />
+    <testcase name="TypeNotAtBeginning" file="../../starboard/shared/starboard/media/mime_type_test.cc" line="109" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.060" classname="MimeTypeTest" />
+    <testcase name="ValidContentTypeWithParams" file="../../starboard/shared/starboard/media/mime_type_test.cc" line="114" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.063" classname="MimeTypeTest" />
+    <testcase name="GetCodecs" file="../../starboard/shared/starboard/media/mime_type_test.cc" line="131" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.065" classname="MimeTypeTest" />
+    <testcase name="ParamCount" file="../../starboard/shared/starboard/media/mime_type_test.cc" line="151" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.067" classname="MimeTypeTest" />
+    <testcase name="GetParamType" file="../../starboard/shared/starboard/media/mime_type_test.cc" line="168" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.070" classname="MimeTypeTest" />
+    <testcase name="GetParamName" file="../../starboard/shared/starboard/media/mime_type_test.cc" line="191" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.072" classname="MimeTypeTest" />
+    <testcase name="GetParamIntValueWithIndex" file="../../starboard/shared/starboard/media/mime_type_test.cc" line="200" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.074" classname="MimeTypeTest" />
+    <testcase name="GetParamFloatValueWithIndex" file="../../starboard/shared/starboard/media/mime_type_test.cc" line="218" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.076" classname="MimeTypeTest" />
+    <testcase name="GetParamStringValueWithIndex" file="../../starboard/shared/starboard/media/mime_type_test.cc" line="224" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.079" classname="MimeTypeTest" />
+    <testcase name="GetParamBoolValueWithIndex" file="../../starboard/shared/starboard/media/mime_type_test.cc" line="238" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.082" classname="MimeTypeTest" />
+    <testcase name="GetParamValueInInvalidType" file="../../starboard/shared/starboard/media/mime_type_test.cc" line="244" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.084" classname="MimeTypeTest" />
+    <testcase name="GetParamIntValueWithName" file="../../starboard/shared/starboard/media/mime_type_test.cc" line="251" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.086" classname="MimeTypeTest" />
+    <testcase name="GetParamFloatValueWithName" file="../../starboard/shared/starboard/media/mime_type_test.cc" line="270" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.088" classname="MimeTypeTest" />
+    <testcase name="GetParamStringValueWithName" file="../../starboard/shared/starboard/media/mime_type_test.cc" line="279" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.091" classname="MimeTypeTest" />
+    <testcase name="GetParamBooleanValueWithName" file="../../starboard/shared/starboard/media/mime_type_test.cc" line="294" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.093" classname="MimeTypeTest" />
+    <testcase name="ReadParamOfDifferentTypes" file="../../starboard/shared/starboard/media/mime_type_test.cc" line="302" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.095" classname="MimeTypeTest" />
+    <testcase name="ParseInvalidParamString" file="../../starboard/shared/starboard/media/mime_type_test.cc" line="333" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.097" classname="MimeTypeTest" />
+    <testcase name="ParseValidParamString" file="../../starboard/shared/starboard/media/mime_type_test.cc" line="341" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.099" classname="MimeTypeTest" />
+    <testcase name="ValidateParamsWithPatterns" file="../../starboard/shared/starboard/media/mime_type_test.cc" line="400" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.102" classname="MimeTypeTest" />
+    <testcase name="ValidateParamsWithShortPatterns" file="../../starboard/shared/starboard/media/mime_type_test.cc" line="410" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.104" classname="MimeTypeTest" />
+    <testcase name="ValidateParamsWithPartialMatches" file="../../starboard/shared/starboard/media/mime_type_test.cc" line="418" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.106" classname="MimeTypeTest" />
+    <testcase name="ValidateMissingParam" file="../../starboard/shared/starboard/media/mime_type_test.cc" line="426" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.109" classname="MimeTypeTest" />
+    <testcase name="ValidateParamsWithEmptyishPattern" file="../../starboard/shared/starboard/media/mime_type_test.cc" line="432" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.111" classname="MimeTypeTest" />
+    <testcase name="ValidateParamWithInvalidMimeType" file="../../starboard/shared/starboard/media/mime_type_test.cc" line="439" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.116" classname="MimeTypeTest" />
+  </testsuite>
+  <testsuite name="VideoCapabilitiesTest" tests="6" failures="0" disabled="0" skipped="0" errors="0" time="0.014" timestamp="2392-07-09T13:16:56.119">
+    <testcase name="EmptyObject" file="../../starboard/shared/starboard/media/video_capabilities_test.cc" line="26" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.120" classname="VideoCapabilitiesTest" />
+    <testcase name="H264SdrWithOneRule" file="../../starboard/shared/starboard/media/video_capabilities_test.cc" line="37" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.122" classname="VideoCapabilitiesTest" />
+    <testcase name="H264SdrWithMixedRules" file="../../starboard/shared/starboard/media/video_capabilities_test.cc" line="69" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.125" classname="VideoCapabilitiesTest" />
+    <testcase name="H264SdrWithRedundantRules" file="../../starboard/shared/starboard/media/video_capabilities_test.cc" line="90" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:16:56.127" classname="VideoCapabilitiesTest" />
+    <testcase name="IsSupportedWithZeroValues" file="../../starboard/shared/starboard/media/video_capabilities_test.cc" line="117" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.130" classname="VideoCapabilitiesTest" />
+    <testcase name="MultiCodecsAndDynamicRanges" file="../../starboard/shared/starboard/media/video_capabilities_test.cc" line="188" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.133" classname="VideoCapabilitiesTest" />
+  </testsuite>
+  <testsuite name="Vp9FrameParserTests" tests="4" failures="0" disabled="0" skipped="0" errors="0" time="0.008" timestamp="2392-07-09T13:16:56.136">
+    <testcase name="EmptyFrame" file="../../starboard/shared/starboard/media/vp9_util_test.cc" line="76" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.137" classname="Vp9FrameParserTests" />
+    <testcase name="NonSuperFrame" file="../../starboard/shared/starboard/media/vp9_util_test.cc" line="83" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.139" classname="Vp9FrameParserTests" />
+    <testcase name="SuperFrames" file="../../starboard/shared/starboard/media/vp9_util_test.cc" line="92" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.141" classname="Vp9FrameParserTests" />
+    <testcase name="SuperFramesWithEmptySubframes" file="../../starboard/shared/starboard/media/vp9_util_test.cc" line="130" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.144" classname="Vp9FrameParserTests" />
+  </testsuite>
+  <testsuite name="BufferTest" tests="5" failures="0" disabled="0" skipped="0" errors="0" time="0.011" timestamp="2392-07-09T13:16:56.147">
+    <testcase name="DefaultCtor" file="../../starboard/shared/starboard/player/buffer_test_internal.cc" line="28" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.148" classname="BufferTest" />
+    <testcase name="Allocate" file="../../starboard/shared/starboard/player/buffer_test_internal.cc" line="33" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.151" classname="BufferTest" />
+    <testcase name="CopyCtor" file="../../starboard/shared/starboard/player/buffer_test_internal.cc" line="40" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.153" classname="BufferTest" />
+    <testcase name="MoveCtor" file="../../starboard/shared/starboard/player/buffer_test_internal.cc" line="60" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.155" classname="BufferTest" />
+    <testcase name="MoveAssignmentOperator" file="../../starboard/shared/starboard/player/buffer_test_internal.cc" line="76" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.157" classname="BufferTest" />
+  </testsuite>
+  <testsuite name="DecodedAudioTest" tests="6" failures="0" disabled="0" skipped="0" errors="0" time="0.048" timestamp="2392-07-09T13:16:56.161">
+    <testcase name="DefaultCtor" file="../../starboard/shared/starboard/player/decoded_audio_test_internal.cc" line="184" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.162" classname="DecodedAudioTest" />
+    <testcase name="CtorWithSize" file="../../starboard/shared/starboard/player/decoded_audio_test_internal.cc" line="189" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.164" classname="DecodedAudioTest" />
+    <testcase name="AdjustForSeekTime" file="../../starboard/shared/starboard/player/decoded_audio_test_internal.cc" line="210" status="run" result="completed" time="0.03" timestamp="2392-07-09T13:16:56.167" classname="DecodedAudioTest" />
+    <testcase name="AdjustForDiscardedDurations" file="../../starboard/shared/starboard/player/decoded_audio_test_internal.cc" line="266" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.199" classname="DecodedAudioTest" />
+    <testcase name="SwitchFormatTo" file="../../starboard/shared/starboard/player/decoded_audio_test_internal.cc" line="311" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:16:56.202" classname="DecodedAudioTest" />
+    <testcase name="Clone" file="../../starboard/shared/starboard/player/decoded_audio_test_internal.cc" line="346" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.207" classname="DecodedAudioTest" />
+  </testsuite>
+  <testsuite name="JobQueueTest" tests="7" failures="0" disabled="0" skipped="0" errors="0" time="0.024" timestamp="2392-07-09T13:16:56.211">
+    <testcase name="OwnedScheduledJobsAreExecutedInOrder" file="../../starboard/shared/starboard/player/job_queue_test.cc" line="46" status="run" result="completed" time="0.004" timestamp="2392-07-09T13:16:56.212" classname="JobQueueTest" />
+    <testcase name="OwnedJobsAreRemovedWhenOwnerGoesOutOfScope" file="../../starboard/shared/starboard/player/job_queue_test.cc" line="67" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.218" classname="JobQueueTest" />
+    <testcase name="CancelPendingJobsCancelsPendingJobs" file="../../starboard/shared/starboard/player/job_queue_test.cc" line="83" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.221" classname="JobQueueTest" />
+    <testcase name="RemovedJobsAreRemoved" file="../../starboard/shared/starboard/player/job_queue_test.cc" line="103" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.223" classname="JobQueueTest" />
+    <testcase name="RunUntilStoppedExecutesAllRemainingJobs" file="../../starboard/shared/starboard/player/job_queue_test.cc" line="121" status="run" result="completed" time="0.003" timestamp="2392-07-09T13:16:56.225" classname="JobQueueTest" />
+    <testcase name="JobsAreMovedAndNotCopied" file="../../starboard/shared/starboard/player/job_queue_test.cc" line="143" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.230" classname="JobQueueTest" />
+    <testcase name="QueueBelongsToCorrectThread" file="../../starboard/shared/starboard/player/job_queue_test.cc" line="173" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.234" classname="JobQueueTest" />
+  </testsuite>
+  <testsuite name="JobThreadTest" tests="5" failures="0" disabled="0" skipped="0" errors="0" time="0.023" timestamp="2392-07-09T13:16:56.237">
+    <testcase name="ScheduledJobsAreExecutedInOrder" file="../../starboard/shared/starboard/player/job_thread_test.cc" line="41" status="run" result="completed" time="0.004" timestamp="2392-07-09T13:16:56.238" classname="JobThreadTest" />
+    <testcase name="ScheduleAndWaitWaits" file="../../starboard/shared/starboard/player/job_thread_test.cc" line="61" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:16:56.245" classname="JobThreadTest" />
+    <testcase name="ScheduledJobsShouldNotExecuteAfterGoingOutOfScope" file="../../starboard/shared/starboard/player/job_thread_test.cc" line="74" status="run" result="completed" time="0.005" timestamp="2392-07-09T13:16:56.249" classname="JobThreadTest" />
+    <testcase name="CanceledJobsAreCanceled" file="../../starboard/shared/starboard/player/job_thread_test.cc" line="96" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:16:56.256" classname="JobThreadTest" />
+    <testcase name="QueueBelongsToCorrectThread" file="../../starboard/shared/starboard/player/job_thread_test.cc" line="137" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.260" classname="JobThreadTest" />
+  </testsuite>
+  <testsuite name="JniEnvExtTest" tests="5" failures="0" disabled="0" skipped="0" errors="0" time="0.011" timestamp="2392-07-09T13:16:56.263">
+    <testcase name="NewStringStandardUTF" file="../../starboard/android/shared/jni_env_ext_test.cc" line="46" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.265" classname="JniEnvExtTest" />
+    <testcase name="NewStringModifiedUTF" file="../../starboard/android/shared/jni_env_ext_test.cc" line="58" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.267" classname="JniEnvExtTest" />
+    <testcase name="EmptyNewStringStandardUTF" file="../../starboard/android/shared/jni_env_ext_test.cc" line="70" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.269" classname="JniEnvExtTest" />
+    <testcase name="GetStringStandardUTF" file="../../starboard/android/shared/jni_env_ext_test.cc" line="77" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.271" classname="JniEnvExtTest" />
+    <testcase name="EmptyGetStringStandardUTF" file="../../starboard/android/shared/jni_env_ext_test.cc" line="88" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.274" classname="JniEnvExtTest" />
+  </testsuite>
+  <testsuite name="ModelYearTest" tests="1" failures="0" disabled="0" skipped="0" errors="0" time="0.002" timestamp="2392-07-09T13:16:56.277">
+    <testcase name="YearIsFourDigitsOrUnknown" file="../../starboard/android/shared/model_year_test.cc" line="24" status="run" result="completed" time="0" timestamp="2392-07-09T13:16:56.278" classname="ModelYearTest" />
+  </testsuite>
+</testsuites>

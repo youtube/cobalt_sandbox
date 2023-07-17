@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="33" failures="0" disabled="1" errors="0" time="1.095" timestamp="2392-07-09T13:18:17.386" name="AllTests">
+  <testsuite name="CompressionUtilsTest" tests="6" failures="0" disabled="0" skipped="0" errors="0" time="0.939" timestamp="2392-07-09T13:18:17.391">
+    <testcase name="GzipCompression" file="../../third_party/zlib/google/compression_utils_unittest.cc" line="37" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:18:17.393" classname="CompressionUtilsTest" />
+    <testcase name="GzipUncompression" file="../../third_party/zlib/google/compression_utils_unittest.cc" line="47" status="run" result="completed" time="0" timestamp="2392-07-09T13:18:17.396" classname="CompressionUtilsTest" />
+    <testcase name="GzipUncompressionFromStringPieceToString" file="../../third_party/zlib/google/compression_utils_unittest.cc" line="59" status="run" result="completed" time="0" timestamp="2392-07-09T13:18:17.399" classname="CompressionUtilsTest" />
+    <testcase name="LargeInput" file="../../third_party/zlib/google/compression_utils_unittest.cc" line="73" status="run" result="completed" time="0" timestamp="2392-07-09T13:18:17.401" classname="CompressionUtilsTest" />
+    <testcase name="OutputCompressionAndDecompressionDuration" file="../../third_party/zlib/google/compression_utils_unittest.cc" line="94" status="run" result="completed" time="0.923" timestamp="2392-07-09T13:18:17.404" classname="CompressionUtilsTest" />
+    <testcase name="InPlace" file="../../third_party/zlib/google/compression_utils_unittest.cc" line="124" status="run" result="completed" time="0" timestamp="2392-07-09T13:18:18.330" classname="CompressionUtilsTest" />
+  </testsuite>
+  <testsuite name="ZipReaderTest" tests="19" failures="0" disabled="1" skipped="0" errors="0" time="0.072" timestamp="2392-07-09T13:18:18.334">
+    <testcase name="Open_ValidZipFile" file="../../third_party/zlib/google/zip_reader_unittest.cc" line="240" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:18:18.335" classname="ZipReaderTest" />
+    <testcase name="Open_NonExistentFile" file="../../third_party/zlib/google/zip_reader_unittest.cc" line="255" status="run" result="completed" time="0" timestamp="2392-07-09T13:18:18.339" classname="ZipReaderTest" />
+    <testcase name="Open_ExistentButNonZipFile" file="../../third_party/zlib/google/zip_reader_unittest.cc" line="260" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:18:18.342" classname="ZipReaderTest" />
+    <testcase name="Iteration" file="../../third_party/zlib/google/zip_reader_unittest.cc" line="267" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:18:18.346" classname="ZipReaderTest" />
+    <testcase name="current_entry_info_RegularFile" file="../../third_party/zlib/google/zip_reader_unittest.cc" line="306" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:18:18.349" classname="ZipReaderTest" />
+    <testcase name="current_entry_info_DotDotFile" file="../../third_party/zlib/google/zip_reader_unittest.cc" line="331" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:18:18.353" classname="ZipReaderTest" />
+    <testcase name="current_entry_info_InvalidUTF8File" file="../../third_party/zlib/google/zip_reader_unittest.cc" line="345" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:18:18.356" classname="ZipReaderTest" />
+    <testcase name="current_entry_info_AbsoluteFile" file="../../third_party/zlib/google/zip_reader_unittest.cc" line="360" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:18:18.359" classname="ZipReaderTest" />
+    <testcase name="current_entry_info_Directory" file="../../third_party/zlib/google/zip_reader_unittest.cc" line="373" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:18:18.363" classname="ZipReaderTest" />
+    <testcase name="current_entry_info_EncryptedFile" file="../../third_party/zlib/google/zip_reader_unittest.cc" line="400" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:18:18.366" classname="ZipReaderTest" />
+    <testcase name="OpenFromString" file="../../third_party/zlib/google/zip_reader_unittest.cc" line="418" status="run" result="completed" time="0.003" timestamp="2392-07-09T13:18:18.370" classname="ZipReaderTest" />
+    <testcase name="ExtractToFileAsync_Directory" file="../../third_party/zlib/google/zip_reader_unittest.cc" line="487" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:18:18.375" classname="ZipReaderTest" />
+    <testcase name="ExtractCurrentEntryToString" file="../../third_party/zlib/google/zip_reader_unittest.cc" line="515" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:18:18.379" classname="ZipReaderTest" />
+    <testcase name="ExtractPartOfCurrentEntry" file="../../third_party/zlib/google/zip_reader_unittest.cc" line="551" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:18:18.383" classname="ZipReaderTest" />
+    <testcase name="DISABLED_LeakDetectionTest" file="../../third_party/zlib/google/zip_reader_unittest.cc" line="595" status="notrun" result="suppressed" time="0" timestamp="1969-12-31T16:00:00.000" classname="ZipReaderTest" />
+    <testcase name="ExtractCurrentEntryPrepareFailure" file="../../third_party/zlib/google/zip_reader_unittest.cc" line="605" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:18:18.388" classname="ZipReaderTest" />
+    <testcase name="ExtractCurrentEntryWriteBytesFailure" file="../../third_party/zlib/google/zip_reader_unittest.cc" line="622" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:18:18.393" classname="ZipReaderTest" />
+    <testcase name="ExtractCurrentEntryFlushFailure" file="../../third_party/zlib/google/zip_reader_unittest.cc" line="643" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:18:18.397" classname="ZipReaderTest" />
+    <testcase name="ExtractCurrentEntrySuccess" file="../../third_party/zlib/google/zip_reader_unittest.cc" line="665" status="run" result="completed" time="0.003" timestamp="2392-07-09T13:18:18.401" classname="ZipReaderTest" />
+  </testsuite>
+  <testsuite name="FileWriterDelegateTest" tests="1" failures="0" disabled="0" skipped="0" errors="0" time="0.002" timestamp="2392-07-09T13:18:18.408">
+    <testcase name="WriteToStartAndTruncate" file="../../third_party/zlib/google/zip_reader_unittest.cc" line="719" status="run" result="completed" time="0" timestamp="2392-07-09T13:18:18.409" classname="FileWriterDelegateTest" />
+  </testsuite>
+  <testsuite name="ZipTest" tests="7" failures="0" disabled="0" skipped="0" errors="0" time="0.066" timestamp="2392-07-09T13:18:18.413">
+    <testcase name="Unzip" file="../../third_party/zlib/google/zip_unittest.cc" line="331" status="run" result="completed" time="0.009" timestamp="2392-07-09T13:18:18.414" classname="ZipTest" />
+    <testcase name="UnzipUncompressed" file="../../third_party/zlib/google/zip_unittest.cc" line="344" status="run" result="completed" time="0.008" timestamp="2392-07-09T13:18:18.426" classname="ZipTest" />
+    <testcase name="UnzipEvil" file="../../third_party/zlib/google/zip_unittest.cc" line="357" status="run" result="completed" time="0.001" timestamp="2392-07-09T13:18:18.437" classname="ZipTest" />
+    <testcase name="UnzipEvil2" file="../../third_party/zlib/google/zip_unittest.cc" line="390" status="run" result="completed" time="0.003" timestamp="2392-07-09T13:18:18.441" classname="ZipTest" />
+    <testcase name="UnzipWithFilter" file="../../third_party/zlib/google/zip_unittest.cc" line="423" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:18:18.446" classname="ZipTest" />
+    <testcase name="UnzipWithDelegates" file="../../third_party/zlib/google/zip_unittest.cc" line="499" status="run" result="completed" time="0.007" timestamp="2392-07-09T13:18:18.451" classname="ZipTest" />
+    <testcase name="UnzipFilesWithIncorrectSize" file="../../third_party/zlib/google/zip_unittest.cc" line="673" status="run" result="completed" time="0.017" timestamp="2392-07-09T13:18:18.461" classname="ZipTest" />
+  </testsuite>
+</testsuites>

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="33" failures="0" disabled="4" errors="0" time="0.25" timestamp="2392-07-09T13:11:19.574" name="AllTests">
+  <testsuite name="HTMLDecoderTest" tests="21" failures="0" disabled="3" skipped="0" errors="0" time="0.161" timestamp="2392-07-09T13:11:19.578">
+    <testcase name="CanParseEmptyDocument" file="../../cobalt/dom_parser/html_decoder_test.cc" line="92" status="run" result="completed" time="0.005" timestamp="2392-07-09T13:11:19.579" classname="HTMLDecoderTest" />
+    <testcase name="DISABLED_CanParseDocumentWithOnlyNulls" file="../../cobalt/dom_parser/html_decoder_test.cc" line="114" status="notrun" result="suppressed" time="0" timestamp="1969-12-31T16:00:00.000" classname="HTMLDecoderTest" />
+    <testcase name="DISABLED_CanParseDocumentWithOnlySpaces" file="../../cobalt/dom_parser/html_decoder_test.cc" line="134" status="notrun" result="suppressed" time="0" timestamp="1969-12-31T16:00:00.000" classname="HTMLDecoderTest" />
+    <testcase name="DISABLED_CanParseDocumentWithOnlyHTML" file="../../cobalt/dom_parser/html_decoder_test.cc" line="153" status="notrun" result="suppressed" time="0" timestamp="1969-12-31T16:00:00.000" classname="HTMLDecoderTest" />
+    <testcase name="CanParseDocumentWithOnlyBody" file="../../cobalt/dom_parser/html_decoder_test.cc" line="172" status="run" result="completed" time="0.004" timestamp="2392-07-09T13:11:19.591" classname="HTMLDecoderTest" />
+    <testcase name="DecodingWholeDocumentShouldAddImpliedTags" file="../../cobalt/dom_parser/html_decoder_test.cc" line="191" status="run" result="completed" time="0.004" timestamp="2392-07-09T13:11:19.597" classname="HTMLDecoderTest" />
+    <testcase name="DecodingDocumentFragmentShouldNotAddImpliedTags" file="../../cobalt/dom_parser/html_decoder_test.cc" line="215" status="run" result="completed" time="0.004" timestamp="2392-07-09T13:11:19.604" classname="HTMLDecoderTest" />
+    <testcase name="CanParseAttributesWithAndWithoutValue" file="../../cobalt/dom_parser/html_decoder_test.cc" line="231" status="run" result="completed" time="0.004" timestamp="2392-07-09T13:11:19.611" classname="HTMLDecoderTest" />
+    <testcase name="CanParseIncompleteAttributesAssignment" file="../../cobalt/dom_parser/html_decoder_test.cc" line="260" status="run" result="completed" time="0.004" timestamp="2392-07-09T13:11:19.617" classname="HTMLDecoderTest" />
+    <testcase name="CanParseSelfClosingTags" file="../../cobalt/dom_parser/html_decoder_test.cc" line="283" status="run" result="completed" time="0.004" timestamp="2392-07-09T13:11:19.624" classname="HTMLDecoderTest" />
+    <testcase name="CanParseNormalCharacters" file="../../cobalt/dom_parser/html_decoder_test.cc" line="302" status="run" result="completed" time="0.004" timestamp="2392-07-09T13:11:19.631" classname="HTMLDecoderTest" />
+    <testcase name="ShouldIgnoreNonUTF8Input" file="../../cobalt/dom_parser/html_decoder_test.cc" line="321" status="run" result="completed" time="0.005" timestamp="2392-07-09T13:11:19.637" classname="HTMLDecoderTest" />
+    <testcase name="CanParseEscapedCharacters" file="../../cobalt/dom_parser/html_decoder_test.cc" line="336" status="run" result="completed" time="0.004" timestamp="2392-07-09T13:11:19.645" classname="HTMLDecoderTest" />
+    <testcase name="CanParseEscapedInvalidUnicodeCharacters" file="../../cobalt/dom_parser/html_decoder_test.cc" line="364" status="run" result="completed" time="0.004" timestamp="2392-07-09T13:11:19.651" classname="HTMLDecoderTest" />
+    <testcase name="CanParseUTF8EncodedSupplementaryCharacters" file="../../cobalt/dom_parser/html_decoder_test.cc" line="384" status="run" result="completed" time="0.004" timestamp="2392-07-09T13:11:19.657" classname="HTMLDecoderTest" />
+    <testcase name="CanParseUTF8SplitInChunks" file="../../cobalt/dom_parser/html_decoder_test.cc" line="403" status="run" result="completed" time="0.029" timestamp="2392-07-09T13:11:19.664" classname="HTMLDecoderTest" />
+    <testcase name="CanParseMisnestedTags1" file="../../cobalt/dom_parser/html_decoder_test.cc" line="435" status="run" result="completed" time="0.009" timestamp="2392-07-09T13:11:19.696" classname="HTMLDecoderTest" />
+    <testcase name="CanParseMisnestedTags2" file="../../cobalt/dom_parser/html_decoder_test.cc" line="462" status="run" result="completed" time="0.006" timestamp="2392-07-09T13:11:19.708" classname="HTMLDecoderTest" />
+    <testcase name="TagNamesShouldBeCaseInsensitive" file="../../cobalt/dom_parser/html_decoder_test.cc" line="481" status="run" result="completed" time="0.004" timestamp="2392-07-09T13:11:19.717" classname="HTMLDecoderTest" />
+    <testcase name="AttributesShouldBeCaseInsensitive" file="../../cobalt/dom_parser/html_decoder_test.cc" line="496" status="run" result="completed" time="0.004" timestamp="2392-07-09T13:11:19.724" classname="HTMLDecoderTest" />
+    <testcase name="LibxmlDecodingErrorShouldTerminateParsing" file="../../cobalt/dom_parser/html_decoder_test.cc" line="514" status="run" result="completed" time="0.006" timestamp="2392-07-09T13:11:19.731" classname="HTMLDecoderTest" />
+  </testsuite>
+  <testsuite name="XMLDecoderTest" tests="12" failures="0" disabled="1" skipped="0" errors="0" time="0.079" timestamp="2392-07-09T13:11:19.742">
+    <testcase name="ShouldNotAddImpliedTags" file="../../cobalt/dom_parser/xml_decoder_test.cc" line="58" status="run" result="completed" time="0.005" timestamp="2392-07-09T13:11:19.743" classname="XMLDecoderTest" />
+    <testcase name="CanParseCDATASection" file="../../cobalt/dom_parser/xml_decoder_test.cc" line="73" status="run" result="completed" time="0.004" timestamp="2392-07-09T13:11:19.750" classname="XMLDecoderTest" />
+    <testcase name="CanParseAttributesWithValue" file="../../cobalt/dom_parser/xml_decoder_test.cc" line="105" status="run" result="completed" time="0.004" timestamp="2392-07-09T13:11:19.757" classname="XMLDecoderTest" />
+    <testcase name="TagNamesShouldBeCaseSensitive" file="../../cobalt/dom_parser/xml_decoder_test.cc" line="127" status="run" result="completed" time="0.006" timestamp="2392-07-09T13:11:19.763" classname="XMLDecoderTest" />
+    <testcase name="AttributesShouldBeCaseSensitive" file="../../cobalt/dom_parser/xml_decoder_test.cc" line="145" status="run" result="completed" time="0.004" timestamp="2392-07-09T13:11:19.773" classname="XMLDecoderTest" />
+    <testcase name="CanDealWithFileAttack" file="../../cobalt/dom_parser/xml_decoder_test.cc" line="167" status="run" result="completed" time="0.005" timestamp="2392-07-09T13:11:19.780" classname="XMLDecoderTest" />
+    <testcase name="CanDealWithHTMLAttack" file="../../cobalt/dom_parser/xml_decoder_test.cc" line="183" status="run" result="completed" time="0.005" timestamp="2392-07-09T13:11:19.787" classname="XMLDecoderTest" />
+    <testcase name="CanDealWithAttack" file="../../cobalt/dom_parser/xml_decoder_test.cc" line="199" status="run" result="completed" time="0.005" timestamp="2392-07-09T13:11:19.795" classname="XMLDecoderTest" />
+    <testcase name="CanDealWithPEAttack" file="../../cobalt/dom_parser/xml_decoder_test.cc" line="215" status="run" result="completed" time="0.003" timestamp="2392-07-09T13:11:19.802" classname="XMLDecoderTest" />
+    <testcase name="CanDealWithDTDAttack" file="../../cobalt/dom_parser/xml_decoder_test.cc" line="231" status="run" result="completed" time="0.004" timestamp="2392-07-09T13:11:19.809" classname="XMLDecoderTest" />
+    <testcase name="DISABLED_CanDealWithLaughsAttack" file="../../cobalt/dom_parser/xml_decoder_test.cc" line="248" status="notrun" result="suppressed" time="0" timestamp="1969-12-31T16:00:00.000" classname="XMLDecoderTest" />
+    <testcase name="CanDealWithXIncludeAttack" file="../../cobalt/dom_parser/xml_decoder_test.cc" line="280" status="run" result="completed" time="0.003" timestamp="2392-07-09T13:11:19.817" classname="XMLDecoderTest" />
+  </testsuite>
+</testsuites>
