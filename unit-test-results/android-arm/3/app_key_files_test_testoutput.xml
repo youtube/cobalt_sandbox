@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="5" failures="0" disabled="0" errors="0" time="0.026" timestamp="2392-07-09T13:09:46.797" name="AllTests">
+  <testsuite name="AppKeyFilesTest" tests="5" failures="0" disabled="0" skipped="0" errors="0" time="0.019" timestamp="2392-07-09T13:09:46.802">
+    <testcase name="TestGoodKeyFile" file="../../starboard/loader_app/app_key_files_test.cc" line="45" status="run" result="completed" time="0" timestamp="2392-07-09T13:09:46.804" classname="AppKeyFilesTest" />
+    <testcase name="TestBadKeyFile" file="../../starboard/loader_app/app_key_files_test.cc" line="57" status="run" result="completed" time="0" timestamp="2392-07-09T13:09:46.807" classname="AppKeyFilesTest" />
+    <testcase name="TestGoodKeyFileInvalidInput" file="../../starboard/loader_app/app_key_files_test.cc" line="69" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:09:46.810" classname="AppKeyFilesTest" />
+    <testcase name="TestBadKeyFileInvalidInput" file="../../starboard/loader_app/app_key_files_test.cc" line="77" status="run" result="completed" time="0.002" timestamp="2392-07-09T13:09:46.815" classname="AppKeyFilesTest" />
+    <testcase name="TestAnyGoodKeyFile" file="../../starboard/loader_app/app_key_files_test.cc" line="85" status="run" result="completed" time="0" timestamp="2392-07-09T13:09:46.819" classname="AppKeyFilesTest" />
+  </testsuite>
+</testsuites>

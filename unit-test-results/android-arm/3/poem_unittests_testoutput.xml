@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="6" failures="0" disabled="0" errors="0" time="0.019" timestamp="2392-07-09T13:15:52.416" name="AllTests">
+  <testsuite name="StringPoemTest" tests="6" failures="0" disabled="0" skipped="0" errors="0" time="0.013" timestamp="2392-07-09T13:15:52.419">
+    <testcase name="PoemStringConcat" file="../../starboard/client_porting/poem/string_poem_test.cc" line="25" status="run" result="completed" time="0" timestamp="2392-07-09T13:15:52.420" classname="StringPoemTest" />
+    <testcase name="PoemStringCopy" file="../../starboard/client_porting/poem/string_poem_test.cc" line="34" status="run" result="completed" time="0" timestamp="2392-07-09T13:15:52.423" classname="StringPoemTest" />
+    <testcase name="PoemStringCopyZeroBytes" file="../../starboard/client_porting/poem/string_poem_test.cc" line="43" status="run" result="completed" time="0" timestamp="2392-07-09T13:15:52.425" classname="StringPoemTest" />
+    <testcase name="PoemStringCopySrcNotNullTerminated" file="../../starboard/client_porting/poem/string_poem_test.cc" line="52" status="run" result="completed" time="0" timestamp="2392-07-09T13:15:52.427" classname="StringPoemTest" />
+    <testcase name="PoemStringCopyNotEnoughSpace" file="../../starboard/client_porting/poem/string_poem_test.cc" line="61" status="run" result="completed" time="0" timestamp="2392-07-09T13:15:52.429" classname="StringPoemTest" />
+    <testcase name="PoemStringCopySizeMoreThanNeeded" file="../../starboard/client_porting/poem/string_poem_test.cc" line="70" status="run" result="completed" time="0" timestamp="2392-07-09T13:15:52.431" classname="StringPoemTest" />
+  </testsuite>
+</testsuites>
