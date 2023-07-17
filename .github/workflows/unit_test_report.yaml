@@ -28,10 +28,9 @@ jobs:
         DATADOG_API_KEY: ${{ secrets.DD_API_KEY }}
         DATADOG_SITE: us5.datadoghq.com
       steps:
-        # TODO: Check if artifact exists, or
-        # TODO: Always upload a report, empty -> no upload
         - name: Collect Unit Test Reports
-          uses: actions/github-script@v3.1.0
+          id: collect-report
+          uses: actions/github-script@v6.4.1
           with:
             script: |
               var artifacts = await github.actions.listWorkflowRunArtifacts({
@@ -41,7 +40,11 @@ jobs:
               });
               var results = artifacts.data.artifacts.filter((artifact) => {
                 return artifact.name == "unit-test-results"
-              })[0];
+              });
+              if (results.length == 0) {
+                // No reports to upload.
+                return false;
+              }
               var download = await github.actions.downloadArtifact({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -50,16 +53,21 @@ jobs:
               });
               var fs = require('fs');
               fs.writeFileSync('${{github.workspace}}/unit-test-results.zip', Buffer.from(download.data));
+              return true;
         - run: unzip unit-test-results.zip -d unit-test-results
+          if: steps.collect-report.outputs.result
         - name: Install node
+          if: steps.collect-report.outputs.result
           uses: actions/setup-node@v3
           with:
             node-version: 16
         - name: Get Datadog CLI
+          if: steps.collect-report.outputs.result
           shell: bash
           # TODO: pin version (with checksum?)
           run: npm install -g @datadog/datadog-ci
         - name: Upload the JUnit files
+          if: steps.collect-report.outputs.result
           shell: bash
           run: |
             # Loop over platform folders in archive
