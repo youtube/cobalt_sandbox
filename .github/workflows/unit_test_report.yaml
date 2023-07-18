@@ -62,19 +62,19 @@ jobs:
               console.log(`${process.env.GITHUB_WORKSPACE}/unit-test-results.zip`);
               return true;
         - run: unzip unit-test-results.zip -d unit-test-results
-          if: steps.collect-report.outputs.result
+          if: ${{ steps.collect-report.outputs.result == 'true' }}
         - name: Install node
           if: steps.collect-report.outputs.result
           uses: actions/setup-node@v3
           with:
             node-version: 16
         - name: Get Datadog CLI
-          if: steps.collect-report.outputs.result
+          if: ${{ steps.collect-report.outputs.result == 'true' }}
           shell: bash
           # TODO: pin version (with checksum?)
           run: npm install -g @datadog/datadog-ci
         - name: Upload the JUnit files
-          if: steps.collect-report.outputs.result
+          if: ${{ steps.collect-report.outputs.result == 'true' }}
           shell: bash
           run: |
             # Loop over platform folders in archive
