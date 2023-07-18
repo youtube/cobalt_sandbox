@@ -41,10 +41,12 @@ jobs:
                   repo: context.repo.repo,
                   run_id: context.payload.workflow_run.id,
               });
-              let matchArtifact = allArtifacts.data.artifacts.filter((artifact) => {
+              console.log(allArtifacts);
+              let matchArtifacts = allArtifacts.data.artifacts.filter((artifact) => {
                 return artifact.name == "unit-test-results"
               });
-              if (matchArtifact.length == 0) {
+              console.log(matchArtifacts)
+              if (matchArtifacts.length == 0) {
                 // No reports were uploaded.
                 console.log('No unit test reports were uploaded');
                 return false;
@@ -52,7 +54,7 @@ jobs:
               let download = await github.rest.actions.downloadArtifact({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
-                  artifact_id: matchArtifact.id,
+                  artifact_id: matchArtifacts[0].id,
                   archive_format: 'zip',
               });
               let fs = require('fs');
