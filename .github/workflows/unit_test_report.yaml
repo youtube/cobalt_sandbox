@@ -26,16 +26,16 @@ jobs:
       if: always()
       runs-on: ubuntu-latest
       name: Upload Unit Test Reports
-      env:
-        DATADOG_API_KEY: ${{ secrets.DD_API_KEY }}
-        DATADOG_SITE: us5.datadoghq.com
       steps:
         - name: Collect Unit Test Reports
           id: collect-report
           uses: actions/github-script@v6
           with:
             script: |
-              console.log(context);
+              console.log('context', context);
+              console.log('context.payload.workflow_run.pull_requests', context.payload.workflow_run.pull_requests);
+              console.log('context.payload.workflow_run.head_commit', context.payload.workflow_run.head_commit);
+
               let allArtifacts = await github.rest.actions.listWorkflowRunArtifacts({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
@@ -59,7 +59,6 @@ jobs:
               });
               let fs = require('fs');
               fs.writeFileSync(`${process.env.GITHUB_WORKSPACE}/unit-test-results.zip`, Buffer.from(download.data));
-              console.log(`${process.env.GITHUB_WORKSPACE}/unit-test-results.zip`);
               return true;
         - run: unzip unit-test-results.zip -d unit-test-results
           if: ${{ steps.collect-report.outputs.result == 'true' }}
@@ -76,17 +75,24 @@ jobs:
         - name: Upload the JUnit files
           if: ${{ steps.collect-report.outputs.result == 'true' }}
           shell: bash
+          env:
+            DATADOG_API_KEY: ${{ secrets.DD_API_KEY }}
+            DATADOG_SITE: us5.datadoghq.com
+            DD_ENV: ci
+            DD_SERVICE: ${{ github.event.repository.name }}
+            # TODO
+            # DD_METRICS:
+
+            DD_GIT_COMMIT_SHA: ${{ github.event.workflow_run.head_sha }}
+            DD_GIT_REPOSITORY_URL: ${{ github.event.repository.git_url }}
           run: |
-            # Loop over platform folders in archive
+
             for dir in unit-test-results/*/; do
               echo "Uploading $dir test report"
 
-              service="${{ github.event.repository.name }}"
               tags=`cat ${dir}TAGS`
 
               datadog-ci junit upload \
-                        --service $service \
-                        --env ci \
                         --tags $tags \
-                        $dir
+                        $dir/**
             done
