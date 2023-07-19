@@ -1,6 +1,8 @@
 name: Upload Unit Test Results
 
 on:
+  # This workflow must be triggered via `workflow_run` to be able to access
+  # secrets, which is not possible from a workflow triggered by a PR in a fork.
   workflow_run:
     workflows:
       - linux
@@ -35,6 +37,12 @@ jobs:
               console.log('context', context);
               console.log('context.payload.workflow_run.pull_requests', context.payload.workflow_run.pull_requests);
               console.log('context.payload.workflow_run.head_commit', context.payload.workflow_run.head_commit);
+
+              // The `download-artifact` action can only access artifacts that
+              // were uploaded in the same workflow. Since it was not this
+              // workflow that uploaded the artifacts we must use rest api
+              // to download them.
+              // https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#using-data-from-the-triggering-workflow
 
               let allArtifacts = await github.rest.actions.listWorkflowRunArtifacts({
                   owner: context.repo.owner,
@@ -83,6 +91,7 @@ jobs:
             # TODO
             # DD_METRICS:
 
+            # Git info
             DD_GIT_COMMIT_SHA: ${{ github.event.workflow_run.head_sha }}
             DD_GIT_REPOSITORY_URL: ${{ github.event.repository.git_url }}
 
