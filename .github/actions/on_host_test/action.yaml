@@ -60,7 +60,7 @@ runs:
       run: |
         echo "PYTHONPATH=$GITHUB_WORKSPACE" >> $GITHUB_ENV
         echo "TEST_RESULTS_DIR=${GITHUB_WORKSPACE}/unit-test-results" >> $GITHUB_ENV
-        echo "XML_FILES_DIR=${TEST_RESULTS_DIR}/${{ matrix.platform }}/${{ matrix.shard }}" >> $GITHUB_ENV
+        echo "XML_FILES_DIR=${GITHUB_WORKSPACE}/unit-test-results/${{ matrix.platform }}/${{ matrix.shard }}" >> $GITHUB_ENV
         echo "COVERAGE_DIR=${GITHUB_WORKSPACE}/coverage" >> $GITHUB_ENV
     - name: Run Tests
       shell: bash
