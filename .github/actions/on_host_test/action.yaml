@@ -60,6 +60,7 @@ runs:
       run: |
         echo "PYTHONPATH=$GITHUB_WORKSPACE" >> $GITHUB_ENV
         echo "TEST_RESULTS_DIR=${GITHUB_WORKSPACE}/unit-test-results" >> $GITHUB_ENV
+        echo "XML_FILES_DIR=${TEST_RESULTS_DIR}/${{ matrix.platform }}/${{ matrix.shard }}" >> $GITHUB_ENV
         echo "COVERAGE_DIR=${GITHUB_WORKSPACE}/coverage" >> $GITHUB_ENV
     - name: Run Tests
       shell: bash
@@ -84,27 +85,18 @@ runs:
         elif [[ "${{matrix.shard}}" == 'evergreen-as-blackbox' ]]; then
           xvfb-run -a --server-args="-screen 0 1920x1080x24i +render +extension GLX -noreset" python3 $GITHUB_WORKSPACE/cobalt/black_box_tests/black_box_tests.py --platform ${{matrix.target_platform}} --config ${{matrix.config}} ${loader_args} --test_set evergreen
         elif [[ "${{matrix.shard}}" == 'coverage' ]]; then
-          xvfb-run -a --server-args="-screen 0 1920x1080x24i +render +extension GLX -noreset" python3 ${GITHUB_WORKSPACE}/starboard/tools/testing/test_runner.py --platform ${{matrix.target_platform}} --config ${{matrix.config}} -r ${loader_args} --xml_output_dir=${TEST_RESULTS_DIR} --coverage_dir=${COVERAGE_DIR} --coverage_report
+          xvfb-run -a --server-args="-screen 0 1920x1080x24i +render +extension GLX -noreset" python3 ${GITHUB_WORKSPACE}/starboard/tools/testing/test_runner.py --platform ${{matrix.target_platform}} --config ${{matrix.config}} -r ${loader_args} --xml_output_dir=${XML_FILES_DIR} --coverage_dir=${COVERAGE_DIR} --coverage_report
         else
           if [[ "${{inputs.os}}" == 'windows' ]]; then
             python3 ${GITHUB_WORKSPACE}/starboard/tools/testing/test_runner.py --platform ${{matrix.target_platform}} --config ${{matrix.config}} -s ${{matrix.shard}} -r
           else
-            xvfb-run -a --server-args="-screen 0 1920x1080x24i +render +extension GLX -noreset" python3 ${GITHUB_WORKSPACE}/starboard/tools/testing/test_runner.py --platform ${{matrix.target_platform}} --config ${{matrix.config}} -s ${{matrix.shard}} -r ${loader_args} --xml_output_dir=${TEST_RESULTS_DIR}
+            xvfb-run -a --server-args="-screen 0 1920x1080x24i +render +extension GLX -noreset" python3 ${GITHUB_WORKSPACE}/starboard/tools/testing/test_runner.py --platform ${{matrix.target_platform}} --config ${{matrix.config}} -s ${{matrix.shard}} -r ${loader_args} --xml_output_dir=${XML_FILES_DIR}
           fi
         fi
-    - name: Prepare unit test results for archiving
+    - name: Populate TAGS for unit test report
       shell: bash
       run: |
         set -x
-        # Move test results into platform and shard (if applicable) subfolders.
-        dest="${TEST_RESULTS_DIR}/${{ matrix.platform }}"
-        if [[ -z "${{ matrix.shard }}" ]]; then
-          dest="${dest}/${{ matrix.shard }}"
-        fi
-
-        mkdir -p $dest
-        mv ${TEST_RESULTS_DIR}/* $dest
-
         # TODO: Set tags in `includes` field in config?
         # TODO: Set metrics here?
 
