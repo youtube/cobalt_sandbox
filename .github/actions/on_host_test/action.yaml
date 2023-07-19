@@ -89,10 +89,26 @@ runs:
           if [[ "${{inputs.os}}" == 'windows' ]]; then
             python3 ${GITHUB_WORKSPACE}/starboard/tools/testing/test_runner.py --platform ${{matrix.target_platform}} --config ${{matrix.config}} -s ${{matrix.shard}} -r
           else
-            xvfb-run -a --server-args="-screen 0 1920x1080x24i +render +extension GLX -noreset" python3 ${GITHUB_WORKSPACE}/starboard/tools/testing/test_runner.py --platform ${{matrix.target_platform}} --config ${{matrix.config}} -s ${{matrix.shard}} -r ${loader_args} --xml_output_dir=${TEST_RESULTS_DIR}/${{ matrix.platform }}/${{ matrix.shard }}
+            xvfb-run -a --server-args="-screen 0 1920x1080x24i +render +extension GLX -noreset" python3 ${GITHUB_WORKSPACE}/starboard/tools/testing/test_runner.py --platform ${{matrix.target_platform}} --config ${{matrix.config}} -s ${{matrix.shard}} -r ${loader_args} --xml_output_dir=${TEST_RESULTS_DIR}
           fi
         fi
-    - name: Archive unit test report
+    - name: Prepare unit test results for archiving
+      shell: bash
+      run: |
+        set -x
+        # Move test results into platform and shard (if applicable) subfolders.
+        dest="${TEST_RESULTS_DIR}/${{ matrix.platform }}"
+        if [[ -z "${{ matrix.shard }}" ]]; then
+          dest="${dest}/${{ matrix.shard }}"
+        fi
+        mv ${TEST_RESULTS_DIR}/* $dest
+
+        # TODO: Set tags in `includes` field in config?
+        # TODO: Set metrics here?
+
+        # Prepare TAGS file with relevant tags.
+        echo "platform:${{ matrix.platform }},os:${{ inputs.os }}" > ${TEST_RESULTS_DIR}/${{ matrix.platform }}/TAGS
+    - name: Archive unit test results
       uses: actions/upload-artifact@v3
       # TODO: Should only run for unit-tests
       if: always()
