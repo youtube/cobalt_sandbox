@@ -116,7 +116,24 @@ jobs:
             # Commit committer date in ISO 8601 format.
             # Example: 2021-03-12T16:00:28Z
           run: |
+            # Unit test results are archived on the following format:
+            #
+            # unit-test-results/
+            # ├── android-arm
+            # │   ├── <shards>
+            # │   │   └── <test result xmls>
+            # │   └── TAGS
+            # ├── linux-x64x11
+            # │   ├── <shards>
+            # │   │   └── <test result xmls>
+            # │   └── TAGS
+            # ├── raspi-2
+            # │   ├── <shards>
+            # │   │   └── <test result xmls>
+            # │   └── TAGS
+            # etc.
 
+            # Loop over each platform, extract the tags and upload xml results.
             for dir in unit-test-results/*/; do
               echo "Uploading $dir test report"
 
