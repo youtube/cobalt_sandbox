@@ -94,9 +94,17 @@ runs:
           fi
         fi
     - name: Populate TAGS for unit test report
+      # TODO: Should only run for unit-tests
+      if: always()
       shell: bash
       run: |
         set -x
+
+        # TODO: Remove when I've figured out how to only run this for unit tests
+        if [[ ! -d ${TEST_RESULTS_DIR}/${{ matrix.platform }} ]]; then
+          exit 0
+        fi
+
         # TODO: Set tags in `includes` field in config?
         # TODO: Set metrics here?
 
