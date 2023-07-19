@@ -101,6 +101,8 @@ runs:
         if [[ -z "${{ matrix.shard }}" ]]; then
           dest="${dest}/${{ matrix.shard }}"
         fi
+
+        mkdir -p $dest
         mv ${TEST_RESULTS_DIR}/* $dest
 
         # TODO: Set tags in `includes` field in config?
