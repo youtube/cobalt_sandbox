@@ -26,7 +26,7 @@
 #include "base/threading/thread_checker.h"
 #include "cobalt/base/event_dispatcher.h"
 #include "cobalt/browser/browser_module.h"
-#include "cobalt/browser/memory_tracker/tool.h"
+#include "cobalt/browser/metrics/cobalt_metrics_services_manager.h"
 #include "cobalt/network/network_module.h"
 #include "cobalt/persistent_storage/persistent_settings.h"
 #include "cobalt/system_window/system_window.h"
@@ -198,17 +198,6 @@ class Application {
 
   base::RepeatingTimer stats_update_timer_;
 
-#if defined(ENABLE_DEBUGGER) && defined(STARBOARD_ALLOWS_MEMORY_TRACKING)
-  std::unique_ptr<memory_tracker::Tool> memory_tracker_tool_;
-
-  // Command handler object for creating a memory tracker.
-  debug::console::ConsoleCommandManager::CommandHandler
-      memory_tracker_command_handler_;
-
-  // Create a memory tracker with the given message
-  void OnMemoryTrackerCommand(const std::string& message);
-#endif  // defined(ENABLE_DEBUGGER) && defined(STARBOARD_ALLOWS_MEMORY_TRACKING)
-
   // Deep links are stored here until they are reported consumed.
   std::string unconsumed_deep_link_;
 
@@ -223,6 +212,15 @@ class Application {
   // Dispatch events for deep links.
   void DispatchDeepLink(const char* link, SbTimeMonotonic timestamp);
   void DispatchDeepLinkIfNotConsumed();
+
+
+  // Initializes all code necessary to start telemetry/metrics gathering and
+  // reporting. See go/cobalt-telemetry.
+  void InitMetrics();
+
+  // Reference to the current metrics manager, the highest level control point
+  // for metrics/telemetry.
+  metrics::CobaltMetricsServicesManager* metrics_services_manager_;
 
   DISALLOW_COPY_AND_ASSIGN(Application);
 };

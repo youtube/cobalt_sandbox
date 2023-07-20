@@ -32,13 +32,14 @@
 #include "cobalt/script/javascript_engine.h"
 #include "cobalt/script/script_runner.h"
 #include "cobalt/script/wrappable.h"
+#include "cobalt/watchdog/watchdog.h"
 #include "cobalt/web/blob.h"
 #include "cobalt/web/context.h"
 #include "cobalt/web/environment_settings.h"
 #include "cobalt/web/url.h"
 #include "cobalt/web/window_or_worker_global_scope.h"
 #include "cobalt/worker/service_worker.h"
-#include "cobalt/worker/service_worker_jobs.h"
+#include "cobalt/worker/service_worker_context.h"
 #include "cobalt/worker/service_worker_object.h"
 #include "cobalt/worker/service_worker_registration.h"
 #include "cobalt/worker/service_worker_registration_object.h"
@@ -50,6 +51,16 @@ namespace web {
 // must be called on the message loop of the Agent thread, so they
 // execute synchronously with respect to one another.
 namespace {
+
+// The watchdog time interval in microseconds allowed between pings before
+// triggering violations.
+const int64_t kWatchdogTimeInterval = 15000000;
+// The watchdog time wait in microseconds to initially wait before triggering
+// violations.
+const int64_t kWatchdogTimeWait = 15000000;
+// The watchdog time interval in milliseconds between pings.
+const int64_t kWatchdogTimePing = 5000;
+
 class Impl : public Context {
  public:
   Impl(const std::string& name, const Agent::Options& options);
@@ -91,8 +102,8 @@ class Impl : public Context {
     DCHECK(fetcher_factory_);
     return fetcher_factory_->network_module();
   }
-  worker::ServiceWorkerJobs* service_worker_jobs() const final {
-    return service_worker_jobs_;
+  worker::ServiceWorkerContext* service_worker_context() const final {
+    return service_worker_context_;
   }
 
   const std::string& name() const final { return name_; };
@@ -217,7 +228,7 @@ class Impl : public Context {
   std::map<worker::ServiceWorkerObject*, scoped_refptr<worker::ServiceWorker>>
       service_worker_object_map_;
 
-  worker::ServiceWorkerJobs* service_worker_jobs_;
+  worker::ServiceWorkerContext* service_worker_context_;
   const web::UserAgentPlatformInfo* platform_info_;
 
   // https://html.spec.whatwg.org/multipage/webappapis.html#concept-environment-active-service-worker
@@ -250,7 +261,7 @@ void LogScriptError(const base::SourceLocation& source_location,
 Impl::Impl(const std::string& name, const Agent::Options& options)
     : name_(name), web_settings_(options.web_settings) {
   TRACE_EVENT0("cobalt::web", "Agent::Impl::Impl()");
-  service_worker_jobs_ = options.service_worker_jobs;
+  service_worker_context_ = options.service_worker_context;
   platform_info_ = options.platform_info;
   blob_registry_.reset(new Blob::Registry);
 
@@ -352,11 +363,9 @@ void Impl::SetupFinished() {
   }
 #endif
 
-  if (service_worker_jobs_) {
-    service_worker_jobs_->RegisterWebContext(this);
-  }
-  if (service_worker_jobs_) {
-    service_worker_jobs_->SetActiveWorker(environment_settings_.get());
+  if (service_worker_context_) {
+    service_worker_context_->RegisterWebContext(this);
+    service_worker_context_->SetActiveWorker(environment_settings_.get());
   }
 }
 
@@ -533,8 +542,14 @@ void Agent::Stop() {
   DCHECK(message_loop());
   DCHECK(thread_.IsRunning());
 
-  if (context() && context()->service_worker_jobs()) {
-    context()->service_worker_jobs()->UnregisterWebContext(context());
+  if (context() && context()->service_worker_context()) {
+    context()->service_worker_context()->UnregisterWebContext(context());
+  }
+
+  watchdog::Watchdog* watchdog = watchdog::Watchdog::GetInstance();
+  if (watchdog) {
+    watchdog_registered_ = false;
+    watchdog->Unregister(watchdog_name_);
   }
 
   // Ensure that the destruction observer got added before stopping the thread.
@@ -561,6 +576,22 @@ void Agent::Run(const Options& options, InitializeCallback initialize_callback,
   thread_options.priority = options.thread_priority;
   if (!thread_.StartWithOptions(thread_options)) return;
   DCHECK(message_loop());
+
+  watchdog::Watchdog* watchdog = watchdog::Watchdog::GetInstance();
+
+  // Registers service worker thread as a watchdog client.
+  if (watchdog) {
+    watchdog_name_ =
+        thread_.thread_name() + std::to_string(thread_.GetThreadId());
+    watchdog_registered_ = true;
+    watchdog->Register(watchdog_name_, watchdog_name_,
+                       base::kApplicationStateStarted, kWatchdogTimeInterval,
+                       kWatchdogTimeWait, watchdog::PING);
+    message_loop()->task_runner()->PostDelayedTask(
+        FROM_HERE,
+        base::Bind(&Agent::PingWatchdog, base::Unretained(this), watchdog),
+        base::TimeDelta::FromMilliseconds(kWatchdogTimePing));
+  }
 
   message_loop()->task_runner()->PostTask(
       FROM_HERE,
@@ -628,6 +659,19 @@ void Agent::RequestJavaScriptHeapStatistics(
   script::HeapStatistics heap_statistics =
       context_->javascript_engine()->GetHeapStatistics();
   callback.Run(heap_statistics);
+}
+
+// Ping watchdog every 5 second, otherwise a violation will be triggered.
+void Agent::PingWatchdog(watchdog::Watchdog* watchdog) {
+  DCHECK_EQ(base::MessageLoop::current(), message_loop());
+  // If watchdog is already unregistered, stop ping watchdog.
+  if (!watchdog_registered_) return;
+
+  watchdog->Ping(watchdog_name_);
+  message_loop()->task_runner()->PostDelayedTask(
+      FROM_HERE,
+      base::Bind(&Agent::PingWatchdog, base::Unretained(this), watchdog),
+      base::TimeDelta::FromMilliseconds(kWatchdogTimePing));
 }
 
 }  // namespace web

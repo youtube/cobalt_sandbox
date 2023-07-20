@@ -16,6 +16,7 @@
 
 #include "starboard/nplb/player_test_fixture.h"
 #include "starboard/string.h"
+#include "starboard/testing/fake_graphics_context_provider.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
 #if SB_API_VERSION >= 15
@@ -29,6 +30,7 @@ namespace starboard {
 namespace nplb {
 namespace {
 
+using ::starboard::testing::FakeGraphicsContextProvider;
 using ::testing::ValuesIn;
 
 typedef SbPlayerTestFixture::GroupedSamples GroupedSamples;
@@ -98,12 +100,15 @@ class SbPlayerGetAudioConfigurationTest
     ASSERT_TRUE(coding_type_is_valid);
     ASSERT_GE(configuration.number_of_channels, 0);
   }
+
+  FakeGraphicsContextProvider fake_graphics_context_provider_;
 };
 
 TEST_P(SbPlayerGetAudioConfigurationTest, SunnyDay) {
   const int kSamplesToWrite = 8;
 
-  SbPlayerTestFixture player_fixture(GetParam());
+  SbPlayerTestFixture player_fixture(GetParam(),
+                                     &fake_graphics_context_provider_);
   if (HasFatalFailure()) {
     return;
   }
@@ -115,10 +120,12 @@ TEST_P(SbPlayerGetAudioConfigurationTest, SunnyDay) {
 
   GroupedSamples samples;
   if (player_fixture.HasAudio()) {
-    samples.AddAudioSamplesWithEOS(0, kSamplesToWrite);
+    samples.AddAudioSamples(0, kSamplesToWrite);
+    samples.AddAudioEOS();
   }
   if (player_fixture.HasVideo()) {
-    samples.AddVideoSamplesWithEOS(0, kSamplesToWrite);
+    samples.AddVideoSamples(0, kSamplesToWrite);
+    samples.AddVideoEOS();
   }
   ASSERT_NO_FATAL_FAILURE(player_fixture.Write(samples));
   ASSERT_NO_FATAL_FAILURE(player_fixture.WaitForPlayerPresenting());
@@ -148,7 +155,8 @@ TEST_P(SbPlayerGetAudioConfigurationTest, SunnyDay) {
 }
 
 TEST_P(SbPlayerGetAudioConfigurationTest, NoInput) {
-  SbPlayerTestFixture player_fixture(GetParam());
+  SbPlayerTestFixture player_fixture(GetParam(),
+                                     &fake_graphics_context_provider_);
   if (HasFatalFailure()) {
     return;
   }
@@ -159,10 +167,10 @@ TEST_P(SbPlayerGetAudioConfigurationTest, NoInput) {
 
   GroupedSamples samples;
   if (player_fixture.HasAudio()) {
-    samples.AddAudioSamplesWithEOS(0, 0);
+    samples.AddAudioEOS();
   }
   if (player_fixture.HasVideo()) {
-    samples.AddVideoSamplesWithEOS(0, 0);
+    samples.AddVideoEOS();
   }
   ASSERT_NO_FATAL_FAILURE(player_fixture.Write(samples));
   ASSERT_NO_FATAL_FAILURE(player_fixture.WaitForPlayerPresenting());
@@ -188,7 +196,8 @@ TEST_P(SbPlayerGetAudioConfigurationTest, NoInput) {
 TEST_P(SbPlayerGetAudioConfigurationTest, MultipleSeeks) {
   const int kSamplesToWrite = 8;
 
-  SbPlayerTestFixture player_fixture(GetParam());
+  SbPlayerTestFixture player_fixture(GetParam(),
+                                     &fake_graphics_context_provider_);
   if (HasFatalFailure()) {
     return;
   }
@@ -199,10 +208,12 @@ TEST_P(SbPlayerGetAudioConfigurationTest, MultipleSeeks) {
 
   GroupedSamples samples;
   if (player_fixture.HasAudio()) {
-    samples.AddAudioSamplesWithEOS(0, kSamplesToWrite);
+    samples.AddAudioSamples(0, kSamplesToWrite);
+    samples.AddAudioEOS();
   }
   if (player_fixture.HasVideo()) {
-    samples.AddVideoSamplesWithEOS(0, kSamplesToWrite);
+    samples.AddVideoSamples(0, kSamplesToWrite);
+    samples.AddVideoEOS();
   }
   ASSERT_NO_FATAL_FAILURE(player_fixture.Write(samples));
   ASSERT_NO_FATAL_FAILURE(player_fixture.WaitForPlayerPresenting());
@@ -229,14 +240,16 @@ TEST_P(SbPlayerGetAudioConfigurationTest, MultipleSeeks) {
 
   samples = GroupedSamples();
   if (player_fixture.HasAudio()) {
-    samples.AddAudioSamplesWithEOS(
+    samples.AddAudioSamples(
         0, player_fixture.ConvertDurationToAudioBufferCount(seek_to_time) +
                kSamplesToWrite);
+    samples.AddAudioEOS();
   }
   if (player_fixture.HasVideo()) {
-    samples.AddVideoSamplesWithEOS(
+    samples.AddVideoSamples(
         0, player_fixture.ConvertDurationToVideoBufferCount(seek_to_time) +
                kSamplesToWrite);
+    samples.AddVideoEOS();
   }
   ASSERT_NO_FATAL_FAILURE(player_fixture.Write(samples));
   ASSERT_NO_FATAL_FAILURE(player_fixture.WaitForPlayerPresenting());

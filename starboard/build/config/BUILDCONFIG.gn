@@ -57,7 +57,6 @@ is_gold = build_type == "gold"
 assert(is_debug || is_devel || is_qa || is_gold)
 
 # Set some variables we never want to change.
-sb_allows_memory_tracking = !is_gold
 host_byteorder = "little"
 is_official_build = false  # Chromium's build files expect this to be set.
 is_component_build = false
@@ -97,7 +96,7 @@ if (target_cpu == "x86" || target_cpu == "arm") {
 host_toolchain = "//starboard/build/toolchain/$host_os:$_host_toolchain_cpu"
 
 if (build_with_separate_cobalt_toolchain) {
-  cobalt_toolchain = "//starboard/build/toolchain/linux:clang_lld"
+  cobalt_toolchain = "//starboard/build/toolchain:clang"
   starboard_toolchain = "//$starboard_path/toolchain:starboard"
 } else {
   cobalt_toolchain = "//$starboard_path/toolchain:target"

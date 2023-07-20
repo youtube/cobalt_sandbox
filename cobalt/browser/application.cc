@@ -24,6 +24,7 @@
 #include "base/lazy_instance.h"
 #include "base/logging.h"
 #include "base/metrics/statistics_recorder.h"
+#include "base/metrics/user_metrics.h"
 #include "base/optional.h"
 #include "base/path_service.h"
 #include "base/strings/string_number_conversions.h"
@@ -58,12 +59,13 @@
 #include "cobalt/browser/client_hint_headers.h"
 #include "cobalt/browser/device_authentication.h"
 #include "cobalt/browser/memory_settings/auto_mem_settings.h"
-#include "cobalt/browser/memory_tracker/tool.h"
+#include "cobalt/browser/metrics/cobalt_metrics_services_manager.h"
 #include "cobalt/browser/switches.h"
 #include "cobalt/browser/user_agent_platform_info.h"
 #include "cobalt/browser/user_agent_string.h"
 #include "cobalt/cache/cache.h"
 #include "cobalt/configuration/configuration.h"
+#include "cobalt/h5vcc/h5vcc_crash_log.h"
 #include "cobalt/loader/image/image_decoder.h"
 #include "cobalt/math/size.h"
 #include "cobalt/script/javascript_engine.h"
@@ -73,6 +75,7 @@
 #include "cobalt/system_window/input_event.h"
 #include "cobalt/trace_event/scoped_trace_to_file.h"
 #include "cobalt/watchdog/watchdog.h"
+#include "components/metrics/metrics_service.h"
 #include "starboard/common/device_type.h"
 #include "starboard/common/system_property.h"
 #include "starboard/configuration.h"
@@ -524,14 +527,6 @@ struct SecurityFlags {
 base::LazyInstance<NonTrivialStaticFields>::DestructorAtExit
     non_trivial_static_fields = LAZY_INSTANCE_INITIALIZER;
 
-#if defined(ENABLE_DEBUGGER) && defined(STARBOARD_ALLOWS_MEMORY_TRACKING)
-const char kMemoryTrackerCommand[] = "memory_tracker";
-const char kMemoryTrackerCommandShortHelp[] = "Create a memory tracker.";
-const char kMemoryTrackerCommandLongHelp[] =
-    "Create a memory tracker of the given type. Use an empty string to see the "
-    "available trackers.";
-#endif  // defined(ENABLE_DEBUGGER) && defined(STARBOARD_ALLOWS_MEMORY_TRACKING)
-
 void AddCrashHandlerAnnotations(const UserAgentPlatformInfo& platform_info) {
   auto crash_handler_extension =
       static_cast<const CobaltExtensionCrashHandlerApi*>(
@@ -599,34 +594,27 @@ void AddCrashHandlerAnnotations(const UserAgentPlatformInfo& platform_info) {
   }
 }
 
-void AddCrashHandlerApplicationState(base::ApplicationState state) {
-  auto crash_handler_extension =
-      static_cast<const CobaltExtensionCrashHandlerApi*>(
-          SbSystemGetExtension(kCobaltExtensionCrashHandlerName));
-  if (!crash_handler_extension) {
-    DLOG(INFO) << "No crash handler extension, not sending application state.";
-    return;
-  }
-
+void AddCrashLogApplicationState(base::ApplicationState state) {
   std::string application_state = std::string(GetApplicationStateString(state));
   application_state.push_back('\0');
 
-  if (crash_handler_extension->version > 1) {
-    if (crash_handler_extension->SetString("application_state",
-                                           application_state.c_str())) {
-      DLOG(INFO) << "Sent application state to crash handler.";
-      return;
+  auto crash_handler_extension =
+      static_cast<const CobaltExtensionCrashHandlerApi*>(
+          SbSystemGetExtension(kCobaltExtensionCrashHandlerName));
+  if (crash_handler_extension && crash_handler_extension->version >= 2) {
+    if (!crash_handler_extension->SetString("application_state",
+                                            application_state.c_str())) {
+      LOG(ERROR) << "Could not send application state to crash handler.";
     }
+    return;
   }
-  DLOG(ERROR) << "Could not send application state to crash handler.";
+
+  // Crash handler is not supported, fallback to crash log dictionary.
+  h5vcc::CrashLogDictionary::GetInstance()->SetString("application_state",
+                                                      application_state);
 }
 
 }  // namespace
-
-// Helper stub to disable histogram tracking in StatisticsRecorder
-struct RecordCheckerStub : public base::RecordHistogramChecker {
-  bool ShouldRecord(uint64_t) const override { return false; }
-};
 
 // Static user logs
 ssize_t Application::available_memory_ = 0;
@@ -634,17 +622,7 @@ int64 Application::lifetime_in_ms_ = 0;
 
 Application::Application(const base::Closure& quit_closure, bool should_preload,
                          SbTimeMonotonic timestamp)
-    : message_loop_(base::MessageLoop::current()),
-      quit_closure_(quit_closure)
-#if defined(ENABLE_DEBUGGER) && defined(STARBOARD_ALLOWS_MEMORY_TRACKING)
-      ,
-      ALLOW_THIS_IN_INITIALIZER_LIST(memory_tracker_command_handler_(
-          kMemoryTrackerCommand,
-          base::Bind(&Application::OnMemoryTrackerCommand,
-                     base::Unretained(this)),
-          kMemoryTrackerCommandShortHelp, kMemoryTrackerCommandLongHelp))
-#endif  // defined(ENABLE_DEBUGGER) && defined(STARBOARD_ALLOWS_MEMORY_TRACKING)
-{
+    : message_loop_(base::MessageLoop::current()), quit_closure_(quit_closure) {
   DCHECK(!quit_closure_.is_null());
   if (should_preload) {
     preload_timestamp_ = timestamp;
@@ -691,11 +669,6 @@ Application::Application(const base::Closure& quit_closure, bool should_preload,
   std::string language = base::GetSystemLanguage();
   base::LocalizedStrings::GetInstance()->Initialize(language);
 
-  // Disable histogram tracking before TaskScheduler creates StatisticsRecorder
-  // instances.
-  auto record_checker = std::make_unique<RecordCheckerStub>();
-  base::StatisticsRecorder::SetRecordChecker(std::move(record_checker));
-
   // A one-per-process task scheduler is needed for usage of APIs in
   // base/post_task.h which will be used by some net APIs like
   // URLRequestContext;
@@ -705,6 +678,9 @@ Application::Application(const base::Closure& quit_closure, bool should_preload,
   persistent_settings_ =
       std::make_unique<persistent_storage::PersistentSettings>(
           kPersistentSettingsJson);
+
+  // Initialize telemetry/metrics.
+  InitMetrics();
 
   // Initializes Watchdog.
   watchdog::Watchdog* watchdog =
@@ -865,14 +841,6 @@ Application::Application(const base::Closure& quit_closure, bool should_preload,
 
   EnableUsingStubImageDecoderIfRequired();
 
-#if defined(ENABLE_DEBUGGER) && defined(STARBOARD_ALLOWS_MEMORY_TRACKING)
-  if (command_line->HasSwitch(switches::kMemoryTracker)) {
-    std::string command_arg =
-        command_line->GetSwitchValueASCII(switches::kMemoryTracker);
-    memory_tracker_tool_ = memory_tracker::CreateMemoryTrackerTool(command_arg);
-  }
-#endif  // defined(ENABLE_DEBUGGER) && defined(STARBOARD_ALLOWS_MEMORY_TRACKING)
-
   if (command_line->HasSwitch(switches::kDisableImageAnimations)) {
     options.web_module_options.enable_image_animations = false;
   }
@@ -912,6 +880,9 @@ Application::Application(const base::Closure& quit_closure, bool should_preload,
   network_module_.reset(new network::NetworkModule(
       CreateUserAgentString(platform_info), GetClientHintHeaders(platform_info),
       &event_dispatcher_, network_module_options));
+  // This is not necessary, but since some platforms need a lot of time to read
+  // the savegame, start the storage manager as soon as possible here.
+  network_module_->EnsureStorageManagerStarted();
 
   AddCrashHandlerAnnotations(platform_info);
 
@@ -1053,9 +1024,9 @@ Application::~Application() {
   // for the debugger to land.
   watchdog::Watchdog::DeleteInstance();
 
-#if defined(ENABLE_DEBUGGER) && defined(STARBOARD_ALLOWS_MEMORY_TRACKING)
-  memory_tracker_tool_.reset(NULL);
-#endif  // defined(ENABLE_DEBUGGER) && defined(STARBOARD_ALLOWS_MEMORY_TRACKING)
+  // Explicitly delete the global metrics services manager here to give it
+  // an opportunity to clean up late logs and persist metrics.
+  metrics::CobaltMetricsServicesManager::DeleteInstance();
 
   // Unregister event callbacks.
   event_dispatcher_.RemoveEventCallback(base::WindowSizeChangedEvent::TypeId(),
@@ -1211,7 +1182,7 @@ void Application::OnApplicationEvent(SbEventType event_type,
     case kSbEventTypeStop:
       LOG(INFO) << "Got quit event.";
       if (watchdog) watchdog->UpdateState(base::kApplicationStateStopped);
-      AddCrashHandlerApplicationState(base::kApplicationStateStopped);
+      AddCrashLogApplicationState(base::kApplicationStateStopped);
       Quit();
       LOG(INFO) << "Finished quitting.";
       break;
@@ -1286,7 +1257,7 @@ void Application::OnApplicationEvent(SbEventType event_type,
       return;
   }
   if (watchdog) watchdog->UpdateState(browser_module_->GetApplicationState());
-  AddCrashHandlerApplicationState(browser_module_->GetApplicationState());
+  AddCrashLogApplicationState(browser_module_->GetApplicationState());
 }
 
 void Application::OnWindowSizeChangedEvent(const base::Event* event) {
@@ -1472,24 +1443,6 @@ void Application::DispatchEventInternal(base::Event* event) {
   event_dispatcher_.DispatchEvent(std::unique_ptr<base::Event>(event));
 }
 
-#if defined(ENABLE_DEBUGGER) && defined(STARBOARD_ALLOWS_MEMORY_TRACKING)
-void Application::OnMemoryTrackerCommand(const std::string& message) {
-  if (base::MessageLoop::current() != message_loop_) {
-    message_loop_->task_runner()->PostTask(
-        FROM_HERE, base::Bind(&Application::OnMemoryTrackerCommand,
-                              base::Unretained(this), message));
-    return;
-  }
-
-  if (memory_tracker_tool_) {
-    LOG(ERROR) << "Can not create a memory tracker when one is already active.";
-    return;
-  }
-  LOG(WARNING) << "Creating \"" << message << "\" memory tracker.";
-  memory_tracker_tool_ = memory_tracker::CreateMemoryTrackerTool(message);
-}
-#endif  // defined(ENABLE_DEBUGGER) && defined(STARBOARD_ALLOWS_MEMORY_TRACKING)
-
 // Called to handle deep link consumed events.
 void Application::OnDeepLinkConsumedCallback(const std::string& link) {
   LOG(INFO) << "Got deep link consumed callback: " << link;
@@ -1546,6 +1499,30 @@ void Application::DispatchDeepLinkIfNotConsumed() {
   if (browser_module_) {
     browser_module_->SetDeepLinkTimestamp(timestamp);
   }
+}
+
+void Application::InitMetrics() {
+  // Must be called early as it initializes global state which is then read by
+  // all threads without synchronization.
+  // RecordAction task runner must be called before metric initialization.
+  base::SetRecordActionTaskRunner(base::ThreadTaskRunnerHandle::Get());
+  metrics_services_manager_ =
+      metrics::CobaltMetricsServicesManager::GetInstance();
+  // Before initializing metrics manager, set any persisted settings like if
+  // it's enabled or upload interval.
+  bool is_metrics_enabled = persistent_settings_->GetPersistentSettingAsBool(
+      metrics::kMetricEnabledSettingName, false);
+  metrics_services_manager_->SetUploadInterval(
+      persistent_settings_->GetPersistentSettingAsInt(
+          metrics::kMetricEventIntervalSettingName, 300));
+  metrics_services_manager_->ToggleMetricsEnabled(is_metrics_enabled);
+  // Metric recording state initialization _must_ happen before we bootstrap
+  // otherwise we crash.
+  metrics_services_manager_->GetMetricsService()
+      ->InitializeMetricsRecordingState();
+  // UpdateUploadPermissions bootstraps the whole metric reporting, scheduling,
+  // and uploading cycle.
+  metrics_services_manager_->UpdateUploadPermissions(is_metrics_enabled);
 }
 
 }  // namespace browser

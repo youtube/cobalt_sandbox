@@ -50,7 +50,6 @@ title: "Starboard Configuration Reference Guide"
 
 | Properties |
 | :--- |
-| **`SB_HAS_BILINEAR_FILTERING_SUPPORT`**<br><br>Indicates whether or not the given platform supports bilinear filtering. This can be checked to enable/disable renderer tests that verify that this is working properly.<br><br>The default value in the Stub implementation is `1` |
 | **`SB_HAS_NV12_TEXTURE_SUPPORT`**<br><br>Indicates whether or not the given platform supports rendering of NV12 textures. These textures typically originate from video decoders.<br><br>The default value in the Stub implementation is `0` |
 | **`SB_HAS_VIRTUAL_REALITY`**<br><br>The default value in the Stub implementation is `1` |
 
@@ -65,11 +64,9 @@ title: "Starboard Configuration Reference Guide"
 
 ## Media Configuration
 
- After a seek is triggered, the default behavior is to append video frames from the last key frame before the seek time and append audio frames from the seek time because usually all audio frames are key frames.  On platforms that cannot decode video frames without displaying them, this will cause the video being played without audio for several seconds after seeking.  When the following macro is defined, the app will append audio frames start from the timestamp that is before the timestamp of the video key frame being appended.
-
 | Properties |
 | :--- |
-| **`SB_HAS_QUIRK_SUPPORT_INT16_AUDIO_SAMPLES`**<br><br> The implementation is allowed to support kSbMediaAudioSampleTypeInt16 only when this macro is defined.<br><br>By default, this property is undefined. |
+| **`SB_HAS_QUIRK_SUPPORT_INT16_AUDIO_SAMPLES`**<br><br>The implementation is allowed to support kSbMediaAudioSampleTypeInt16 only when this macro is defined.<br><br>By default, this property is undefined. |
 
 
 ## Memory Configuration

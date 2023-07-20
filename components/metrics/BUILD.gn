@@ -2,10 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# TODO(b/283275484): Remove this once test.gni is stubbed for Cobalt.
-if (!use_cobalt_customizations) {
-  import("//testing/test.gni")
-}
+import("//testing/test.gni")
 
 static_library("metrics") {
   sources = [
@@ -139,6 +136,11 @@ static_library("metrics") {
       "system_memory_stats_recorder_win.cc",
       "system_session_analyzer_win.cc",
       "system_session_analyzer_win.h",
+
+      # Files with unused symbols. ex: DriveMetricsProvider::HasSeekPenalty
+      # These files give linker errors about undefined symbols during modualr builds.
+      "drive_metrics_provider.cc",
+      "drive_metrics_provider.h",
     ]
   }
 
@@ -146,7 +148,7 @@ static_library("metrics") {
     deps += [ ":serialization" ]
   }
 
-  if (is_mac) {
+  if (is_mac && !use_cobalt_customizations) {
     libs = [
       # The below are all needed for drive_metrics_provider_mac.mm.
       "CoreFoundation.framework",
@@ -156,7 +158,7 @@ static_library("metrics") {
     ]
   }
 
-  if (is_win) {
+  if (is_win && !use_cobalt_customizations) {
     sources -= [ "machine_id_provider_stub.cc" ]
     deps += [ "//components/browser_watcher:stability_client" ]
     libs = [ "wevtapi.lib" ]
@@ -369,7 +371,7 @@ static_library("test_support") {
   ]
 }
 
-if (is_linux) {
+if (is_linux && !use_cobalt_customizations) {
   static_library("serialization") {
     sources = [
       "serialization/metric_sample.cc",
@@ -382,6 +384,7 @@ if (is_linux) {
     ]
   }
 }
+
 # TODO(b/283275474): Re-enable as many of these tests as possible.
 if (!use_cobalt_customizations) {
   source_set("unit_tests") {

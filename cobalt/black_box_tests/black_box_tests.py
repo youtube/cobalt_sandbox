@@ -46,9 +46,7 @@ _EVERGREEN_COMPATIBLE_CONFIGS = [
     # TODO(b/283788059): enable when there are GitHub jobs to run integration
     # and Black Box Tests on evergreen-arm-hardfp.
     #'evergreen-arm/devel',
-    # TODO(b/283144901): enable when the Starboard 16 binaries are released for
-    # Evergreen.
-    #'evergreen-x64/devel',
+    'evergreen-x64/devel',
 ]
 
 _PORT_SELECTION_RETRY_LIMIT = 10
@@ -87,15 +85,18 @@ _TESTS_NO_SIGNAL = [
     'service_worker_fetch_main_resource_test',
     'service_worker_fetch_test',
     'service_worker_message_test',
+    'service_worker_post_message_test',
     'service_worker_test',
     'service_worker_persist_test',
     'soft_mic_platform_service_test',
+    'telemetry_test',
     'text_encoding_test',
     'wasm_basic_test',
     'web_debugger',
     'web_worker_test',
     'worker_csp_test',
     'worker_load_test',
+    'worker_post_message_test',
 ]
 # These are very different and require a custom config + proxy
 _WPT_TESTS = [
@@ -121,6 +122,8 @@ _launcher_params = None
 _server_binding_address = None
 # Port used to create the web platform test http server.
 _wpt_http_port = None
+# Port used to set up tunneling between host and device for testdata server.
+_web_server_port = None
 
 
 class BlackBoxTestCase(unittest.TestCase):
@@ -153,6 +156,7 @@ class BlackBoxTestCase(unittest.TestCase):
         launcher_params=_launcher_params,
         url=url,
         target_params=all_target_params,
+        web_server_port=_web_server_port,
         **kwargs)
 
   def GetBindingAddress(self):
@@ -242,6 +246,11 @@ class BlackBoxTests(object):
     global _wpt_http_port
     _wpt_http_port = args.wpt_http_port or str(
         self.GetUnusedPort([_server_binding_address]))
+
+    global _web_server_port
+    sock = socket.socket()
+    sock.bind(('', 0))
+    _web_server_port = sock.getsockname()[1]
 
     # Proxy is only needed for WPT
     self.use_proxy = args.test_set in ['all', 'wpt']

@@ -52,7 +52,6 @@ action("game_activity_sources") {
 
 static_library("starboard_platform") {
   sources = [
-    "$target_gen_dir/ndk-sources/cpu-features.c",
     "//starboard/shared/egl/system_egl.cc",
     "//starboard/shared/gcc/atomic_gcc_public.h",
     "//starboard/shared/gles/gl_call.h",
@@ -427,7 +426,6 @@ static_library("starboard_platform") {
 
   public_deps = [
     ":game_activity_sources",
-    ":ndk_sources",
     ":starboard_base_symbolize",
     "//starboard/common",
     "//starboard/shared/starboard/media:media_util",
@@ -438,14 +436,6 @@ static_library("starboard_platform") {
     "//third_party/libevent",
     "//third_party/opus",
   ]
-
-  if (is_internal_build) {
-    sources += [
-      "//internal/starboard/android/shared/internal/input_events_filter.cc",
-      "//internal/starboard/android/shared/internal/input_events_filter.h",
-    ]
-    defines = [ "STARBOARD_INPUT_EVENTS_FILTER" ]
-  }
 
   if (sb_is_evergreen_compatible) {
     sources -= [
@@ -474,8 +464,8 @@ static_library("starboard_platform") {
 
 static_library("starboard_base_symbolize") {
   sources = [
-    "//base/third_party/symbolize/demangle.cc",
-    "//base/third_party/symbolize/symbolize.cc",
+    "//third_party/symbolize/demangle.cc",
+    "//third_party/symbolize/symbolize.cc",
   ]
 
   public_deps = [ "//starboard/elf_loader:evergreen_info" ]
@@ -498,9 +488,4 @@ target(gtest_target_type, "starboard_platform_tests") {
     "//testing/gmock",
     "//testing/gtest",
   ]
-}
-
-copy("ndk_sources") {
-  sources = [ "$android_ndk_path/sources/android/cpufeatures/cpu-features.c" ]
-  outputs = [ "$target_gen_dir/ndk-sources/{{source_file_part}}" ]
 }

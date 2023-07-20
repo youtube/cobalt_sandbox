@@ -20,15 +20,10 @@ config("host") {
 }
 
 config("common") {
-  if (!cobalt_fastbuild) {
-    # Containers cannot use PDBs, so we conditionally disable them.
-    # We want to keep them for non-docker builds as they make compilation
-    # significantly faster.
-    configs = [ ":no_pdbs" ]
-  }
+  configs = []
 
   cflags_cc = [ "/TP" ]
-  cflags = []
+  cflags = [ "/Z7" ]
   ldflags = [
     "/NXCOMPAT",
     "/MANIFEST:NO",
@@ -236,17 +231,17 @@ config("common") {
 
     # Deprecated function warning.
     "/wd4996",
-  ]
-}
 
-config("no_pdbs") {
-  if (is_docker_build) {
-    cflags = [ "/Z7" ]
-  } else {
-    cflags = [
-      "/Zi",
-      "/FS",
-    ]
-  }
-  ldflags = [ "/DEBUG:FULL" ]
+    # Compiler warnings introduced after upgrading to Visual Studio 2022.
+    # Implicit conversion from 'type' to bool. Possible information loss.
+    "/wd4800",
+
+    # Discarding return value of function with 'nodiscard' attribute.
+    "/wd4834",
+    "/wd4858",
+
+    # Unnamed class used in typedef name cannot declare members other than
+    # non-static data members, member enumerations, or member classes.
+    "/wd5208",
+  ]
 }

@@ -174,8 +174,9 @@ void URLFetcherCore::Start() {
 }
 
 void URLFetcherCore::Stop() {
-  if (delegate_task_runner_)  // May be NULL in tests.
+  if (delegate_task_runner_) {  // May be NULL in tests.
     DCHECK(delegate_task_runner_->RunsTasksInCurrentSequence());
+  }
 
   delegate_ = NULL;
   fetcher_ = NULL;
@@ -351,6 +352,14 @@ void URLFetcherCore::SaveResponseToFileAtPath(
       new URLFetcherFileWriter(file_task_runner, file_path)));
 }
 
+#if defined(STARBOARD)
+void URLFetcherCore::SaveResponseToLargeString() {
+  DCHECK(delegate_task_runner_->RunsTasksInCurrentSequence());
+  SaveResponseWithWriter(std::unique_ptr<URLFetcherResponseWriter>(
+      new URLFetcherLargeStringWriter()));
+}
+#endif
+
 void URLFetcherCore::SaveResponseToTemporaryFile(
     scoped_refptr<base::SequencedTaskRunner> file_task_runner) {
   DCHECK(delegate_task_runner_->RunsTasksInCurrentSequence());
@@ -433,6 +442,19 @@ bool URLFetcherCore::GetResponseAsString(
   *out_response_string = string_writer->data();
   return true;
 }
+
+#if defined(STARBOARD)
+bool URLFetcherCore::GetResponseAsLargeString(
+    std::string* out_response_string) const {
+  URLFetcherLargeStringWriter* large_string_writer =
+      response_writer_ ? response_writer_->AsLargeStringWriter() : NULL;
+  if (!large_string_writer)
+    return false;
+
+  large_string_writer->GetAndResetData(out_response_string);
+  return true;
+}
+#endif
 
 bool URLFetcherCore::GetResponseAsFilePath(bool take_ownership,
                                            base::FilePath* out_response_path) {
@@ -782,8 +804,11 @@ void URLFetcherCore::StartURLRequest() {
   if (!extra_request_headers_.IsEmpty())
     request_->SetExtraRequestHeaders(extra_request_headers_);
 
+#if defined(STARBOARD)
   request_->SetLoadTimingInfoCallback(base::Bind(&URLFetcherCore::GetLoadTimingInfo,
       base::Unretained(this)));
+#endif
+
   request_->Start();
 }
 
@@ -1131,6 +1156,14 @@ void URLFetcherCore::AssertHasNoUploadData() const {
 
 #if defined(STARBOARD)
 void URLFetcherCore::GetLoadTimingInfo(
+    const net::LoadTimingInfo& timing_info) {
+  delegate_task_runner_->PostTask(
+      FROM_HERE,
+      base::Bind(&URLFetcherCore::GetLoadTimingInfoInDelegateThread,
+                 this, timing_info));
+}
+
+void URLFetcherCore::GetLoadTimingInfoInDelegateThread(
     const net::LoadTimingInfo& timing_info) {
   // Check if the URLFetcherCore has been stopped before.
   if (delegate_) {

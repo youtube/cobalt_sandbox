@@ -26,7 +26,6 @@ RUN apt update -qqy \
         ninja-build \
         pkgconf \
         unzip \
-        yasm \
     && /opt/clean-after-apt.sh
 
 # === Get Nodejs pinned LTS version via NVM
@@ -110,6 +109,8 @@ RUN cd /tmp \
     && tar xf clang-llvmorg-${CLANG_16_VER}.tgz -C ${CLANG_16_TC_HOME} \
     && echo ${CLANG_16_VER} >> ${CLANG_16_TC_HOME}/cr_build_revision \
     && rm clang-llvmorg-${CLANG_16_VER}.tgz
+
+RUN git config --global --add safe.directory /code
 
 WORKDIR /code
 CMD ["/usr/bin/python","--version"]

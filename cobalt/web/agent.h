@@ -27,6 +27,7 @@
 #include "cobalt/network/network_module.h"
 #include "cobalt/script/javascript_engine.h"
 #include "cobalt/script/wrappable.h"
+#include "cobalt/watchdog/watchdog.h"
 #include "cobalt/web/context.h"
 #include "cobalt/web/environment_settings.h"
 #include "cobalt/web/user_agent_platform_info.h"
@@ -34,7 +35,7 @@
 
 namespace cobalt {
 namespace worker {
-class ServiceWorkerJobs;
+class ServiceWorkerContext;
 }
 namespace web {
 
@@ -69,7 +70,7 @@ class Agent : public base::MessageLoop::DestructionObserver {
     base::Callback<int(const std::string&, std::unique_ptr<char[]>*)>
         read_cache_callback;
 
-    worker::ServiceWorkerJobs* service_worker_jobs = nullptr;
+    worker::ServiceWorkerContext* service_worker_context = nullptr;
 
     const UserAgentPlatformInfo* platform_info = nullptr;
   };
@@ -119,10 +120,16 @@ class Agent : public base::MessageLoop::DestructionObserver {
   void InitializeTaskInThread(const Options& options,
                               InitializeCallback initialize_callback);
 
+  void PingWatchdog(watchdog::Watchdog* watchdog);
+
   // The thread created and owned by this Web Agent.
   // All sub-objects of this object are created on this thread, and all public
   // member functions are re-posted to this thread if necessary.
   base::Thread thread_;
+
+  bool watchdog_registered_ = false;
+
+  std::string watchdog_name_;
 
   // Interface to the web Context
   std::unique_ptr<Context> context_;
