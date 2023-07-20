@@ -104,6 +104,8 @@ jobs:
             # TODO: Not available?
             DD_GIT_COMMIT_COMMITTER_DATE:  ${{ github.event.workflow_run.head_commit.timestamp }}
           run: |
+            # Loop over each platform, extract the tags and upload xml results.
+
             # Unit test results are archived on the following format:
             #
             # unit-test-results/
@@ -121,7 +123,6 @@ jobs:
             # │   └── TAGS
             # etc.
 
-            # Loop over each platform, extract the tags and upload xml results.
             for dir in unit-test-results/*/; do
               echo "Uploading $dir test report"
 
