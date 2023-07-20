@@ -59,7 +59,6 @@ jobs:
                 let fs = require('fs');
                 fs.writeFileSync(`${process.env.GITHUB_WORKSPACE}/unit-test-results.zip`, Buffer.from(download.data));
             } else {
-              // TODO: Comment on PR?
               core.setFailed(`Expected one artifact with name 'unit-test-results'. Found ${matchArtifacts.length}.`);
             }
       - name: Extract Archived Unit Test Results
@@ -72,7 +71,7 @@ jobs:
         shell: bash
         # TODO: pin version (with checksum?)
         run: npm install -g @datadog/datadog-ci
-      - name: Upload To Datadog
+      - name: Upload to Datadog
         shell: bash
         env:
           DATADOG_API_KEY: ${{ secrets.DD_API_KEY }}
@@ -117,3 +116,23 @@ jobs:
                       --tags $tags \
                       $dir/**/*.xml
           done
+      - name: Comment on PR on Failure
+        # TODO: Change to failure once tested.
+        if: success()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            // Get url of this workflow run.
+            const actions_run = (await github.rest.actions.getWorkflowRun({
+              owner : context.repo.owner,
+              repo : context.repo.repo,
+              run_id : context.runId,
+            })).data;
+            context.payload.workflow_run.pull_requests.forEach(pr => {
+              github.rest.issues.createComment({
+                issue_number: pr.number
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `Failed to upload unit test results to DataDog. See ${actions_run.html_url} for details about the error.`
+              })
+            });
