@@ -60,7 +60,7 @@ jobs:
                 fs.writeFileSync(`${process.env.GITHUB_WORKSPACE}/unit-test-results.zip`, Buffer.from(download.data));
             } else {
               // TODO: Comment on PR?
-              core.setFailed('Expected exactly ');
+              core.setFailed(`Expected one artifact with name 'unit-test-results'. Found ${matchArtifacts.length}.`);
             }
       - name: Extract Archived Unit Test Results
         run: unzip unit-test-results.zip -d unit-test-results
