@@ -98,10 +98,9 @@ jobs:
           for dir in unit-test-results/*/; do
             echo "Uploading $dir test report"
 
-            tags=`cat ${dir}TAGS`
+            export DD_TAGS=`cat ${dir}TAGS`
 
             datadog-ci junit upload \
-                      --tags $tags \
                       $dir/**/*.xml
           done
       - name: Comment on PR on Failure
