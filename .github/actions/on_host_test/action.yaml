@@ -63,6 +63,7 @@ runs:
         echo "XML_FILES_DIR=${GITHUB_WORKSPACE}/unit-test-results/${{ matrix.platform }}/${{ matrix.shard }}" >> $GITHUB_ENV
         echo "COVERAGE_DIR=${GITHUB_WORKSPACE}/coverage" >> $GITHUB_ENV
     - name: Run Tests
+      id: run-tests
       shell: bash
       run: |
         set -x
@@ -87,6 +88,8 @@ runs:
         elif [[ "${{matrix.shard}}" == 'coverage' ]]; then
           xvfb-run -a --server-args="-screen 0 1920x1080x24i +render +extension GLX -noreset" python3 ${GITHUB_WORKSPACE}/starboard/tools/testing/test_runner.py --platform ${{matrix.target_platform}} --config ${{matrix.config}} -r ${loader_args} --xml_output_dir=${XML_FILES_DIR} --coverage_dir=${COVERAGE_DIR} --coverage_report
         else
+          # Running unit tests.
+          echo "test_type=unittests" >> $GITHUB_OUTPUT
           if [[ "${{inputs.os}}" == 'windows' ]]; then
             python3 ${GITHUB_WORKSPACE}/starboard/tools/testing/test_runner.py --platform ${{matrix.target_platform}} --config ${{matrix.config}} -s ${{matrix.shard}} -r
           else
@@ -94,8 +97,7 @@ runs:
           fi
         fi
     - name: Populate TAGS for unit test report
-      # TODO: Should only run for unit-tests
-      if: always()
+      if: ${{ steps.run-tests.outputs.test_type == 'unittests' }}
       shell: bash
       run: |
         set -x
@@ -105,15 +107,11 @@ runs:
           exit 0
         fi
 
-        # TODO: Set tags in `includes` field in config?
-        # TODO: Set metrics here?
-
         # Prepare TAGS file with relevant tags.
         echo "platform:${{ matrix.platform }},os:${{ inputs.os }}" > ${TEST_RESULTS_DIR}/${{ matrix.platform }}/TAGS
     - name: Archive unit test results
       uses: actions/upload-artifact@v3
-      # TODO: Should only run for unit-tests
-      if: always()
+      if: ${{ steps.run-tests.outputs.test_type == 'unittests' }}
       with:
         name: unit-test-results
         path: ${{env.TEST_RESULTS_DIR}}/
