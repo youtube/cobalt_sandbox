@@ -1,23 +1,10 @@
 name: Upload Unit Test Results
 
 on:
-  # This workflow must be triggered via `workflow_run` to be able to access
-  # secrets, which is not possible from a workflow triggered by a PR in a fork.
   workflow_run:
     workflows:
+      - evergreen
       - linux
-      # TODO: Temporary testing
-      - testing
-      # TODO: Download xml files from GCS
-      # - android
-      # - raspi
-      # TODO: Generate xml files
-      # - win32
-      # TODO: Get xml files from platforms
-      # - atv
-      # - ps
-      # - switch
-      # - xbox
     types:
       - completed
 
