@@ -105,11 +105,15 @@ jobs:
                       $dir/**/*.xml
           done
       - name: Comment on PR on Failure
-        # TODO: Change to failure once tested.
-        if: success()
+        if: failure()
         uses: actions/github-script@v6
         with:
           script: |
+            if (context.payload.workflow_run.pull_requests.length == 0) {
+              // Nothing to comment on. The job was not triggered from a pull request.
+              return;
+            }
+
             // Get url of this workflow run.
             const actions_run = (await github.rest.actions.getWorkflowRun({
               owner : context.repo.owner,
