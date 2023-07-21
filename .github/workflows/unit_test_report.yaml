@@ -23,7 +23,8 @@ on:
 
 jobs:
   unit-test-report:
-    permissions: {}
+    permissions:
+      issues: write
     if: always()
     runs-on: ubuntu-latest
     name: Upload Unit Test Reports
