@@ -27,6 +27,6 @@ jobs:
     permissions:
       packages: write
       pull-requests: write
-    with:
+    with: lsls
       platform: win32
       nightly: ${{ github.event.inputs.nightly }}
