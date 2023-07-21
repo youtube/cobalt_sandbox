@@ -21,6 +21,13 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
+            // TODO: Debug loggin'
+            console.log('context.payload.workflow_run', context.payload.workflow_run);
+            console.log('context.payload.workflow_run.pull_requests', context.payload.workflow_run.pull_requests);
+            console.log('context.payload.workflow_run.referenced_workflows', context.payload.workflow_run.referenced_workflows);
+
+            console.log(`Downloading artifacts from ${context.payload.workflow_run.html_url}.`);
+
             // The `download-artifact` action can only access artifacts that
             // were uploaded in the same workflow. Since it was not this
             // workflow that uploaded the artifacts we must use rest api
