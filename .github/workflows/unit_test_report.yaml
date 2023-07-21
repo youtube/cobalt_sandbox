@@ -130,7 +130,7 @@ jobs:
             })).data;
             context.payload.workflow_run.pull_requests.forEach(pr => {
               github.rest.issues.createComment({
-                issue_number: pr.number
+                issue_number: pr.number,
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 body: `Failed to upload unit test results to DataDog. See ${actions_run.html_url} for details about the error.`
