@@ -24,7 +24,7 @@ on:
 jobs:
   unit-test-report:
     permissions:
-      issues: write
+      pull-requests: write
     if: always()
     runs-on: ubuntu-latest
     name: Upload Unit Test Reports
@@ -129,6 +129,8 @@ jobs:
               repo : context.repo.repo,
               run_id : context.runId
             })).data;
+
+            // Comment on each pull request in the trigger event.
             context.payload.workflow_run.pull_requests.forEach(pr => {
               github.rest.issues.createComment({
                 issue_number: pr.number,
