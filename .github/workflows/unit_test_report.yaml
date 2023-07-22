@@ -11,33 +11,27 @@ on:
 jobs:
   unit-test-report:
     permissions:
+      # Needed for posting comments on the triggering PR upon failure.
       pull-requests: write
     if: always()
     runs-on: ubuntu-latest
     name: Upload Unit Test Reports
     steps:
       - name: Download Unit Test Results
-        id: collect-report
+        # The `download-artifact` action can only access artifacts that were uploaded in the same workflow.
+        # Since it was not this workflow that uploaded the artifacts we must use rest api to download them.
+        # https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#using-data-from-the-triggering-workflow
         uses: actions/github-script@v6
         with:
           script: |
-            // TODO: Debug loggin'
-            console.log('context.payload.workflow_run', context.payload.workflow_run);
-            console.log('context.payload.workflow_run.pull_requests', context.payload.workflow_run.pull_requests);
-            console.log('context.payload.workflow_run.referenced_workflows', context.payload.workflow_run.referenced_workflows);
-
-            console.log(`Downloading artifacts from ${context.payload.workflow_run.html_url}.`);
-
-            // The `download-artifact` action can only access artifacts that
-            // were uploaded in the same workflow. Since it was not this
-            // workflow that uploaded the artifacts we must use rest api
-            // to download them.
-            // https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#using-data-from-the-triggering-workflow
+            const name = context.payload.workflow_run.name;
+            const url = context.payload.workflow_run.html_url;
+            console.log(`Downloading unit test results for '${name}' (${url}).`);
 
             let allArtifacts = await github.rest.actions.listWorkflowRunArtifacts({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                run_id: context.payload.workflow_run.id,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.payload.workflow_run.id
             });
 
             let matchArtifacts = allArtifacts.data.artifacts.filter((artifact) => {
@@ -49,10 +43,11 @@ jobs:
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 artifact_id: matchArtifacts[0].id,
-                archive_format: 'zip',
-                });
-                let fs = require('fs');
-                fs.writeFileSync(`${process.env.GITHUB_WORKSPACE}/unit-test-results.zip`, Buffer.from(download.data));
+                archive_format: 'zip'
+              });
+              let fs = require('fs');
+              const path = `${process.env.GITHUB_WORKSPACE}/unit-test-results.zip`;
+              fs.writeFileSync(path, Buffer.from(download.data));
             } else {
               core.setFailed(`Expected one artifact with name 'unit-test-results'. Found ${matchArtifacts.length}.`);
             }
@@ -67,6 +62,16 @@ jobs:
         # TODO: pin version (with checksum?)
         run: npm install -g @datadog/datadog-ci
       - name: Upload to Datadog
+        # Unit test results are archived on the following format:
+        # ├── <platform>
+        # │   ├── <shards>
+        # │   │   └── <test result xmls>
+        # │   └── TAGS
+        # ├── <platform>
+        # │   ├── <shards>
+        # │   │   └── <test result xmls>
+        # │   └── TAGS
+        # etc.
         shell: bash
         env:
           DATADOG_API_KEY: ${{ secrets.DD_API_KEY }}
@@ -86,22 +91,6 @@ jobs:
           DD_GIT_COMMIT_COMMITTER_DATE:  ${{ github.event.workflow_run.head_commit.timestamp }}
         run: |
           # Loop over each platform, extract the tags and upload xml results.
-
-          # Unit test results are archived on the following format:
-          # ├── android-arm
-          # │   ├── <shards>
-          # │   │   └── <test result xmls>
-          # │   └── TAGS
-          # ├── linux-x64x11
-          # │   ├── <shards>
-          # │   │   └── <test result xmls>
-          # │   └── TAGS
-          # ├── raspi-2
-          # │   ├── <shards>
-          # │   │   └── <test result xmls>
-          # │   └── TAGS
-          # etc.
-
           for dir in unit-test-results/*/; do
             echo "Uploading $dir test report"
 
