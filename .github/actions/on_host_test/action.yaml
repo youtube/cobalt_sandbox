@@ -67,6 +67,8 @@ runs:
       shell: bash
       run: |
         set -x
+        test_type=""
+
         # Starboard toolchains are downloaded to a different dir on github. Create a symlink to reassure our tooling that everything is fine.
         if [ -d /root/starboard-toolchains ]; then
           ln -s /root/starboard-toolchains /github/home/starboard-toolchains
@@ -88,8 +90,7 @@ runs:
         elif [[ "${{matrix.shard}}" == 'coverage' ]]; then
           xvfb-run -a --server-args="-screen 0 1920x1080x24i +render +extension GLX -noreset" python3 ${GITHUB_WORKSPACE}/starboard/tools/testing/test_runner.py --platform ${{matrix.target_platform}} --config ${{matrix.config}} -r ${loader_args} --xml_output_dir=${XML_FILES_DIR} --coverage_dir=${COVERAGE_DIR} --coverage_report
         else
-          # Running unit tests.
-          echo "test_type=unittests" >> $GITHUB_OUTPUT
+          test_type=unit_tests
           if [[ "${{inputs.os}}" == 'windows' ]]; then
             python3 ${GITHUB_WORKSPACE}/starboard/tools/testing/test_runner.py --platform ${{matrix.target_platform}} --config ${{matrix.config}} -s ${{matrix.shard}} -r --xml_output_dir=${XML_FILES_DIR}
           else
@@ -98,7 +99,7 @@ runs:
         fi
         echo "test_type=$test_type" >> $GITHUB_OUTPUT
     - name: Populate TAGS for unit test report
-      if: ${{ steps.run-tests.outputs.test_type == 'unittests' }}
+      if: ${{ steps.run-tests.outputs.test_type == 'unit_tests' }}
       shell: bash
       run: |
         # Set tags for test differentiation.
@@ -107,7 +108,7 @@ runs:
         echo $tags > ${TEST_RESULTS_DIR}/${{ matrix.platform }}/TAGS
     - name: Archive unit test results
       uses: actions/upload-artifact@v3
-      if: ${{ steps.run-tests.outputs.test_type == 'unittests' }}
+      if: ${{ steps.run-tests.outputs.test_type == 'unit_tests' }}
       with:
         name: unit-test-results
         path: ${{env.TEST_RESULTS_DIR}}/
