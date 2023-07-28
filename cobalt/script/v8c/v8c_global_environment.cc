@@ -97,8 +97,8 @@ V8cGlobalEnvironment::V8cGlobalEnvironment(v8::Isolate* isolate)
   isolate_->SetData(kIsolateDataIndex, this);
   DCHECK(isolate_->GetData(kIsolateDataIndex) == this);
 
-  isolate_->SetAllowCodeGenerationFromStringsCallback(
-      AllowCodeGenerationFromStringsCallback);
+  isolate_->SetModifyCodeGenerationFromStringsCallback(
+      ModifyCodeGenerationFromStringsCallback);
 
   isolate_->SetAllowWasmCodeGenerationCallback(
       [](v8::Local<v8::Context> context, v8::Local<v8::String> source) {
@@ -371,8 +371,10 @@ V8cGlobalEnvironment::DestructionHelper::~DestructionHelper() {
 }
 
 // static
-bool V8cGlobalEnvironment::AllowCodeGenerationFromStringsCallback(
-    v8::Local<v8::Context> context, v8::Local<v8::String> source) {
+v8::ModifyCodeGenerationFromStringsResult
+V8cGlobalEnvironment::ModifyCodeGenerationFromStringsCallback(
+    v8::Local<v8::Context> context, v8::Local<v8::Value> source,
+    bool is_code_like) {
   V8cGlobalEnvironment* global_environment =
       V8cGlobalEnvironment::GetFromIsolate(context->GetIsolate());
   DCHECK(global_environment);
@@ -385,7 +387,7 @@ bool V8cGlobalEnvironment::AllowCodeGenerationFromStringsCallback(
   // WebAssembly callback has not been explicitly set, however we *have* set
   // one.
   DCHECK_EQ(context->IsCodeGenerationFromStringsAllowed(), false);
-  return context->IsCodeGenerationFromStringsAllowed();
+  return {context->IsCodeGenerationFromStringsAllowed(), {}};
 }
 
 // static
@@ -394,14 +396,14 @@ void V8cGlobalEnvironment::MessageHandler(v8::Local<v8::Message> message,
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
   V8cGlobalEnvironment* global_environment =
       V8cGlobalEnvironment::GetFromIsolate(isolate);
-  if (isolate->GetEnteredContext().IsEmpty()) {
+  if (isolate->GetEnteredOrMicrotaskContext().IsEmpty()) {
     return;
   }
   if (message->ErrorLevel() != v8::Isolate::kMessageError) {
     return;
   }
 
-  v8::Local<v8::Context> context = isolate->GetEnteredContext();
+  v8::Local<v8::Context> context = isolate->GetEnteredOrMicrotaskContext();
   ErrorReport error_report;
   error_report.message = *v8::String::Utf8Value(isolate, message->Get());
   error_report.filename =

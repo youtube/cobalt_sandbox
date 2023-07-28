@@ -169,11 +169,8 @@ void MetricsLog::RecordCoreSystemProfile(MetricsServiceClient* client,
 #endif
 
   metrics::SystemProfileProto::OS* os = system_profile->mutable_os();
-// TODO(b/283256747): Remove when base::SysInfo is Starboardized.
-#if !defined(STARBOARD)
   os->set_name(base::SysInfo::OperatingSystemName());
   os->set_version(base::SysInfo::OperatingSystemVersion());
-#endif
 #if defined(OS_CHROMEOS)
   os->set_kernel_version(base::SysInfo::KernelVersion());
 #elif defined(OS_ANDROID)
@@ -332,7 +329,8 @@ void MetricsLog::TruncateEvents() {
         internal::kUserActionEventLimit,
         uma_proto_.user_action_event_size() - internal::kUserActionEventLimit);
   }
-
+// Omnibox proto removed for binary size reasons: b/290819695.
+#if !defined(USE_COBALT_CUSTOMIZATIONS)
   if (uma_proto_.omnibox_event_size() > internal::kOmniboxEventLimit) {
     UMA_HISTOGRAM_COUNTS_100000("UMA.TruncatedEvents.Omnibox",
                                 uma_proto_.omnibox_event_size());
@@ -340,6 +338,7 @@ void MetricsLog::TruncateEvents() {
         internal::kOmniboxEventLimit,
         uma_proto_.omnibox_event_size() - internal::kOmniboxEventLimit);
   }
+#endif
 }
 
 void MetricsLog::GetEncodedLog(std::string* encoded_log) {

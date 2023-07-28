@@ -25,6 +25,14 @@ template("libwebp_lib") {
       "//starboard/build/config:speed",
       ":libwebp_direct_config",
     ]
+    if (is_win) {
+      cflags_c = [ "/wd4312" ]  # warning C4312: 'type cast': conversion from 'int' to 'int *'
+    } else {
+      cflags_c = [
+        "-Wno-implicit-function-declaration",
+        "-Wno-int-to-pointer-cast",
+      ]
+    }
   }
 }
 
@@ -83,6 +91,11 @@ libwebp_lib("libwebp_enc") {
   sources = libwebp_enc_sources
 }
 
+libwebp_lib("libwebp_sharpyuv") {
+  sources = libwebp_sharpyuv_sources
+  deps = [ ":libwebp_dsp_dec_common" ]
+}
+
 libwebp_lib("libwebp_dsp_enc") {
   sources = libwebp_dsp_enc_sources
 }
@@ -93,7 +106,7 @@ libwebp_lib("libwebp_utils_enc") {
 
 config("libwebp_direct_config") {
   include_dirs = [ "." ]
-  if (is_starboard && !is_win) {
+  if (is_starboard && (target_os == "android" || target_os == "linux")) {
     if (current_cpu == "x64" || current_cpu == "x86") {
       cflags = [
         "-msse2",
@@ -113,8 +126,7 @@ config("libwebp_direct_config") {
       ]
       defines += [ "WEBP_HAVE_AVX2" ]
     }
-    if ((current_cpu == "arm" || current_cpu == "arm64") && arm_use_neon &&
-        (target_os == "android" || target_os == "linux")) {
+    if ((current_cpu == "arm" || current_cpu == "arm64") && arm_use_neon ) {
       defines = [ "WEBP_HAVE_NEON" ]
       cflags = [ "-mfpu=neon" ]
     }
@@ -129,6 +141,7 @@ group("libwebp") {
     ":libwebp_dsp_dec_common",
     ":libwebp_dsp_enc",
     ":libwebp_enc",
+    ":libwebp_sharpyuv",
     ":libwebp_utils_dec",
     ":libwebp_utils_enc",
   ]
