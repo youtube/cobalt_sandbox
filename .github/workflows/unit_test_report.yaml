@@ -11,9 +11,9 @@ on:
 
 jobs:
   unit-test-report:
-    permissions:
-      # Needed for posting comments on the triggering PR upon failure.
-      pull-requests: write
+    permissions: {}
+      # TODO(b/293508740): Report failed workflow runs back to triggering PR.
+      # pull-requests: write
     if: always()
     runs-on: ubuntu-latest
     name: Upload Unit Test Reports
