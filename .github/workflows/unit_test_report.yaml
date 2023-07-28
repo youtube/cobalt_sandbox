@@ -58,7 +58,7 @@ jobs:
         shell: bash
         env:
           DD_VERSION: 'v2.18.0'
-          GN_SHA256SUM: 'af7b2dcb3905bca56655e12131b365f1cba8e159db80d2022330c4f522fab2ef datadog-ci'
+          GN_SHA256SUM: 'adbe9b3a41faaf0b1d9702ba256cf8fa9e474c0cc8216f25e5b489c53d6f0a70  datadog-ci'
         run: |
           set -e
           download_url="https://github.com/DataDog/datadog-ci/releases/download/${DD_VERSION}/datadog-ci_linux-x64"
