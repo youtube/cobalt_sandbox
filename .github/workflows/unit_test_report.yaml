@@ -5,6 +5,7 @@ on:
     workflows:
       - evergreen
       - linux
+      - win32
     types:
       - completed
 
