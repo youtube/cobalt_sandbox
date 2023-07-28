@@ -100,15 +100,10 @@ runs:
       if: ${{ steps.run-tests.outputs.test_type == 'unittests' }}
       shell: bash
       run: |
-        set -x
-
-        # TODO: Remove when I've figured out how to only run this for unit tests
-        if [[ ! -d ${TEST_RESULTS_DIR}/${{ matrix.platform }} ]]; then
-          exit 0
-        fi
-
-        # Prepare TAGS file with relevant tags.
-        echo "platform:${{ matrix.platform }},os:${{ inputs.os }}" > ${TEST_RESULTS_DIR}/${{ matrix.platform }}/TAGS
+        # Set tags for test differentiation.
+        tags="platform:${{ matrix.platform }}"
+        tags="${tags},os:${{ inputs.os }}"
+        echo $tags > ${TEST_RESULTS_DIR}/${{ matrix.platform }}/TAGS
     - name: Archive unit test results
       uses: actions/upload-artifact@v3
       if: ${{ steps.run-tests.outputs.test_type == 'unittests' }}
