@@ -98,6 +98,6 @@ jobs:
           for dir in unit-test-results/*/; do
             echo "Uploading $dir test report"
             export DD_TAGS=`cat ${dir}TAGS`
-            datadog-ci junit upload \
+            ./datadog-ci junit upload \
                       $dir/**/*.xml
           done
