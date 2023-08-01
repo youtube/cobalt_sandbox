@@ -31,7 +31,7 @@ jobs:
 
             console.log(`Downloading artifacts from ${url}`)
             context.payload.workflow_run.pull_requests.forEach(pr => {
-              console.log(`Pull request: https://github.com/youtube/cobalt/pull/${pr.number}`);
+              console.log(`Pull request: ${context.payload.repository.html_url}/pull/${pr.number}`);
             });
 
             let allArtifacts = await github.rest.actions.listWorkflowRunArtifacts({
