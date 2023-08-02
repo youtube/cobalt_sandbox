@@ -34,6 +34,7 @@ jobs:
         run: |
           set -eux
           gsutil -d cp "${GCS_PATH}/${SESSION_ID}.zip" .
+          mkdir -p unit-test-results/${SHARD}/
           unzip ${SESSION_ID}.zip -d unit-test-results/${SHARD}/
       - name: Archive unit test report
         uses: actions/upload-artifact@v3
