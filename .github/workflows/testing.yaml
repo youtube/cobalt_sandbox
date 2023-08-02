@@ -28,7 +28,6 @@ jobs:
         if: always()
         shell: bash
         env:
-          DOWNLOAD_PATH: unit-test-results.zip
           GCS_PATH: gs://cobalt-unittest-storage/results
           SESSION_ID: 7f0f3e44-3f78-4c80-b0fa-bf1ac2bc11ff
           SHARD: 0
