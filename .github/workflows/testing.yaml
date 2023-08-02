@@ -19,13 +19,24 @@ on:
         default: false
 
 jobs:
-  linux-x64:
+  android:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: kaidokert/checkout@v3.5.999
-        with:
-          fetch-depth: 1
+      - name: Set up Cloud SDK
+        uses: isarkis/setup-gcloud@40dce7857b354839efac498d3632050f568090b6 # v1.1.1
+      - name: Download Unit Test Results from GCS
+        if: always()
+        shell: bash
+        env:
+          DOWNLOAD_PATH: unit-test-results.zip
+          GCS_PATH: gs://cobalt-unittest-storage/results/
+          SESSION_ID: 7f0f3e44-3f78-4c80-b0fa-bf1ac2bc11ff
+          SHARD: 0
+        run: |
+          set -eux
+          # TODO: Get session id
+          gsutil -d cp "${GCS_PATH}/${SESSION_ID}.zip" .
+          unzip ${SESSION_ID}.zip -d unit-test-results/${SHARD}/
       - name: Archive unit test report
         uses: actions/upload-artifact@v3
         # TODO: Should only run for unit-tests
