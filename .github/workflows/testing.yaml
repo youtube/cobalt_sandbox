@@ -20,7 +20,7 @@ on:
 
 jobs:
   android:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, X64]
     steps:
       - name: Set up Cloud SDK
         uses: isarkis/setup-gcloud@40dce7857b354839efac498d3632050f568090b6 # v1.1.1
