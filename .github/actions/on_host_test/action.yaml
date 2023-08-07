@@ -102,6 +102,8 @@ runs:
       if: always()
       shell: bash
       run: |
+        echo "steps.id.outputs.test_type: ${{ steps.id.outputs.test_type }}"
+
         # Set tags for test differentiation.
         tags="platform:${{ matrix.platform }}"
         tags="${tags},os:${{ inputs.os }}"
