@@ -35,34 +35,35 @@ jobs:
         run: |
           test_type=unit_test
           echo "test_type=$test_type" >> $GITHUB_OUTPUT
+          exit 1
 
       - name: Print outputs
         if: always()
         shell: bash
         run: |
-          echo "steps.run-tests-0.outputs.test_type: ${{ steps.run-tests-0.outputs.test_type }}"
-          echo "steps.run-tests-1.outputs.test_type: ${{ steps.run-tests-1.outputs.test_type }}"
+          echo "'run-tests-0' always: ${{ steps.run-tests-0.outputs.test_type }}"
+          echo "'run-tests-1' always: ${{ steps.run-tests-1.outputs.test_type }}"
 
-      - name: Gated by output of 'run-tests-0'
+      - name: Gated by output of 'run-tests-0' no curlies
         if: steps.run-tests-0.outputs.test_type == 'unit_test'
         shell: bash
         run: |
-          echo "steps.run-tests-0.outputs.test_type: ${{ steps.run-tests-0.outputs.test_type }}"
+          echo "'run-tests-0' no curlies: ${{ steps.run-tests-0.outputs.test_type }}"
 
-      - name: Gated by output of 'run-tests-1'
+      - name: Gated by output of 'run-tests-1' no curlies
         if: steps.run-tests-1.outputs.test_type == 'unit_test'
         shell: bash
         run: |
-          echo "steps.run-tests-1.outputs.test_type: ${{ steps.run-tests-1.outputs.test_type }}"
+          echo "'run-tests-1' no curlies: ${{ steps.run-tests-1.outputs.test_type }}"
 
       - name: Gated by output of 'run-tests-0' with curlies
         if: ${{ steps.run-tests-0.outputs.test_type == 'unit_test'  }}
         shell: bash
         run: |
-          echo "steps.run-tests-0.outputs.test_type: ${{ steps.run-tests-0.outputs.test_type }}"
+          echo "'run-tests-0' with curlies: ${{ steps.run-tests-0.outputs.test_type }}"
 
       - name: Gated by output of 'run-tests-1' with curlies
         if: ${{ steps.run-tests-1.outputs.test_type == 'unit_test' }}
         shell: bash
         run: |
-          echo "steps.run-tests-1.outputs.test_type: ${{ steps.run-tests-1.outputs.test_type }}"
+          echo "'run-tests-1' with curlies: ${{ steps.run-tests-1.outputs.test_type }}"
