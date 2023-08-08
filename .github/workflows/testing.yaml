@@ -67,3 +67,15 @@ jobs:
         shell: bash
         run: |
           echo "'run-tests-1' with curlies: ${{ steps.run-tests-1.outputs.test_type }}"
+
+      - name: Gated by output of 'run-tests-0' and always()
+        if: always() && steps.run-tests-0.outputs.test_type == 'unit_test'
+        shell: bash
+        run: |
+          echo "'run-tests-0' and always(): ${{ steps.run-tests-0.outputs.test_type }}"
+
+      - name: Gated by output of 'run-tests-1' no curlies
+        if: always() && steps.run-tests-1.outputs.test_type == 'unit_test'
+        shell: bash
+        run: |
+          echo "'run-tests-1' and always(): ${{ steps.run-tests-1.outputs.test_type }}"
