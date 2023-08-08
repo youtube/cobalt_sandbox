@@ -99,18 +99,16 @@ runs:
         fi
         echo "test_type=$test_type" >> $GITHUB_OUTPUT
     - name: Populate TAGS for unit test report
-      if: always()
+      if: steps.run-tests.outputs.test_type == 'unit_tests'
       shell: bash
       run: |
-        echo "steps.id.outputs.test_type: ${{ steps.id.outputs.test_type }}"
-
         # Set tags for test differentiation.
         tags="platform:${{ matrix.platform }}"
         tags="${tags},os:${{ inputs.os }}"
         echo $tags > ${TEST_RESULTS_DIR}/${{ matrix.platform }}/TAGS
     - name: Archive unit test results
       uses: actions/upload-artifact@v3
-      if: always()
+      if: steps.run-tests.outputs.test_type == 'unit_tests'
       with:
         name: unit-test-results
         path: ${{env.TEST_RESULTS_DIR}}/
