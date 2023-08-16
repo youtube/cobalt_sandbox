@@ -26,7 +26,7 @@ namespace webdriver {
 namespace protocol {
 
 // Represents the JSON parameters passed to the moveto WebDriver command.
-// https://www.selenium.dev/documentation/legacy/json_wire_protocol/#sessionsessionidmoveto
+// https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol#sessionsessionidmoveto
 class Moveto {
  public:
   static std::unique_ptr<base::Value> ToValue(const Moveto& moveto);

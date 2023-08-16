@@ -24,13 +24,13 @@ namespace webdriver {
 namespace algorithms {
 
 // Implementation of getElementText algorithm.
-// https://www.w3.org/TR/2015/WD-webdriver-20150808/#getelementtext
+// https://w3c.github.io/webdriver/webdriver-spec.html#getelementtext
 // The spec is not totally clear and, according to comments on the spec, does
 // not exactly match the behavior of existing WebDriver implementations. This
 // implementation will follow the de-facto standards where they differ.
 std::string GetElementText(dom::Element* element);
 
-// https://www.w3.org/TR/2015/WD-webdriver-20150808/#element-displayedness
+// https://w3c.github.io/webdriver/webdriver-spec.html#element-displayedness
 // The spec does not exactly match the behavior of existing WebDriver
 // implementations. Consistency with existing implementations will be preferred
 // over strict conformance to the draft spec.

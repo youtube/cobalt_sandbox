@@ -14,9 +14,8 @@ on:
       - 'COBALT_9'
 
 concurrency:
-  group: '${{ github.workflow }}-${{ github.event_name }}-${{ inputs.platform }} @ ${{ github.event.pull_request.head.repo.id}}:${{ github.event.pull_request.head.label || github.head_ref || github.sha }}'
+  group: '${{ github.workflow }}-${{ inputs.platform }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.sha }}'
   cancel-in-progress: true
-
 
 permissions:
   pull-requests: write

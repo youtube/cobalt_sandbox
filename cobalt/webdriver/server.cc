@@ -16,7 +16,6 @@
 
 #include <memory>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "base/bind.h"
@@ -77,7 +76,7 @@ class ResponseHandlerImpl : public WebDriverServer::ResponseHandler {
         server_(server),
         connection_id_(connection_id) {}
 
-  // https://www.selenium.dev/documentation/legacy/json_wire_protocol/#responses
+  // https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol#Responses
   void Success(std::unique_ptr<base::Value> value) override {
     DCHECK(value);
     std::string data;
@@ -95,7 +94,7 @@ class ResponseHandlerImpl : public WebDriverServer::ResponseHandler {
   // Failed commands map to a valid WebDriver command and contain the expected
   // parameters, but otherwise failed to execute for some reason. This should
   // send a 500 Internal Server Error.
-  // https://www.selenium.dev/documentation/legacy/json_wire_protocol/#error-handling
+  // https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol#Error-Handling
   void FailedCommand(std::unique_ptr<base::Value> value) override {
     DCHECK(value);
     std::string data;
@@ -104,7 +103,7 @@ class ResponseHandlerImpl : public WebDriverServer::ResponseHandler {
   }
 
   // A number of cases for invalid requests are explained here:
-  // https://www.selenium.dev/documentation/legacy/json_wire_protocol/#invalid-requests
+  // https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol#Invalid-Requests
   // The response type should be text/plain and the message body is an error
   // message
 

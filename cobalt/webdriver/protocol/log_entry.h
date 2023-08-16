@@ -26,7 +26,7 @@ namespace webdriver {
 namespace protocol {
 
 // Log entry object:
-// https://www.selenium.dev/documentation/legacy/json_wire_protocol/#log-entry-json-object
+// https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol#Log-Entry-JSON-Object
 class LogEntry {
  public:
   enum LogLevel {

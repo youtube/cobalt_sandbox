@@ -45,7 +45,7 @@ class Capabilities {
  private:
   Capabilities() {}
   // The capabilities listed here:
-  // https://www.selenium.dev/documentation/legacy/json_wire_protocol/#capabilities-json-object
+  // https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol#Capabilities-JSON-Object
 
   base::Optional<std::string> browser_name_;
   base::Optional<std::string> version_;

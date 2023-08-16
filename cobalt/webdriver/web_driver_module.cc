@@ -514,7 +514,7 @@ SessionDriver* WebDriverModule::GetSessionDriver(
   return NULL;
 }
 
-// https://www.selenium.dev/documentation/legacy/json_wire_protocol/#status
+// https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol#status
 void WebDriverModule::GetServerStatus(
     const base::Value* parameters,
     const WebDriverDispatcher::PathVariableMap* path_variables,
@@ -524,7 +524,7 @@ void WebDriverModule::GetServerStatus(
                              protocol::ServerStatus::ToValue(status_));
 }
 
-// https://www.selenium.dev/documentation/legacy/json_wire_protocol/#sessions
+// https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol#sessions
 void WebDriverModule::GetActiveSessions(
     const base::Value* parameters,
     const WebDriverDispatcher::PathVariableMap* path_variables,
@@ -538,7 +538,7 @@ void WebDriverModule::GetActiveSessions(
                              util::internal::ToValue(sessions));
 }
 
-// https://www.selenium.dev/documentation/legacy/json_wire_protocol/#sessionsessionid
+// https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol#get-sessionsessionid
 void WebDriverModule::CreateSession(
     const base::Value* parameters,
     const WebDriverDispatcher::PathVariableMap* path_variables,
@@ -564,7 +564,7 @@ void WebDriverModule::CreateSession(
                                  result_handler.get());
 }
 
-// https://www.selenium.dev/documentation/legacy/json_wire_protocol/#sessions
+// https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol#delete-sessionsessionid
 void WebDriverModule::DeleteSession(
     const base::Value* parameters,
     const WebDriverDispatcher::PathVariableMap* path_variables,
@@ -627,7 +627,7 @@ void WebDriverModule::StopScreencast(
   }
 }
 
-// https://www.selenium.dev/documentation/legacy/json_wire_protocol/#sessionsessionidscreenshot
+// https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol#sessionsessionidscreenshot
 void WebDriverModule::RequestScreenshot(
     const base::Value* parameters,
     const WebDriverDispatcher::PathVariableMap* path_variables,

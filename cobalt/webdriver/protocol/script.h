@@ -27,8 +27,8 @@ namespace protocol {
 
 // Represents the JSON parameters passed to the execute and execute_async
 // WebDriver commands.
-// https://www.selenium.dev/documentation/legacy/json_wire_protocol/#sessionsessionidexecute
-// https://www.selenium.dev/documentation/legacy/json_wire_protocol/#sessionsessionidexecute_async
+// https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol#sessionsessionidexecute
+// https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol#sessionsessionidexecute-async
 class Script {
  public:
   static base::Optional<Script> FromValue(const base::Value* script);
