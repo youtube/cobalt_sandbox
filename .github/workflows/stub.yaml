@@ -26,3 +26,4 @@ jobs:
       pull-requests: write
     with:
       platform: stub
+      nightly: ${{ github.event.inputs.nightly }}
