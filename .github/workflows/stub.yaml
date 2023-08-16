@@ -19,13 +19,10 @@ on:
         default: false
 
 jobs:
-  stub:
+  stub-32:
     uses: ./.github/workflows/main.yaml
     permissions:
       packages: write
       pull-requests: write
     with:
       platform: stub
-      nightly: 'false'
-      run_api_leak_detector: true
-      leak_manifest_filename: "gn_built_docker_debian10_manifest"
