@@ -72,11 +72,16 @@ jobs:
         id: cherry-pick
         continue-on-error: true
         run: |
-          set -e
           git fetch origin ${{ matrix.target_branch }}
+          set +e
           git cherry-pick -x $MERGE_COMMIT_SHA
-          git add .
-          git cherry-pick --continue
+          RES=$?
+          set -e
+          if [ $RES -ne 0 ]; then
+            git add .
+            git cherry-pick --continue
+          fi
+          exit $RES
 
       - name: Create Pull Request
         id: create-pr
