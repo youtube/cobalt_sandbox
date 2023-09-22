@@ -47,7 +47,6 @@ jobs:
     needs: prepare_branch_list
     if: |
       needs.prepare_branch_list.outputs.target_branch != '[]' &&
-      github.event.pull_request.merged == true &&
       github.event.pull_request.merge_commit_sha != null
     strategy:
       matrix:
