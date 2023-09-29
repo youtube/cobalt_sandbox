@@ -72,8 +72,8 @@ jobs:
         id: cherry-pick
         continue-on-error: true
         run: |
+          set -e
           git fetch origin ${{ matrix.target_branch }}
-          set +e
           git cherry-pick -x $MERGE_COMMIT_SHA
           RES=$?
           set -e
