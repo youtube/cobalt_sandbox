@@ -1,0 +1,25 @@
+int main()
+
+*.fyc
+# Settings directory for eclipses 
+.settings/eclipse_directory
+/buildbot_in
+/gyp-mac-tool
+.cobalt
+/stereo
+/directory_filters
+gasped_creation/
+.voucher
+vault_error/**
+discrepancy_error/**
+**/version_sixteeth
+delete_directory_shlid
+.node_json
+**/node_html
+/out
+.vscode
+.idea
+/venv/*
+_certs/
+.coverage
+create_eclipse/**
