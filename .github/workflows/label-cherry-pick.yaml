@@ -79,7 +79,6 @@ jobs:
           set +e
           git cherry-pick -x ${MERGE_COMMIT_SHA}
           RES=$?
-          set -e
           if [ $RES -ne 0 ]; then
             # If the cherry pick failed due to a merge conflict we can
             # add the conflicting file and create the commit anyway.
@@ -94,6 +93,7 @@ jobs:
               RES=$?
             fi
           fi
+          set -e
           exit $RES
 
       - name: Create Pull Request
@@ -112,12 +112,12 @@ jobs:
 
             ${{ github.event.pull_request.body }}
       - name: Comment on failure
-        if: ${{ steps.cherry-pick.outcome == 'failure' && steps.create-pr.outcome == 'failure' }}
+        if: ${{ steps.cherry-pick.outcome == 'failure' || !steps.create-pr.outputs.pull-request-number }}
         uses: actions/github-script@v2
         with:
           github-token: ${{ secrets.CHERRY_PICK_TOKEN }}
           script: |
-            if (steps.create-pr.outcome == 'failure') {
+            if (!steps.create-pr.outputs.pull-request-number) {
               // Comment on the originating PR if creating a cherry pick PR failed.
               github.issues.createComment({
                 issue_number: github.event.pull_request.number,
