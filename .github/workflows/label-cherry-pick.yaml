@@ -77,12 +77,22 @@ jobs:
         run: |
           git fetch origin ${{ matrix.target_branch }}
           set +e
-          git cherry-pick -x $MERGE_COMMIT_SHA
+          git cherry-pick -x ${MERGE_COMMIT_SHA}
           RES=$?
           set -e
           if [ $RES -ne 0 ]; then
+            # If the cherry pick failed due to a merge conflict we can
+            # add the conflicting file and create the commit anyway.
             git add .
             git cherry-pick --continue
+            RES=$?
+
+            # If the cherry pick fails again it could be a merge commit.
+            # Try to select the first parent (-m 1) as the mainline tree.
+            if [ $RES -ne 0 ]; then
+              git cherry-pick -x -m 1 ${MERGE_COMMIT_SHA}
+              RES=$?
+            fi
           fi
           exit $RES
 
@@ -93,7 +103,7 @@ jobs:
           token: ${{ secrets.CHERRY_PICK_TOKEN }}
           draft: ${{ steps.cherry-pick.outcome == 'failure' }}
           base: ${{ matrix.target_branch }}
-          branch: "${{ matrix.target_branch }}-${{ github.event.pull_request.number }}"
+          branch: "cherry-pick-${{ matrix.target_branch }}-${{ github.event.pull_request.number }}"
           committer: GitHub Release Automation <github@google.com>
           reviewers: ${{ github.event.pull_request.user.login }}
           title: "Cherry pick PR #${{ github.event.pull_request.number }}: ${{ github.event.pull_request.title }}"
@@ -101,15 +111,26 @@ jobs:
             Refer to the original PR: https://github.com/${{ github.repository }}/pull/${{ github.event.pull_request.number }}
 
             ${{ github.event.pull_request.body }}
-      - name: PR Comment
-        if: ${{ success() && steps.cherry-pick.outcome == 'failure' }}
+      - name: Comment on failure
+        if: ${{ steps.cherry-pick.outcome == 'failure' && steps.create-pr.outcome == 'failure' }}
         uses: actions/github-script@v2
         with:
           github-token: ${{ secrets.CHERRY_PICK_TOKEN }}
           script: |
-            github.issues.createComment({
-              issue_number: ${{ steps.create-pr.outputs.pull-request-number }},
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '> [!IMPORTANT]\n> The cherry-pick failed! Check out the PR branch (${{ matrix.target_branch }}-${{ github.event.pull_request.number }}) and fix the conflicts before proceeding.'
-            })
+            if (steps.create-pr.outcome == 'failure') {
+              // Comment on the originating PR if creating a cherry pick PR failed.
+              github.issues.createComment({
+                issue_number: github.event.pull_request.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: '> [!IMPORTANT]\n> Creating the cherry pick PR failed! Check the log at ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}.'
+              });
+            } else if (steps.cherry-pick.outcome == 'failure') {
+              // Comment on the new PR if the cherry pick failed.
+              github.issues.createComment({
+                issue_number: steps.create-pr.outputs.pull-request-number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: '> [!IMPORTANT]\n> The cherry-pick failed! Check out the PR branch (${{ matrix.target_branch }}-${{ github.event.pull_request.number }}) and fix the conflicts before proceeding.'
+              });
+            }
