@@ -98,6 +98,7 @@ jobs:
 
       - name: Create Pull Request
         id: create-pr
+        continue-on-error: true
         uses: peter-evans/create-pull-request@2b011faafdcbc9ceb11414d64d0573f37c774b04 # v4.2.3
         with:
           token: ${{ secrets.CHERRY_PICK_TOKEN }}
@@ -112,7 +113,6 @@ jobs:
 
             ${{ github.event.pull_request.body }}
       - name: Comment on failure
-        if: ${{ steps.cherry-pick.outcome == 'failure' || !steps.create-pr.outputs.pull-request-number }}
         uses: actions/github-script@v2
         with:
           github-token: ${{ secrets.CHERRY_PICK_TOKEN }}
