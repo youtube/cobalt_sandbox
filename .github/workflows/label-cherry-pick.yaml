@@ -121,6 +121,9 @@ jobs:
         with:
           github-token: ${{ secrets.CHERRY_PICK_TOKEN }}
           script: |
+            console.log(github);
+            console.log(github.event);
+            console.log(context);
             if (!'${{ steps.create-pr.outputs.pull-request-number }}') {
               // Comment on the originating PR if creating a cherry pick PR failed.
               github.issues.createComment({
