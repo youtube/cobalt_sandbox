@@ -74,6 +74,7 @@ jobs:
         id: cherry-pick
         continue-on-error: true
         run: |
+          set -x
           git fetch origin ${{ matrix.target_branch }}
           set +e
 
