@@ -40,10 +40,13 @@ jobs:
 
           for label in $labels; do
             if [[ $label == "cp-$branch" ]]; then
+              echo $branch
               filtered_branches+=("$branch")
             fi
           done
         done
+
+        echo -n "$filtered_branches" | jq -cRs 'split("\n")'
 
         echo "target_branch=$(echo -n "$filtered_branches" | jq -cRs 'split("\n")')" >> $GITHUB_OUTPUT
 
