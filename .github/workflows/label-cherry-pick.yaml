@@ -124,7 +124,7 @@ jobs:
             if (!'${{ steps.create-pr.outputs.pull-request-number }}') {
               // Comment on the originating PR if creating a cherry pick PR failed.
               github.issues.createComment({
-                issue_number: github.event.pull_request.number,
+                issue_number: github.event.number,
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 body: '> [!IMPORTANT]\n> Creating the cherry pick PR failed! Check the log at ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}.'
