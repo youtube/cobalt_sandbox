@@ -82,24 +82,29 @@ jobs:
         run: |
           git fetch origin ${{ matrix.target_branch }}
           set +e
-          git cherry-pick -x ${MERGE_COMMIT_SHA}
-          RES=$?
-          if [ $RES -ne 0 ]; then
-            # If the cherry pick failed due to a merge conflict we can
-            # add the conflicting file and create the commit anyway.
-            git add .
-            git cherry-pick --continue
+
+          rev_list=`git rev-list --parents -n 1 ${MERGE_COMMIT_SHA}`
+          hash_count=`wc -w <<< ${rev_list}`
+
+          # git rev-list returns a list of hashes: <HEAD_HASH> [<PARENT_HASH>...]
+          # It's not a merge commit if there are less than three (i.e. less than two parents).
+          if [ ${hash_count} -lt 3 ]; then
+            git cherry-pick -x ${MERGE_COMMIT_SHA}
             RES=$?
 
-            # If the cherry pick fails again it could be a merge commit.
-            # Try to select the first parent (-m 1) as the mainline tree.
-            if [ $RES -ne 0 ]; then
-              git cherry-pick -x -m 1 ${MERGE_COMMIT_SHA}
-              RES=$?
+            if [ ${RES} -ne 0 ]; then
+              # If the cherry pick failed due to a merge conflict we can
+              # add the conflicting file and create the commit anyway.
+              git add .
+              git cherry-pick --continue
+              exit $?
             fi
+          else
+            # This commit is a merge commit and has multiple parents.
+            # Select the first parent (-m 1) as the mainline tree.
+            git cherry-pick -x -m 1 ${MERGE_COMMIT_SHA}
+            RES=$?
           fi
-          set -e
-          exit $RES
 
       - name: Create Pull Request
         id: create-pr
