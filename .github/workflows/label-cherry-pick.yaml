@@ -3,12 +3,14 @@ name: Label Cherry Pick
 on:
   pull_request_target:
     types:
-      - labeled
       - closed
 
 jobs:
   prepare_branch_list:
     runs-on: ubuntu-latest
+    if: |
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.merge_commit_sha != null
     outputs:
       target_branch: ${{ steps.set-branches.outputs.target_branch }}
     steps:
@@ -17,14 +19,9 @@ jobs:
       env:
         PR_LABELS: ${{ toJson(github.event.pull_request.labels) }}
         EVENT_ACTION: ${{ github.event.action }}
-        LABEL_NAME: ${{ github.event.label.name }}
         BASE_REF: ${{ github.base_ref }}
       run: |
-        if [[ $EVENT_ACTION == 'closed' ]]; then
-          labels=$(echo "$PR_LABELS" | jq -r '.[].name')
-        else
-          labels=$LABEL_NAME
-        fi
+        labels=$(echo "$PR_LABELS" | jq -r '.[].name')
 
         branches=("24.lts.1+" "23.lts.1+" "22.lts.1+" "21.lts.1+" "20.lts.1+" "19.lts.1+" "rc_11" "COBALT_9")
         filtered_branches=()
@@ -45,10 +42,7 @@ jobs:
   cherry_pick:
     runs-on: ubuntu-latest
     needs: prepare_branch_list
-    if: |
-      needs.prepare_branch_list.outputs.target_branch != '[]' &&
-      github.event.pull_request.merged == true &&
-      github.event.pull_request.merge_commit_sha != null
+    if: needs.prepare_branch_list.outputs.target_branch != '[]'
     strategy:
       matrix:
         target_branch: ${{ fromJson(needs.prepare_branch_list.outputs.target_branch) }}
@@ -117,7 +111,7 @@ jobs:
         with:
           github-token: ${{ secrets.CHERRY_PICK_TOKEN }}
           script: |
-            if (!${{ steps.create-pr.outputs.pull-request-number }}) {
+            if (!'${{ steps.create-pr.outputs.pull-request-number }}') {
               // Comment on the originating PR if creating a cherry pick PR failed.
               github.issues.createComment({
                 issue_number: github.event.pull_request.number,
@@ -125,7 +119,7 @@ jobs:
                 repo: context.repo.repo,
                 body: '> [!IMPORTANT]\n> Creating the cherry pick PR failed! Check the log at ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}.'
               });
-            } else if (${{ steps.cherry-pick.outcome }} == 'failure') {
+            } else if ('${{ steps.cherry-pick.outcome }}' == 'failure') {
               // Comment on the new PR if the cherry pick failed.
               github.issues.createComment({
                 issue_number: ${{ steps.create-pr.outputs.pull-request-number }},
