@@ -97,7 +97,7 @@ jobs:
               # add the conflicting file and create the commit anyway.
               git add .
               git cherry-pick --continue
-              exit $?
+              exit ${RES}
             fi
           else
             # This commit is a merge commit and has multiple parents.
