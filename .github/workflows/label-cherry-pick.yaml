@@ -46,6 +46,8 @@ jobs:
 
   cherry_pick:
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
     needs: prepare_branch_list
     if: needs.prepare_branch_list.outputs.target_branch != '[]'
     strategy:
@@ -118,13 +120,17 @@ jobs:
             ${{ github.event.pull_request.body }}
       - name: Comment on failure
         uses: actions/github-script@v6
+        env:
+          DEST_PR_NUMBER: ${{ steps.create-pr.outputs.pull-request-number }}
         with:
           github-token: ${{ secrets.CHERRY_PICK_TOKEN }}
           script: |
             console.log(github);
             console.log(github.event);
             console.log(context);
-            if (!'${{ steps.create-pr.outputs.pull-request-number }}') {
+
+            const { DEST_PR_NUMBER } = process.env
+            if (DEST_PR_NUMBER != '') {
               // Comment on the originating PR if creating a cherry pick PR failed.
               github.issues.createComment({
                 issue_number: github.event.number,
@@ -135,7 +141,7 @@ jobs:
             } else if ('${{ steps.cherry-pick.outcome }}' == 'failure') {
               // Comment on the new PR if the cherry pick failed.
               github.issues.createComment({
-                issue_number: ${{ steps.create-pr.outputs.pull-request-number }},
+                issue_number: DEST_PR_NUMBER,
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 body: '> [!IMPORTANT]\n> The cherry-pick failed! Check out the PR branch (${{ matrix.target_branch }}-${{ github.event.pull_request.number }}) and fix the conflicts before proceeding.'
