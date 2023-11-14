@@ -37,18 +37,12 @@ jobs:
           if [[ $branch == $BASE_REF ]]; then
             continue
           fi
-
-          for label in $labels; do
-            if [[ $label == "cp-$branch" ]]; then
-              echo $branch
-              filtered_branches+=("$branch")
-            fi
-          done
+          if [[ ${labels[@]} =~ "cp-$branch" ]]; then
+            filtered_branches+=("$branch")
+          fi
         done
 
-        echo -n "$filtered_branches" | jq -cRs 'split("\n")'
-
-        echo "target_branch=$(echo -n "$filtered_branches" | jq -cRs 'split("\n")')" >> $GITHUB_OUTPUT
+        echo "target_branch=$(echo -n "${filtered_branches[@]}" | jq -cRs 'split(" ")')" >> $GITHUB_OUTPUT
 
   cherry_pick:
     runs-on: ubuntu-latest
