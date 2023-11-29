@@ -50,7 +50,7 @@ x-shared-unittest-definitions: &shared-unittest-definitions
     args:
       - CLANG_VER=${CLANG_VER:-365097-f7e52fbd-8}
       - CLANG_16_VER=${CLANG_16_VER:-16-init-17653-g39da55e8-2}
-  image: cobalt-linux-x64x11-unittest
+  image: gcr.io/cobalt-actions-prod/cobalt-linux-x64x11-unittest:pr-2009
   environment:
     - PLATFORM=${PLATFORM:-linux-x64x11}
     - CONFIG=${CONFIG:-devel}
@@ -159,7 +159,7 @@ services:
     build:
       context: ./docker/linux
       dockerfile: linux-x64x11/Dockerfile
-    image: cobalt-build-linux
+    image: gcr.io/cobalt-actions-prod/cobalt-build-linux:pr-2009
     depends_on: [ build-base ]
     environment:
       <<: *shared-build-env
@@ -169,7 +169,7 @@ services:
     build:
       context: ./docker/linux
       dockerfile: linux-x64x11/Dockerfile
-    image: cobalt-build-linux
+    image: gcr.io/cobalt-actions-prod/cobalt-build-linux:pr-2009
     depends_on: [ build-base ]
     environment:
       <<: *shared-build-env
