@@ -24,6 +24,7 @@
 #include "base/lazy_instance.h"
 #include "base/logging.h"
 #include "base/metrics/statistics_recorder.h"
+#include "base/metrics/user_metrics.h"
 #include "base/optional.h"
 #include "base/path_service.h"
 #include "base/strings/string_number_conversions.h"
@@ -48,21 +49,22 @@
 #include "cobalt/base/on_screen_keyboard_hidden_event.h"
 #include "cobalt/base/on_screen_keyboard_shown_event.h"
 #include "cobalt/base/on_screen_keyboard_suggestions_updated_event.h"
+#include "cobalt/base/starboard_stats_tracker.h"
 #include "cobalt/base/startup_timer.h"
-#if defined(COBALT_ENABLE_VERSION_COMPATIBILITY_VALIDATIONS)
 #include "cobalt/base/version_compatibility.h"
-#endif  // defined(COBALT_ENABLE_VERSION_COMPATIBILITY_VALIDATIONS)
 #include "cobalt/base/window_on_offline_event.h"
 #include "cobalt/base/window_on_online_event.h"
 #include "cobalt/base/window_size_changed_event.h"
+#include "cobalt/browser/client_hint_headers.h"
 #include "cobalt/browser/device_authentication.h"
 #include "cobalt/browser/memory_settings/auto_mem_settings.h"
-#include "cobalt/browser/memory_tracker/tool.h"
+#include "cobalt/browser/metrics/cobalt_metrics_services_manager.h"
 #include "cobalt/browser/switches.h"
 #include "cobalt/browser/user_agent_platform_info.h"
 #include "cobalt/browser/user_agent_string.h"
 #include "cobalt/cache/cache.h"
 #include "cobalt/configuration/configuration.h"
+#include "cobalt/h5vcc/h5vcc_crash_log.h"
 #include "cobalt/loader/image/image_decoder.h"
 #include "cobalt/math/size.h"
 #include "cobalt/script/javascript_engine.h"
@@ -72,14 +74,15 @@
 #include "cobalt/system_window/input_event.h"
 #include "cobalt/trace_event/scoped_trace_to_file.h"
 #include "cobalt/watchdog/watchdog.h"
+#include "components/metrics/metrics_service.h"
 #include "starboard/common/device_type.h"
+#include "starboard/common/metrics/stats_tracker.h"
 #include "starboard/common/system_property.h"
 #include "starboard/configuration.h"
 #include "starboard/event.h"
 #include "starboard/extension/crash_handler.h"
 #include "starboard/extension/installation_manager.h"
 #include "starboard/system.h"
-#include "starboard/time.h"
 #include "url/gurl.h"
 
 #if SB_IS(EVERGREEN)
@@ -112,7 +115,7 @@ const int64_t kWatchdogTimeInterval = 10000000;
 const int64_t kWatchdogTimeWait = 2000000;
 
 bool IsStringNone(const std::string& str) {
-  return !base::strcasecmp(str.c_str(), "none");
+  return !strcasecmp(str.c_str(), "none");
 }
 
 #if defined(ENABLE_WEBDRIVER) || defined(ENABLE_DEBUGGER)
@@ -122,7 +125,7 @@ std::string GetDevServersListenIp() {
   // Default to INADDR_ANY
   std::string listen_ip(ip_v6 ? "::" : "0.0.0.0");
 
-#if SB_API_VERSION < SB_SYSTEM_DEVICE_TYPE_AS_STRING_API_VERSION
+#if SB_API_VERSION < 15
   // Desktop PCs default to loopback.
   if (SbSystemGetDeviceType() == kSbSystemDeviceTypeDesktopPC) {
     listen_ip = ip_v6 ? "::1" : "127.0.0.1";
@@ -454,7 +457,12 @@ std::string GetMinLogLevelString() {
 }
 
 int StringToLogLevel(const std::string& log_level) {
-  if (log_level == "info") {
+  if (log_level == "verbose") {
+    // The lower the verbose level is, the more messages are logged.  Set it to
+    // a lower enough value to ensure that all known verbose messages are
+    // logged.
+    return logging::LOG_VERBOSE - 15;
+  } else if (log_level == "info") {
     return logging::LOG_INFO;
   } else if (log_level == "warning") {
     return logging::LOG_WARNING;
@@ -523,15 +531,7 @@ struct SecurityFlags {
 base::LazyInstance<NonTrivialStaticFields>::DestructorAtExit
     non_trivial_static_fields = LAZY_INSTANCE_INITIALIZER;
 
-#if defined(ENABLE_DEBUGGER) && defined(STARBOARD_ALLOWS_MEMORY_TRACKING)
-const char kMemoryTrackerCommand[] = "memory_tracker";
-const char kMemoryTrackerCommandShortHelp[] = "Create a memory tracker.";
-const char kMemoryTrackerCommandLongHelp[] =
-    "Create a memory tracker of the given type. Use an empty string to see the "
-    "available trackers.";
-#endif  // defined(ENABLE_DEBUGGER) && defined(STARBOARD_ALLOWS_MEMORY_TRACKING)
-
-void AddCrashHandlerAnnotations() {
+void AddCrashHandlerAnnotations(const UserAgentPlatformInfo& platform_info) {
   auto crash_handler_extension =
       static_cast<const CobaltExtensionCrashHandlerApi*>(
           SbSystemGetExtension(kCobaltExtensionCrashHandlerName));
@@ -540,7 +540,6 @@ void AddCrashHandlerAnnotations() {
     return;
   }
 
-  auto platform_info = cobalt::browser::GetUserAgentPlatformInfoFromSystem();
   std::string user_agent =
       cobalt::browser::CreateUserAgentString(platform_info);
   std::string version = "";
@@ -599,52 +598,35 @@ void AddCrashHandlerAnnotations() {
   }
 }
 
-void AddCrashHandlerApplicationState(base::ApplicationState state) {
-  auto crash_handler_extension =
-      static_cast<const CobaltExtensionCrashHandlerApi*>(
-          SbSystemGetExtension(kCobaltExtensionCrashHandlerName));
-  if (!crash_handler_extension) {
-    DLOG(INFO) << "No crash handler extension, not sending application state.";
-    return;
-  }
-
+void AddCrashLogApplicationState(base::ApplicationState state) {
   std::string application_state = std::string(GetApplicationStateString(state));
   application_state.push_back('\0');
 
-  if (crash_handler_extension->version > 1) {
-    if (crash_handler_extension->SetString("application_state",
-                                           application_state.c_str())) {
-      DLOG(INFO) << "Sent application state to crash handler.";
-      return;
+  auto crash_handler_extension =
+      static_cast<const CobaltExtensionCrashHandlerApi*>(
+          SbSystemGetExtension(kCobaltExtensionCrashHandlerName));
+  if (crash_handler_extension && crash_handler_extension->version >= 2) {
+    if (!crash_handler_extension->SetString("application_state",
+                                            application_state.c_str())) {
+      LOG(ERROR) << "Could not send application state to crash handler.";
     }
+    return;
   }
-  DLOG(ERROR) << "Could not send application state to crash handler.";
+
+  // Crash handler is not supported, fallback to crash log dictionary.
+  h5vcc::CrashLogDictionary::GetInstance()->SetString("application_state",
+                                                      application_state);
 }
 
 }  // namespace
-
-// Helper stub to disable histogram tracking in StatisticsRecorder
-struct RecordCheckerStub : public base::RecordHistogramChecker {
-  bool ShouldRecord(uint64_t) const override { return false; }
-};
 
 // Static user logs
 ssize_t Application::available_memory_ = 0;
 int64 Application::lifetime_in_ms_ = 0;
 
 Application::Application(const base::Closure& quit_closure, bool should_preload,
-                         SbTimeMonotonic timestamp)
-    : message_loop_(base::MessageLoop::current()),
-      quit_closure_(quit_closure)
-#if defined(ENABLE_DEBUGGER) && defined(STARBOARD_ALLOWS_MEMORY_TRACKING)
-      ,
-      ALLOW_THIS_IN_INITIALIZER_LIST(memory_tracker_command_handler_(
-          kMemoryTrackerCommand,
-          base::Bind(&Application::OnMemoryTrackerCommand,
-                     base::Unretained(this)),
-          kMemoryTrackerCommandShortHelp, kMemoryTrackerCommandLongHelp))
-#endif  // defined(ENABLE_DEBUGGER) && defined(STARBOARD_ALLOWS_MEMORY_TRACKING)
-{
+                         int64_t timestamp)
+    : message_loop_(base::MessageLoop::current()), quit_closure_(quit_closure) {
   DCHECK(!quit_closure_.is_null());
   if (should_preload) {
     preload_timestamp_ = timestamp;
@@ -691,20 +673,21 @@ Application::Application(const base::Closure& quit_closure, bool should_preload,
   std::string language = base::GetSystemLanguage();
   base::LocalizedStrings::GetInstance()->Initialize(language);
 
-  // Disable histogram tracking before TaskScheduler creates StatisticsRecorder
-  // instances.
-  auto record_checker = std::make_unique<RecordCheckerStub>();
-  base::StatisticsRecorder::SetRecordChecker(std::move(record_checker));
-
   // A one-per-process task scheduler is needed for usage of APIs in
   // base/post_task.h which will be used by some net APIs like
   // URLRequestContext;
   base::TaskScheduler::CreateAndStartWithDefaultParams("Cobalt TaskScheduler");
 
+  starboard::StatsTrackerContainer::GetInstance()->set_stats_tracker(
+      std::make_unique<StarboardStatsTracker>());
+
   // Initializes persistent settings.
   persistent_settings_ =
       std::make_unique<persistent_storage::PersistentSettings>(
           kPersistentSettingsJson);
+
+  // Initialize telemetry/metrics.
+  InitMetrics();
 
   // Initializes Watchdog.
   watchdog::Watchdog* watchdog =
@@ -717,9 +700,6 @@ Application::Application(const base::Closure& quit_closure, bool should_preload,
                        base::kApplicationStateStarted, kWatchdogTimeInterval,
                        kWatchdogTimeWait, watchdog::NONE);
 
-  cobalt::cache::Cache::GetInstance()->set_persistent_settings(
-      persistent_settings_.get());
-
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
   base::Optional<cssom::ViewportSize> requested_viewport_size =
       GetRequestedViewportSize(command_line);
@@ -727,7 +707,6 @@ Application::Application(const base::Closure& quit_closure, bool should_preload,
   unconsumed_deep_link_ = GetInitialDeepLink();
   DLOG(INFO) << "Initial deep link: " << unconsumed_deep_link_;
 
-  storage::StorageManager::Options storage_manager_options;
   network::NetworkModule::Options network_module_options;
   // Create the main components of our browser.
   BrowserModule::Options options;
@@ -764,7 +743,7 @@ Application::Application(const base::Closure& quit_closure, bool should_preload,
 
 #if defined(ENABLE_DEBUG_COMMAND_LINE_SWITCHES)
   if (command_line->HasSwitch(browser::switches::kNullSavegame)) {
-    storage_manager_options.savegame_options.factory =
+    network_module_options.storage_manager_options.savegame_options.factory =
         &storage::SavegameFake::Create;
   }
 
@@ -774,7 +753,6 @@ Application::Application(const base::Closure& quit_closure, bool should_preload,
 
 #endif  // defined(ENABLE_DEBUG_COMMAND_LINE_SWITCHES)
 
-#if defined(COBALT_ENABLE_VERSION_COMPATIBILITY_VALIDATIONS)
   constexpr int kDefaultMinCompatibilityVersion = 1;
   int minimum_version = kDefaultMinCompatibilityVersion;
 #if defined(ENABLE_DEBUG_COMMAND_LINE_SWITCHES)
@@ -787,7 +765,6 @@ Application::Application(const base::Closure& quit_closure, bool should_preload,
   }
 #endif  // defined(ENABLE_DEBUG_COMMAND_LINE_SWITCHES)
   base::VersionCompatibility::GetInstance()->SetMinimumVersion(minimum_version);
-#endif  // defined(COBALT_ENABLE_VERSION_COMPATIBILITY_VALIDATIONS)
 
   base::Optional<std::string> partition_key;
   if (command_line->HasSwitch(browser::switches::kLocalStoragePartitionUrl)) {
@@ -798,14 +775,16 @@ Application::Application(const base::Closure& quit_closure, bool should_preload,
   } else {
     partition_key = base::GetApplicationKey(initial_url);
   }
-  storage_manager_options.savegame_options.id = partition_key;
+  network_module_options.storage_manager_options.savegame_options.id =
+      partition_key;
 
   base::Optional<std::string> default_key =
       base::GetApplicationKey(GURL(kDefaultURL));
   if (command_line->HasSwitch(
           browser::switches::kForceMigrationForStoragePartitioning) ||
       partition_key == default_key) {
-    storage_manager_options.savegame_options.fallback_to_default_id = true;
+    network_module_options.storage_manager_options.savegame_options
+        .fallback_to_default_id = true;
   }
 
   // User can specify an extra search path entry for files loaded via file://.
@@ -864,14 +843,6 @@ Application::Application(const base::Closure& quit_closure, bool should_preload,
 
   EnableUsingStubImageDecoderIfRequired();
 
-#if defined(ENABLE_DEBUGGER) && defined(STARBOARD_ALLOWS_MEMORY_TRACKING)
-  if (command_line->HasSwitch(switches::kMemoryTracker)) {
-    std::string command_arg =
-        command_line->GetSwitchValueASCII(switches::kMemoryTracker);
-    memory_tracker_tool_ = memory_tracker::CreateMemoryTrackerTool(command_arg);
-  }
-#endif  // defined(ENABLE_DEBUGGER) && defined(STARBOARD_ALLOWS_MEMORY_TRACKING)
-
   if (command_line->HasSwitch(switches::kDisableImageAnimations)) {
     options.web_module_options.enable_image_animations = false;
   }
@@ -906,15 +877,16 @@ Application::Application(const base::Closure& quit_closure, bool should_preload,
   options.web_module_options.collect_unload_event_time_callback = base::Bind(
       &Application::CollectUnloadEventTimingInfo, base::Unretained(this));
 
-  account_manager_.reset(new account::AccountManager());
-
-  storage_manager_.reset(new storage::StorageManager(storage_manager_options));
+  cobalt::browser::UserAgentPlatformInfo platform_info;
 
   network_module_.reset(new network::NetworkModule(
-      CreateUserAgentString(GetUserAgentPlatformInfoFromSystem()),
-      storage_manager_.get(), &event_dispatcher_, network_module_options));
+      CreateUserAgentString(platform_info), GetClientHintHeaders(platform_info),
+      &event_dispatcher_, network_module_options));
+  // This is not necessary, but since some platforms need a lot of time to read
+  // the savegame, start the storage manager as soon as possible here.
+  network_module_->EnsureStorageManagerStarted();
 
-  AddCrashHandlerAnnotations();
+  AddCrashHandlerAnnotations(platform_info);
 
 #if SB_IS(EVERGREEN)
   if (SbSystemGetExtension(kCobaltExtensionInstallationManagerName) &&
@@ -936,15 +908,15 @@ Application::Application(const base::Closure& quit_closure, bool should_preload,
                                                      update_check_delay_sec));
   }
 #endif
-  browser_module_.reset(new BrowserModule(
-      initial_url,
-      (should_preload ? base::kApplicationStateConcealed
-                      : base::kApplicationStateStarted),
-      &event_dispatcher_, account_manager_.get(), network_module_.get(),
+  browser_module_.reset(
+      new BrowserModule(initial_url,
+                        (should_preload ? base::kApplicationStateConcealed
+                                        : base::kApplicationStateStarted),
+                        &event_dispatcher_, network_module_.get(),
 #if SB_IS(EVERGREEN)
-      updater_module_.get(),
+                        updater_module_.get(),
 #endif
-      options));
+                        options));
 
   UpdateUserAgent();
 
@@ -991,14 +963,12 @@ Application::Application(const base::Closure& quit_closure, bool should_preload,
       base::Bind(&Application::OnWindowOnOfflineEvent, base::Unretained(this));
   event_dispatcher_.AddEventCallback(base::WindowOnOfflineEvent::TypeId(),
                                      on_window_on_offline_event_callback_);
-#if SB_API_VERSION >= 13
   on_date_time_configuration_changed_event_callback_ =
       base::Bind(&Application::OnDateTimeConfigurationChangedEvent,
                  base::Unretained(this));
   event_dispatcher_.AddEventCallback(
       base::DateTimeConfigurationChangedEvent::TypeId(),
       on_date_time_configuration_changed_event_callback_);
-#endif
 
 #if defined(ENABLE_WEBDRIVER)
 #if defined(ENABLE_DEBUG_COMMAND_LINE_SWITCHES)
@@ -1021,15 +991,20 @@ Application::Application(const base::Closure& quit_closure, bool should_preload,
 #endif  // ENABLE_WEBDRIVER
 
 #if defined(ENABLE_DEBUGGER)
-  int remote_debugging_port = GetRemoteDebuggingPort();
-  if (remote_debugging_port == 0) {
-    DLOG(INFO) << "Remote web debugger disabled because "
-               << switches::kRemoteDebuggingPort << " is 0.";
+  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
+          switches::kDisableWebDebugger)) {
+    LOG(INFO) << "Remote web debugger disabled.";
   } else {
-    debug_web_server_.reset(new debug::remote::DebugWebServer(
-        remote_debugging_port, GetDevServersListenIp(),
-        base::Bind(&BrowserModule::CreateDebugClient,
-                   base::Unretained(browser_module_.get()))));
+    int remote_debugging_port = GetRemoteDebuggingPort();
+    if (remote_debugging_port == 0) {
+      LOG(INFO) << "Remote web debugger disabled because "
+                << switches::kRemoteDebuggingPort << " is 0.";
+    } else {
+      debug_web_server_.reset(new debug::remote::DebugWebServer(
+          remote_debugging_port, GetDevServersListenIp(),
+          base::Bind(&BrowserModule::CreateDebugClient,
+                     base::Unretained(browser_module_.get()))));
+    }
   }
 #endif  // ENABLE_DEBUGGER
 
@@ -1047,6 +1022,8 @@ Application::Application(const base::Closure& quit_closure, bool should_preload,
         base::TimeDelta::FromSeconds(duration_in_seconds));
   }
 #endif  // ENABLE_DEBUG_COMMAND_LINE_SWITCHES
+
+  AddCrashLogApplicationState(base::kApplicationStateStarted);
 }
 
 Application::~Application() {
@@ -1056,9 +1033,9 @@ Application::~Application() {
   // for the debugger to land.
   watchdog::Watchdog::DeleteInstance();
 
-#if defined(ENABLE_DEBUGGER) && defined(STARBOARD_ALLOWS_MEMORY_TRACKING)
-  memory_tracker_tool_.reset(NULL);
-#endif  // defined(ENABLE_DEBUGGER) && defined(STARBOARD_ALLOWS_MEMORY_TRACKING)
+  // Explicitly delete the global metrics services manager here to give it
+  // an opportunity to clean up late logs and persist metrics.
+  metrics::CobaltMetricsServicesManager::DeleteInstance();
 
   // Unregister event callbacks.
   event_dispatcher_.RemoveEventCallback(base::WindowSizeChangedEvent::TypeId(),
@@ -1081,14 +1058,14 @@ Application::~Application() {
   event_dispatcher_.RemoveEventCallback(
       base::AccessibilityCaptionSettingsChangedEvent::TypeId(),
       on_caption_settings_changed_event_callback_);
-#if SB_API_VERSION >= 13
   event_dispatcher_.RemoveEventCallback(
       base::DateTimeConfigurationChangedEvent::TypeId(),
       on_date_time_configuration_changed_event_callback_);
-#endif
+  browser_module_.reset();
+  network_module_.reset();
 }
 
-void Application::Start(SbTimeMonotonic timestamp) {
+void Application::Start(int64_t timestamp) {
   if (base::MessageLoop::current() != message_loop_) {
     message_loop_->task_runner()->PostTask(
         FROM_HERE,
@@ -1126,7 +1103,6 @@ void Application::HandleStarboardEvent(const SbEvent* starboard_event) {
 
   // Create a Cobalt event from the Starboard event, if recognized.
   switch (starboard_event->type) {
-#if SB_API_VERSION >= 13
     case kSbEventTypeBlur:
     case kSbEventTypeFocus:
     case kSbEventTypeConceal:
@@ -1136,15 +1112,6 @@ void Application::HandleStarboardEvent(const SbEvent* starboard_event) {
     case kSbEventTypeLowMemory:
       OnApplicationEvent(starboard_event->type, starboard_event->timestamp);
       break;
-#else
-    case kSbEventTypePause:
-    case kSbEventTypeUnpause:
-    case kSbEventTypeSuspend:
-    case kSbEventTypeResume:
-    case kSbEventTypeLowMemory:
-      OnApplicationEvent(starboard_event->type, SbTimeGetMonotonicNow());
-      break;
-#endif  // SB_API_VERSION >= 13
     case kSbEventTypeWindowSizeChanged:
       DispatchEventInternal(new base::WindowSizeChangedEvent(
           static_cast<SbEventWindowSizeChangedData*>(starboard_event->data)
@@ -1175,47 +1142,30 @@ void Application::HandleStarboardEvent(const SbEvent* starboard_event) {
           *static_cast<int*>(starboard_event->data)));
       break;
     case kSbEventTypeLink: {
-#if SB_API_VERSION >= 13
       DispatchDeepLink(static_cast<const char*>(starboard_event->data),
                        starboard_event->timestamp);
-#else   // SB_API_VERSION >= 13
-      DispatchDeepLink(static_cast<const char*>(starboard_event->data),
-                       SbTimeGetMonotonicNow());
-#endif  // SB_API_VERSION >= 13
       break;
     }
-#if SB_API_VERSION >= 13
     case kSbEventTypeAccessibilitySettingsChanged:
-#else
-    case kSbEventTypeAccessiblitySettingsChanged:
-#endif  // SB_API_VERSION >= 13
       DispatchEventInternal(new base::AccessibilitySettingsChangedEvent());
       break;
     case kSbEventTypeAccessibilityCaptionSettingsChanged:
       DispatchEventInternal(
           new base::AccessibilityCaptionSettingsChangedEvent());
       break;
-#if SB_API_VERSION >= 13
     case kSbEventTypeAccessibilityTextToSpeechSettingsChanged:
-#else
-    case kSbEventTypeAccessiblityTextToSpeechSettingsChanged:
-#endif  // SB_API_VERSION >= 13
       DispatchEventInternal(
           new base::AccessibilityTextToSpeechSettingsChangedEvent());
       break;
-#if SB_API_VERSION >= 13
     case kSbEventTypeOsNetworkDisconnected:
       DispatchEventInternal(new base::WindowOnOfflineEvent());
       break;
     case kSbEventTypeOsNetworkConnected:
       DispatchEventInternal(new base::WindowOnOnlineEvent());
       break;
-#endif
-#if SB_API_VERSION >= 13
     case kSbEventDateTimeConfigurationChanged:
       DispatchEventInternal(new base::DateTimeConfigurationChangedEvent());
       break;
-#endif
     // Explicitly list unhandled cases here so that the compiler can give a
     // warning when a value is added, but not handled.
     case kSbEventTypeInput:
@@ -1231,7 +1181,7 @@ void Application::HandleStarboardEvent(const SbEvent* starboard_event) {
 }
 
 void Application::OnApplicationEvent(SbEventType event_type,
-                                     SbTimeMonotonic timestamp) {
+                                     int64_t timestamp) {
   TRACE_EVENT0("cobalt::browser", "Application::OnApplicationEvent()");
   DCHECK_CALLED_ON_VALID_THREAD(application_event_thread_checker_);
 
@@ -1241,7 +1191,7 @@ void Application::OnApplicationEvent(SbEventType event_type,
     case kSbEventTypeStop:
       LOG(INFO) << "Got quit event.";
       if (watchdog) watchdog->UpdateState(base::kApplicationStateStopped);
-      AddCrashHandlerApplicationState(base::kApplicationStateStopped);
+      AddCrashLogApplicationState(base::kApplicationStateStopped);
       Quit();
       LOG(INFO) << "Finished quitting.";
       break;
@@ -1251,7 +1201,6 @@ void Application::OnApplicationEvent(SbEventType event_type,
       browser_module_->Focus(timestamp);
       LOG(INFO) << "Finished starting.";
       break;
-#if SB_API_VERSION >= 13
     case kSbEventTypeBlur:
       LOG(INFO) << "Got blur event.";
       browser_module_->Blur(timestamp);
@@ -1289,37 +1238,6 @@ void Application::OnApplicationEvent(SbEventType event_type,
 #endif
       LOG(INFO) << "Finished unfreezing.";
       break;
-#else
-    case kSbEventTypePause:
-      LOG(INFO) << "Got pause event.";
-      browser_module_->Blur(timestamp);
-      LOG(INFO) << "Finished pausing.";
-      break;
-    case kSbEventTypeUnpause:
-      LOG(INFO) << "Got unpause event.";
-      browser_module_->Focus(timestamp);
-      LOG(INFO) << "Finished unpausing.";
-      break;
-    case kSbEventTypeSuspend:
-      LOG(INFO) << "Got suspend event.";
-      browser_module_->Conceal(timestamp);
-      browser_module_->Freeze(timestamp);
-#if SB_IS(EVERGREEN)
-      if (updater_module_) updater_module_->Suspend();
-#endif
-      LOG(INFO) << "Finished suspending.";
-      break;
-    case kSbEventTypeResume:
-      DCHECK(SbSystemSupportsResume());
-      LOG(INFO) << "Got resume event.";
-      browser_module_->Unfreeze(timestamp);
-      browser_module_->Reveal(timestamp);
-#if SB_IS(EVERGREEN)
-      if (updater_module_) updater_module_->Resume();
-#endif
-      LOG(INFO) << "Finished resuming.";
-      break;
-#endif  // SB_API_VERSION >= 13
     case kSbEventTypeLowMemory:
       DLOG(INFO) << "Got low memory event.";
       browser_module_->ReduceMemory();
@@ -1329,38 +1247,26 @@ void Application::OnApplicationEvent(SbEventType event_type,
     case kSbEventTypePreload:
     case kSbEventTypeWindowSizeChanged:
     case kSbEventTypeAccessibilityCaptionSettingsChanged:
-#if SB_API_VERSION >= 13
     case kSbEventTypeAccessibilityTextToSpeechSettingsChanged:
-#else
-    case kSbEventTypeAccessiblityTextToSpeechSettingsChanged:
-#endif  // SB_API_VERSION >= 13
     case kSbEventTypeOnScreenKeyboardBlurred:
     case kSbEventTypeOnScreenKeyboardFocused:
     case kSbEventTypeOnScreenKeyboardHidden:
     case kSbEventTypeOnScreenKeyboardShown:
     case kSbEventTypeOnScreenKeyboardSuggestionsUpdated:
-#if SB_API_VERSION >= 13
     case kSbEventTypeAccessibilitySettingsChanged:
-#else
-    case kSbEventTypeAccessiblitySettingsChanged:
-#endif  // SB_API_VERSION >= 13
     case kSbEventTypeInput:
     case kSbEventTypeLink:
     case kSbEventTypeScheduled:
     case kSbEventTypeUser:
     case kSbEventTypeVerticalSync:
-#if SB_API_VERSION >= 13
     case kSbEventTypeOsNetworkDisconnected:
     case kSbEventTypeOsNetworkConnected:
-#endif
-#if SB_API_VERSION >= 13
     case kSbEventDateTimeConfigurationChanged:
-#endif
       NOTREACHED() << "Unexpected event type: " << event_type;
       return;
   }
   if (watchdog) watchdog->UpdateState(browser_module_->GetApplicationState());
-  AddCrashHandlerApplicationState(browser_module_->GetApplicationState());
+  AddCrashLogApplicationState(browser_module_->GetApplicationState());
 }
 
 void Application::OnWindowSizeChangedEvent(const base::Event* event) {
@@ -1439,7 +1345,6 @@ void Application::OnWindowOnOfflineEvent(const base::Event* event) {
       base::polymorphic_downcast<const base::WindowOnOfflineEvent*>(event));
 }
 
-#if SB_API_VERSION >= 13
 void Application::OnDateTimeConfigurationChangedEvent(
     const base::Event* event) {
   TRACE_EVENT0("cobalt::browser",
@@ -1448,7 +1353,6 @@ void Application::OnDateTimeConfigurationChangedEvent(
       base::polymorphic_downcast<
           const base::DateTimeConfigurationChangedEvent*>(event));
 }
-#endif
 
 void Application::MainWebModuleCreated(WebModule* web_module) {
   TRACE_EVENT0("cobalt::browser", "Application::MainWebModuleCreated()");
@@ -1548,24 +1452,6 @@ void Application::DispatchEventInternal(base::Event* event) {
   event_dispatcher_.DispatchEvent(std::unique_ptr<base::Event>(event));
 }
 
-#if defined(ENABLE_DEBUGGER) && defined(STARBOARD_ALLOWS_MEMORY_TRACKING)
-void Application::OnMemoryTrackerCommand(const std::string& message) {
-  if (base::MessageLoop::current() != message_loop_) {
-    message_loop_->task_runner()->PostTask(
-        FROM_HERE, base::Bind(&Application::OnMemoryTrackerCommand,
-                              base::Unretained(this), message));
-    return;
-  }
-
-  if (memory_tracker_tool_) {
-    LOG(ERROR) << "Can not create a memory tracker when one is already active.";
-    return;
-  }
-  LOG(WARNING) << "Creating \"" << message << "\" memory tracker.";
-  memory_tracker_tool_ = memory_tracker::CreateMemoryTrackerTool(message);
-}
-#endif  // defined(ENABLE_DEBUGGER) && defined(STARBOARD_ALLOWS_MEMORY_TRACKING)
-
 // Called to handle deep link consumed events.
 void Application::OnDeepLinkConsumedCallback(const std::string& link) {
   LOG(INFO) << "Got deep link consumed callback: " << link;
@@ -1575,8 +1461,7 @@ void Application::OnDeepLinkConsumedCallback(const std::string& link) {
   }
 }
 
-void Application::DispatchDeepLink(const char* link,
-                                   SbTimeMonotonic timestamp) {
+void Application::DispatchDeepLink(const char* link, int64_t timestamp) {
   if (!link || *link == 0) {
     return;
   }
@@ -1597,26 +1482,20 @@ void Application::DispatchDeepLink(const char* link,
   DispatchEventInternal(new base::DeepLinkEvent(
       deep_link, base::Bind(&Application::OnDeepLinkConsumedCallback,
                             base::Unretained(this), deep_link)));
-#if SB_API_VERSION >= 13
   if (browser_module_) {
     browser_module_->SetDeepLinkTimestamp(timestamp);
   }
-#endif  // SB_API_VERSION >= 13
 }
 
 void Application::DispatchDeepLinkIfNotConsumed() {
   std::string deep_link;
-#if SB_API_VERSION >= 13
-  SbTimeMonotonic timestamp;
-#endif  // SB_API_VERSION >= 13
+  int64_t timestamp;
   // This block exists to ensure that the lock is held while accessing
   // unconsumed_deep_link_.
   {
     base::AutoLock auto_lock(unconsumed_deep_link_lock_);
     deep_link = unconsumed_deep_link_;
-#if SB_API_VERSION >= 13
     timestamp = deep_link_timestamp_;
-#endif  // SB_API_VERSION >= 13
   }
 
   if (!deep_link.empty()) {
@@ -1625,11 +1504,38 @@ void Application::DispatchDeepLinkIfNotConsumed() {
         deep_link, base::Bind(&Application::OnDeepLinkConsumedCallback,
                               base::Unretained(this), deep_link)));
   }
-#if SB_API_VERSION >= 13
   if (browser_module_) {
     browser_module_->SetDeepLinkTimestamp(timestamp);
   }
-#endif  // SB_API_VERSION >= 13
+}
+
+void Application::InitMetrics() {
+  // Must be called early as it initializes global state which is then read by
+  // all threads without synchronization.
+  // RecordAction task runner must be called before metric initialization.
+  base::SetRecordActionTaskRunner(base::ThreadTaskRunnerHandle::Get());
+  metrics_services_manager_ =
+      metrics::CobaltMetricsServicesManager::GetInstance();
+  // Before initializing metrics manager, set any persisted settings like if
+  // it's enabled or upload interval.
+  bool is_metrics_enabled = persistent_settings_->GetPersistentSettingAsBool(
+      metrics::kMetricEnabledSettingName, false);
+  auto metric_event_interval = persistent_settings_->GetPersistentSettingAsInt(
+      metrics::kMetricEventIntervalSettingName, 300);
+  metrics_services_manager_->SetEventDispatcher(&event_dispatcher_);
+  metrics_services_manager_->SetUploadInterval(metric_event_interval);
+  metrics_services_manager_->ToggleMetricsEnabled(is_metrics_enabled);
+  // Metric recording state initialization _must_ happen before we bootstrap
+  // otherwise we crash.
+  metrics_services_manager_->GetMetricsService()
+      ->InitializeMetricsRecordingState();
+  // UpdateUploadPermissions bootstraps the whole metric reporting, scheduling,
+  // and uploading cycle.
+  metrics_services_manager_->UpdateUploadPermissions(is_metrics_enabled);
+  LOG(INFO)
+      << "Cobalt Telemetry initialized with settings: is_metrics_enabled: "
+      << is_metrics_enabled
+      << ", metric_event_interval: " << metric_event_interval;
 }
 
 }  // namespace browser

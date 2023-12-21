@@ -16,6 +16,7 @@
 #define STARBOARD_SHARED_STARBOARD_PLAYER_PLAYER_INTERNAL_H_
 
 #include <utility>
+#include <vector>
 
 #include "starboard/common/scoped_ptr.h"
 #include "starboard/decode_target.h"
@@ -47,8 +48,6 @@ struct SbPlayerPrivate {
       void* context,
       starboard::scoped_ptr<PlayerWorker::Handler> player_worker_handler);
 
-  static int number_of_players() { return number_of_players_; }
-
   void Seek(SbTime seek_to_time, int ticket);
   template <typename PlayerSampleInfo>
   void WriteSamples(const PlayerSampleInfo* sample_infos,
@@ -56,16 +55,19 @@ struct SbPlayerPrivate {
   void WriteEndOfStream(SbMediaType stream_type);
   void SetBounds(int z_index, int x, int y, int width, int height);
 
-#if SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#if SB_API_VERSION >= 15
   void GetInfo(SbPlayerInfo* out_player_info);
-#else   // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#else   // SB_API_VERSION >= 15
   void GetInfo(SbPlayerInfo2* out_player_info);
-#endif  // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#endif  // SB_API_VERSION >= 15
   void SetPause(bool pause);
   void SetPlaybackRate(double playback_rate);
   void SetVolume(double volume);
 
   SbDecodeTarget GetCurrentDecodeTarget();
+  bool GetAudioConfiguration(
+      int index,
+      SbMediaAudioConfiguration* out_audio_configuration);
 
   ~SbPlayerPrivate() {
     --number_of_players_;
@@ -94,6 +96,7 @@ struct SbPlayerPrivate {
 
   SbPlayerDeallocateSampleFunc sample_deallocate_func_;
   void* context_;
+
   starboard::Mutex mutex_;
   int ticket_ = SB_PLAYER_INITIAL_TICKET;
   SbTime media_time_ = 0;
@@ -110,6 +113,9 @@ struct SbPlayerPrivate {
   bool is_progressing_ = false;
 
   starboard::scoped_ptr<PlayerWorker> worker_;
+
+  starboard::Mutex audio_configurations_mutex_;
+  std::vector<SbMediaAudioConfiguration> audio_configurations_;
 
   static int number_of_players_;
 };

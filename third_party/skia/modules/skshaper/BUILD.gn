@@ -6,7 +6,7 @@
 import("../../gn/skia.gni")
 
 declare_args() {
-  skia_enable_skshaper = !(is_win && is_component_build)
+  skia_enable_skshaper = true
 }
 
 if (skia_enable_skshaper) {
@@ -19,7 +19,6 @@ if (skia_enable_skshaper) {
   }
 
   component("skshaper") {
-    check_includes = false
     import("skshaper.gni")
     public_configs = [ ":public_config" ]
     public = skia_shaper_public

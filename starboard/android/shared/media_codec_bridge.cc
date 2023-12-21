@@ -169,8 +169,7 @@ scoped_ptr<MediaCodecBridge> MediaCodecBridge::CreateAudioMediaCodecBridge(
 
   std::string decoder_name =
       MediaCapabilitiesCache::GetInstance()->FindAudioDecoder(
-          mime, 0, /* bitrate */
-          false /* must_support_tunnel_mode */);
+          mime, /* bitrate = */ 0);
 
   if (decoder_name.empty()) {
     SB_LOG(ERROR) << "Failed to find decoder for " << audio_stream_info.codec
@@ -215,19 +214,24 @@ scoped_ptr<MediaCodecBridge> MediaCodecBridge::CreateAudioMediaCodecBridge(
 // static
 scoped_ptr<MediaCodecBridge> MediaCodecBridge::CreateVideoMediaCodecBridge(
     SbMediaVideoCodec video_codec,
-    int width,
-    int height,
+    int width_hint,
+    int height_hint,
     int fps,
+    optional<int> max_width,
+    optional<int> max_height,
     Handler* handler,
     jobject j_surface,
     jobject j_media_crypto,
     const SbMediaColorMetadata* color_metadata,
+    bool require_secured_decoder,
     bool require_software_codec,
     int tunnel_mode_audio_session_id,
     bool force_big_endian_hdr_metadata,
-    bool force_improved_support_check,
     std::string* error_message) {
   SB_DCHECK(error_message);
+  SB_DCHECK(max_width.has_engaged() == max_height.has_engaged());
+  SB_DCHECK(max_width.value_or(1920) > 0);
+  SB_DCHECK(max_height.value_or(1080) > 0);
 
   const char* mime = SupportedVideoCodecToMimeType(video_codec);
   if (!mime) {
@@ -235,34 +239,28 @@ scoped_ptr<MediaCodecBridge> MediaCodecBridge::CreateVideoMediaCodecBridge(
     return scoped_ptr<MediaCodecBridge>(NULL);
   }
 
-  const bool must_support_secure = !!j_media_crypto;
+  const bool must_support_secure = require_secured_decoder;
   const bool must_support_hdr = color_metadata;
   const bool must_support_tunnel_mode = tunnel_mode_audio_session_id != -1;
   // On first pass, try to find a decoder with HDR if the color info is
   // non-null.
   std::string decoder_name =
       MediaCapabilitiesCache::GetInstance()->FindVideoDecoder(
-          mime, must_support_secure,    /* must_support_secure */
-          must_support_hdr,             /* must_support_hdr */
-          require_software_codec,       /* is_software_codec */
-          must_support_tunnel_mode,     /* must_support_tunnel_mode */
-          force_improved_support_check, /* force_improved_support_check */
-          0,                            /* frame_width */
-          0,                            /* frame_height */
-          0,                            /* bitrate */
-          0 /* fps */);
+          mime, must_support_secure, must_support_hdr, require_software_codec,
+          must_support_tunnel_mode,
+          /* frame_width = */ 0,
+          /* frame_height = */ 0,
+          /* bitrate = */ 0,
+          /* fps = */ 0);
   if (decoder_name.empty() && color_metadata) {
     // On second pass, forget HDR.
     decoder_name = MediaCapabilitiesCache::GetInstance()->FindVideoDecoder(
-        mime, must_support_secure,    /* must_support_secure */
-        false,                        /* must_support_hdr */
-        require_software_codec,       /* is_software_codec */
-        must_support_tunnel_mode,     /* must_support_tunnel_mode */
-        force_improved_support_check, /* force_improved_support_check */
-        0,                            /* frame_width */
-        0,                            /* frame_height */
-        0,                            /* bitrate */
-        0 /* fps */);
+        mime, must_support_secure, /* must_support_hdr = */ false,
+        require_software_codec, must_support_tunnel_mode,
+        /* frame_width = */ 0,
+        /* frame_height = */ 0,
+        /* bitrate = */ 0,
+        /* fps = */ 0);
   }
 
   if (decoder_name.empty()) {
@@ -315,15 +313,16 @@ scoped_ptr<MediaCodecBridge> MediaCodecBridge::CreateVideoMediaCodecBridge(
       new MediaCodecBridge(handler));
   env->CallStaticVoidMethodOrAbort(
       "dev/cobalt/media/MediaCodecBridge", "createVideoMediaCodecBridge",
-      "(JLjava/lang/String;Ljava/lang/String;IIILandroid/view/Surface;"
+      "(JLjava/lang/String;Ljava/lang/String;IIIIILandroid/view/Surface;"
       "Landroid/media/MediaCrypto;"
       "Ldev/cobalt/media/MediaCodecBridge$ColorInfo;"
       "I"
       "Ldev/cobalt/media/MediaCodecBridge$CreateMediaCodecBridgeResult;)"
       "V",
       reinterpret_cast<jlong>(native_media_codec_bridge.get()), j_mime.Get(),
-      j_decoder_name.Get(), width, height, fps, j_surface, j_media_crypto,
-      j_color_info.Get(), tunnel_mode_audio_session_id,
+      j_decoder_name.Get(), width_hint, height_hint, fps,
+      max_width.value_or(-1), max_height.value_or(-1), j_surface,
+      j_media_crypto, j_color_info.Get(), tunnel_mode_audio_session_id,
       j_create_media_codec_bridge_result.Get());
 
   jobject j_media_codec_bridge = env->CallObjectMethodOrAbort(
@@ -451,16 +450,25 @@ jint MediaCodecBridge::Flush() {
                                                 "()I");
 }
 
-SurfaceDimensions MediaCodecBridge::GetOutputDimensions() {
+FrameSize MediaCodecBridge::GetOutputSize() {
   JniEnvExt* env = JniEnvExt::Get();
   env->CallVoidMethodOrAbort(
       j_media_codec_bridge_, "getOutputFormat",
       "(Ldev/cobalt/media/MediaCodecBridge$GetOutputFormatResult;)V",
       j_reused_get_output_format_result_);
-  return {env->CallIntMethodOrAbort(j_reused_get_output_format_result_, "width",
-                                    "()I"),
-          env->CallIntMethodOrAbort(j_reused_get_output_format_result_,
-                                    "height", "()I")};
+
+  auto call_int_method = [env, this](const char* name) {
+    return env->CallIntMethodOrAbort(j_reused_get_output_format_result_, name,
+                                     "()I");
+  };
+
+  FrameSize size = {
+      call_int_method("textureWidth"), call_int_method("textureHeight"),
+      call_int_method("cropLeft"),     call_int_method("cropTop"),
+      call_int_method("cropRight"),    call_int_method("cropBottom")};
+
+  size.DCheckValid();
+  return size;
 }
 
 AudioOutputFormatResult MediaCodecBridge::GetAudioOutputFormat() {

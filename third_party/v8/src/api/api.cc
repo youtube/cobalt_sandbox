@@ -10750,10 +10750,11 @@ void CpuProfiler::SetUsePreciseSampling(bool use_precise_sampling) {
       use_precise_sampling);
 }
 
-CpuProfilingStatus CpuProfiler::StartProfiling(Local<String> title,
-                                               CpuProfilingOptions options) {
+CpuProfilingStatus CpuProfiler::StartProfiling(
+    Local<String> title, CpuProfilingOptions options,
+    std::unique_ptr<DiscardedSamplesDelegate> delegate) {
   return reinterpret_cast<i::CpuProfiler*>(this)->StartProfiling(
-      *Utils::OpenHandle(*title), options);
+      *Utils::OpenHandle(*title), options, std::move(delegate));
 }
 
 CpuProfilingStatus CpuProfiler::StartProfiling(Local<String> title,
@@ -11187,12 +11188,11 @@ RegisterState::RegisterState()
     : pc(nullptr), sp(nullptr), fp(nullptr), lr(nullptr) {}
 RegisterState::~RegisterState() = default;
 
-RegisterState::RegisterState(const RegisterState& other) V8_NOEXCEPT {
+RegisterState::RegisterState(const RegisterState& other) {
   *this = other;
 }
 
-RegisterState& RegisterState::operator=(const RegisterState& other)
-    V8_NOEXCEPT {
+RegisterState& RegisterState::operator=(const RegisterState& other) {
   if (&other != this) {
     pc = other.pc;
     sp = other.sp;

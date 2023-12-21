@@ -1,4 +1,4 @@
-# Copyright 2021 The Cobalt Authors. All Rights Reserved.
+# Copyright 2023 The Cobalt Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,16 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import("//starboard/build/config/os_definitions.gni")
+
 common_sources = [
   "src/AddressSpace.hpp",
   "src/CompactUnwinder.hpp",
   "src/DwarfInstructions.hpp",
   "src/DwarfParser.hpp",
   "src/EHHeaderParser.hpp",
+  "src/FrameHeaderCache.hpp",
   "src/RWMutex.hpp",
   "src/Registers.hpp",
   "src/Unwind-EHABI.cpp",
   "src/Unwind-EHABI.h",
+  "src/Unwind-seh.cpp",
   "src/Unwind-sjlj.c",
   "src/UnwindCursor.hpp",
   "src/UnwindLevel1-gcc-ext.c",
@@ -29,6 +33,7 @@ common_sources = [
   "src/UnwindRegistersRestore.S",
   "src/UnwindRegistersSave.S",
   "src/assembly.h",
+  "src/cet_unwind.h",
   "src/config.h",
   "src/dwarf2.h",
   "src/libunwind.cpp",
@@ -52,8 +57,9 @@ config("common_unwind_dependents_config") {
 # dependencies from spilling over to gn check when run for non-evergreen
 # platforms (e.g., raspi-2_gn_devel). It can and should be removed once the gn
 # check errors have been resolved for evergreen.
-if (sb_is_evergreen) {
-  config("unwind_evergreen_config") {
+# TODO: b/295702296 Fix libunwind for modular  builds.
+if (sb_is_evergreen || (sb_is_modular && is_host_win)) {
+  config("unwind_config") {
     configs = [ ":common_unwind_dependents_config" ]
 
     cflags = [
@@ -62,7 +68,7 @@ if (sb_is_evergreen) {
     ]
 
     cflags_cc = [
-      "-std=c++11",
+      "-std=c++17",
       "-nostdinc++",
       "-fPIC",
       "-Werror=return-type",
@@ -87,10 +93,10 @@ if (sb_is_evergreen) {
     ]
   }
 
-  static_library("unwind_evergreen") {
+  static_library("unwind") {
     sources = common_sources
 
-    configs += [ ":unwind_evergreen_config" ]
+    configs += [ ":unwind_config" ]
     all_dependent_configs = [ ":common_unwind_dependents_config" ]
 
     deps = [
@@ -108,7 +114,7 @@ config("unwind_starboard_config") {
 
   cflags = [ "-Wno-unused-command-line-argument" ]
   cflags_cc = [
-    "-std=c++11",
+    "-std=c++17",
     "-fPIC",
     "-Werror=return-type",
     "-fvisibility-inlines-hidden",

@@ -1,7 +1,6 @@
----
-layout: doc
-title: "GYP to GN Migration Changes"
----
+Project: /youtube/cobalt/_project.yaml
+Book: /youtube/cobalt/_book.yaml
+
 # GYP to GN Migration Changes
 
 This file tracks changes to configuration meta build configuration variables in
@@ -24,7 +23,6 @@ variables.
 `sb_evergreen` (0/1)                      | `sb_is_evergreen` (true/false)                       | `//starboard/build/config/base_configuration.gni`
 `sb_evergreen_compatible` (0/1)           | `sb_is_evergreen_compatible` (true/false)            | `//starboard/build/config/base_configuration.gni`
 `sb_evergreen_compatible_libunwind` (0/1) | `sb_evergreen_compatible_use_libunwind` (true/false) | `//starboard/build/config/base_configuration.gni`
-`sb_evergreen_compatible_lite` (0/1)      | `sb_evergreen_compatible_enable_lite` (true/false)   | `//starboard/build/config/base_configuration.gni`
 `sb_disable_cpp14_audit`                  | (none)                                               |
 `sb_disable_microphone_idl`               | (none)                                               |
 `starboard_path`                          | (none)                                               |
@@ -47,7 +45,7 @@ variables.
 ## Notes:
 
 *   *Starboard Implementation:* If your platform defined
-    `STARBOARD_IMPLENTATION` in its implementation, you would now add the above
+    `STARBOARD_IMPLEMENTATION` in its implementation, you would now add the above
     config with `configs +=
     ["//starboard/build/config:starboard_implementation"]`.
 

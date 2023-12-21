@@ -11,24 +11,36 @@ exclude: |
             base|
             build|
             buildtools|
+            cobalt/updater|
             components/crash/core/common|
-            components/metrics|
             components/metrics_services_manager|
+            components/metrics|
+            components/prefs|
             components/ukm|
             components/variations|
             components/version_info|
             crypto|
             extensions/buildflags|
+            glimp/include|
             net|
+            internal/kokoro/third-party|
             internal/starboard/shared/playstation/glimp/shaders|
             testing|
             third_party|
             tools/gyp|
+            tools/python|
             url
         )/
         |
         components/update_client/((?!cobalt).)*$
         |
+        # Ignore everything under tools/metrics _except_ Cobalt files. We
+        # need those validated to keep the telemetry/metrics pipeline working.
+        tools/metrics/((?!cobalt\/).)*$|
+        .*\.pb\.cc$ |
+        .*\.pb\.h$ |
+        .*\.patch$ |
+        .*Proto.java$|
         .*\.sig$
     )
 
@@ -40,6 +52,7 @@ repos:
     -   id: end-of-file-fixer
     -   id: trailing-whitespace
     -   id: mixed-line-ending
+    -   id: check-xml
 
 -   repo: https://cobalt.googlesource.com/codespell
     rev: 67c489d36dd4c52cbb9e4755d90c35c6231842ef  # v2.0.0
@@ -50,15 +63,21 @@ repos:
                # The --ignore-words-list argument has a bug where it needs to
                # be lowercase, see
                # https://github.com/codespell-project/codespell/issues/1390
-               --ignore-words-list, atleast]
+               --ignore-words-list, "atleast,varius,ridiculus,statics",
+               ]
         exclude: |
             (?x)^(
                 (internal/)?starboard/[^/]+/i18n/|
                 cobalt/content/licenses/|
+                cobalt/content/ssl/|
                 cobalt/fetch/embedded_scripts|
+                cobalt/streams/embedded_scripts|
                 cobalt/loader/cors_preflight.cc|
                 internal/cobalt/browser/splash_screen/youtube_splash_screen.html|
-                internal/starboard/shared/playstation/storage_internal.cc
+                internal/starboard/shared/playstation/storage_internal.cc|
+                starboard/loader_app/app_key_test.cc|
+                starboard/shared/starboard/player/testdata|
+                starboard/shared/win32/media_transform.cc
             )
 
 -   repo: local
@@ -74,6 +93,7 @@ repos:
         entry: clang-format
         language: python
         types: [c++]
+        exclude_types: [objective-c++]
         args: [-i, -style=file]
         additional_dependencies: ['clang-format']
     -   id: cpplint
@@ -120,13 +140,25 @@ repos:
         stages: [push]
         exclude: |
             (?x)^(
+                .pylintrc$|
                 .pre-commit-config.yaml$|
-                cobalt/media/|
+                cobalt/base/unicode/|
+                cobalt/demos/content/|
                 cobalt/layout_tests/testdata/|
+                cobalt/math/|
+                cobalt/media/|
+                cobalt/streams/|
+                cobalt/updater/|
+                cobalt/webdriver/screencast/|
+                cobalt/websocket/|
+                components/crx_file/|
+                content/|
+                glimp/|
                 nb/|
                 starboard/android/apk/app/src/main/java/dev/cobalt/media/MediaDrmBridge.java$|
                 starboard/shared/starboard/player/filter/decoded_audio_queue.cc$|
                 starboard/shared/starboard/player/filter/decoded_audio_queue.h$|
+                starboard/shared/starboard/player/testdata/licences/|
                 starboard/shared/starboard/player/filter/wsola_internal.cc$
             )
         exclude_types: [markdown]
@@ -166,20 +198,6 @@ repos:
         stages: [push]
         always_run: true
         pass_filenames: false
-    -   id: osslint
-        name: osslint
-        entry: python precommit_hooks/osslint_wrapper.py
-        language: python
-        types: [text]
-        stages: [manual]
-    -   id: internal-file-check
-        name: Internal File Check
-        entry: python precommit_hooks/internal_file_check_wrapper.py
-        language: python
-        types: [text]
-        # TODO: Remove docker-compose-windows.yml after internal check evaluates
-        # properly on it.
-        exclude: '(^docker-compose-windows(-internal)?.yml|EXCLUDE\.FILES(\.RECURSIVE)?|codereview\.settings)$'
     -   id: gn-format
         name: GN format
         entry: gn format

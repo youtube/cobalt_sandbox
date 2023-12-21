@@ -37,20 +37,19 @@ namespace {
 // Use SbMediaGetAudioConfiguration() to check if the platform can support
 // |channels|.
 bool IsAudioOutputSupported(SbMediaAudioCodingType coding_type, int channels) {
-  int count = SbMediaGetAudioOutputCount();
-
-  for (int output_index = 0; output_index < count; ++output_index) {
-    SbMediaAudioConfiguration configuration;
-    if (!SbMediaGetAudioConfiguration(output_index, &configuration)) {
-      continue;
-    }
-
+  // SbPlayerBridge::GetAudioConfigurations() reads up to 32 configurations. The
+  // limit here is to avoid infinite loop and also match
+  // SbPlayerBridge::GetAudioConfigurations().
+  const int kMaxAudioConfigurations = 32;
+  int output_index = 0;
+  SbMediaAudioConfiguration configuration;
+  while (output_index < kMaxAudioConfigurations &&
+         SbMediaGetAudioConfiguration(output_index++, &configuration)) {
     if (configuration.coding_type == coding_type &&
         configuration.number_of_channels >= channels) {
       return true;
     }
   }
-
   return false;
 }
 
@@ -99,17 +98,28 @@ bool IsSupportedAudioCodec(const ParsedMimeInfo& mime_info) {
       break;
 #if SB_API_VERSION >= 14
     case kSbMediaAudioCodecMp3:
+      if (mime_type.subtype() != "mpeg" && mime_type.subtype() != "mp3") {
+        return false;
+      }
+      break;
     case kSbMediaAudioCodecFlac:
+      if (mime_type.subtype() != "ogg" && mime_type.subtype() != "flac") {
+        return false;
+      }
+      break;
     case kSbMediaAudioCodecPcm:
-      return false;
+      if (mime_type.subtype() != "wav") {
+        return false;
+      }
+      break;
 #endif  // SB_API_VERSION >= 14
-#if SB_API_VERSION >= SB_MEDIA_IAMF_SUPPORT_API_VERSION
+#if SB_API_VERSION >= 15
     case kSbMediaAudioCodecIamf:
       if (mime_type.subtype() != "mp4") {
         return false;
       }
       break;
-#endif  // SB_API_VERSION >= SB_MEDIA_IAMF_SUPPORT_API_VERSION
+#endif  // SB_API_VERSION >= 15
   }
 
   if (!IsAudioOutputSupported(kSbMediaAudioCodingTypePcm,

@@ -21,7 +21,8 @@ from starboard.tools import abstract_launcher
 from starboard.tools import paths
 
 _BASE_STAGING_DIRECTORY = 'evergreen_staging'
-_CRASHPAD_TARGET = 'crashpad_handler'
+_NATIVE_TARGET_TOOLCHAIN = 'native_target'
+_CRASHPAD_EXECUTABLE = 'crashpad_handler'
 _DEFAULT_LOADER_TARGET = 'elf_loader_sandbox'
 
 
@@ -63,6 +64,11 @@ class Launcher(abstract_launcher.AbstractLauncher):
     self.loader_config = kwargs.get('loader_config')
     if not self.loader_config:
       raise ValueError('|loader_config| cannot be |None|.')
+
+    # RDK doesn't use our loader, therefore the test files are stored
+    # in the folder named after the target
+    if 'rdk' in self.loader_platform:
+      kwargs['loader_target'] = self.target_name
 
     self.loader_target = kwargs.get('loader_target')
     if not self.loader_target:
@@ -119,7 +125,7 @@ class Launcher(abstract_launcher.AbstractLauncher):
         target_params=target_command_line_params,
         output_file=self.output_file,
         out_directory=self.staging_directory,
-        coverage_directory=self.coverage_directory,
+        coverage_file_path=self.coverage_file_path,
         env_variables=self.env_variables,
         log_targets=False)
 
@@ -174,8 +180,12 @@ class Launcher(abstract_launcher.AbstractLauncher):
     # TODO(b/267568637): Make the Linux launcher run from the install_directory.
     if 'linux' in self.loader_platform:
       self._StageTargetsAndContentsLinux()
-    else:
+    elif 'raspi' in self.loader_platform:
       self._StageTargetsAndContentsRaspi()
+    elif 'rdk' in self.loader_platform:
+      self._StageTargetsAndContentsRdk()
+    else:
+      raise ValueError(f"'{self.loader_platform}' is not recognized")
 
   def _StageTargetsAndContentsLinux(self):
     """Stage targets and their contents for GN builds for Linux platforms."""
@@ -193,9 +203,11 @@ class Launcher(abstract_launcher.AbstractLauncher):
     loader_target_dst = os.path.join(self.staging_directory, self.loader_target)
     shutil.copy(loader_target_src, loader_target_dst)
 
-    crashpad_target_src = os.path.join(loader_install_path, 'bin',
-                                       _CRASHPAD_TARGET)
-    crashpad_target_dst = os.path.join(self.staging_directory, _CRASHPAD_TARGET)
+    crashpad_target_src = os.path.join(self.loader_out_directory,
+                                       _NATIVE_TARGET_TOOLCHAIN,
+                                       _CRASHPAD_EXECUTABLE)
+    crashpad_target_dst = os.path.join(self.staging_directory,
+                                       _CRASHPAD_EXECUTABLE)
     shutil.copy(crashpad_target_src, crashpad_target_dst)
 
     # Copy target content and binary
@@ -242,10 +254,11 @@ class Launcher(abstract_launcher.AbstractLauncher):
                                      self.loader_target)
     shutil.copy(loader_target_src, loader_target_dst)
 
-    crashpad_target_src = os.path.join(loader_binary_src, _CRASHPAD_TARGET,
-                                       _CRASHPAD_TARGET)
+    crashpad_target_src = os.path.join(self.loader_out_directory,
+                                       _NATIVE_TARGET_TOOLCHAIN,
+                                       _CRASHPAD_EXECUTABLE)
     crashpad_target_dst = os.path.join(staging_directory_loader,
-                                       _CRASHPAD_TARGET)
+                                       _CRASHPAD_EXECUTABLE)
     shutil.copy(crashpad_target_src, crashpad_target_dst)
 
     # Copy target content and binary
@@ -264,6 +277,32 @@ class Launcher(abstract_launcher.AbstractLauncher):
     shlib_name += '.lz4' if self.use_compressed_library else '.so'
     target_binary_src = os.path.join(target_install_path, 'lib', shlib_name)
     target_binary_dst = os.path.join(target_staging_dir, 'lib', shlib_name)
+    os.makedirs(os.path.join(target_staging_dir, 'lib'))
+    shutil.copy(target_binary_src, target_binary_dst)
+
+  def _StageTargetsAndContentsRdk(self):
+    """Stage targets and their contents for GN builds for RDK platforms."""
+    # The rdk loader always loads libcobalt.so. Hard code target_name to match.
+    rdk_target_name = 'cobalt'
+
+    # Copy target content and binary.
+    target_install_path = os.path.join(self.out_directory, 'install')
+    target_staging_dir = os.path.join(self.staging_directory, 'content', 'app',
+                                      self.target_name)
+    os.makedirs(target_staging_dir)
+
+    # TODO(b/218889313): Reset the content path for the evergreen artifacts.
+    content_subdir = os.path.join('usr', 'share', 'cobalt')
+    target_content_src = os.path.join(target_install_path, content_subdir)
+    target_content_dst = os.path.join(target_staging_dir, 'content')
+    shutil.copytree(target_content_src, target_content_dst)
+
+    shlib_name = f'lib{self.target_name}.so'
+    target_binary_src = os.path.join(self.out_directory, 'install', 'lib',
+                                     shlib_name)
+    target_binary_dst = os.path.join(target_staging_dir, 'lib',
+                                     f'lib{rdk_target_name}.so')
+
     os.makedirs(os.path.join(target_staging_dir, 'lib'))
     shutil.copy(target_binary_src, target_binary_dst)
 

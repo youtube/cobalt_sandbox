@@ -86,8 +86,6 @@ static_library("speech") {
     "speech_synthesis_utterance.cc",
     "speech_synthesis_utterance.h",
     "speech_synthesis_voice.h",
-    "starboard_speech_recognizer.cc",
-    "starboard_speech_recognizer.h",
   ]
 
   configs += [ ":speech_config" ]
@@ -107,7 +105,7 @@ static_library("speech") {
     "//cobalt/script",
     "//cobalt/web:dom_exception",
     "//content/browser/speech",
-    "//starboard",
+    "//starboard:starboard_group",
     "//third_party/flac",
     "//third_party/protobuf:protobuf_lite",
     "//url",

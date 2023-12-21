@@ -88,7 +88,10 @@
 #include "cobalt/cssom/unicode_range_value.h"
 #include "cobalt/cssom/universal_selector.h"
 #include "cobalt/cssom/url_value.h"
-#include "nb/memory_scope.h"
+#if !defined(COBALT_BUILD_TYPE_GOLD)
+#include "base/command_line.h"
+#include "cobalt/css_parser/switches.h"
+#endif  // !defined(COBALT_BUILD_TYPE_GOLD)
 
 namespace cobalt {
 namespace css_parser {
@@ -271,21 +274,18 @@ ParserImpl::ParserImpl(const std::string& input,
           supports_map_to_mesh == Parser::kSupportsMapToMeshRectangular) {}
 
 scoped_refptr<cssom::CSSStyleSheet> ParserImpl::ParseStyleSheet() {
-  TRACK_MEMORY_SCOPE("CSS");
   scanner_.PrependToken(kStyleSheetEntryPointToken);
   return Parse() ? style_sheet_
                  : base::WrapRefCounted(new cssom::CSSStyleSheet(css_parser_));
 }
 
 scoped_refptr<cssom::CSSRule> ParserImpl::ParseRule() {
-  TRACK_MEMORY_SCOPE("CSS");
   scanner_.PrependToken(kRuleEntryPointToken);
   return Parse() ? rule_ : NULL;
 }
 
 scoped_refptr<cssom::CSSDeclaredStyleData>
 ParserImpl::ParseStyleDeclarationList() {
-  TRACK_MEMORY_SCOPE("CSS");
   scanner_.PrependToken(kStyleDeclarationListEntryPointToken);
   return Parse() ? style_declaration_data_
                  : base::WrapRefCounted(new cssom::CSSDeclaredStyleData());
@@ -293,7 +293,6 @@ ParserImpl::ParseStyleDeclarationList() {
 
 scoped_refptr<cssom::CSSFontFaceDeclarationData>
 ParserImpl::ParseFontFaceDeclarationList() {
-  TRACK_MEMORY_SCOPE("CSS");
   scanner_.PrependToken(kFontFaceDeclarationListEntryPointToken);
   return Parse()
              ? font_face_declaration_data_
@@ -312,7 +311,6 @@ void ParserImpl::LogWarningUnsupportedProperty(
 
 scoped_refptr<cssom::PropertyValue> ParserImpl::ParsePropertyValue(
     const std::string& property_name) {
-  TRACK_MEMORY_SCOPE("CSS");
   Token property_name_token;
   bool is_property_name_known =
       scanner_.DetectPropertyNameToken(property_name, &property_name_token);
@@ -335,7 +333,6 @@ scoped_refptr<cssom::PropertyValue> ParserImpl::ParsePropertyValue(
 void ParserImpl::ParsePropertyIntoDeclarationData(
     const std::string& property_name,
     cssom::CSSDeclarationData* declaration_data) {
-  TRACK_MEMORY_SCOPE("CSS");
   Token property_name_token;
   bool is_property_name_known =
       scanner_.DetectPropertyNameToken(property_name, &property_name_token);
@@ -364,13 +361,11 @@ void ParserImpl::ParsePropertyIntoDeclarationData(
 }
 
 scoped_refptr<cssom::MediaList> ParserImpl::ParseMediaList() {
-  TRACK_MEMORY_SCOPE("CSS");
   scanner_.PrependToken(kMediaListEntryPointToken);
   return Parse() ? media_list_ : base::WrapRefCounted(new cssom::MediaList());
 }
 
 scoped_refptr<cssom::MediaQuery> ParserImpl::ParseMediaQuery() {
-  TRACK_MEMORY_SCOPE("CSS");
   scanner_.PrependToken(kMediaQueryEntryPointToken);
   return Parse() ? media_query_ : base::WrapRefCounted(new cssom::MediaQuery());
 }
@@ -390,7 +385,6 @@ void ParserImpl::LogError(const std::string& message) {
 }
 
 bool ParserImpl::Parse() {
-  TRACK_MEMORY_SCOPE("CSS");
   // For more information on error codes
   // see http://www.gnu.org/software/bison/manual/html_node/Parser-Function.html
   TRACE_EVENT0("cobalt::css_parser", "ParseImpl::Parse");
@@ -549,11 +543,23 @@ namespace {
 void LogWarningCallback(const ::base::DebuggerHooks* debugger_hooks,
                         const std::string& message) {
   CLOG(WARNING, *debugger_hooks) << message;
+#if !defined(COBALT_BUILD_TYPE_GOLD)
+  ::base::CommandLine* command_line = ::base::CommandLine::ForCurrentProcess();
+  if (command_line->GetSwitchValueASCII(switches::kOnCssWarning) == "crash") {
+    IMMEDIATE_CRASH() << message;
+  }
+#endif  // !defined(COBALT_BUILD_TYPE_GOLD)
 }
 
 void LogErrorCallback(const ::base::DebuggerHooks* debugger_hooks,
                       const std::string& message) {
   CLOG(ERROR, *debugger_hooks) << message;
+#if !defined(COBALT_BUILD_TYPE_GOLD)
+  ::base::CommandLine* command_line = ::base::CommandLine::ForCurrentProcess();
+  if (command_line->GetSwitchValueASCII(switches::kOnCssError) == "crash") {
+    IMMEDIATE_CRASH() << message;
+  }
+#endif  // !defined(COBALT_BUILD_TYPE_GOLD)
 }
 
 }  // namespace

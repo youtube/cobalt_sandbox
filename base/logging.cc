@@ -7,17 +7,19 @@
 #include <limits.h>
 
 #include "base/macros.h"
+#include "base/trace_event/trace_event.h"
 #include "build/build_config.h"
 
 #if defined(STARBOARD)
+#include "base/files/file_starboard.h"
 #include "starboard/client_porting/eztime/eztime.h"
 #include "starboard/common/log.h"
 #include "starboard/common/mutex.h"
+#include "starboard/common/time.h"
 #include "starboard/configuration.h"
 #include "starboard/configuration_constants.h"
 #include "starboard/file.h"
 #include "starboard/system.h"
-#include "starboard/time.h"
 typedef SbFile FileHandle;
 typedef SbMutex MutexHandle;
 #else
@@ -208,7 +210,7 @@ int32_t CurrentProcessId() {
 
 uint64_t TickCount() {
 #if defined(STARBOARD)
-  return static_cast<uint64_t>(SbTimeGetMonotonicNow());
+  return starboard::CurrentMonotonicTime();
 #else
 #if defined(OS_WIN)
   return GetTickCount();
@@ -476,9 +478,15 @@ SbLogPriority LogLevelToStarboardLogPriority(int level) {
     case LOG_ERROR:
       return kSbLogPriorityError;
     case LOG_FATAL:
-    case LOG_VERBOSE:
       return kSbLogPriorityFatal;
+    case LOG_VERBOSE:
     default:
+      if (level <= LOG_VERBOSE) {
+        // Verbose level can be any negative integer, sanity check its range to
+        // filter out potential errors.
+        DCHECK_GE(level, -256);
+        return kSbLogPriorityInfo;
+      }
       NOTREACHED() << "Unrecognized log level.";
       return kSbLogPriorityInfo;
   }
@@ -555,7 +563,7 @@ void SetMinLogLevel(int level) {
   g_min_log_level = std::min(LOG_FATAL, level);
 }
 
-#if defined(OFFICIAL_BUILD) && !SB_IS(EVERGREEN)
+#if defined(OFFICIAL_BUILD) && !SB_IS(MODULAR)
 int GetMinLogLevel() {
   return LOG_NUM_SEVERITIES;
 }
@@ -579,7 +587,7 @@ void SetLogItems(bool enable_process_id,
 
 void SetLogPrefix(const char* prefix) {}
 
-#else  // defined(OFFICIAL_BUILD) && !SB_IS(EVERGREEN)
+#else  // defined(OFFICIAL_BUILD) && !SB_IS(MODULAR)
 
 int GetMinLogLevel() {
   return g_min_log_level;
@@ -623,7 +631,7 @@ void SetLogPrefix(const char* prefix) {
          base::ContainsOnlyChars(prefix, "abcdefghijklmnopqrstuvwxyz"));
   g_log_prefix = prefix;
 }
-#endif  // defined(OFFICIAL_BUILD) && !SB_IS(EVERGREEN)
+#endif  // defined(OFFICIAL_BUILD) && !SB_IS(MODULAR)
 
 void SetShowErrorDialogs(bool enable_dialogs) {
   show_error_dialogs = enable_dialogs;
@@ -723,6 +731,8 @@ LogMessage::~LogMessage() {
 #endif
   stream_ << std::endl;
   std::string str_newline(stream_.str());
+  TRACE_EVENT_INSTANT1("log", "LogMessage", TRACE_EVENT_SCOPE_THREAD, "message",
+                       str_newline);
 
   // Give any log message handler first dibs on the message.
   if (log_message_handler &&
@@ -939,6 +949,7 @@ LogMessage::~LogMessage() {
       while (written < str_newline.length()) {
         int result = SbFileWrite(g_log_file, &(str_newline.c_str()[written]),
                                  str_newline.length() - written);
+        base::RecordFileWriteStat(result);
         if (result < 0) {
           break;
         }

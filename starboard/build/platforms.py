@@ -36,12 +36,14 @@ PLATFORMS = {
     'android-x86': 'starboard/android/x86',
     'raspi-2': 'starboard/raspi/2',
     'raspi-2-skia': 'starboard/raspi/2/skia',
+    'rdk': 'starboard/rdk',
     'evergreen-x64': 'starboard/evergreen/x64',
     'evergreen-x86': 'starboard/evergreen/x86',
     'evergreen-arm-hardfp': 'starboard/evergreen/arm/hardfp',
     'evergreen-arm-softfp': 'starboard/evergreen/arm/softfp',
     'evergreen-arm64': 'starboard/evergreen/arm64',
     'win-win32': 'starboard/win/win32',
+    'xb1': 'starboard/xb1',
 }
 PLATFORMS.update(INTERNAL_PLATFORMS)
 

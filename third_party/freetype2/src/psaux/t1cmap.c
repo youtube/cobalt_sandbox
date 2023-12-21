@@ -4,7 +4,7 @@
  *
  *   Type 1 character map support (body).
  *
- * Copyright (C) 2002-2020 by
+ * Copyright (C) 2002-2023 by
  * David Turner, Robert Wilhelm, and Werner Lemberg.
  *
  * This file is part of the FreeType project, and may only be used,
@@ -18,7 +18,7 @@
 
 #include "t1cmap.h"
 
-#include FT_INTERNAL_DEBUG_H
+#include <freetype/internal/ftdebug.h>
 
 #include "psauxerr.h"
 
@@ -95,7 +95,7 @@
   }
 
 
-  FT_CALLBACK_DEF( FT_UInt32 )
+  FT_CALLBACK_DEF( FT_UInt )
   t1_cmap_std_char_next( T1_CMapStd   cmap,
                          FT_UInt32   *pchar_code )
   {
@@ -232,7 +232,7 @@
   }
 
 
-  FT_CALLBACK_DEF( FT_UInt32 )
+  FT_CALLBACK_DEF( FT_UInt )
   t1_cmap_custom_char_next( T1_CMapCustom  cmap,
                             FT_UInt32     *pchar_code )
   {
@@ -341,7 +341,7 @@
   }
 
 
-  FT_CALLBACK_DEF( FT_UInt32 )
+  FT_CALLBACK_DEF( FT_UInt )
   t1_cmap_unicode_char_next( PS_Unicodes  unicodes,
                              FT_UInt32   *pchar_code )
   {

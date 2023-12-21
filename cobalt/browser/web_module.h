@@ -229,6 +229,8 @@ class WebModule : public base::MessageLoop::DestructionObserver,
     bool limit_performance_timer_resolution = true;
 
 #if defined(ENABLE_DEBUGGER)
+    // Whether a debugger should be started for this WebModule.
+    bool enable_debugger = false;
     // Whether the debugger should block until remote devtools connects.
     bool wait_for_web_debugger = false;
 
@@ -362,15 +364,15 @@ class WebModule : public base::MessageLoop::DestructionObserver,
   }
 
   // LifecycleObserver implementation
-  void Blur(SbTimeMonotonic timestamp) override;
+  void Blur(int64_t timestamp) override;
   void Conceal(render_tree::ResourceProvider* resource_provider,
-               SbTimeMonotonic timestamp) override;
-  void Freeze(SbTimeMonotonic timestamp) override;
+               int64_t timestamp) override;
+  void Freeze(int64_t timestamp) override;
   void Unfreeze(render_tree::ResourceProvider* resource_provider,
-                SbTimeMonotonic timestamp) override;
+                int64_t timestamp) override;
   void Reveal(render_tree::ResourceProvider* resource_provider,
-              SbTimeMonotonic timestamp) override;
-  void Focus(SbTimeMonotonic timestamp) override;
+              int64_t timestamp) override;
+  void Focus(int64_t timestamp) override;
 
   // Attempt to reduce overall memory consumption. Called in response to a
   // system indication that memory usage is nearing a critical level.
@@ -392,8 +394,8 @@ class WebModule : public base::MessageLoop::DestructionObserver,
 
   // Pass the application preload or start timestamps from Starboard.
   void SetApplicationStartOrPreloadTimestamp(bool is_preload,
-                                             SbTimeMonotonic timestamp);
-  void SetDeepLinkTimestamp(SbTimeMonotonic timestamp);
+                                             int64_t timestamp);
+  void SetDeepLinkTimestamp(int64_t timestamp);
 
   // From base::MessageLoop::DestructionObserver.
   void WillDestroyCurrentMessageLoop() override;

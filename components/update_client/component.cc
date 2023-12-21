@@ -196,7 +196,11 @@ void InstallOnBlockingTaskRunner(
 
 void UnpackCompleteOnBlockingTaskRunner(
     scoped_refptr<base::SingleThreadTaskRunner> main_task_runner,
+#if defined(IN_MEMORY_UPDATES)
+    const base::FilePath& installation_dir,
+#else
     const base::FilePath& crx_path,
+#endif
 #if defined(STARBOARD)
     const int installation_index,
     PersistedData* metadata,
@@ -209,16 +213,22 @@ void UnpackCompleteOnBlockingTaskRunner(
     const ComponentUnpacker::Result& result) {
 #if defined(STARBOARD)
   LOG(INFO) << "UnpackCompleteOnBlockingTaskRunner";
+#if !defined(IN_MEMORY_UPDATES)
   base::DeleteFile(crx_path, false);
-#else
+#endif  // !defined(IN_MEMORY_UPDATES)
+#else  // defined(STARBOARD)
   update_client::DeleteFileAndEmptyParentDirectory(crx_path);
-#endif
+#endif  // defined(STARBOARD)
 
   if (result.error != UnpackerError::kNone) {
 #if defined(STARBOARD)
     // When there is an error unpacking the downloaded CRX, such as a failure to
     // verify the package, we should remember to clear out any drain files.
+#if defined(IN_MEMORY_UPDATES)
+    if (base::DirectoryExists(installation_dir)) {
+#else  // defined(IN_MEMORY_UPDATES)
     if (base::DirectoryExists(crx_path.DirName())) {
+#endif  // defined(IN_MEMORY_UPDATES)
       const auto installation_api =
         static_cast<const CobaltExtensionInstallationManagerApi*>(
           SbSystemGetExtension(kCobaltExtensionInstallationManagerName));
@@ -229,7 +239,7 @@ void UnpackCompleteOnBlockingTaskRunner(
         }
       }
     }
-#endif
+#endif  // #if defined(STARBOARD)
     main_task_runner->PostTask(
         FROM_HERE,
         base::BindOnce(std::move(callback), ErrorCategory::kUnpack,
@@ -239,21 +249,26 @@ void UnpackCompleteOnBlockingTaskRunner(
 
   base::PostTaskWithTraits(
       FROM_HERE, kTaskTraits,
-      base::BindOnce(&InstallOnBlockingTaskRunner, main_task_runner,
-                     result.unpack_path, result.public_key,
+                 base::BindOnce(&InstallOnBlockingTaskRunner, main_task_runner,
+                                result.unpack_path, result.public_key,
 #if defined(STARBOARD)
                      installation_index,
                      metadata,
                      id,
                      version,
 #endif
-                     fingerprint, installer, std::move(callback)));
+                                fingerprint, installer, std::move(callback)));
 }
 
 void StartInstallOnBlockingTaskRunner(
     scoped_refptr<base::SingleThreadTaskRunner> main_task_runner,
     const std::vector<uint8_t>& pk_hash,
+#if defined(IN_MEMORY_UPDATES)
+    const base::FilePath& installation_dir,
+    const std::string* crx_str,
+#else
     const base::FilePath& crx_path,
+#endif
 #if defined(STARBOARD)
     const int installation_index,
     PersistedData* metadata,
@@ -270,11 +285,23 @@ void StartInstallOnBlockingTaskRunner(
   LOG(INFO) << "StartInstallOnBlockingTaskRunner";
 #endif
   auto unpacker = base::MakeRefCounted<ComponentUnpacker>(
-      pk_hash, crx_path, installer, std::move(unzipper_), std::move(patcher_),
+      pk_hash,
+#if defined(IN_MEMORY_UPDATES)
+      crx_str,
+      installation_dir,
+#else
+      crx_path,
+#endif
+      installer, std::move(unzipper_), std::move(patcher_),
       crx_format);
 
   unpacker->Unpack(base::BindOnce(&UnpackCompleteOnBlockingTaskRunner,
-                                  main_task_runner, crx_path,
+                                  main_task_runner,
+#if defined(IN_MEMORY_UPDATES)
+                                  installation_dir,
+#else
+                                  crx_path,
+#endif
 #if defined(STARBOARD)
                                   installation_index, metadata, id, version,
 #endif
@@ -682,6 +709,10 @@ void Component::StateChecking::UpdateCheckComplete() {
         FROM_HERE, base::BindOnce(&PersistedData::SetUpdaterChannel,
                                   base::Unretained(metadata), component.id_,
                                   config->GetChannel()));
+    base::ThreadTaskRunnerHandle::Get()->PostTask(
+        FROM_HERE, base::BindOnce(&PersistedData::SetLatestChannel,
+                                  base::Unretained(metadata),
+                                  config->GetChannel()));
   } else {
     LOG(WARNING) << "Failed to get the persisted data store to write the "
                        "updater channel.";
@@ -813,7 +844,11 @@ void Component::StateDownloadingDiff::Cancel() {
 void Component::StateDownloadingDiff::DoHandle() {
   DCHECK(thread_checker_.CalledOnValidThread());
 
+#if defined(IN_MEMORY_UPDATES)
+  auto& component = Component::State::component();
+#else
   const auto& component = Component::State::component();
+#endif
   const auto& update_context = component.update_context_;
 
   DCHECK(component.crx_component());
@@ -833,6 +868,9 @@ void Component::StateDownloadingDiff::DoHandle() {
                  base::Unretained(this), id));
   crx_downloader_->StartDownload(
       component.crx_diffurls_, component.hashdiff_sha256_,
+#if defined(IN_MEMORY_UPDATES)
+      &component.crx_str_,
+#endif
       base::BindOnce(&Component::StateDownloadingDiff::DownloadComplete,
                      base::Unretained(this), id));
 
@@ -860,7 +898,9 @@ void Component::StateDownloadingDiff::DownloadComplete(
   crx_downloader_.reset();
 
   if (download_result.error) {
+#if !defined(IN_MEMORY_UPDATES)
     DCHECK(download_result.response.empty());
+#endif
     component.diff_error_category_ = ErrorCategory::kDownload;
     component.diff_error_code_ = download_result.error;
 
@@ -868,7 +908,11 @@ void Component::StateDownloadingDiff::DownloadComplete(
     return;
   }
 
+#if defined(IN_MEMORY_UPDATES)
+  component.installation_dir_ = download_result.installation_dir;
+#else
   component.crx_path_ = download_result.response;
+#endif
 
 #if defined(STARBOARD)
   component.installation_index_ = download_result.installation_index;
@@ -894,7 +938,11 @@ void Component::StateDownloading::Cancel() {
 void Component::StateDownloading::DoHandle() {
   DCHECK(thread_checker_.CalledOnValidThread());
 
+#if defined(IN_MEMORY_UPDATES)
+  auto& component = Component::State::component();
+#else
   const auto& component = Component::State::component();
+#endif
   const auto& update_context = component.update_context_;
 
   DCHECK(component.crx_component());
@@ -914,6 +962,9 @@ void Component::StateDownloading::DoHandle() {
                  base::Unretained(this), id));
   crx_downloader_->StartDownload(
       component.crx_urls_, component.hash_sha256_,
+#if defined(IN_MEMORY_UPDATES)
+      &component.crx_str_,
+#endif
       base::BindOnce(&Component::StateDownloading::DownloadComplete,
                      base::Unretained(this), id));
 
@@ -942,7 +993,9 @@ void Component::StateDownloading::DownloadComplete(
   crx_downloader_.reset();
 
   if (download_result.error) {
+#if !defined(IN_MEMORY_UPDATES)
     DCHECK(download_result.response.empty());
+#endif
     component.error_category_ = ErrorCategory::kDownload;
     component.error_code_ = download_result.error;
 
@@ -950,7 +1003,11 @@ void Component::StateDownloading::DownloadComplete(
     return;
   }
 
+#if defined(IN_MEMORY_UPDATES)
+  component.installation_dir_ = download_result.installation_dir;
+#else
   component.crx_path_ = download_result.response;
+#endif
 
 #if defined(STARBOARD)
   component.installation_index_ = download_result.installation_index;
@@ -969,7 +1026,11 @@ Component::StateUpdatingDiff::~StateUpdatingDiff() {
 void Component::StateUpdatingDiff::DoHandle() {
   DCHECK(thread_checker_.CalledOnValidThread());
 
+#if defined(IN_MEMORY_UPDATES)
+  auto& component = Component::State::component();
+#else
   const auto& component = Component::State::component();
+#endif
   const auto& update_context = component.update_context_;
 
   DCHECK(component.crx_component());
@@ -982,7 +1043,13 @@ void Component::StateUpdatingDiff::DoHandle() {
           base::BindOnce(
               &update_client::StartInstallOnBlockingTaskRunner,
               base::ThreadTaskRunnerHandle::Get(),
-              component.crx_component()->pk_hash, component.crx_path_,
+              component.crx_component()->pk_hash,
+#if defined(IN_MEMORY_UPDATES)
+              component.installation_dir_,
+              &component.crx_str_,
+#else
+              component.crx_path_,
+#endif
 #if defined(STARBOARD)
               component.installation_index_,
               update_context.update_checker->GetPersistedData(), component.id_,
@@ -1039,10 +1106,15 @@ void Component::StateUpdating::DoHandle() {
 #endif
   DCHECK(thread_checker_.CalledOnValidThread());
 
+#if defined(IN_MEMORY_UPDATES)
+  auto& component = Component::State::component();
+#else
   const auto& component = Component::State::component();
+#endif
   const auto& update_context = component.update_context_;
 
   DCHECK(component.crx_component());
+
   component.NotifyObservers(Events::COMPONENT_UPDATE_READY);
 
   base::CreateSequencedTaskRunnerWithTraits(kTaskTraits)
@@ -1050,7 +1122,13 @@ void Component::StateUpdating::DoHandle() {
                  base::BindOnce(
                      &update_client::StartInstallOnBlockingTaskRunner,
                      base::ThreadTaskRunnerHandle::Get(),
-                     component.crx_component()->pk_hash, component.crx_path_,
+                     component.crx_component()->pk_hash,
+#if defined(IN_MEMORY_UPDATES)
+                     component.installation_dir_,
+                     &component.crx_str_,
+#else
+                     component.crx_path_,
+#endif
 #if defined(STARBOARD)
                      component.installation_index_,
                      update_context.update_checker->GetPersistedData(),
@@ -1062,7 +1140,6 @@ void Component::StateUpdating::DoHandle() {
                      component.crx_component()->crx_format_requirement,
                      base::BindOnce(&Component::StateUpdating::InstallComplete,
                                     base::Unretained(this))));
-
 }
 
 void Component::StateUpdating::InstallComplete(ErrorCategory error_category,

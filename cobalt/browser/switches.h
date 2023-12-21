@@ -30,6 +30,8 @@ extern const char kDevServersListenIp[];
 extern const char kDevServersListenIpHelp[];
 
 #if defined(ENABLE_DEBUGGER)
+extern const char kDisableWebDebugger[];
+extern const char kDisableWebDebuggerHelp[];
 extern const char kRemoteDebuggingPort[];
 extern const char kRemoteDebuggingPortHelp[];
 extern const char kWaitForWebDebugger[];
@@ -62,8 +64,6 @@ extern const char kIgnoreCertificateErrors[];
 extern const char kIgnoreCertificateErrorsHelp[];
 extern const char kInputFuzzer[];
 extern const char kInputFuzzerHelp[];
-extern const char kMemoryTracker[];
-extern const char kMemoryTrackerHelp[];
 extern const char kMinCompatibilityVersion[];
 extern const char kMinCompatibilityVersionHelp[];
 extern const char kNullSavegame[];

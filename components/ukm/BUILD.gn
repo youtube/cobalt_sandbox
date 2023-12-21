@@ -38,6 +38,14 @@ static_library("ukm") {
     "//components/variations",
     "//url",
   ]
+
+  if (use_cobalt_customizations) {
+    public_deps -= [
+      "//services/metrics/public/cpp:metrics_cpp",
+      "//services/metrics/public/cpp:ukm_builders",
+      "//services/metrics/public/mojom",
+    ]
+  }
 }
 
 # Helper library for observing signals that we need to clear any local data.
@@ -79,6 +87,8 @@ static_library("test_support") {
   ]
 }
 
+# TODO(b/283275474): Re-enable as many tests as possible.
+if (!use_cobalt_customizations) {
 source_set("unit_tests") {
   testonly = true
   sources = [
@@ -98,6 +108,7 @@ source_set("unit_tests") {
     "//components/sync",
     "//components/sync:test_support_driver",
     "//components/sync_preferences:test_support",
+    "//components/unified_consent:test_support",
     "//components/variations",
     "//net:test_support",
     "//services/metrics/public/cpp:ukm_builders",
@@ -115,4 +126,5 @@ test("ukm_unittests") {
     "//base/test:test_support",
     "//components/test:run_all_unittests",
   ]
+}
 }

@@ -142,7 +142,7 @@ TEST_F(MetricsLogTest, BasicRecord) {
 #endif
   metrics::SystemProfileProto::Hardware* hardware =
       system_profile->mutable_hardware();
-#if !defined(OS_IOS)
+#if !defined(OS_IOS) && !defined(STARBOARD)
   hardware->set_cpu_architecture(base::SysInfo::OperatingSystemArchitecture());
 #endif
   hardware->set_system_ram_mb(base::SysInfo::AmountOfPhysicalMemoryMB());
@@ -229,6 +229,8 @@ TEST_F(MetricsLogTest, HistogramBucketFields) {
   EXPECT_EQ(12, histogram_proto.bucket(4).max());
 }
 
+// TODO(b/283255893): Remove when base::CPU is Starboardized.
+#if !defined(STARBOARD)
 TEST_F(MetricsLogTest, RecordEnvironment) {
   TestMetricsServiceClient client;
   TestMetricsLog log(kClientId, kSessionId, MetricsLog::ONGOING_LOG, &client);
@@ -238,6 +240,7 @@ TEST_F(MetricsLogTest, RecordEnvironment) {
   // Check that the system profile on the log has the correct values set.
   CheckSystemProfile(log.system_profile());
 }
+#endif
 
 TEST_F(MetricsLogTest, RecordEnvironmentEnableDefault) {
   TestMetricsServiceClient client;
@@ -343,6 +346,8 @@ TEST_F(MetricsLogTest, TruncateEvents) {
     log.RecordUserAction("BasicAction");
     EXPECT_EQ(i + 1, log.uma_proto().user_action_event_size());
   }
+// Omnibox proto removed for binary size reasons: b/290819695.
+#if !defined(USE_COBALT_CUSTOMIZATIONS)
   for (int i = 0; i < internal::kOmniboxEventLimit * 2; ++i) {
     // Add an empty omnibox event. Not fully realistic since these are normally
     // supplied by a metrics provider.
@@ -355,6 +360,7 @@ TEST_F(MetricsLogTest, TruncateEvents) {
   EXPECT_EQ(internal::kUserActionEventLimit,
             log.uma_proto().user_action_event_size());
   EXPECT_EQ(internal::kOmniboxEventLimit, log.uma_proto().omnibox_event_size());
+#endif
 }
 
 }  // namespace metrics

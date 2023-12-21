@@ -11,6 +11,7 @@
 #include "base/sequenced_task_runner.h"
 #include "base/stl_util.h"
 #include "base/threading/sequenced_task_runner_handle.h"
+#include "base/time/time.h"
 #include "net/base/elements_upload_data_stream.h"
 #include "net/base/io_buffer.h"
 #include "net/base/load_flags.h"
@@ -26,14 +27,14 @@
 #include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_getter.h"
 #include "net/url_request/url_request_throttler_manager.h"
-#include "starboard/time.h"
+#include "starboard/common/time.h"
 #include "starboard/types.h"
 #include "url/origin.h"
 
 namespace {
 
 #if defined(STARBOARD)
-const SbTime kInformDownloadProgressInterval = 50 * kSbTimeMillisecond;
+const int64_t kInformDownloadProgressIntervalUsec = 50 * base::Time::kMicrosecondsPerMillisecond;
 #else   // defined(STARBOARD)
 const int kBufferSize = 4096;
 #endif  // defined(STARBOARD)
@@ -174,8 +175,9 @@ void URLFetcherCore::Start() {
 }
 
 void URLFetcherCore::Stop() {
-  if (delegate_task_runner_)  // May be NULL in tests.
+  if (delegate_task_runner_) {  // May be NULL in tests.
     DCHECK(delegate_task_runner_->RunsTasksInCurrentSequence());
+  }
 
   delegate_ = NULL;
   fetcher_ = NULL;
@@ -351,6 +353,14 @@ void URLFetcherCore::SaveResponseToFileAtPath(
       new URLFetcherFileWriter(file_task_runner, file_path)));
 }
 
+#if defined(STARBOARD)
+void URLFetcherCore::SaveResponseToLargeString() {
+  DCHECK(delegate_task_runner_->RunsTasksInCurrentSequence());
+  SaveResponseWithWriter(std::unique_ptr<URLFetcherResponseWriter>(
+      new URLFetcherLargeStringWriter()));
+}
+#endif
+
 void URLFetcherCore::SaveResponseToTemporaryFile(
     scoped_refptr<base::SequencedTaskRunner> file_task_runner) {
   DCHECK(delegate_task_runner_->RunsTasksInCurrentSequence());
@@ -433,6 +443,19 @@ bool URLFetcherCore::GetResponseAsString(
   *out_response_string = string_writer->data();
   return true;
 }
+
+#if defined(STARBOARD)
+bool URLFetcherCore::GetResponseAsLargeString(
+    std::string* out_response_string) const {
+  URLFetcherLargeStringWriter* large_string_writer =
+      response_writer_ ? response_writer_->AsLargeStringWriter() : NULL;
+  if (!large_string_writer)
+    return false;
+
+  large_string_writer->GetAndResetData(out_response_string);
+  return true;
+}
+#endif
 
 bool URLFetcherCore::GetResponseAsFilePath(bool take_ownership,
                                            base::FilePath* out_response_path) {
@@ -545,15 +568,15 @@ void URLFetcherCore::OnReadCompleted(URLRequest* request,
 
 #if defined(STARBOARD)
   // Prime it to the current time so it is only called after the loop, or every
-  // time when the loop takes |kInformDownloadProgressInterval|.
-  SbTime download_progress_informed_at = SbTimeGetMonotonicNow();
+  // time when the loop takes |kInformDownloadProgressIntervalUsec|.
+  int64_t download_progress_informed_at = starboard::CurrentMonotonicTime();
   bool did_read_after_inform_download_progress = false;
 
   while (bytes_read > 0) {
     current_response_bytes_ += bytes_read;
     did_read_after_inform_download_progress = true;
-    auto now = SbTimeGetMonotonicNow();
-    if (now - download_progress_informed_at > kInformDownloadProgressInterval) {
+    auto now = starboard::CurrentMonotonicTime();
+    if (now - download_progress_informed_at > kInformDownloadProgressIntervalUsec) {
       InformDelegateDownloadProgress();
       download_progress_informed_at = now;
       did_read_after_inform_download_progress = false;
@@ -782,8 +805,11 @@ void URLFetcherCore::StartURLRequest() {
   if (!extra_request_headers_.IsEmpty())
     request_->SetExtraRequestHeaders(extra_request_headers_);
 
+#if defined(STARBOARD)
   request_->SetLoadTimingInfoCallback(base::Bind(&URLFetcherCore::GetLoadTimingInfo,
       base::Unretained(this)));
+#endif
+
   request_->Start();
 }
 
@@ -1131,6 +1157,14 @@ void URLFetcherCore::AssertHasNoUploadData() const {
 
 #if defined(STARBOARD)
 void URLFetcherCore::GetLoadTimingInfo(
+    const net::LoadTimingInfo& timing_info) {
+  delegate_task_runner_->PostTask(
+      FROM_HERE,
+      base::Bind(&URLFetcherCore::GetLoadTimingInfoInDelegateThread,
+                 this, timing_info));
+}
+
+void URLFetcherCore::GetLoadTimingInfoInDelegateThread(
     const net::LoadTimingInfo& timing_info) {
   // Check if the URLFetcherCore has been stopped before.
   if (delegate_) {

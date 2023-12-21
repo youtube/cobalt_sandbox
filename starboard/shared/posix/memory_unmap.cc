@@ -12,11 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#if SB_API_VERSION < 16
+
 #include "starboard/memory.h"
 #include "starboard/shared/posix/page_internal.h"
-#include "starboard/shared/starboard/memory_reporter_internal.h"
 
 bool SbMemoryUnmap(void* virtual_address, int64_t size_bytes) {
-  SbMemoryReporterReportUnmappedMemory(virtual_address, size_bytes);
   return SbPageUnmap(virtual_address, size_bytes);
 }
+
+#endif  // SB_API_VERSION < 16

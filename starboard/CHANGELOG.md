@@ -1,18 +1,61 @@
 # Starboard Version Changelog
 
-This document records all changes made to the Starboard interface, up to the
-current version, but not including the experimental version.  This file will
-be updated each time a new Starboard version is released.  Each section in
-this file describes the changes made to the Starboard interface since the
-version previous to it.
+This document records all changes made to the Starboard interface.
+This file will be updated each time a new Starboard version is released.
+Each section in this file describes the changes made to the Starboard interface
+since the version previous to it.
 
 **NOTE: Starboard versions 9 and below are no longer supported.**
 
-## Experimental Version
+## Version 16
 
-A description of all changes currently in the experimental Starboard version
-can be found in the comments of the "Experimental Feature Defines" section of
-[configuration.h](configuration.h).
+### Deprecated SbMemoryMap APIs and migrated to POSIX mmap
+The memory mapping APIs `SbMemoryMap`, `SbMemoryUnmap`, `SbMemoryProtect` and
+`SbMemoryFlush` are deprecated and the standard APIs `mmap`, `munmap`,
+`mprotect`, `msync` from `<sys/mman.h>` should be used instead.
+
+### Deprecated SbMemory allocation APIs and migrated to POSIX memory APIs
+The memory management APIs `SbMemoryAllocate`, `SbMemoryReallocate`,
+`SbMemoryCalloc`, `SbMemoryAllocateAligned`, `SbMemoryDeallocate`,
+`SbMemoryDeallocateAligned` `SbStringDuplicate` are deprecated and the
+standard APIs `malloc`, `realloc`, `calloc`, `posix_memalign`, `free`
+from `<stdlib.h>` and `strdup` from `<string.h>` should be used instead.
+
+### Deprecated SbMediaGetBufferAlignment
+The `SbMediaGetBufferAlignment`API was deprecated.
+
+### Removed SbUser from SbStorageOpenRecord and SbStorageDeleteRecord
+The `SbStorageOpenRecord` and `SbStorageDeleteRecord` APIs defined in
+`starboard/storage.h` no longer have a parameter for `SbUser` as the APIs are
+user-agnostic.
+
+### Removed SbUserGetCurrent, SbUserGetSignedIn, SbUserGetProperty, SbUserGetPropertySize, and kSbUserMaxSignedIn
+The APIs defined in `starboard/user.h` are no longer used and have been
+deprecated.
+
+### Removed SbByteSwapS16, SbByteSwapS32, SbByteSwapS64, SbByteSwapU16, SbByteSwapU32, and SbByteSwapU64
+The APIs defined in `starboard/byte_swap.h` are no longer used and have been
+deprecated.
+
+### Removed SbImageDecode and SbImageIsDecodeSupported
+The APIs defined in `starboard/image.h` are no longer used and have been
+deprecated.
+
+### Add a new enum `kIamfConfigObus` to `SbPlayerSampleSideDataType` in `starboard/player.h`
+This value allows IAMF samples to be written to Starboard along with IAMF
+Config OBUs as side data.
+
+### Deprecated SbStringScan and SbStringScanF
+The APIs defined in `starboard/string.h` are deprecated and the standard API `vsscanf` and `sscanf` are used instead.
+
+## Version 15
+
+### SbMemoryReporter is no longer used
+
+`SbMemoryReporter` defined in `starboard/memory_reporter.h`` is no longer used
+and is considered deprecated. It will be removed in upcoming Starboard versions.
+The corresponding `SbMemoryAllocateNoReport` and `SbMemoryDeallocateNoReport`
+are also deprecated.
 
 ### Removed version suffixes of SbPlayer functions and structures
 Renamed SbPlayerInfo2 to SbPlayerInfo, SbPlayerSeek2() to SbPlayerSeek(),and
@@ -59,6 +102,30 @@ This code has been separated out and refactored into `starboard/common/atomic.h`
 to break dependency cycle between Starboard interface and Starboard Common C++
 library.
 
+### Improves audio access unit processing.
+  1.  Abstracted stream specific info from SbMediaAudioSampleInfo and
+      SbMediaVideoSampleInfo into SbMediaAudioStreamInfo and
+      SbMediaVideoStreamInfo.
+  2.  Removed unused info about the audio stream.
+  3.  Renamed SbPlayerWriteSample2() to SbPlayerWriteSamples().
+  4.  Improved accuracy of audio write duration handling.
+      The app will set audio write duration to 0.5 seconds for wired audio
+      output device, and 10 seconds for wireless audio output device.
+      Added `SbPlayerGetAudioConfiguration()` to allow the app to query
+      active audio output devices used by the SbPlayer.
+      `SbMediaSetAudioWriteDuration()` is deprecated as a result.
+      Note that the app used to set audio write duration to 10 seconds at
+      playback startup or seek to accommodate wireless devices, now the app
+      sets the audio write duration to 0.5 seconds at all time for wired
+      devices.
+  5.  Refined SbMediaAudioConnector.
+      Renamed `kSbMediaAudioConnectorNone` to
+      `kSbMediaAudioConnectorUnknown`, as the implementation should only use
+      this value when the audio output is available but its type cannot be
+      determined.
+  6.  Removed index from SbMediaAudioConfiguration.
+      Removed unused member variable `SbMediaAudioConfiguration::index`.
+
 ### Removed SbMemoryGetStackBounds
 This API is unused by Cobalt and has been deprecated.
 
@@ -71,6 +138,12 @@ This enumeration of device types `SbSystemDeviceType` has been deprecated. We
 added new system property `kSbSystemPropertyDeviceType` for device type as a string.
 All the allowed device type values are now checked by nplb test:
 `starboard/nplb/system_get_property_test.cc`.
+
+### Deprecated kSbHasAc3Audio
+This constant is no longer used and has been deprecated.
+
+### Removed BILINEAR_FILTERING_SUPPORT config
+The unused macro for SB_HAS_BILINEAR_FILTERING_SUPPORT feature has been removed.
 
 ## Version 14
 ### Add MP3, FLAC, and PCM values to SbMediaAudioCodec.

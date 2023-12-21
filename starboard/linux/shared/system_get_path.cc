@@ -29,16 +29,16 @@
 #if SB_IS(EVERGREEN_COMPATIBLE)
 #include "starboard/elf_loader/evergreen_config.h"
 #endif
-#include "starboard/user.h"
+#include "starboard/shared/starboard/get_home_directory.h"
 
 namespace {
 const int kMaxPathSize = kSbFileMaxPath;
 
-// Gets the path to the cache directory, using the user's home directory.
+// Gets the path to the cache directory, using the home directory.
 bool GetCacheDirectory(char* out_path, int path_size) {
   std::vector<char> home_path(kMaxPathSize + 1);
-  if (!SbUserGetProperty(SbUserGetCurrent(), kSbUserPropertyHomeDirectory,
-                         home_path.data(), kMaxPathSize)) {
+  if (!starboard::shared::starboard::GetHomeDirectory(home_path.data(),
+                                                      kMaxPathSize)) {
     return false;
   }
   int result =
@@ -50,11 +50,11 @@ bool GetCacheDirectory(char* out_path, int path_size) {
   return SbDirectoryCreate(out_path);
 }
 
-// Gets the path to the storage directory, using the user's home directory.
+// Gets the path to the storage directory, using the home directory.
 bool GetStorageDirectory(char* out_path, int path_size) {
   std::vector<char> home_path(kMaxPathSize + 1);
-  if (!SbUserGetProperty(SbUserGetCurrent(), kSbUserPropertyHomeDirectory,
-                         home_path.data(), kMaxPathSize)) {
+  if (!starboard::shared::starboard::GetHomeDirectory(home_path.data(),
+                                                      kMaxPathSize)) {
     return false;
   }
   int result = SbStringFormatF(out_path, path_size, "%s/.cobalt_storage",
@@ -113,6 +113,19 @@ bool GetEvergreenContentPathOverride(char* out_path, int path_size) {
 }
 #endif
 
+bool GetParentDirectory(char* out_path) {
+  if (!out_path) {
+    return false;
+  }
+  char* last_slash = const_cast<char*>(strrchr(out_path, '/'));
+  if (!last_slash) {
+    return false;
+  }
+
+  *last_slash = '\0';
+  return true;
+}
+
 // Places up to |path_size| - 1 characters of the path to the directory
 // containing the current executable in |out_path|, ensuring it is
 // NULL-terminated. Returns success status. The result being greater than
@@ -122,14 +135,7 @@ bool GetExecutableDirectory(char* out_path, int path_size) {
   if (!GetExecutablePath(out_path, path_size)) {
     return false;
   }
-
-  char* last_slash = const_cast<char*>(strrchr(out_path, '/'));
-  if (!last_slash) {
-    return false;
-  }
-
-  *last_slash = '\0';
-  return true;
+  return GetParentDirectory(out_path);
 }
 
 // Gets only the name portion of the current executable.
@@ -168,6 +174,11 @@ bool GetContentDirectory(char* out_path, int path_size) {
   if (!GetExecutableDirectory(out_path, path_size)) {
     return false;
   }
+#ifdef USE_COMMON_CONTENT_DIR
+  if (!GetParentDirectory(out_path)) {
+    return false;
+  }
+#endif
   if (starboard::strlcat(out_path, "/content", path_size) >= path_size) {
     return false;
   }

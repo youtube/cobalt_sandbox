@@ -47,9 +47,8 @@
 
 #include "starboard/shared/starboard/player/filter/interleaved_sinc_resampler.h"
 
+#include <string.h>
 #include <algorithm>
-
-#include "starboard/memory.h"
 
 namespace starboard {
 namespace shared {
@@ -235,6 +234,9 @@ void InterleavedSincResampler::Flush() {
 }
 
 bool InterleavedSincResampler::CanQueueBuffer() const {
+  // TODO(b/289102877): after support partial audio, each input buffer could
+  // have a small amount of frames. We should avoid using count of pending
+  // buffer here.
   if (pending_buffers_.empty()) {
     return true;
   }

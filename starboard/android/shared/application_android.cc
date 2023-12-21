@@ -80,13 +80,13 @@ const char* AndroidCommandName(
 // "using" doesn't work with class members, so make a local convenience type.
 typedef ::starboard::shared::starboard::Application::Event Event;
 
-#if SB_MODULAR_BUILD
+#if SB_API_VERSION >= 15
 ApplicationAndroid::ApplicationAndroid(
     ALooper* looper,
     SbEventHandleCallback sb_event_handle_callback)
 #else
 ApplicationAndroid::ApplicationAndroid(ALooper* looper)
-#endif  // SB_MODULAR_BUILD
+#endif  // SB_API_VERSION >= 15
     : looper_(looper),
       native_window_(NULL),
       android_command_readfd_(-1),
@@ -96,9 +96,9 @@ ApplicationAndroid::ApplicationAndroid(ALooper* looper)
       android_command_condition_(android_command_mutex_),
       activity_state_(AndroidCommand::kUndefined),
       window_(kSbWindowInvalid),
-#if SB_MODULAR_BUILD
+#if SB_API_VERSION >= 15
       QueueApplication(sb_event_handle_callback),
-#endif  // SB_MODULAR_BUILD
+#endif  // SB_API_VERSION >= 15
       last_is_accessibility_high_contrast_text_enabled_(false) {
   // Initialize Time Zone early so that local time works correctly.
   // Called once here to help SbTimeZoneGet*Name()
@@ -140,9 +140,16 @@ ApplicationAndroid::ApplicationAndroid(ALooper* looper)
   jobject local_ref = env->CallStarboardObjectMethodOrAbort(
       "getResourceOverlay", "()Ldev/cobalt/coat/ResourceOverlay;");
   resource_overlay_ = env->ConvertLocalRefToGlobalRef(local_ref);
+
+  env->CallStarboardVoidMethodOrAbort("starboardApplicationStarted", "()V");
 }
 
 ApplicationAndroid::~ApplicationAndroid() {
+  // Inform StarboardBridge that
+  JniEnvExt* env = JniEnvExt::Get();
+  env->CallStarboardVoidMethodOrAbort("starboardApplicationStopping", "()V");
+
+  // The application is exiting.
   // Release the global reference.
   if (resource_overlay_) {
     JniEnvExt* env = JniEnvExt::Get();
@@ -156,6 +163,13 @@ ApplicationAndroid::~ApplicationAndroid() {
   ALooper_removeFd(looper_, keyboard_inject_readfd_);
   close(keyboard_inject_readfd_);
   close(keyboard_inject_writefd_);
+
+  {
+    // Signal for any potentially waiting window creation or destroy commands.
+    ScopedLock lock(android_command_mutex_);
+    application_destroying_.store(true);
+    android_command_condition_.Signal();
+  }
 }
 
 void ApplicationAndroid::Initialize() {
@@ -251,7 +265,10 @@ void ApplicationAndroid::ProcessAndroidCommand() {
   JniEnvExt* env = JniEnvExt::Get();
   AndroidCommand cmd;
   int err = read(android_command_readfd_, &cmd, sizeof(cmd));
-  SB_DCHECK(err >= 0) << "Command read failed. errno=" << errno;
+  if (err < 0) {
+    SB_DCHECK(err >= 0) << "Command read failed. errno=" << errno;
+    return;
+  }
 
   SB_LOG(INFO) << "Android command: " << AndroidCommandName(cmd.type);
 
@@ -280,11 +297,7 @@ void ApplicationAndroid::ProcessAndroidCommand() {
         // This is the initial launch, so we have to start Cobalt now that we
         // have a window.
         env->CallStarboardVoidMethodOrAbort("beforeStartOrResume", "()V");
-#if SB_API_VERSION >= 13
         DispatchStart(GetAppStartTimestamp());
-#else   // SB_API_VERSION >= 13
-        DispatchStart();
-#endif  // SB_API_VERSION >= 13
       } else {
         // Now that we got a window back, change the command for the switch
         // below to sync up with the current activity lifecycle.
@@ -297,16 +310,12 @@ void ApplicationAndroid::ProcessAndroidCommand() {
       // early in SendAndroidCommand().
       {
         ScopedLock lock(android_command_mutex_);
-// Cobalt can't keep running without a window, even if the Activity
-// hasn't stopped yet. Block until conceal event has been processed.
+        // Cobalt can't keep running without a window, even if the Activity
+        // hasn't stopped yet. Block until conceal event has been processed.
 
-// Only process injected events -- don't check system events since
-// that may try to acquire the already-locked android_command_mutex_.
-#if SB_API_VERSION >= 13
+        // Only process injected events -- don't check system events since
+        // that may try to acquire the already-locked android_command_mutex_.
         InjectAndProcess(kSbEventTypeConceal, /* checkSystemEvents */ false);
-#else
-        InjectAndProcess(kSbEventTypeSuspend, /* checkSystemEvents */ false);
-#endif
 
         if (window_) {
           window_->native_window = NULL;
@@ -344,7 +353,7 @@ void ApplicationAndroid::ProcessAndroidCommand() {
 
     // Remember the Android activity state to sync to when we have a window.
     case AndroidCommand::kStop:
-      SbAtomicNoBarrier_Increment(&android_stop_count_, -1);
+      SbAtomicBarrier_Increment(&android_stop_count_, -1);
     // Intentional fall-through.
     case AndroidCommand::kStart:
     case AndroidCommand::kResume:
@@ -359,15 +368,11 @@ void ApplicationAndroid::ProcessAndroidCommand() {
         if (state() == kStateUnstarted) {
           SetStartLink(deep_link);
           SB_LOG(INFO) << "ApplicationAndroid SetStartLink";
-          SbMemoryDeallocate(static_cast<void*>(deep_link));
+          free(static_cast<void*>(deep_link));
         } else {
           SB_LOG(INFO) << "ApplicationAndroid Inject: kSbEventTypeLink";
-#if SB_API_VERSION >= 13
           Inject(new Event(kSbEventTypeLink, SbTimeGetMonotonicNow(), deep_link,
-                           SbMemoryDeallocate));
-#else   // SB_API_VERSION >= 13
-          Inject(new Event(kSbEventTypeLink, deep_link, SbMemoryDeallocate));
-#endif  // SB_API_VERSION >= 13
+                           free));
         }
       }
       break;
@@ -376,14 +381,13 @@ void ApplicationAndroid::ProcessAndroidCommand() {
 
   // If there's an outstanding "stop" command, then don't update the app state
   // since it'll be overridden by the upcoming "stop" state.
-  if (SbAtomicNoBarrier_Load(&android_stop_count_) > 0) {
+  if (SbAtomicAcquire_Load(&android_stop_count_) > 0) {
     return;
   }
 
   // If there's a window, sync the app state to the Activity lifecycle.
   if (native_window_) {
     switch (sync_state) {
-#if SB_API_VERSION >= 13
       case AndroidCommand::kStart:
         Inject(new Event(kSbEventTypeReveal, NULL, NULL));
         break;
@@ -396,20 +400,6 @@ void ApplicationAndroid::ProcessAndroidCommand() {
       case AndroidCommand::kStop:
         Inject(new Event(kSbEventTypeConceal, NULL, NULL));
         break;
-#else
-      case AndroidCommand::kStart:
-        Inject(new Event(kSbEventTypeResume, NULL, NULL));
-        break;
-      case AndroidCommand::kResume:
-        Inject(new Event(kSbEventTypeUnpause, NULL, NULL));
-        break;
-      case AndroidCommand::kPause:
-        Inject(new Event(kSbEventTypePause, NULL, NULL));
-        break;
-      case AndroidCommand::kStop:
-        Inject(new Event(kSbEventTypeSuspend, NULL, NULL));
-        break;
-#endif
       default:
         break;
     }
@@ -421,17 +411,20 @@ void ApplicationAndroid::SendAndroidCommand(AndroidCommand::CommandType type,
   SB_LOG(INFO) << "Send Android command: " << AndroidCommandName(type);
   AndroidCommand cmd{type, data};
   ScopedLock lock(android_command_mutex_);
-  write(android_command_writefd_, &cmd, sizeof(cmd));
+  if (write(android_command_writefd_, &cmd, sizeof(cmd)) == -1) {
+    SB_LOG(ERROR) << "Writing Android command failed";
+    return;
+  }
   // Synchronization only necessary when managing resources.
   switch (type) {
     case AndroidCommand::kNativeWindowCreated:
     case AndroidCommand::kNativeWindowDestroyed:
-      while (native_window_ != data) {
+      while ((native_window_ != data) && !application_destroying_.load()) {
         android_command_condition_.Wait();
       }
       break;
     case AndroidCommand::kStop:
-      SbAtomicNoBarrier_Increment(&android_stop_count_, 1);
+      SbAtomicBarrier_Increment(&android_stop_count_, 1);
       break;
     default:
       break;
@@ -462,12 +455,6 @@ bool ApplicationAndroid::SendAndroidMotionEvent(
 bool ApplicationAndroid::SendAndroidKeyEvent(
     const GameActivityKeyEvent* event) {
   bool result = false;
-
-#ifdef STARBOARD_INPUT_EVENTS_FILTER
-  if (!input_events_filter_.ShouldProcessKeyEvent(event)) {
-    return result;
-  }
-#endif
 
   ScopedLock lock(input_mutex_);
   if (!input_events_generator_) {
@@ -599,7 +586,7 @@ void DeleteSbInputDataWithText(void* ptr) {
 
 void ApplicationAndroid::SbWindowSendInputEvent(const char* input_text,
                                                 bool is_composing) {
-  char* text = SbStringDuplicate(input_text);
+  char* text = strdup(input_text);
   SbInputData* data = new SbInputData();
   memset(data, 0, sizeof(*data));
   data->window = window_;
@@ -635,7 +622,7 @@ void ApplicationAndroid::HandleDeepLink(const char* link_url) {
   if (link_url == NULL || link_url[0] == '\0') {
     return;
   }
-  char* deep_link = SbStringDuplicate(link_url);
+  char* deep_link = strdup(link_url);
   SB_DCHECK(deep_link);
 
   SendAndroidCommand(AndroidCommand::kDeepLink, deep_link);

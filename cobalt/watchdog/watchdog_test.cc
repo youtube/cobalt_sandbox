@@ -12,11 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "cobalt/watchdog/watchdog.h"
+
+#include <set>
 #include <vector>
 
 #include "base/json/json_reader.h"
 #include "base/json/json_writer.h"
-#include "cobalt/watchdog/watchdog.h"
 #include "starboard/common/file.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
@@ -27,6 +29,7 @@ namespace {
 
 const char kWatchdogViolationsJson[] = "watchdog_test.json";
 const int64_t kWatchdogMonitorFrequency = 100000;
+const int64_t kWatchdogSleepDuration = kWatchdogMonitorFrequency * 4;
 
 }  // namespace
 
@@ -83,7 +86,6 @@ TEST_F(WatchdogTest, RedundantRegistersShouldFail) {
   ASSERT_TRUE(watchdog_->Register("test-name", "test-desc",
                                   base::kApplicationStateStarted,
                                   kWatchdogMonitorFrequency));
-
   ASSERT_FALSE(watchdog_->Register("test-name", "test-desc",
                                    base::kApplicationStateStarted,
                                    kWatchdogMonitorFrequency));
@@ -97,10 +99,6 @@ TEST_F(WatchdogTest, RedundantRegistersShouldFail) {
 }
 
 TEST_F(WatchdogTest, RegisterOnlyAcceptsValidParameters) {
-  ASSERT_TRUE(watchdog_->Register("test-name", "test-desc",
-                                  base::kApplicationStateStarted,
-                                  kWatchdogMonitorFrequency, 0));
-  ASSERT_TRUE(watchdog_->Unregister("test-name"));
   ASSERT_FALSE(watchdog_->Register("test-name-1", "test-desc-1",
                                    base::kApplicationStateStarted, 1, 0));
   ASSERT_FALSE(watchdog_->Unregister("test-name-1"));
@@ -124,7 +122,37 @@ TEST_F(WatchdogTest, RegisterOnlyAcceptsValidParameters) {
   ASSERT_FALSE(watchdog_->Unregister("test-name-6"));
 }
 
-TEST_F(WatchdogTest, UnmatchedUnregistersShouldFail) {
+TEST_F(WatchdogTest, RegisterByClientOnlyAcceptsValidParameters) {
+  std::shared_ptr<Client> client = watchdog_->RegisterByClient(
+      "test-name", "test-desc", base::kApplicationStateStarted, 1, 0);
+  ASSERT_EQ(client, nullptr);
+  ASSERT_FALSE(watchdog_->UnregisterByClient(client));
+  client = watchdog_->RegisterByClient("test-name", "test-desc",
+                                       base::kApplicationStateStarted, 0, 0);
+  ASSERT_EQ(client, nullptr);
+  ASSERT_FALSE(watchdog_->UnregisterByClient(client));
+  client = watchdog_->RegisterByClient("test-name", "test-desc",
+                                       base::kApplicationStateStarted, -1, 0);
+  ASSERT_EQ(client, nullptr);
+  ASSERT_FALSE(watchdog_->UnregisterByClient(client));
+  client = watchdog_->RegisterByClient("test-name", "test-desc",
+                                       base::kApplicationStateStarted,
+                                       kWatchdogMonitorFrequency, 1);
+  ASSERT_NE(client, nullptr);
+  ASSERT_TRUE(watchdog_->UnregisterByClient(client));
+  client = watchdog_->RegisterByClient("test-name", "test-desc",
+                                       base::kApplicationStateStarted,
+                                       kWatchdogMonitorFrequency, 0);
+  ASSERT_NE(client, nullptr);
+  ASSERT_TRUE(watchdog_->UnregisterByClient(client));
+  client = watchdog_->RegisterByClient("test-name", "test-desc",
+                                       base::kApplicationStateStarted,
+                                       kWatchdogMonitorFrequency, -1);
+  ASSERT_EQ(client, nullptr);
+  ASSERT_FALSE(watchdog_->UnregisterByClient(client));
+}
+
+TEST_F(WatchdogTest, UnmatchedUnregisterShouldFail) {
   ASSERT_FALSE(watchdog_->Unregister("test-name"));
   ASSERT_TRUE(watchdog_->Register("test-name", "test-desc",
                                   base::kApplicationStateStarted,
@@ -133,15 +161,37 @@ TEST_F(WatchdogTest, UnmatchedUnregistersShouldFail) {
   ASSERT_FALSE(watchdog_->Unregister("test-name"));
 }
 
-TEST_F(WatchdogTest, UnmatchedPingsShouldFail) {
+TEST_F(WatchdogTest, UnmatchedUnregisterByClientShouldFail) {
+  std::shared_ptr<Client> client_test(new Client);
+  ASSERT_FALSE(watchdog_->UnregisterByClient(client_test));
+  std::shared_ptr<Client> client = watchdog_->RegisterByClient(
+      "test-name", "test-desc", base::kApplicationStateStarted,
+      kWatchdogMonitorFrequency);
+  ASSERT_NE(client, nullptr);
+  ASSERT_TRUE(watchdog_->UnregisterByClient(client));
+  ASSERT_FALSE(watchdog_->UnregisterByClient(client));
+}
+
+TEST_F(WatchdogTest, UnmatchedPingShouldFail) {
   ASSERT_FALSE(watchdog_->Ping("test-name"));
   ASSERT_TRUE(watchdog_->Register("test-name", "test-desc",
                                   base::kApplicationStateStarted,
                                   kWatchdogMonitorFrequency));
   ASSERT_TRUE(watchdog_->Ping("test-name"));
-  ASSERT_TRUE(watchdog_->Ping("test-name"));
   ASSERT_TRUE(watchdog_->Unregister("test-name"));
   ASSERT_FALSE(watchdog_->Ping("test-name"));
+}
+
+TEST_F(WatchdogTest, UnmatchedPingByClientShouldFail) {
+  std::shared_ptr<Client> client_test(new Client);
+  ASSERT_FALSE(watchdog_->PingByClient(client_test));
+  std::shared_ptr<Client> client = watchdog_->RegisterByClient(
+      "test-name", "test-desc", base::kApplicationStateStarted,
+      kWatchdogMonitorFrequency);
+  ASSERT_NE(client, nullptr);
+  ASSERT_TRUE(watchdog_->PingByClient(client));
+  ASSERT_TRUE(watchdog_->UnregisterByClient(client));
+  ASSERT_FALSE(watchdog_->PingByClient(client));
 }
 
 TEST_F(WatchdogTest, PingOnlyAcceptsValidParameters) {
@@ -149,12 +199,18 @@ TEST_F(WatchdogTest, PingOnlyAcceptsValidParameters) {
                                   base::kApplicationStateStarted,
                                   kWatchdogMonitorFrequency));
   ASSERT_TRUE(watchdog_->Ping("test-name", "42"));
-  ASSERT_FALSE(
-      watchdog_->Ping("test-name",
-                      "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                      "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                      "xxxxxxxxxxxxxxxxxxxxxxxxxxx"));
+  ASSERT_FALSE(watchdog_->Ping("test-name", std::string(1025, 'x')));
   ASSERT_TRUE(watchdog_->Unregister("test-name"));
+}
+
+TEST_F(WatchdogTest, PingByClientOnlyAcceptsValidParameters) {
+  std::shared_ptr<Client> client = watchdog_->RegisterByClient(
+      "test-name", "test-desc", base::kApplicationStateStarted,
+      kWatchdogMonitorFrequency);
+  ASSERT_NE(client, nullptr);
+  ASSERT_TRUE(watchdog_->PingByClient(client, "42"));
+  ASSERT_FALSE(watchdog_->PingByClient(client, std::string(1025, 'x')));
+  ASSERT_TRUE(watchdog_->UnregisterByClient(client));
 }
 
 TEST_F(WatchdogTest, ViolationsJsonShouldPersistAndBeValid) {
@@ -163,7 +219,7 @@ TEST_F(WatchdogTest, ViolationsJsonShouldPersistAndBeValid) {
                                   base::kApplicationStateStarted,
                                   kWatchdogMonitorFrequency));
   ASSERT_TRUE(watchdog_->Ping("test-name", "test-ping"));
-  SbThreadSleep(kWatchdogMonitorFrequency * 2);
+  SbThreadSleep(kWatchdogSleepDuration);
   ASSERT_TRUE(watchdog_->Unregister("test-name"));
   TearDown();
   watchdog_ = new watchdog::Watchdog();
@@ -233,8 +289,8 @@ TEST_F(WatchdogTest, RedundantViolationsShouldStack) {
   ASSERT_TRUE(watchdog_->Register("test-name", "test-desc",
                                   base::kApplicationStateStarted,
                                   kWatchdogMonitorFrequency));
-  SbThreadSleep(kWatchdogMonitorFrequency * 2);
-  std::string json = watchdog_->GetWatchdogViolations(false);
+  SbThreadSleep(kWatchdogSleepDuration);
+  std::string json = watchdog_->GetWatchdogViolations({}, false);
   ASSERT_NE(json, "");
   std::unique_ptr<base::Value> uncleared_violations_map =
       base::JSONReader::Read(json);
@@ -250,8 +306,8 @@ TEST_F(WatchdogTest, RedundantViolationsShouldStack) {
       std::stoll(violations->GetList()[0]
                      .FindKey("violationDurationMilliseconds")
                      ->GetString());
-  SbThreadSleep(kWatchdogMonitorFrequency * 2);
-  json = watchdog_->GetWatchdogViolations(false);
+  SbThreadSleep(kWatchdogSleepDuration);
+  json = watchdog_->GetWatchdogViolations({}, false);
   ASSERT_NE(json, "");
   std::unique_ptr<base::Value> violations_map = base::JSONReader::Read(json);
   ASSERT_NE(violations_map, nullptr);
@@ -273,16 +329,17 @@ TEST_F(WatchdogTest, ViolationsShouldResetAfterFetch) {
   ASSERT_TRUE(watchdog_->Register("test-name-1", "test-desc-1",
                                   base::kApplicationStateStarted,
                                   kWatchdogMonitorFrequency));
-  SbThreadSleep(kWatchdogMonitorFrequency * 2);
+  SbThreadSleep(kWatchdogSleepDuration);
   ASSERT_TRUE(watchdog_->Unregister("test-name-1"));
   std::string json = watchdog_->GetWatchdogViolations();
   ASSERT_NE(json.find("test-name-1"), std::string::npos);
   ASSERT_EQ(json.find("test-name-2"), std::string::npos);
-  ASSERT_TRUE(watchdog_->Register("test-name-2", "test-desc-2",
-                                  base::kApplicationStateStarted,
-                                  kWatchdogMonitorFrequency));
-  SbThreadSleep(kWatchdogMonitorFrequency * 2);
-  ASSERT_TRUE(watchdog_->Unregister("test-name-2"));
+  std::shared_ptr<Client> client = watchdog_->RegisterByClient(
+      "test-name-2", "test-desc-2", base::kApplicationStateStarted,
+      kWatchdogMonitorFrequency);
+  ASSERT_NE(client, nullptr);
+  SbThreadSleep(kWatchdogSleepDuration);
+  ASSERT_TRUE(watchdog_->UnregisterByClient(client));
   json = watchdog_->GetWatchdogViolations();
   ASSERT_EQ(json.find("test-name-1"), std::string::npos);
   ASSERT_NE(json.find("test-name-2"), std::string::npos);
@@ -293,10 +350,10 @@ TEST_F(WatchdogTest, PingInfosAreEvictedAfterMax) {
   ASSERT_TRUE(watchdog_->Register("test-name", "test_desc",
                                   base::kApplicationStateStarted,
                                   kWatchdogMonitorFrequency));
-  for (int i = 0; i < 21; i++) {
+  for (int i = 0; i < 61; i++) {
     ASSERT_TRUE(watchdog_->Ping("test-name", std::to_string(i)));
   }
-  SbThreadSleep(kWatchdogMonitorFrequency * 2);
+  SbThreadSleep(kWatchdogSleepDuration);
   std::string json = watchdog_->GetWatchdogViolations();
   ASSERT_NE(json, "");
   std::unique_ptr<base::Value> violations_map = base::JSONReader::Read(json);
@@ -304,7 +361,7 @@ TEST_F(WatchdogTest, PingInfosAreEvictedAfterMax) {
   base::Value* violation_dict = violations_map->FindKey("test-name");
   base::Value* violations = violation_dict->FindKey("violations");
   base::Value* pingInfos = violations->GetList()[0].FindKey("pingInfos");
-  ASSERT_EQ(pingInfos->GetList().size(), 20);
+  ASSERT_EQ(pingInfos->GetList().size(), 60);
   ASSERT_EQ(pingInfos->GetList()[0].FindKey("info")->GetString(), "1");
   ASSERT_TRUE(watchdog_->Unregister("test-name"));
 }
@@ -322,16 +379,19 @@ TEST_F(WatchdogTest, ViolationsAreEvictedAfterMax) {
   starboard::ScopedFile file(watchdog_->GetWatchdogFilePath().c_str(),
                              kSbFileCreateAlways | kSbFileWrite);
   file.WriteAll(json.c_str(), static_cast<int>(json.size()));
-
+  TearDown();
+  watchdog_ = new watchdog::Watchdog();
+  watchdog_->InitializeCustom(nullptr, std::string(kWatchdogViolationsJson),
+                              kWatchdogMonitorFrequency);
   ASSERT_TRUE(watchdog_->Register("test-name-3", "test-desc-3",
                                   base::kApplicationStateStarted,
                                   kWatchdogMonitorFrequency));
   ASSERT_TRUE(watchdog_->Register("test-name-4", "test-desc-4",
                                   base::kApplicationStateStarted,
                                   kWatchdogMonitorFrequency));
-  SbThreadSleep(kWatchdogMonitorFrequency * 2);
+  SbThreadSleep(kWatchdogSleepDuration);
 
-  json = watchdog_->GetWatchdogViolations(false);
+  json = watchdog_->GetWatchdogViolations({}, false);
   ASSERT_NE(json, "");
   std::unique_ptr<base::Value> uncleared_violations_map =
       base::JSONReader::Read(json);
@@ -355,7 +415,7 @@ TEST_F(WatchdogTest, ViolationsAreEvictedAfterMax) {
   ASSERT_EQ(violations->GetList().size(), 1);
 
   ASSERT_TRUE(watchdog_->Ping("test-name-3"));
-  SbThreadSleep(kWatchdogMonitorFrequency * 2);
+  SbThreadSleep(kWatchdogSleepDuration);
 
   json = watchdog_->GetWatchdogViolations();
   ASSERT_NE(json, "");
@@ -387,7 +447,7 @@ TEST_F(WatchdogTest, UpdateStateShouldPreventViolations) {
                                   base::kApplicationStateStarted,
                                   kWatchdogMonitorFrequency));
   watchdog_->UpdateState(base::kApplicationStateBlurred);
-  SbThreadSleep(kWatchdogMonitorFrequency * 2);
+  SbThreadSleep(kWatchdogSleepDuration);
   ASSERT_EQ(watchdog_->GetWatchdogViolations(), "");
   ASSERT_TRUE(watchdog_->Unregister("test-name"));
 }
@@ -395,13 +455,14 @@ TEST_F(WatchdogTest, UpdateStateShouldPreventViolations) {
 TEST_F(WatchdogTest, TimeWaitShouldPreventViolations) {
   ASSERT_TRUE(watchdog_->Register(
       "test-name", "test-desc", base::kApplicationStateStarted,
-      kWatchdogMonitorFrequency, kWatchdogMonitorFrequency * 3));
-  SbThreadSleep(kWatchdogMonitorFrequency * 2);
+      kWatchdogMonitorFrequency,
+      kWatchdogSleepDuration + kWatchdogMonitorFrequency));
+  SbThreadSleep(kWatchdogSleepDuration);
   ASSERT_EQ(watchdog_->GetWatchdogViolations(), "");
   ASSERT_TRUE(watchdog_->Unregister("test-name"));
 }
 
-TEST_F(WatchdogTest, PingsShouldPreventViolations) {
+TEST_F(WatchdogTest, PingShouldPreventViolations) {
   ASSERT_TRUE(watchdog_->Register("test-name", "test-desc",
                                   base::kApplicationStateStarted,
                                   kWatchdogMonitorFrequency));
@@ -429,6 +490,20 @@ TEST_F(WatchdogTest, PingsShouldPreventViolations) {
                                   kWatchdogMonitorFrequency, 0, ALL));
   ASSERT_EQ(watchdog_->GetWatchdogViolations(), "");
   ASSERT_TRUE(watchdog_->Unregister("test-name"));
+}
+
+TEST_F(WatchdogTest, PingByClientShouldPreventViolations) {
+  std::shared_ptr<Client> client = watchdog_->RegisterByClient(
+      "test-name", "test-desc", base::kApplicationStateStarted,
+      kWatchdogMonitorFrequency);
+  SbThreadSleep(kWatchdogMonitorFrequency / 2);
+  ASSERT_TRUE(watchdog_->PingByClient(client));
+  SbThreadSleep(kWatchdogMonitorFrequency / 2);
+  ASSERT_TRUE(watchdog_->PingByClient(client));
+  ASSERT_EQ(watchdog_->GetWatchdogViolations(), "");
+  SbThreadSleep(kWatchdogSleepDuration);
+  ASSERT_NE(watchdog_->GetWatchdogViolations(), "");
+  ASSERT_TRUE(watchdog_->UnregisterByClient(client));
 }
 
 TEST_F(WatchdogTest, UnregisterShouldPreventViolations) {
@@ -436,7 +511,16 @@ TEST_F(WatchdogTest, UnregisterShouldPreventViolations) {
                                   base::kApplicationStateStarted,
                                   kWatchdogMonitorFrequency));
   ASSERT_TRUE(watchdog_->Unregister("test-name"));
-  SbThreadSleep(kWatchdogMonitorFrequency * 2);
+  SbThreadSleep(kWatchdogSleepDuration);
+  ASSERT_EQ(watchdog_->GetWatchdogViolations(), "");
+}
+
+TEST_F(WatchdogTest, UnregisterByClientShouldPreventViolations) {
+  std::shared_ptr<Client> client = watchdog_->RegisterByClient(
+      "test-name", "test-desc", base::kApplicationStateStarted,
+      kWatchdogMonitorFrequency);
+  ASSERT_TRUE(watchdog_->UnregisterByClient(client));
+  SbThreadSleep(kWatchdogSleepDuration);
   ASSERT_EQ(watchdog_->GetWatchdogViolations(), "");
 }
 
@@ -447,7 +531,7 @@ TEST_F(WatchdogTest, KillSwitchShouldPreventViolations) {
   ASSERT_TRUE(watchdog_->Register("test-name", "test-desc",
                                   base::kApplicationStateStarted,
                                   kWatchdogMonitorFrequency));
-  SbThreadSleep(kWatchdogMonitorFrequency * 2);
+  SbThreadSleep(kWatchdogSleepDuration);
   ASSERT_EQ(watchdog_->GetWatchdogViolations(), "");
   ASSERT_TRUE(watchdog_->Unregister("test-name"));
 }
@@ -456,7 +540,7 @@ TEST_F(WatchdogTest, FrequentConsecutiveViolationsShouldNotWrite) {
   ASSERT_TRUE(watchdog_->Register("test-name", "test-desc",
                                   base::kApplicationStateStarted,
                                   kWatchdogMonitorFrequency));
-  SbThreadSleep(kWatchdogMonitorFrequency * 2);
+  SbThreadSleep(kWatchdogSleepDuration);
   std::string write_json = "";
   starboard::ScopedFile read_file(watchdog_->GetWatchdogFilePath().c_str(),
                                   kSbFileOpenOnly | kSbFileRead);
@@ -468,7 +552,7 @@ TEST_F(WatchdogTest, FrequentConsecutiveViolationsShouldNotWrite) {
   }
   ASSERT_NE(write_json, "");
   ASSERT_TRUE(watchdog_->Ping("test-name"));
-  SbThreadSleep(kWatchdogMonitorFrequency * 2);
+  SbThreadSleep(kWatchdogSleepDuration);
   ASSERT_TRUE(watchdog_->Unregister("test-name"));
   std::string no_write_json = "";
   starboard::ScopedFile read_file_again(
@@ -483,6 +567,73 @@ TEST_F(WatchdogTest, FrequentConsecutiveViolationsShouldNotWrite) {
   ASSERT_EQ(write_json, no_write_json);
   std::string json = watchdog_->GetWatchdogViolations();
   ASSERT_NE(write_json, json);
+}
+
+TEST_F(WatchdogTest, GetViolationClientNames) {
+  ASSERT_TRUE(watchdog_->Register("test-name-1", "test-desc-1",
+                                  base::kApplicationStateStarted,
+                                  kWatchdogMonitorFrequency));
+  ASSERT_TRUE(watchdog_->Register("test-name-2", "test-desc-2",
+                                  base::kApplicationStateStarted,
+                                  kWatchdogMonitorFrequency));
+  SbThreadSleep(kWatchdogSleepDuration);
+  ASSERT_TRUE(watchdog_->Unregister("test-name-1"));
+  ASSERT_TRUE(watchdog_->Unregister("test-name-2"));
+
+  std::vector<std::string> names = watchdog_->GetWatchdogViolationClientNames();
+  ASSERT_EQ(names.size(), 2);
+  ASSERT_TRUE(std::find(names.begin(), names.end(), "test-name-1") !=
+              names.end());
+  ASSERT_TRUE(std::find(names.begin(), names.end(), "test-name-2") !=
+              names.end());
+  watchdog_->GetWatchdogViolations();
+  names = watchdog_->GetWatchdogViolationClientNames();
+  ASSERT_EQ(names.size(), 0);
+}
+
+TEST_F(WatchdogTest, GetPartialViolationsByClients) {
+  ASSERT_TRUE(watchdog_->Register("test-name-1", "test-desc-1",
+                                  base::kApplicationStateStarted,
+                                  kWatchdogMonitorFrequency));
+  ASSERT_TRUE(watchdog_->Register("test-name-2", "test-desc-2",
+                                  base::kApplicationStateStarted,
+                                  kWatchdogMonitorFrequency));
+  SbThreadSleep(kWatchdogSleepDuration);
+  ASSERT_TRUE(watchdog_->Unregister("test-name-1"));
+  ASSERT_TRUE(watchdog_->Unregister("test-name-2"));
+
+  const std::vector<std::string> clients = {"test-name-1"};
+  std::string json = watchdog_->GetWatchdogViolations(clients);
+  ASSERT_NE(json, "");
+  std::unique_ptr<base::Value> violations_map = base::JSONReader::Read(json);
+  ASSERT_NE(violations_map, nullptr);
+  base::Value* violation_dict = violations_map->FindKey("test-name-1");
+  ASSERT_NE(violation_dict, nullptr);
+  violation_dict = violations_map->FindKey("test-name-2");
+  ASSERT_EQ(violation_dict, nullptr);
+  json = watchdog_->GetWatchdogViolations(clients);
+  ASSERT_EQ(json, "");
+}
+
+TEST_F(WatchdogTest, EvictOldWatchdogViolations) {
+  // Creates old Violation json file.
+  std::unique_ptr<base::Value> dummy_map =
+      std::make_unique<base::Value>(base::Value::Type::DICTIONARY);
+  dummy_map->SetKey("test-name-old",
+                    CreateDummyViolationDict("test-desc-old", 0, 1));
+  std::string json;
+  base::JSONWriter::Write(*dummy_map, &json);
+  starboard::ScopedFile file(watchdog_->GetWatchdogFilePath().c_str(),
+                             kSbFileCreateAlways | kSbFileWrite);
+  TearDown();
+  file.WriteAll(json.c_str(), static_cast<int>(json.size()));
+  watchdog_ = new watchdog::Watchdog();
+  watchdog_->InitializeCustom(nullptr, std::string(kWatchdogViolationsJson),
+                              kWatchdogMonitorFrequency);
+
+  ASSERT_NE(watchdog_->GetWatchdogViolations({}, false), "");
+  ASSERT_EQ(watchdog_->GetWatchdogViolations({"test-name-new"}), "");
+  ASSERT_EQ(watchdog_->GetWatchdogViolations({}, false), "");
 }
 
 }  // namespace watchdog

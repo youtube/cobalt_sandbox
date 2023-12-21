@@ -19,10 +19,11 @@ from __future__ import print_function
 
 import logging
 import os
-from six.moves import SimpleHTTPServer
-from six.moves import socketserver
 import socket
 import threading
+
+from six.moves import SimpleHTTPServer
+from six.moves import socketserver
 
 
 class _ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
@@ -67,7 +68,6 @@ def MakeCustomHeaderRequestHandlerClass(base_path, paths_to_headers):
     base_path: A path considered to be the root directory.
     paths_to_headers: A dictionary with keys partial paths and values of header
     dicts. Key is expected to be a substring of a file being served.
-
     E.g. if you have a test with files foo.html and foo.js, you can serve them
     separate headers with the following:
     paths_to_headers = {
@@ -154,7 +154,10 @@ class ThreadedWebServer(object):
     if not binding_address:
       # No specific binding address specified. Bind to any interfaces instead.
       binding_address = '0.0.0.0'
-    self._server = _ThreadedTCPServer((binding_address, 0), handler)
+    # pylint: disable=import-outside-toplevel
+    from cobalt.black_box_tests.bbt_settings import default_web_server_port
+    binding_port = default_web_server_port
+    self._server = _ThreadedTCPServer((binding_address, binding_port), handler)
 
     self._server_thread = None
 
@@ -163,6 +166,9 @@ class ThreadedWebServer(object):
     if self._bound_host == '0.0.0.0':
       # When listening to any interfaces, get the IPv4 address of the hostname.
       self._bound_host = socket.gethostbyname(socket.gethostname())
+
+  def GetPort(self):
+    return self._bound_port
 
   def GetURL(self, file_name):
     """Given a |file_name|, return a HTTP URI that can be fetched.

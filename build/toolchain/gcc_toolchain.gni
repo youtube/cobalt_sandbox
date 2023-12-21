@@ -12,6 +12,10 @@ import("//build/toolchain/goma.gni")
 import("//build/toolchain/rbe.gni")
 import("//build/toolchain/toolchain.gni")
 
+if (use_cobalt_customizations) {
+  import("//starboard/build/config/os_definitions.gni")
+}
+
 if (is_nacl) {
   # To keep NaCl variables out of builds that don't include NaCl, all
   # variables defined in nacl/config.gni referenced here should be protected by
@@ -116,6 +120,10 @@ if (enable_resource_allowlist_generation) {
 #      that the snarl tool will accept.
 template("gcc_toolchain") {
   toolchain(target_name) {
+    is_starboard_toolchain = target_name == "starboard"
+    if (!sb_is_modular || sb_is_evergreen) {
+      not_needed(["is_starboard_toolchain"])
+    }
     assert(defined(invoker.ar), "gcc_toolchain() must specify a \"ar\" value")
     assert(defined(invoker.cc), "gcc_toolchain() must specify a \"cc\" value")
     assert(defined(invoker.cxx), "gcc_toolchain() must specify a \"cxx\" value")
@@ -145,17 +153,18 @@ template("gcc_toolchain") {
     toolchain_args = {
       # Populate toolchain args from the invoker.
       forward_variables_from(invoker_toolchain_args, "*")
+      build_with_separate_cobalt_toolchain = build_with_separate_cobalt_toolchain
 
       # The host toolchain value computed by the default toolchain's setup
       # needs to be passed through unchanged to all secondary toolchains to
       # ensure that it's always the same, regardless of the values that may be
       # set on those toolchains.
       if (!use_cobalt_customizations) {
-        host_toolchain = host_toolchain
+      host_toolchain = host_toolchain
 
-        if (!defined(invoker_toolchain_args.v8_current_cpu)) {
-          v8_current_cpu = invoker_toolchain_args.current_cpu
-        }
+      if (!defined(invoker_toolchain_args.v8_current_cpu)) {
+        v8_current_cpu = invoker_toolchain_args.current_cpu
+      }
       }
     }
 
@@ -386,10 +395,10 @@ template("gcc_toolchain") {
       # TODO(b/206642994): see if we can remove this condition. It's needed for
       # now to add cflags for evergreen platforms but we haven't yet decided
       # whether cflags should be added here for all platforms.
-      if (is_starboard && sb_is_evergreen) {
+      if (!is_starboard_toolchain && is_starboard && sb_is_modular) {
         command = "$asm -MMD -MF $depfile ${rebuild_string}{{defines}} {{include_dirs}} {{cflags}} {{asmflags}}${extra_asmflags} -c {{source}} -o {{output}}"
       } else {
-        command = "$asm -MMD -MF $depfile ${rebuild_string}{{defines}} {{include_dirs}} {{asmflags}}${extra_asmflags} -c {{source}} -o {{output}}"
+      command = "$asm -MMD -MF $depfile ${rebuild_string}{{defines}} {{include_dirs}} {{asmflags}}${extra_asmflags} -c {{source}} -o {{output}}"
       }
 
       depsformat = "gcc"
@@ -402,7 +411,8 @@ template("gcc_toolchain") {
         rspfile = "{{output}}.rsp"
         rspfile_content = "{{inputs_newline}}"
         command = "\"$ar\" {{arflags}} rcsD {{output}} @\"$rspfile\""
-      } else if (current_os == "aix") {
+      } else
+      if (current_os == "aix") {
         # AIX does not support either -D (deterministic output) or response
         # files.
         command = "$ar -X64 {{arflags}} -r -c -s {{output}} {{inputs}}"
@@ -452,14 +462,7 @@ template("gcc_toolchain") {
       # .TOC file, overwrite it, otherwise, don't change it.
       tocfile = sofile + ".TOC"
 
-      # TODO(b/206642994): see if we can remove this condition. It's needed for
-      # now because we use the ld.lld linker for evergreen platforms and need to
-      # pass options as `option` instead of `-Wl,option`.
-      if (is_starboard && sb_is_evergreen) {
-        link_command = "$ld -shared -soname=\"$soname\" {{ldflags}}${extra_ldflags} -o \"$unstripped_sofile\" @\"$rspfile\""
-      } else {
-        link_command = "$ld -shared -Wl,-soname=\"$soname\" {{ldflags}}${extra_ldflags} -o \"$unstripped_sofile\" @\"$rspfile\""
-      }
+      link_command = "$ld -shared -Wl,-soname=\"$soname\" {{ldflags}}${extra_ldflags} -o \"$unstripped_sofile\" @\"$rspfile\""
 
       # Generate a map file to be used for binary size analysis.
       # Map file adds ~10% to the link time on a z620.
@@ -486,11 +489,6 @@ template("gcc_toolchain") {
 
       if (target_cpu == "mipsel" && is_component_build && is_android) {
         rspfile_content = "-Wl,--start-group -Wl,--whole-archive {{inputs}} {{solibs}} -Wl,--no-whole-archive {{libs}} -Wl,--end-group$tail_lib_dependencies"
-        # TODO(b/206642994): see if we can remove this condition. It's needed for
-        # now because we use the ld.lld linker for evergreen platforms and need
-        # to pass options as `option` instead of `-Wl,option`.
-      } else if (is_starboard && sb_is_evergreen) {
-        rspfile_content = "--whole-archive {{inputs}} {{solibs}} --no-whole-archive {{libs}}$tail_lib_dependencies"
       } else {
         rspfile_content = "-Wl,--whole-archive {{inputs}} {{solibs}} -Wl,--no-whole-archive {{libs}}$tail_lib_dependencies"
       }
@@ -616,7 +614,12 @@ template("gcc_toolchain") {
       if (using_old_compiler) {
         link_command = "$ld {{ldflags}}${extra_ldflags} -o \"$unstripped_outfile\" $start_group_flag @\"$rspfile\" {{solibs}} $end_group_flag {{libs}} $tail_lib_dependencies"
       } else {
-        link_command = "$ld {{ldflags}}${extra_ldflags} {{libs}} -o \"$unstripped_outfile\" $start_group_flag @\"$rspfile\" {{solibs}} $end_group_flag$tail_lib_dependencies"
+        # Windows based platform modular builds dont link directly with the shared library.
+        if (is_host_win && sb_is_modular) {
+          link_command = "$ld {{ldflags}}${extra_ldflags} {{libs}} -o \"$unstripped_outfile\" $start_group_flag @\"$rspfile\"  $end_group_flag$tail_lib_dependencies"
+        } else {
+          link_command = "$ld {{ldflags}}${extra_ldflags} {{libs}} -o \"$unstripped_outfile\" $start_group_flag @\"$rspfile\" {{solibs}} $end_group_flag$tail_lib_dependencies"
+        }
       }
 
       # Generate a map file to be used for binary size analysis.

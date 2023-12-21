@@ -51,17 +51,17 @@ SbPlayer SbPlayerCreate(SbWindow window,
     return kSbPlayerInvalid;
   }
 
-#if SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#if SB_API_VERSION >= 15
   const SbMediaAudioStreamInfo& audio_stream_info =
       creation_param->audio_stream_info;
   const SbMediaVideoStreamInfo& video_stream_info =
       creation_param->video_stream_info;
-#else   // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#else   // SB_API_VERSION >= 15
   const SbMediaAudioSampleInfo& audio_stream_info =
       creation_param->audio_sample_info;
   const SbMediaVideoSampleInfo& video_stream_info =
       creation_param->video_sample_info;
-#endif  // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#endif  // SB_API_VERSION >= 15
 
   bool has_audio = audio_stream_info.codec != kSbMediaAudioCodecNone;
   bool has_video = video_stream_info.codec != kSbMediaVideoCodecNone;
@@ -184,24 +184,14 @@ SbPlayer SbPlayerCreate(SbWindow window,
     return kSbPlayerInvalid;
   }
 
-  // Android doesn't support multiple concurrent hardware decoders, so we can't
-  // have more than one primary player. And as secondary player is disabled on
-  // android, we simply check the number of active players here.
-  const int kMaxNumberOfPlayers = 1;
-  if (SbPlayerPrivate::number_of_players() >= kMaxNumberOfPlayers) {
-    error_message = starboard::FormatString(
-        "Failed to create a new player. Platform cannot support more than %d "
-        "players.",
-        kMaxNumberOfPlayers);
-    SB_LOG(ERROR) << error_message << ".";
-    player_error_func(kSbPlayerInvalid, context, kSbPlayerErrorDecode,
-                      error_message.c_str());
-    return kSbPlayerInvalid;
-  }
-
   if (creation_param->output_mode != kSbPlayerOutputModeDecodeToTexture &&
       // TODO: This is temporary for supporting background media playback.
       //       Need to be removed with media refactor.
+      //
+      // Now this code is also used to avoid creating multiple punch-out player
+      // as it happens to work as is.  Note that even without the check here,
+      // SbPlayer will properly handle this by reporting error in VideoDecoder,
+      // when it fails to acquire the surface.
       video_codec != kSbMediaVideoCodecNone) {
     // Check the availability of the video window. As we only support one main
     // player, and sub players are in decode to texture mode on Android, a

@@ -220,12 +220,7 @@ SkPath RoundedRectToSkiaPath(
     const math::RectF& rect,
     const render_tree::RoundedCorners& rounded_corners) {
   SkPath path;
-#ifdef USE_SKIA_NEXT
   path.addRRect(RoundedRectToSkia(rect, rounded_corners), SkPathDirection::kCW);
-#else
-  path.addRRect(RoundedRectToSkia(rect, rounded_corners),
-                SkPath::kCW_Direction);
-#endif
   return path;
 }
 
@@ -1637,7 +1632,9 @@ void DrawInsetRectShadowNode(render_tree::RectShadowNode* node,
                        shadow_bounds.right(), shadow_bounds.bottom());
 
   SkRect* draw_rects[] = {
-      &left_shadow_rect, &top_shadow_rect, &right_shadow_rect,
+      &left_shadow_rect,
+      &top_shadow_rect,
+      &right_shadow_rect,
       &bottom_shadow_rect,
   };
 

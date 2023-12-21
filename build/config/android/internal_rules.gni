@@ -15,7 +15,7 @@ import("//build/toolchain/goma.gni")
 import("//build/toolchain/kythe.gni")
 import("//build/util/generate_wrapper.gni")
 import("//build_overrides/build.gni")
-if (current_toolchain == default_toolchain) {
+if (is_starboardized_toolchain) {
   import("//build/toolchain/concurrent_links.gni")
 }
 assert(is_android)
@@ -395,10 +395,6 @@ template("write_build_config") {
         "--res-size-info",
         rebase_path(invoker.res_size_info_path, root_build_dir),
       ]
-    }
-    if (defined(invoker.resource_dirs)) {
-      resource_dirs = rebase_path(invoker.resource_dirs, root_build_dir)
-      args += [ "--resource-dirs=$resource_dirs" ]
     }
     if (defined(invoker.res_sources_path)) {
       _res_sources_path = rebase_path(invoker.res_sources_path, root_build_dir)
@@ -2098,11 +2094,6 @@ if (enable_java_templates) {
   #   deps: Specifies the input dependencies for this target.
   #
   #   build_config: Path to the .build_config file corresponding to the target.
-  #
-  #   resource_dirs (Deprecated):
-  #     ** This is deprecated, please specify files using |sources| parameter **
-  #     List of directories containing Android resources, layout should be
-  #     similar to what aapt -S <dir> expects.
   #
   #   sources:
   #     List of input resource files.

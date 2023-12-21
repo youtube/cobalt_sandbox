@@ -61,6 +61,11 @@ class Launcher(abstract_launcher.AbstractLauncher):
       self.device_ip = socket.gethostbyname(socket.gethostname())
 
     self.executable = self.GetTargetPath()
+    if abstract_launcher.IS_MODULAR_BUILD:
+      self.executable += "_loader"
+      if not os.path.exists(self.executable):
+        self.executable = os.path.abspath(
+            os.path.join(self.out_directory, "starboard", self.target_name))
 
     env = os.environ.copy()
     env.update(self.env_variables)
@@ -69,14 +74,12 @@ class Launcher(abstract_launcher.AbstractLauncher):
     # Ensure that if the binary has code coverage or profiling instrumentation,
     # the output will be written to a file in the coverage_directory named as
     # the target_name with '.profraw' postfixed.
-    if self.coverage_directory:
-      target_profraw = os.path.join(self.coverage_directory,
-                                    target_name + ".profraw")
-      env.update({"LLVM_PROFILE_FILE": target_profraw})
+    if self.coverage_file_path:
+      env.update({"LLVM_PROFILE_FILE": self.coverage_file_path})
 
       # Remove any stale profraw file that may already exist.
       try:
-        os.remove(target_profraw)
+        os.remove(self.coverage_file_path)
       except OSError as e:
         if e.errno != errno.ENOENT:
           raise
@@ -205,3 +208,12 @@ class Launcher(abstract_launcher.AbstractLauncher):
   def GetDeviceOutputPath(self):
     """Writable path where test targets can output files"""
     return "/tmp/testoutput"
+
+  def IgnoreAsanLeaks(self):
+    asan_options = self.env_variables.get("ASAN_OPTIONS", "")
+    asan_options = [
+        opt for opt in asan_options.split(":") if "detect_leaks" not in opt
+    ]
+    asan_options.append("detect_leaks=0")
+    asan_options.append("detect_odr_violation=0")
+    self.env_variables["ASAN_OPTIONS"] = ":".join(asan_options)

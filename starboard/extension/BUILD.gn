@@ -22,11 +22,11 @@ target(gtest_target_type, "extension_test") {
   deps = [
     "//cobalt/base",
     "//cobalt/test:run_all_unittests",
-    "//starboard",
+    "//starboard:starboard_group",
     "//testing/gmock",
     "//testing/gtest",
   ]
-  if (sb_is_evergreen) {
+  if (sb_is_modular && current_toolchain == cobalt_toolchain) {
     deps += cobalt_platform_dependencies
   }
 }

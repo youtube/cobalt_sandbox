@@ -36,6 +36,9 @@ const char kDevServersListenIpHelp[] =
     "IPv4), and to listen to LOOPBACK use \"::1\" (\"127.0.0.1\" for IPv4)";
 
 #if defined(ENABLE_DEBUGGER)
+const char kDisableWebDebugger[] = "disable_web_debugger";
+const char kDisableWebDebuggerHelp[] = "Disable support for the web debugger";
+
 const char kRemoteDebuggingPort[] = "remote_debugging_port";
 const char kRemoteDebuggingPortHelp[] =
     "Remote web debugger is served from the specified port. If 0, then the "
@@ -120,11 +123,6 @@ const char kInputFuzzer[] = "input_fuzzer";
 const char kInputFuzzerHelp[] =
     "If this flag is set, input will be continuously generated randomly "
     "instead of taken from an external input device (like a controller).";
-
-const char kMemoryTracker[] = "memory_tracker";
-const char kMemoryTrackerHelp[] =
-    "Enables memory tracking by installing the memory tracker on startup. Run "
-    "--memory_tracker=help for more info.";
 
 const char kMinCompatibilityVersion[] = "min_compatibility_version";
 const char kMinCompatibilityVersionHelp[] =
@@ -231,7 +229,7 @@ const char kWebDriverPortHelp[] =
 
 const char kMinLogLevel[] = "min_log_level";
 const char kMinLogLevelHelp[] =
-    "Set the minimum logging level: info|warning|error|fatal.";
+    "Set the minimum logging level: verbose|info|warning|error|fatal.";
 const char kDisableJavaScriptJit[] = "disable_javascript_jit";
 const char kDisableJavaScriptJitHelp[] =
     "Specifies that javascript jit should be disabled.";
@@ -444,8 +442,9 @@ std::string HelpMessage() {
     {kDebugConsoleMode, kDebugConsoleModeHelp},
         {kDevServersListenIp, kDevServersListenIpHelp},
 #if defined(ENABLE_DEBUGGER)
-        {kWaitForWebDebugger, kWaitForWebDebuggerHelp},
+        {kDisableWebDebugger, kDisableWebDebuggerHelp},
         {kRemoteDebuggingPort, kRemoteDebuggingPortHelp},
+        {kWaitForWebDebugger, kWaitForWebDebuggerHelp},
 #endif  // ENABLE_DEBUGGER
         {kDisableImageAnimations, kDisableImageAnimationsHelp},
         {kForceDeterministicRendering, kForceDeterministicRenderingHelp},
@@ -459,7 +458,7 @@ std::string HelpMessage() {
         {kExtraWebFileDir, kExtraWebFileDirHelp},
         {kFakeMicrophone, kFakeMicrophoneHelp},
         {kIgnoreCertificateErrors, kIgnoreCertificateErrorsHelp},
-        {kInputFuzzer, kInputFuzzerHelp}, {kMemoryTracker, kMemoryTrackerHelp},
+        {kInputFuzzer, kInputFuzzerHelp},
         {kMinCompatibilityVersion, kMinCompatibilityVersionHelp},
         {kNullSavegame, kNullSavegameHelp}, {kProd, kProdHelp},
         {kRequireCSP, kRequireCSPHelp},

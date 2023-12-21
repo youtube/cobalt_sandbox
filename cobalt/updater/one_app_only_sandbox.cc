@@ -72,7 +72,7 @@ bool CheckForAndExecuteStartupSwitches() {
 
 void PreloadApplication(int argc, char** argv, const char* link,
                         const base::Closure& quit_closure,
-                        SbTimeMonotonic timestamp) {
+                        int64_t timestamp) {
   if (CheckForAndExecuteStartupSwitches()) {
     SbSystemRequestStop(0);
     return;
@@ -86,26 +86,16 @@ void PreloadApplication(int argc, char** argv, const char* link,
 
 void StartApplication(int argc, char** argv, const char* link,
                       const base::Closure& quit_closure,
-                      SbTimeMonotonic timestamp) {
+                      int64_t timestamp) {
   if (CheckForAndExecuteStartupSwitches()) {
     SbSystemRequestStop(0);
     return;
   }
   LOG(INFO) << "Starting application.";
-#if SB_API_VERSION >= 13
   DCHECK(!g_application);
   g_application = new cobalt::browser::Application(
       quit_closure, false /*not_preload*/, timestamp);
   DCHECK(g_application);
-#else
-  if (!g_application) {
-    g_application = new cobalt::browser::Application(
-        quit_closure, false /*should_preload*/, timestamp);
-    DCHECK(g_application);
-  } else {
-    g_application->Start(timestamp);
-  }
-#endif  // SB_API_VERSION >= 13
 }
 
 void StopApplication() {

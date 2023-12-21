@@ -22,9 +22,10 @@
 #include "cobalt/dom/c_val_view.h"
 #include "cobalt/dom/mutation_observer_task_manager.h"
 #include "cobalt/h5vcc/h5vcc_accessibility.h"
-#include "cobalt/h5vcc/h5vcc_account_info.h"
 #include "cobalt/h5vcc/h5vcc_audio_config_array.h"
 #include "cobalt/h5vcc/h5vcc_crash_log.h"
+#include "cobalt/h5vcc/h5vcc_metrics.h"
+#include "cobalt/h5vcc/h5vcc_net_log.h"
 #include "cobalt/h5vcc/h5vcc_runtime.h"
 #include "cobalt/h5vcc/h5vcc_settings.h"
 #include "cobalt/h5vcc/h5vcc_storage.h"
@@ -51,7 +52,6 @@ class H5vcc : public script::Wrappable {
 #if SB_IS(EVERGREEN)
           updater_module(NULL),
 #endif
-          account_manager(NULL),
           event_dispatcher(NULL),
           user_agent_data(NULL),
           global_environment(NULL) {
@@ -63,7 +63,6 @@ class H5vcc : public script::Wrappable {
 #if SB_IS(EVERGREEN)
     updater::UpdaterModule* updater_module;
 #endif
-    account::AccountManager* account_manager;
     base::EventDispatcher* event_dispatcher;
     web::NavigatorUAData* user_agent_data;
     script::GlobalEnvironment* global_environment;
@@ -74,14 +73,12 @@ class H5vcc : public script::Wrappable {
   const scoped_refptr<H5vccAccessibility>& accessibility() const {
     return accessibility_;
   }
-  const scoped_refptr<H5vccAccountInfo>& account_info() const {
-    return account_info_;
-  }
   const scoped_refptr<H5vccAudioConfigArray>& audio_config() {
     return audio_config_array_;
   }
   const scoped_refptr<dom::CValView>& c_val() const { return c_val_; }
   const scoped_refptr<H5vccCrashLog>& crash_log() const { return crash_log_; }
+  const scoped_refptr<H5vccMetrics>& metrics() const { return metrics_; }
   const scoped_refptr<H5vccRuntime>& runtime() const { return runtime_; }
   const scoped_refptr<H5vccSettings>& settings() const { return settings_; }
   const scoped_refptr<H5vccStorage>& storage() const { return storage_; }
@@ -89,6 +86,7 @@ class H5vcc : public script::Wrappable {
   const scoped_refptr<H5vccTraceEvent>& trace_event() const {
     return trace_event_;
   }
+  const scoped_refptr<H5vccNetLog>& net_log() const { return net_log_; }
 #if SB_IS(EVERGREEN)
   const scoped_refptr<H5vccUpdater>& updater() const { return updater_; }
 #endif
@@ -98,15 +96,16 @@ class H5vcc : public script::Wrappable {
 
  private:
   scoped_refptr<H5vccAccessibility> accessibility_;
-  scoped_refptr<H5vccAccountInfo> account_info_;
   scoped_refptr<H5vccAudioConfigArray> audio_config_array_;
   scoped_refptr<dom::CValView> c_val_;
   scoped_refptr<H5vccCrashLog> crash_log_;
+  scoped_refptr<H5vccMetrics> metrics_;
   scoped_refptr<H5vccRuntime> runtime_;
   scoped_refptr<H5vccSettings> settings_;
   scoped_refptr<H5vccStorage> storage_;
   scoped_refptr<H5vccSystem> system_;
   scoped_refptr<H5vccTraceEvent> trace_event_;
+  scoped_refptr<H5vccNetLog> net_log_;
 #if SB_IS(EVERGREEN)
   scoped_refptr<H5vccUpdater> updater_;
 #endif

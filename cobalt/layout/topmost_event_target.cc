@@ -57,7 +57,8 @@ scoped_refptr<dom::HTMLElement> TopmostEventTarget::FindTopmostEventTarget(
   document->DoSynchronousLayout();
 
   html_element_ = document->html();
-  ConsiderElement(html_element_, coordinate);
+  bool consider_only_fixed_elements = false;
+  ConsiderElement(html_element_, coordinate, consider_only_fixed_elements);
   box_ = NULL;
   render_sequence_.clear();
   scoped_refptr<dom::HTMLElement> topmost_element;
@@ -141,6 +142,15 @@ std::unique_ptr<dom::PossibleScrollTargets> FindPossibleScrollTargets(
   return possible_scroll_targets;
 }
 
+bool HasAnyScrollTarget(
+    const dom::PossibleScrollTargets* possible_scroll_targets) {
+  if (!possible_scroll_targets) {
+    return false;
+  }
+  return possible_scroll_targets->left || possible_scroll_targets->right ||
+         possible_scroll_targets->up || possible_scroll_targets->down;
+}
+
 scoped_refptr<dom::HTMLElement> FindFirstElementWithScrollType(
     dom::PossibleScrollTargets* possible_scroll_targets,
     ui_navigation::scroll_engine::ScrollType major_scroll_axis,
@@ -178,8 +188,8 @@ struct CanTargetBox {
   }
 };
 
-bool ShouldConsiderElementAndChildren(dom::Element* element,
-                                      math::Vector2dF* coordinate) {
+bool CanTargetElementAndChildren(dom::Element* element,
+                                 math::Vector2dF* coordinate) {
   LayoutBoxes* layout_boxes = GetLayoutBoxesIfNotEmpty(element);
   const Boxes boxes = layout_boxes->boxes();
   const Box* box = boxes.front();
@@ -277,15 +287,6 @@ void SendStateChangeLeaveEvents(
       }
     }
   }
-}
-
-void SendStateChangeLeaveEvents(
-    bool is_pointer_event, scoped_refptr<dom::HTMLElement> previous_element,
-    dom::PointerEventInit* event_init) {
-  scoped_refptr<dom::HTMLElement> target_element = nullptr;
-  scoped_refptr<dom::Element> nearest_common_ancestor = nullptr;
-  SendStateChangeLeaveEvents(is_pointer_event, previous_element, target_element,
-                             nearest_common_ancestor, event_init);
 }
 
 void SendStateChangeEnterEvents(
@@ -419,7 +420,10 @@ void DispatchPointerEventsForScrollStart(
       new dom::PointerEvent(base::Tokens::pointercancel(), web::Event::kBubbles,
                             web::Event::kNotCancelable, view, *event_init));
   bool is_pointer_event = true;
-  SendStateChangeLeaveEvents(is_pointer_event, element, event_init);
+  scoped_refptr<dom::HTMLElement> target_element = nullptr;
+  scoped_refptr<dom::Element> nearest_common_ancestor = nullptr;
+  SendStateChangeLeaveEvents(is_pointer_event, element, target_element,
+                             nearest_common_ancestor, event_init);
 }
 
 math::Matrix3F GetCompleteTransformMatrix(dom::Element* element) {
@@ -434,17 +438,43 @@ math::Matrix3F GetCompleteTransformMatrix(dom::Element* element) {
   return complete_matrix;
 }
 
+bool LayoutBoxesAreFixed(LayoutBoxes* layout_boxes) {
+  const Boxes boxes = layout_boxes->boxes();
+  const Box* box = boxes.front();
+  if (!box->computed_style()) {
+    return false;
+  }
+
+  return box->computed_style()->position() == cssom::KeywordValue::GetFixed();
+}
+
+bool ShouldConsiderElementAndChildren(dom::Element* element,
+                                      math::Vector2dF* coordinate,
+                                      bool consider_only_fixed_elements) {
+  LayoutBoxes* layout_boxes = GetLayoutBoxesIfNotEmpty(element);
+  if (!layout_boxes) {
+    return false;
+  }
+
+  bool is_fixed_element = LayoutBoxesAreFixed(layout_boxes);
+  if (consider_only_fixed_elements && !is_fixed_element) {
+    return false;
+  }
+  return CanTargetElementAndChildren(element, coordinate);
+}
+
 }  // namespace
 
 void TopmostEventTarget::ConsiderElement(dom::Element* element,
-                                         const math::Vector2dF& coordinate) {
+                                         const math::Vector2dF& coordinate,
+                                         bool consider_only_fixed_elements) {
   if (!element) return;
   math::Vector2dF element_coordinate(coordinate);
   LayoutBoxes* layout_boxes = GetLayoutBoxesIfNotEmpty(element);
-  if (layout_boxes) {
-    if (!ShouldConsiderElementAndChildren(element, &element_coordinate)) {
-      return;
-    }
+  bool consider_element_and_children = ShouldConsiderElementAndChildren(
+      element, &element_coordinate, consider_only_fixed_elements);
+
+  if (consider_element_and_children) {
     scoped_refptr<dom::HTMLElement> html_element = element->AsHTMLElement();
     if (html_element && html_element->CanBeDesignatedByPointerIfDisplayed()) {
       ConsiderBoxes(html_element, layout_boxes, element_coordinate);
@@ -453,7 +483,8 @@ void TopmostEventTarget::ConsiderElement(dom::Element* element,
 
   for (dom::Element* child_element = element->first_element_child();
        child_element; child_element = child_element->next_element_sibling()) {
-    ConsiderElement(child_element, element_coordinate);
+    ConsiderElement(child_element, element_coordinate,
+                    !consider_element_and_children);
   }
 }
 
@@ -535,6 +566,10 @@ void TopmostEventTarget::HandleScrollState(
         FindPossibleScrollTargets(target_element);
     pointer_state->SetPossibleScrollTargets(
         pointer_id, std::move(initial_possible_scroll_targets));
+    if (HasAnyScrollTarget(initial_possible_scroll_targets.get())) {
+      pointer_state->SetPendingPointerCaptureTargetOverride(pointer_id,
+                                                            target_element);
+    }
 
     auto transform_matrix = GetCompleteTransformMatrix(target_element.get());
     pointer_state->SetClientTransformMatrix(pointer_id, transform_matrix);
@@ -570,8 +605,11 @@ void TopmostEventTarget::HandleScrollState(
         return;
       }
 
-      DispatchPointerEventsForScrollStart(target_element, event_init);
+      scoped_refptr<dom::HTMLElement> previous_html_element(
+          previous_html_element_weak_);
+      DispatchPointerEventsForScrollStart(previous_html_element, event_init);
       pointer_state->SetWasCancelled(pointer_id);
+      pointer_state->ClearPendingPointerCaptureTargetOverride(pointer_id);
 
       should_clear_pointer_state = true;
       scroll_engine_->thread()->message_loop()->task_runner()->PostTask(
@@ -666,6 +704,12 @@ void TopmostEventTarget::MaybeSendPointerEvents(
                       &event_init);
   }
 
+  bool event_was_cancelled = pointer_event && pointer_state->GetWasCancelled(
+                                                  pointer_event->pointer_id());
+  if (pointer_event && pointer_event->type() == base::Tokens::pointerup()) {
+    pointer_state->ClearWasCancelled(pointer_event->pointer_id());
+  }
+
   scoped_refptr<dom::HTMLElement> previous_html_element(
       previous_html_element_weak_);
 
@@ -674,14 +718,10 @@ void TopmostEventTarget::MaybeSendPointerEvents(
   scoped_refptr<dom::Element> nearest_common_ancestor(
       GetNearestCommonAncestor(previous_html_element, target_element));
 
-  SendStateChangeLeaveEvents(pointer_event, previous_html_element,
-                             target_element, nearest_common_ancestor,
-                             &event_init);
-
-  bool event_was_cancelled = pointer_event && pointer_state->GetWasCancelled(
-                                                  pointer_event->pointer_id());
-  if (pointer_event && pointer_event->type() == base::Tokens::pointerup()) {
-    pointer_state->ClearWasCancelled(pointer_event->pointer_id());
+  if (!event_was_cancelled) {
+    SendStateChangeLeaveEvents(pointer_event, previous_html_element,
+                               target_element, nearest_common_ancestor,
+                               &event_init);
   }
 
   if (target_element) {

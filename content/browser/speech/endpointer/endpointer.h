@@ -78,9 +78,7 @@ class CONTENT_EXPORT Endpointer {
 
   // Returns true if the endpointer detected reasonable audio levels above
   // background noise which could be user speech, false if not.
-  bool DidStartReceivingSpeech() const {
-    return speech_previously_detected_;
-  }
+  bool DidStartReceivingSpeech() const { return speech_previously_detected_; }
 
   bool IsEstimatingEnvironment() const {
     return energy_endpointer_.estimating_environment();
@@ -102,9 +100,7 @@ class CONTENT_EXPORT Endpointer {
     long_speech_length_us_ = time_us;
   }
 
-  bool speech_input_complete() const {
-    return speech_input_complete_;
-  }
+  bool speech_input_complete() const { return speech_input_complete_; }
 
 #if defined(STARBOARD)
   int sample_rate() const { return sample_rate_; }
@@ -123,7 +119,7 @@ class CONTENT_EXPORT Endpointer {
 
   // The speechInputPossiblyComplete event signals that silence/noise has been
   // detected for a *short* amount of time after some speech has been detected.
-  // This proporty specifies the time period.
+  // This property specifies the time period.
   int64_t speech_input_possibly_complete_silence_length_us_;
 
   // The speechInputComplete event signals that silence/noise has been

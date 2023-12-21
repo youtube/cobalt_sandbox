@@ -194,6 +194,10 @@ VideoDecoder::VideoDecoder(
   HardwareDecoderContext hardware_context = GetDirectXForHardwareDecoding();
   d3d_device_ = hardware_context.dx_device_out;
   device_manager_ = hardware_context.dxgi_device_manager_out;
+  if (!d3d_device_ || !device_manager_) {
+    return;
+  }
+
   HRESULT hr = d3d_device_.As(&video_device_);
   if (FAILED(hr)) {
     return;
@@ -284,7 +288,9 @@ void VideoDecoder::WriteInputBuffers(const InputBuffers& input_buffers) {
   SB_DCHECK(input_buffers[0]);
   SB_DCHECK(decoder_status_cb_);
   EnsureDecoderThreadRunning();
-
+  if (error_occured_.load()) {
+    return;
+  }
   const auto& input_buffer = input_buffers[0];
   if (TryUpdateOutputForHdrVideo(input_buffer->video_stream_info())) {
     ScopedLock lock(thread_lock_);
@@ -300,6 +306,9 @@ void VideoDecoder::WriteEndOfStream() {
   SB_DCHECK(thread_checker_.CalledOnValidThread());
   SB_DCHECK(decoder_status_cb_);
   EnsureDecoderThreadRunning();
+  if (error_occured_.load()) {
+    return;
+  }
 
   ScopedLock lock(thread_lock_);
   thread_events_.emplace_back(new Event{Event::kWriteEndOfStream});
@@ -317,6 +326,7 @@ void VideoDecoder::Reset() {
   thread_outputs_.clear();
   thread_lock_.Release();
   outputs_reset_lock_.Release();
+  error_occured_.store(false);
 
   // If the previous priming hasn't finished, restart it.  This happens rarely
   // as it is only triggered when a seek is requested immediately after video is
@@ -470,8 +480,9 @@ void VideoDecoder::InitializeCodec() {
 
   ComPtr<IMFAttributes> attributes = transform->GetAttributes();
   SB_DCHECK(attributes);
-  CheckResult(attributes->SetUINT32(MF_SA_MINIMUM_OUTPUT_SAMPLE_COUNT,
-                                    kMaxOutputSamples));
+  CheckResult(
+      attributes->SetUINT32(MF_SA_MINIMUM_OUTPUT_SAMPLE_COUNT,
+                            static_cast<UINT32>(GetMaxNumberOfCachedFrames())));
 
   UpdateVideoArea(transform->GetCurrentOutputType());
 
@@ -661,6 +672,10 @@ void VideoDecoder::DecoderThreadRun() {
       switch (event->type) {
         case Event::kWriteInputBuffer:
           SB_DCHECK(event->input_buffer != nullptr);
+          if (error_occured_) {
+            event.reset();
+            break;
+          }
           if (decoder_->TryWriteInputBuffer(event->input_buffer, 0)) {
             if (priming_output_count_ > 0) {
               // Save this event for the actual playback.
@@ -706,7 +721,7 @@ void VideoDecoder::DecoderThreadRun() {
       // MF_SA_MINIMUM_OUTPUT_SAMPLE_COUNT.
       thread_lock_.Acquire();
       bool input_full = thread_events_.size() >= kMaxInputSamples;
-      bool output_full = thread_outputs_.size() >= kMaxOutputSamples;
+      bool output_full = thread_outputs_.size() >= GetMaxNumberOfCachedFrames();
       thread_lock_.Release();
 
       Status status = input_full ? kBufferFull : kNeedMoreInput;
@@ -719,7 +734,13 @@ void VideoDecoder::DecoderThreadRun() {
 
       ComPtr<IMFSample> sample;
       ComPtr<IMFMediaType> media_type;
-      decoder_->ProcessAndRead(&sample, &media_type);
+      bool hasError;
+      decoder_->ProcessAndRead(&sample, &media_type, &hasError);
+      if (hasError) {
+        error_occured_.exchange(true);
+        error_cb_(kSbPlayerErrorDecode, "Something went wrong in decoding.");
+        break;
+      }
       if (media_type) {
         UpdateVideoArea(media_type);
       }

@@ -26,7 +26,6 @@
 #include "cobalt/audio/audio_file_reader.h"
 #include "starboard/common/file.h"
 #include "starboard/memory.h"
-#include "starboard/time.h"
 
 namespace cobalt {
 namespace speech {
@@ -94,7 +93,7 @@ MicrophoneFake::MicrophoneFake(const Options& options)
                      file_length_ / audio::GetSampleTypeSize(AudioBus::kInt16),
                      AudioBus::kInt16, AudioBus::kInterleaved));
     memcpy(audio_bus_->interleaved_data(), options.external_audio_data,
-                 file_length_);
+           file_length_);
   }
 }
 
@@ -136,7 +135,7 @@ bool MicrophoneFake::Open() {
           file_buffer_size / audio::GetSampleTypeSize(AudioBus::kInt16),
           AudioBus::kInt16, AudioBus::kInterleaved));
       memcpy(audio_bus_->interleaved_data(), audio_input.get(),
-                   file_buffer_size);
+             file_buffer_size);
       file_length_ = file_buffer_size;
     } else if (reader->sample_type() != AudioBus::kInt16 ||
                reader->sample_rate() != kSupportedSampleRate ||
@@ -163,8 +162,7 @@ int MicrophoneFake::Read(char* out_data, int data_size) {
   }
 
   int copy_bytes = std::min(file_length_ - read_index_, data_size);
-  memcpy(out_data, audio_bus_->interleaved_data() + read_index_,
-               copy_bytes);
+  memcpy(out_data, audio_bus_->interleaved_data() + read_index_, copy_bytes);
   read_index_ += copy_bytes;
   if (read_index_ == file_length_) {
     read_index_ = 0;

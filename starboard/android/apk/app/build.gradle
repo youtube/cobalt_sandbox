@@ -75,7 +75,7 @@ android {
     defaultConfig {
         applicationId "dev.cobalt.coat"
         minSdkVersion 24
-        targetSdkVersion 31
+        targetSdkVersion 34
         versionCode 1
         versionName "${buildId}"
         manifestPlaceholders = [
@@ -109,6 +109,7 @@ android {
                 cmake.arguments "-DCOBALT_CONFIG=debug"
             }
             signingConfig signingConfigs.debugConfig
+            enableUnitTestCoverage true
         }
         devel {
             debuggable true
@@ -117,12 +118,14 @@ android {
                 cmake.arguments "-DCOBALT_CONFIG=devel"
             }
             signingConfig signingConfigs.debugConfig
+            enableUnitTestCoverage true
         }
         qa {
             externalNativeBuild {
                 cmake.arguments "-DCOBALT_CONFIG=qa"
             }
             signingConfig signingConfigs.debugConfig
+            enableUnitTestCoverage true
         }
         release {
             minifyEnabled true
@@ -146,16 +149,16 @@ android {
         }
         // Add the directories symlinked by the CMake "cobalt_content" custom command.
         debug {
-            assets.srcDir "${buildDir}/intermediates/cxx/debug/cobalt_content"
+            assets.srcDir "${cobaltContentDir}"
         }
         devel {
-            assets.srcDir "${buildDir}/intermediates/cxx/devel/cobalt_content"
+            assets.srcDir "${cobaltContentDir}"
         }
         qa {
-            assets.srcDir "${buildDir}/intermediates/cxx/qa/cobalt_content"
+            assets.srcDir "${cobaltContentDir}"
         }
         release {
-            assets.srcDir "${buildDir}/intermediates/cxx/gold/cobalt_content"
+            assets.srcDir "${cobaltContentDir}"
         }
     }
     externalNativeBuild {
@@ -207,4 +210,7 @@ dependencies {
     implementation 'com.google.android.gms:play-services-ads-identifier:17.0.0'
     implementation 'com.google.android.gms:play-services-auth:18.0.0'
     implementation 'com.google.protobuf:protobuf-lite:3.0.1'
+
+    testImplementation 'junit:junit:4.12'
+    testImplementation "com.google.truth:truth:1.1.3"
 }

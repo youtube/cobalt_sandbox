@@ -29,7 +29,7 @@
 #include "cobalt/script/exception_message.h"
 #include "cobalt/script/promise.h"
 #include "cobalt/script/script_value.h"
-#include "cobalt/worker/service_worker_jobs.h"
+#include "cobalt/worker/service_worker_context.h"
 #include "cobalt/worker/service_worker_registration_object.h"
 #include "cobalt/worker/service_worker_update_via_cache.h"
 #include "url/gurl.h"
@@ -61,14 +61,21 @@ ServiceWorkerRegistrationMap::ServiceWorkerRegistrationMap(
       new ServiceWorkerPersistentSettings(options));
   DCHECK(service_worker_persistent_settings_);
 
-  // TODO(b/259731731) For now do not read from persisted settings until
-  // activation of persisted registrations works.
   ReadPersistentSettings();
 }
 
 void ServiceWorkerRegistrationMap::ReadPersistentSettings() {
   service_worker_persistent_settings_->ReadServiceWorkerRegistrationMapSettings(
       registration_map_);
+}
+
+void ServiceWorkerRegistrationMap::DeletePersistentSettings() {
+  base::OnceClosure closure = base::BindOnce(
+      [](std::map<RegistrationMapKey,
+                  scoped_refptr<ServiceWorkerRegistrationObject>>*
+             registration_map) { (*registration_map).clear(); },
+      &registration_map_);
+  service_worker_persistent_settings_->DeleteAll(std::move(closure));
 }
 
 scoped_refptr<ServiceWorkerRegistrationObject>
@@ -252,7 +259,7 @@ bool ServiceWorkerRegistrationMap::IsUnregistered(
 }
 
 void ServiceWorkerRegistrationMap::HandleUserAgentShutdown(
-    ServiceWorkerJobs* jobs) {
+    ServiceWorkerContext* context) {
   TRACE_EVENT0("cobalt::worker",
                "ServiceWorkerRegistrationMap::HandleUserAgentShutdown()");
   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
@@ -270,7 +277,7 @@ void ServiceWorkerRegistrationMap::HandleUserAgentShutdown(
       // active worker is null, invoke Clear Registration with registration and
       // continue to the next iteration of the loop.
       if (!registration->waiting_worker() && !registration->active_worker()) {
-        jobs->ClearRegistration(registration);
+        context->ClearRegistration(registration);
         continue;
       } else {
         // 1.1.2. Else, set installingWorker to null.
@@ -283,7 +290,7 @@ void ServiceWorkerRegistrationMap::HandleUserAgentShutdown(
       // substep in parallel:
 
       // 1.2.1. Invoke Activate with registration.
-      jobs->Activate(registration);
+      context->Activate(registration);
     }
   }
 }

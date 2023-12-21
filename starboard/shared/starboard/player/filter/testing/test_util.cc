@@ -181,14 +181,32 @@ std::vector<VideoTestParam> GetSupportedVideoTests() {
       const auto& video_stream_info = dmp_reader.video_stream_info();
       const std::string video_mime = dmp_reader.video_mime_type();
       const MimeType video_mime_type(video_mime.c_str());
-      if (SbMediaIsVideoSupported(
-              dmp_reader.video_codec(),
-              video_mime.size() > 0 ? &video_mime_type : nullptr, -1, -1, 8,
-              kSbMediaPrimaryIdUnspecified, kSbMediaTransferIdUnspecified,
-              kSbMediaMatrixIdUnspecified, video_stream_info.frame_width,
-              video_stream_info.frame_height, dmp_reader.video_bitrate(),
-              dmp_reader.video_fps(), false)) {
-        test_params.push_back(std::make_tuple(filename, output_mode));
+      // SbMediaIsVideoSupported may return false for gpu based decoder that in
+      // fact supports av1 or/and vp9 because the system can make async
+      // initialization at startup.
+      // To minimize probability of false negative we check result few times
+      static bool decoder_has_been_checked_once = false;
+      int counter = 5;
+      const SbMediaVideoCodec video_codec = dmp_reader.video_codec();
+      bool need_to_check_with_wait = video_codec == kSbMediaVideoCodecAv1 ||
+                                     video_codec == kSbMediaVideoCodecVp9;
+      do {
+        if (SbMediaIsVideoSupported(
+                video_codec, video_mime.size() > 0 ? &video_mime_type : nullptr,
+                -1, -1, 8, kSbMediaPrimaryIdUnspecified,
+                kSbMediaTransferIdUnspecified, kSbMediaMatrixIdUnspecified,
+                video_stream_info.frame_width, video_stream_info.frame_height,
+                dmp_reader.video_bitrate(), dmp_reader.video_fps(), false)) {
+          test_params.push_back(std::make_tuple(filename, output_mode));
+          break;
+        } else if (need_to_check_with_wait && !decoder_has_been_checked_once) {
+          SbThreadSleep(kSbTimeSecond);
+        } else {
+          break;
+        }
+      } while (--counter);
+      if (need_to_check_with_wait) {
+        decoder_has_been_checked_once = true;
       }
     }
   }
@@ -257,11 +275,11 @@ media::VideoStreamInfo CreateVideoStreamInfo(SbMediaVideoCodec codec) {
 }
 
 bool IsPartialAudioSupported() {
-#if SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#if SB_API_VERSION >= 15
   return true;
-#else   // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#else   // SB_API_VERSION >= 15
   return SbSystemGetExtension(kCobaltExtensionEnhancedAudioName) != nullptr;
-#endif  // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#endif  // SB_API_VERSION >= 15
 }
 
 scoped_refptr<InputBuffer> GetAudioInputBuffer(
@@ -283,14 +301,14 @@ scoped_refptr<InputBuffer> GetAudioInputBuffer(
   SB_DCHECK(dmp_reader);
   auto player_sample_info =
       dmp_reader->GetPlayerSampleInfo(kSbMediaTypeAudio, index);
-#if SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#if SB_API_VERSION >= 15
   player_sample_info.audio_sample_info.discarded_duration_from_front =
       discarded_duration_from_front;
   player_sample_info.audio_sample_info.discarded_duration_from_back =
       discarded_duration_from_back;
   auto input_buffer = new InputBuffer(StubDeallocateSampleFunc, nullptr,
                                       nullptr, player_sample_info);
-#else   // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#else   // SB_API_VERSION >= 15
   media::AudioSampleInfo audio_sample_info(
       player_sample_info.audio_sample_info);
   audio_sample_info.discarded_duration_from_front =
@@ -310,7 +328,7 @@ scoped_refptr<InputBuffer> GetAudioInputBuffer(
 
   auto input_buffer = new InputBuffer(StubDeallocateSampleFunc, nullptr,
                                       nullptr, enhanced_audio_sample_info);
-#endif  // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#endif  // SB_API_VERSION >= 15
   return input_buffer;
 }
 

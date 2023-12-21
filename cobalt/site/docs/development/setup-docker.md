@@ -1,13 +1,13 @@
----
-layout: doc
-title: "Set up your environment - Docker"
----
+Project: /youtube/cobalt/_project.yaml
+Book: /youtube/cobalt/_book.yaml
+
+# Set up your environment - Docker
 
 We provide <a
-href="https://cobalt.googlesource.com/cobalt/+/refs/heads/22.lts.stable/src/docker/linux/">Docker image definitions</a> to simplify managing build environments.
+href="https://github.com/youtube/cobalt/tree/main/docker/linux/">Docker image definitions</a> to simplify managing build environments.
 
 The instructions below assume Docker is installed and is able to run basic
-hello-world verification. `docker-compose` command is expected to be available as well.
+hello-world verification. `docker compose` command is expected to be available as well.
 
 ## Set up your workstation
 
@@ -15,7 +15,7 @@ Clone the Cobalt code repository. The following `git` command creates a
 `cobalt` directory that contains the repository:
 
 ```
-$ git clone https://cobalt.googlesource.com/cobalt
+$ git clone https://github.com/youtube/cobalt.git
 $ cd cobalt
 ```
 
@@ -24,21 +24,21 @@ $ cd cobalt
 The simplest usage is:
 
 ```
-docker-compose run <platform>
+docker compose run <platform>
 ```
 
 By default, a `debug` build will be built, with `cobalt` as a target.
 You can override this with an environment variable, e.g.
 
 ```
-docker-compose run -e CONFIG=devel -e TARGET=nplb <platform>
+docker compose run -e CONFIG=devel -e TARGET=nplb <platform>
 ```
 
 where config is one of the four optimization levels, `debug`, `devel`,
 `qa` and `gold`, and target is the build target passed to ninja
 
 See <a
-href="https://cobalt.googlesource.com/cobalt/+/refs/heads/22.lts.stable/src/README.md#build-types">Cobalt README</a> for full details.
+href="https://github.com/youtube/cobalt#building-and-running-the-code">Cobalt README</a> for full details.
 
 Builds will be available in your `${COBALT_SRC}/out` directory.
 
@@ -47,13 +47,22 @@ Note that Docker runs processes as root user by default, hence
 output files in `src/out/<platform>` directory have `root` as file owner.
 </aside>
 
+#### Windows Builds
+
+We have a separate docker compose file for windows. Use the -f or --file flags
+to specify a configuration file to use.
+
+```
+docker compose -f docker-compose-windows.yml run win-win32
+```
+
 ### Customization
 
 To parametrize base operating system images used for the build, pass
-`BASE_OS` as an argument to `docker-compose` as follows:
+`BASE_OS` as an argument to `docker compose` as follows:
 
 ```
-docker-compose build --build-arg BASE_OS="ubuntu:bionic" base
+docker compose build --build-arg BASE_OS="ubuntu:bionic" base
 ```
 
 This parameter is defined in `docker/linux/base/Dockerfile` and is passed
@@ -86,8 +95,8 @@ To debug build issues, enter the shell of the corresponding build container
 by launching the bash shell, i.e.
 
 ```
-docker-compose run linux-x64x11 /bin/bash
+docker compose run linux-x64x11 /bin/bash
 ```
 
 and try to build Cobalt with the <a
-href="https://cobalt.googlesource.com/cobalt/+/refs/heads/22.lts.stable/src/README.md#building-and-running-the-code">usual GN / ninja flow.</a>
+href="https://github.com/youtube/cobalt#building-and-running-the-code">usual GN / ninja flow.</a>

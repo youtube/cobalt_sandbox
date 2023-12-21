@@ -5,7 +5,7 @@
  *   Basic SFNT/TrueType type definitions and interface (specification
  *   only).
  *
- * Copyright (C) 1996-2020 by
+ * Copyright (C) 1996-2023 by
  * David Turner, Robert Wilhelm, and Werner Lemberg.
  *
  * This file is part of the FreeType project, and may only be used,
@@ -21,13 +21,12 @@
 #define TTTYPES_H_
 
 
-#include <ft2build.h>
-#include FT_TRUETYPE_TABLES_H
-#include FT_INTERNAL_OBJECTS_H
-#include FT_COLOR_H
+#include <freetype/tttables.h>
+#include <freetype/internal/ftobjs.h>
+#include <freetype/ftcolor.h>
 
 #ifdef TT_CONFIG_OPTION_GX_VAR_SUPPORT
-#include FT_MULTIPLE_MASTERS_H
+#include <freetype/ftmm.h>
 #endif
 
 
@@ -780,13 +779,15 @@ FT_BEGIN_HEADER
   /**************************************************************************
    *
    * @struct:
-   *   TT_Post_20Rec
+   *   TT_Post_NamesRec
    *
    * @description:
-   *   Postscript names sub-table, format 2.0.  Stores the PS name of each
-   *   glyph in the font face.
+   *   Postscript names table, either format 2.0 or 2.5.
    *
    * @fields:
+   *   loaded ::
+   *     A flag to indicate whether the PS names are loaded.
+   *
    *   num_glyphs ::
    *     The number of named glyphs in the table.
    *
@@ -799,68 +800,13 @@ FT_BEGIN_HEADER
    *   glyph_names ::
    *     The PS names not in Mac Encoding.
    */
-  typedef struct  TT_Post_20Rec_
+  typedef struct  TT_Post_NamesRec_
   {
+    FT_Bool     loaded;
     FT_UShort   num_glyphs;
     FT_UShort   num_names;
     FT_UShort*  glyph_indices;
-    FT_Char**   glyph_names;
-
-  } TT_Post_20Rec, *TT_Post_20;
-
-
-  /**************************************************************************
-   *
-   * @struct:
-   *   TT_Post_25Rec
-   *
-   * @description:
-   *   Postscript names sub-table, format 2.5.  Stores the PS name of each
-   *   glyph in the font face.
-   *
-   * @fields:
-   *   num_glyphs ::
-   *     The number of glyphs in the table.
-   *
-   *   offsets ::
-   *     An array of signed offsets in a normal Mac Postscript name encoding.
-   */
-  typedef struct  TT_Post_25_
-  {
-    FT_UShort  num_glyphs;
-    FT_Char*   offsets;
-
-  } TT_Post_25Rec, *TT_Post_25;
-
-
-  /**************************************************************************
-   *
-   * @struct:
-   *   TT_Post_NamesRec
-   *
-   * @description:
-   *   Postscript names table, either format 2.0 or 2.5.
-   *
-   * @fields:
-   *   loaded ::
-   *     A flag to indicate whether the PS names are loaded.
-   *
-   *   format_20 ::
-   *     The sub-table used for format 2.0.
-   *
-   *   format_25 ::
-   *     The sub-table used for format 2.5.
-   */
-  typedef struct  TT_Post_NamesRec_
-  {
-    FT_Bool  loaded;
-
-    union
-    {
-      TT_Post_20Rec  format_20;
-      TT_Post_25Rec  format_25;
-
-    } names;
+    FT_Byte**   glyph_names;
 
   } TT_Post_NamesRec, *TT_Post_Names;
 
@@ -1373,7 +1319,7 @@ FT_BEGIN_HEADER
    *
    *   num_locations ::
    *     The number of glyph locations in this TrueType file.  This should be
-   *     identical to the number of glyphs.  Ignored for Type 2 fonts.
+   *     one more than the number of glyphs.  Ignored for Type 2 fonts.
    *
    *   glyph_locations ::
    *     An array of longs.  These are offsets to glyph data within the
@@ -1391,8 +1337,8 @@ FT_BEGIN_HEADER
    *   hdmx_record_size ::
    *     The size of a single hdmx record.
    *
-   *   hdmx_record_sizes ::
-   *     An array holding the ppem sizes available in the 'hdmx' table.
+   *   hdmx_records ::
+   *     A array of pointers to the 'hdmx' table records sorted by ppem.
    *
    *   sbit_table ::
    *     A pointer to the font's embedded bitmap location table.
@@ -1509,8 +1455,14 @@ FT_BEGIN_HEADER
     void*                 mm;
 
     /* a typeless pointer to the FT_Service_MetricsVariationsRec table */
-    /* used to handle the HVAR, VVAR, and MVAR OpenType tables         */
-    void*                 var;
+    /* used to handle the HVAR, VVAR, and MVAR OpenType tables by the  */
+    /* "truetype" driver                                               */
+    void*                 tt_var;
+
+    /* a typeless pointer to the FT_Service_MetricsVariationsRec table */
+    /* used to handle the HVAR, VVAR, and MVAR OpenType tables by this */
+    /* TT_Face's driver                                                */
+    void*                 face_var;
 #endif
 
     /* a typeless pointer to the PostScript Aux service */
@@ -1599,14 +1551,14 @@ FT_BEGIN_HEADER
     FT_ULong              horz_metrics_size;
     FT_ULong              vert_metrics_size;
 
-    FT_ULong              num_locations; /* in broken TTF, gid > 0xFFFF */
+    FT_ULong              num_locations; /* up to 0xFFFF + 1 */
     FT_Byte*              glyph_locations;
 
     FT_Byte*              hdmx_table;
     FT_ULong              hdmx_table_size;
     FT_UInt               hdmx_record_count;
     FT_ULong              hdmx_record_size;
-    FT_Byte*              hdmx_record_sizes;
+    FT_Byte**             hdmx_records;
 
     FT_Byte*              sbit_table;
     FT_ULong              sbit_table_size;
@@ -1644,6 +1596,9 @@ FT_BEGIN_HEADER
     /* since 2.10 */
     void*                 cpal;
     void*                 colr;
+
+    /* since 2.12 */
+    void*                 svg;
 
   } TT_FaceRec;
 
@@ -1735,7 +1690,7 @@ FT_BEGIN_HEADER
     FT_UInt          glyph_index;
 
     FT_Stream        stream;
-    FT_Int           byte_len;
+    FT_UInt          byte_len;
 
     FT_Short         n_contours;
     FT_BBox          bbox;
@@ -1769,6 +1724,9 @@ FT_BEGIN_HEADER
 
     /* since version 2.6.2 */
     FT_ListRec       composites;
+
+    /* since version 2.11.2 */
+    FT_Byte*         widthp;
 
   } TT_LoaderRec;
 

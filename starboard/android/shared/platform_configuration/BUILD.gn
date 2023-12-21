@@ -70,7 +70,7 @@ config("platform_configuration") {
     defines += [ "THREAD_SANITIZER" ]
   }
 
-  cflags_cc = [ "-std=c++14" ]
+  cflags_cc = [ "-std=c++17" ]
   cflags += [
     # libwebp uses the cpufeatures library to detect ARM NEON support
     "-I${android_ndk_path}/sources/android/cpufeatures",
@@ -86,6 +86,7 @@ config("platform_configuration") {
     "-fno-limit-debug-info",
     "-fcolor-diagnostics",
     "-fno-strict-aliasing",  # See http://crbug.com/32204
+    "-fno-delete-null-pointer-checks",  # see b/288107039
 
     # Default visibility is hidden to enable dead stripping.
     "-fvisibility=hidden",
@@ -112,6 +113,15 @@ config("platform_configuration") {
 
     # Don"t warn for implicit sign conversions. (in v8 and protobuf)
     "-Wno-sign-conversion",
+
+    # TODO: b/287129945 - Fix compiler warnings
+    "-Wno-implicit-const-int-float-conversion",
+
+    # TODO: b/287320271 - Fix compiler warnings
+    "-Wno-deprecated-copy",
+
+    # TODO: b/287324882 - Fix compiler warnings
+    "-Wno-unused-but-set-variable",
   ]
   defines += [
     # Enable compile-time decisions based on the ABI
@@ -164,14 +174,14 @@ config("speed") {
 }
 
 config("executable_config") {
-  if (current_toolchain == default_toolchain) {
+  if (is_starboardized_toolchain) {
     cflags = [ "-fPIE" ]
     ldflags = [ "-pie" ]
   }
 }
 
 config("library_config") {
-  if (current_toolchain == default_toolchain) {
+  if (is_starboardized_toolchain) {
     cflags = [ "-fPIC" ]
   }
 }

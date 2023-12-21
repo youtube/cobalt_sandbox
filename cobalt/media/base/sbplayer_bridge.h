@@ -72,7 +72,8 @@ class SbPlayerBridge {
                  const scoped_refptr<base::SingleThreadTaskRunner>& task_runner,
                  const std::string& url, SbWindow window, Host* host,
                  SbPlayerSetBoundsHelper* set_bounds_helper,
-                 bool allow_resume_after_suspend, bool prefer_decode_to_texture,
+                 bool allow_resume_after_suspend,
+                 SbPlayerOutputMode default_output_mode,
                  const OnEncryptedMediaInitDataEncounteredCB&
                      encrypted_media_init_data_encountered_cb,
                  DecodeTargetProvider* const decode_target_provider,
@@ -89,7 +90,8 @@ class SbPlayerBridge {
                  const std::string& video_mime_type, SbWindow window,
                  SbDrmSystem drm_system, Host* host,
                  SbPlayerSetBoundsHelper* set_bounds_helper,
-                 bool allow_resume_after_suspend, bool prefer_decode_to_texture,
+                 bool allow_resume_after_suspend,
+                 SbPlayerOutputMode default_output_mode,
                  DecodeTargetProvider* const decode_target_provider,
                  const std::string& max_video_capabilities,
                  std::string pipeline_identifier);
@@ -115,9 +117,9 @@ class SbPlayerBridge {
   void SetPlaybackRate(double playback_rate);
   void GetInfo(uint32* video_frames_decoded, uint32* video_frames_dropped,
                base::TimeDelta* media_time);
-#if SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#if SB_API_VERSION >= 15
   std::vector<SbMediaAudioConfiguration> GetAudioConfigurations();
-#endif  // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#endif  // SB_API_VERSION >= 15
 
 #if SB_HAS(PLAYER_WITH_URL)
   void GetUrlPlayerBufferedTimeRanges(base::TimeDelta* buffer_start_time,
@@ -145,7 +147,7 @@ class SbPlayerBridge {
   SbDecodeTarget GetCurrentSbDecodeTarget();
   SbPlayerOutputMode GetSbPlayerOutputMode();
 
-  void RecordSetDrmSystemReadyTime(SbTimeMonotonic timestamp) {
+  void RecordSetDrmSystemReadyTime(int64_t timestamp) {
     set_drm_system_ready_cb_time_ = timestamp;
   }
 
@@ -234,12 +236,12 @@ class SbPlayerBridge {
 
 #if SB_HAS(PLAYER_WITH_URL)
   SbPlayerOutputMode ComputeSbUrlPlayerOutputMode(
-      bool prefer_decode_to_texture);
+      SbPlayerOutputMode default_output_mode);
 #endif  // SB_HAS(PLAYER_WITH_URL)
   // Returns the output mode that should be used for a video with the given
   // specifications.
   SbPlayerOutputMode ComputeSbPlayerOutputMode(
-      bool prefer_decode_to_texture) const;
+      SbPlayerOutputMode default_output_mode) const;
 
   void LogStartupLatency() const;
 
@@ -304,13 +306,13 @@ class SbPlayerBridge {
   std::string player_creation_error_message_;
 
   // Variables related to tracking player startup latencies.
-  SbTimeMonotonic set_drm_system_ready_cb_time_ = -1;
-  SbTimeMonotonic player_creation_time_ = 0;
-  SbTimeMonotonic sb_player_state_initialized_time_ = 0;
-  SbTimeMonotonic sb_player_state_prerolling_time_ = 0;
-  SbTimeMonotonic first_audio_sample_time_ = 0;
-  SbTimeMonotonic first_video_sample_time_ = 0;
-  SbTimeMonotonic sb_player_state_presenting_time_ = 0;
+  int64_t set_drm_system_ready_cb_time_ = -1;
+  int64_t player_creation_time_ = 0;
+  int64_t sb_player_state_initialized_time_ = 0;
+  int64_t sb_player_state_prerolling_time_ = 0;
+  int64_t first_audio_sample_time_ = 0;
+  int64_t first_video_sample_time_ = 0;
+  int64_t sb_player_state_presenting_time_ = 0;
 
 #if SB_HAS(PLAYER_WITH_URL)
   const bool is_url_based_;

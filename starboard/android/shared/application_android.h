@@ -22,12 +22,10 @@
 #include <vector>
 
 #include "game-activity/GameActivity.h"
-#ifdef STARBOARD_INPUT_EVENTS_FILTER
-#include "internal/starboard/android/shared/internal/input_events_filter.h"
-#endif
 #include "starboard/android/shared/input_events_generator.h"
 #include "starboard/android/shared/jni_env_ext.h"
 #include "starboard/atomic.h"
+#include "starboard/common/atomic.h"
 #include "starboard/common/condition_variable.h"
 #include "starboard/common/mutex.h"
 #include "starboard/common/scoped_ptr.h"
@@ -59,16 +57,16 @@ class ApplicationAndroid
       kDeepLink,
     } CommandType;
 
-    CommandType type;
-    void* data;
+    CommandType type = kUndefined;
+    void* data = nullptr;
   };
 
-#if SB_MODULAR_BUILD
+#if SB_API_VERSION >= 15
   ApplicationAndroid(ALooper* looper,
                      SbEventHandleCallback sb_event_handle_callback);
 #else
   explicit ApplicationAndroid(ALooper* looper);
-#endif  //  SB_MODULAR_BUILD
+#endif  //  SB_API_VERSION >= 15
   ~ApplicationAndroid() override;
 
   static ApplicationAndroid* Get() {
@@ -81,13 +79,8 @@ class ApplicationAndroid
   bool OnSearchRequested();
   void HandleDeepLink(const char* link_url);
   void SendTTSChangedEvent() {
-#if SB_API_VERSION >= 13
     Inject(new Event(kSbEventTypeAccessibilityTextToSpeechSettingsChanged,
                      nullptr, nullptr));
-#else
-    Inject(new Event(kSbEventTypeAccessiblityTextToSpeechSettingsChanged,
-                     nullptr, nullptr));
-#endif
   }
 
   void SendAndroidCommand(AndroidCommand::CommandType type, void* data);
@@ -162,6 +155,9 @@ class ApplicationAndroid
   // already requested it be stopped.
   SbAtomic32 android_stop_count_ = 0;
 
+  // Set to true in the destructor to ensure other threads stop waiting.
+  atomic_bool application_destroying_;
+
   // The last Activity lifecycle state command received.
   AndroidCommand::CommandType activity_state_;
 
@@ -172,10 +168,6 @@ class ApplicationAndroid
   // to safely access it.
   Mutex input_mutex_;
   scoped_ptr<InputEventsGenerator> input_events_generator_;
-
-#ifdef STARBOARD_INPUT_EVENTS_FILTER
-  internal::InputEventsFilter input_events_filter_;
-#endif
 
   bool last_is_accessibility_high_contrast_text_enabled_;
 

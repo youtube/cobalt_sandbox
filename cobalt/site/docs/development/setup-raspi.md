@@ -1,7 +1,7 @@
----
-layout: doc
-title: "Set up your environment - Raspberry Pi"
----
+Project: /youtube/cobalt/_project.yaml
+Book: /youtube/cobalt/_book.yaml
+
+# Set up your environment - Raspberry Pi
 
 These instructions explain how to set up Cobalt for your workstation and your
 Raspberry Pi device. They have been tested with Ubuntu:20.04 and a Raspberry Pi
@@ -54,8 +54,8 @@ Raspberry Pi.
 
     ```
     $ sudo apt install -qqy --no-install-recommends g++-multilib \
-        wget xz-utils libxml2  binutils-aarch64-linux-gnu \
-        binutils-arm-linux-gnueabi  libglib2.0-dev
+        wget xz-utils libxml2 binutils-aarch64-linux-gnu \
+        binutils-arm-linux-gnueabi libglib2.0-dev
     ```
 
 1.  Choose a location for the installed toolchain &ndash; e.g. `raspi-tools`

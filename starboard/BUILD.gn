@@ -12,6 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import("//starboard/build/config/os_definitions.gni")
+import("//starboard/build/config/starboard_target_type.gni")
+import("//starboard/contrib/cast/cast.gni")
+
 group("gn_all") {
   testonly = true
 
@@ -39,37 +43,40 @@ group("gn_all") {
   }
 
   if (platform_tests_path == "") {
-    deps += [ ":starboard_platform_tests" ]
+    deps += [ ":starboard_platform_tests($starboard_toolchain)" ]
   } else {
     deps += [ platform_tests_path ]
   }
 
   if (sb_filter_based_player) {
     deps += [
-      "//starboard/shared/starboard/player/filter/testing:player_filter_tests",
-      "//starboard/shared/starboard/player/filter/tools:audio_dmp_player",
+      "//starboard/shared/starboard/player/filter/testing:player_filter_tests($starboard_toolchain)",
+      "//starboard/shared/starboard/player/filter/testing:player_filter_tests_install($starboard_toolchain)",
     ]
+
+    # TODO: b/296715826 - Fix build error for windows modular builds.
+    if (!(sb_is_modular && is_host_win)) {
+      deps += [ "//starboard/shared/starboard/player/filter/tools:audio_dmp_player($starboard_toolchain)" ]
+    }
   }
 
   if (sb_enable_benchmark) {
     deps += [ "//starboard/benchmark" ]
   }
 
+  if (build_with_separate_cobalt_toolchain && use_contrib_cast) {
+    deps += [ "//starboard/contrib/cast/cast_starboard_api/samples:cast" ]
+  }
+
   if (!sb_is_evergreen) {
     deps += [ "//third_party/lz4_lib:lz4" ]
 
     if (sb_is_evergreen_compatible) {
-      deps += [
-        "//third_party/crashpad/client",
-
-        # TODO(b/270858365): remove this dependency on the Starboard-based
-        # target (from the target toolchain) once Buildbot has been updated to
-        # use the native target (from native_target toolchain).
-        "//third_party/crashpad/handler",
-      ]
+      deps += [ "//third_party/crashpad/client" ]
       data_deps = [
-        "//starboard/loader_app",
+        "//starboard/loader_app($starboard_toolchain)",
         "//third_party/crashpad/handler:crashpad_handler(//$starboard_path/toolchain:native_target)",
+        "//third_party/crashpad/tools:crashpad_database_util(//$starboard_path/toolchain:native_target)",
       ]
     }
   }
@@ -77,37 +84,47 @@ group("gn_all") {
 
 group("default") {
   deps = [
-    ":starboard",
+    ":starboard_group",
     "//starboard/tools:build_app_launcher_zip",
   ]
 }
 
-group("starboard") {
+group("starboard_group") {
   public_deps = [
     ":starboard_headers_only",
     "//starboard/client_porting/cwrappers",
     "//starboard/client_porting/eztime",
   ]
 
-  if (sb_is_evergreen) {
+  if (sb_is_modular && current_toolchain == cobalt_toolchain) {
     public_deps += [
-      "//starboard/elf_loader:sabi_string",
       "//third_party/llvm-project/compiler-rt:compiler_rt",
       "//third_party/llvm-project/libcxx:cxx",
       "//third_party/llvm-project/libcxxabi:cxxabi",
-      "//third_party/llvm-project/libunwind:unwind_evergreen",
       "//third_party/musl:c",
     ]
+    if (sb_is_evergreen) {
+      public_deps += [ "//starboard/elf_loader:sabi_string" ]
+    } else {
+      data_deps = [ ":starboard($starboard_toolchain)" ]
+    }
+
+    # TODO: b/295702296 Fix libunwind for modular builds.
+    if (sb_is_evergreen || is_host_win) {
+      public_deps += [ "//third_party/llvm-project/libunwind:unwind" ]
+    }
   } else {
     public_deps += [
-      "//$starboard_path:starboard_platform",
+      ":starboard_static($starboard_toolchain)",
       "//starboard/common",
     ]
 
-    if (sb_is_evergreen_compatible) {
-      public_deps += [ "//third_party/crashpad/wrapper" ]
-    } else {
-      public_deps += [ "//third_party/crashpad/wrapper:wrapper_stub" ]
+    if (!sb_is_modular || sb_is_evergreen) {
+      if (sb_is_evergreen_compatible) {
+        public_deps += [ "//third_party/crashpad/wrapper" ]
+      } else {
+        public_deps += [ "//third_party/crashpad/wrapper:wrapper_stub" ]
+      }
     }
 
     if (final_executable_type == "shared_library" &&
@@ -128,14 +145,12 @@ source_set("starboard_headers_only") {
     "atomic.h",
     "audio_sink.h",
     "byte_swap.h",
-    "character.h",
     "condition_variable.h",
     "configuration.h",
     "configuration_constants.h",
     "cpu_features.h",
     "decode_target.h",
     "directory.h",
-    "double.h",
     "drm.h",
     "egl.h",
     "event.h",
@@ -170,17 +185,35 @@ source_set("starboard_headers_only") {
   }
 }
 
-if (platform_tests_path == "") {
-  # If 'starboard_platform_tests' is not defined by the platform, then an
-  # empty 'starboard_platform_tests' target is defined.
-  target(gtest_target_type, "starboard_platform_tests") {
-    testonly = true
+if (current_toolchain == starboard_toolchain) {
+  # This is the default 'starboard_platform_target'; use default properties
+  starboard_platform_target("starboard") {
+  }
 
-    sources = [ "//starboard/common/test_main.cc" ]
+  starboard_platform_target("starboard_static") {
+    target_type = "group"
+  }
 
-    public_deps = [
-      ":starboard",
-      "//testing/gmock",
-    ]
+  if (platform_tests_path == "") {
+    # If 'starboard_platform_tests' is not defined by the platform, then an
+    # empty 'starboard_platform_tests' target is defined.
+    target(starboard_level_gtest_target_type, "starboard_platform_tests") {
+      testonly = true
+
+      sources = [ "//starboard/common/test_main.cc" ]
+
+      public_deps = [
+        ":starboard_with_main",
+        "//testing/gmock",
+        "//testing/gtest",
+      ]
+    }
+  }
+
+  group("starboard_with_main") {
+    public_deps = [ ":starboard_group" ]
+    if (sb_is_modular && !sb_is_evergreen) {
+      public_deps += [ "//$starboard_path:starboard_platform_with_main" ]
+    }
   }
 }

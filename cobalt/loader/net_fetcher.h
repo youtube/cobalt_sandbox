@@ -25,8 +25,8 @@
 #include "base/threading/thread_checker.h"
 #include "cobalt/csp/content_security_policy.h"
 #include "cobalt/loader/fetcher.h"
+#include "cobalt/network/disk_cache/resource_type.h"
 #include "cobalt/network/network_module.h"
-#include "net/disk_cache/cobalt/resource_type.h"
 #include "net/http/http_request_headers.h"
 #include "net/url_request/url_fetcher.h"
 #include "net/url_request/url_fetcher_delegate.h"
@@ -46,10 +46,10 @@ class NetFetcher : public Fetcher,
    public:
     Options()
         : request_method(net::URLFetcher::GET),
-          resource_type(disk_cache::kOther),
+          resource_type(network::disk_cache::kOther),
           skip_fetch_intercept(false) {}
     net::URLFetcher::RequestType request_method;
-    disk_cache::ResourceType resource_type;
+    network::disk_cache::ResourceType resource_type;
     net::HttpRequestHeaders headers;
     bool skip_fetch_intercept;
   };
@@ -113,6 +113,7 @@ class NetFetcher : public Fetcher,
   // after being constructed, but before Start() runs.
   base::CancelableClosure start_callback_;
 
+  network::CORSPolicy cors_policy_;
   // True if request mode is CORS and request URL's origin is different from
   // request's origin.
   bool request_cross_origin_;

@@ -64,7 +64,6 @@
 #include "cobalt/web/custom_event.h"
 #include "cobalt/web/dom_exception.h"
 #include "cobalt/web/message_event.h"
-#include "nb/memory_scope.h"
 
 using cobalt::cssom::ViewportSize;
 
@@ -234,29 +233,28 @@ scoped_refptr<Comment> Document::CreateComment(const std::string& data) {
 scoped_refptr<web::Event> Document::CreateEvent(
     const std::string& interface_name,
     script::ExceptionState* exception_state) {
-  TRACK_MEMORY_SCOPE("DOM");
   // https://www.w3.org/TR/dom/#dom-document-createevent
   // The match of interface name is case-insensitive.
-  if (base::strcasecmp(interface_name.c_str(), "event") == 0 ||
-      base::strcasecmp(interface_name.c_str(), "events") == 0 ||
-      base::strcasecmp(interface_name.c_str(), "htmlevents") == 0) {
+  if (strcasecmp(interface_name.c_str(), "event") == 0 ||
+      strcasecmp(interface_name.c_str(), "events") == 0 ||
+      strcasecmp(interface_name.c_str(), "htmlevents") == 0) {
     return new web::Event(web::Event::Uninitialized);
-  } else if (base::strcasecmp(interface_name.c_str(), "keyboardevent") == 0 ||
-             base::strcasecmp(interface_name.c_str(), "keyevents") == 0) {
+  } else if (strcasecmp(interface_name.c_str(), "keyboardevent") == 0 ||
+             strcasecmp(interface_name.c_str(), "keyevents") == 0) {
     return new KeyboardEvent(web::Event::Uninitialized);
-  } else if (base::strcasecmp(interface_name.c_str(), "messageevent") == 0) {
+  } else if (strcasecmp(interface_name.c_str(), "messageevent") == 0) {
     return new web::MessageEvent(web::Event::Uninitialized);
-  } else if (base::strcasecmp(interface_name.c_str(), "mouseevent") == 0 ||
-             base::strcasecmp(interface_name.c_str(), "mouseevents") == 0) {
+  } else if (strcasecmp(interface_name.c_str(), "mouseevent") == 0 ||
+             strcasecmp(interface_name.c_str(), "mouseevents") == 0) {
     return new MouseEvent(web::Event::Uninitialized);
-  } else if (base::strcasecmp(interface_name.c_str(), "uievent") == 0 ||
-             base::strcasecmp(interface_name.c_str(), "uievents") == 0) {
+  } else if (strcasecmp(interface_name.c_str(), "uievent") == 0 ||
+             strcasecmp(interface_name.c_str(), "uievents") == 0) {
     return new UIEvent(web::Event::Uninitialized);
-  } else if (base::strcasecmp(interface_name.c_str(), "wheelevent") == 0) {
+  } else if (strcasecmp(interface_name.c_str(), "wheelevent") == 0) {
     // This not in the spec, but commonly implemented to create a WheelEvent.
     //   https://www.w3.org/TR/2016/WD-uievents-20160804/#interface-wheelevent
     return new WheelEvent(web::Event::Uninitialized);
-  } else if (base::strcasecmp(interface_name.c_str(), "customevent") == 0) {
+  } else if (strcasecmp(interface_name.c_str(), "customevent") == 0) {
     return new web::CustomEvent(web::Event::Uninitialized);
   }
 
@@ -906,12 +904,12 @@ void Document::UpdateUiNavigation() {
 }
 
 bool Document::TrySetUiNavFocusElement(const void* focus_element,
-                                       SbTimeMonotonic time) {
-  if (ui_nav_focus_element_update_time_ > time) {
+                                       int64_t monotonic_time) {
+  if (ui_nav_focus_element_update_time_ > monotonic_time) {
     // A later focus update was already issued.
     return false;
   }
-  ui_nav_focus_element_update_time_ = time;
+  ui_nav_focus_element_update_time_ = monotonic_time;
   ui_nav_focus_element_ = focus_element;
   return true;
 }
@@ -992,11 +990,9 @@ void Document::UpdateSelectorTree() {
       AppendRulesFromCSSStyleSheetToSelectorTree(css_style_sheet,
                                                  selector_tree_.get());
     }
-#if defined(COBALT_ENABLE_VERSION_COMPATIBILITY_VALIDATIONS)
     // Now that the selector tree is fully updated, validate its version
     // compatibility.
     selector_tree_->ValidateVersionCompatibility();
-#endif  // defined(COBALT_ENABLE_VERSION_COMPATIBILITY_VALIDATIONS)
 
     scoped_refptr<HTMLHtmlElement> current_html = html();
     if (current_html) {

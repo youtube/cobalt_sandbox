@@ -4,7 +4,7 @@
  *
  *   TrueType character mapping table (cmap) support (body).
  *
- * Copyright (C) 2002-2020 by
+ * Copyright (C) 2002-2023 by
  * David Turner, Robert Wilhelm, and Werner Lemberg.
  *
  * This file is part of the FreeType project, and may only be used,
@@ -16,14 +16,13 @@
  */
 
 
-#include <ft2build.h>
-#include FT_INTERNAL_DEBUG_H
+#include <freetype/internal/ftdebug.h>
 
-#include "sferrors.h"           /* must come before FT_INTERNAL_VALIDATE_H */
+#include "sferrors.h"                      /* must come before `ftvalid.h' */
 
-#include FT_INTERNAL_VALIDATE_H
-#include FT_INTERNAL_STREAM_H
-#include FT_SERVICE_POSTSCRIPT_CMAPS_H
+#include <freetype/internal/ftvalid.h>
+#include <freetype/internal/ftstream.h>
+#include <freetype/internal/services/svpscmap.h>
 #include "ttload.h"
 #include "ttcmap.h"
 #include "ttpost.h"
@@ -139,7 +138,7 @@
   }
 
 
-  FT_CALLBACK_DEF( FT_UInt32 )
+  FT_CALLBACK_DEF( FT_UInt )
   tt_cmap0_char_next( TT_CMap     cmap,
                       FT_UInt32  *pchar_code )
   {
@@ -466,7 +465,7 @@
     if ( subheader )
     {
       FT_Byte*  p   = subheader;
-      FT_UInt   idx = (FT_UInt)(char_code & 0xFF);
+      FT_UInt   idx = (FT_UInt)( char_code & 0xFF );
       FT_UInt   start, count;
       FT_Int    delta;
       FT_UInt   offset;
@@ -492,7 +491,7 @@
   }
 
 
-  FT_CALLBACK_DEF( FT_UInt32 )
+  FT_CALLBACK_DEF( FT_UInt )
   tt_cmap2_char_next( TT_CMap     cmap,
                       FT_UInt32  *pcharcode )
   {
@@ -795,9 +794,6 @@
     FT_UInt  charcode;
 
 
-    if ( cmap->cur_charcode >= 0xFFFFUL )
-      goto Fail;
-
     charcode = (FT_UInt)cmap->cur_charcode + 1;
 
     if ( charcode < cmap->cur_start )
@@ -883,7 +879,6 @@
         charcode = cmap->cur_start;
     }
 
-  Fail:
     cmap->cur_charcode = (FT_UInt32)0xFFFFFFFFUL;
     cmap->cur_gindex   = 0;
   }
@@ -913,6 +908,16 @@
     {
       if ( valid->level >= FT_VALIDATE_TIGHT )
         FT_INVALID_TOO_SHORT;
+
+      length = (FT_UInt)( valid->limit - table );
+    }
+
+    /* it also happens that the `length' field is too small; */
+    /* this is easy to correct                               */
+    if ( length < (FT_UInt)( valid->limit - table ) )
+    {
+      if ( valid->level >= FT_VALIDATE_PARANOID )
+        FT_INVALID_DATA;
 
       length = (FT_UInt)( valid->limit - table );
     }
@@ -1095,25 +1100,19 @@
     FT_UInt    num_segs2, start, end, offset;
     FT_Int     delta;
     FT_UInt    i, num_segs;
-    FT_UInt32  charcode = *pcharcode;
+    FT_UInt32  charcode = *pcharcode + next;
     FT_UInt    gindex   = 0;
     FT_Byte*   p;
     FT_Byte*   q;
 
 
     p = cmap->data + 6;
-    num_segs2 = FT_PAD_FLOOR( TT_PEEK_USHORT( p ), 2 );
-
-    num_segs = num_segs2 >> 1;
+    num_segs = TT_PEEK_USHORT( p ) >> 1;
 
     if ( !num_segs )
       return 0;
 
-    if ( next )
-      charcode++;
-
-    if ( charcode > 0xFFFFU )
-      return 0;
+    num_segs2 = num_segs << 1;
 
     /* linear search */
     p = cmap->data + 14;               /* ends table   */
@@ -1229,31 +1228,24 @@
     FT_UInt   num_segs2, start, end, offset;
     FT_Int    delta;
     FT_UInt   max, min, mid, num_segs;
-    FT_UInt   charcode = (FT_UInt)*pcharcode;
+    FT_UInt   charcode = (FT_UInt)*pcharcode + next;
     FT_UInt   gindex   = 0;
     FT_Byte*  p;
 
 
     p = cmap->data + 6;
-    num_segs2 = FT_PAD_FLOOR( TT_PEEK_USHORT( p ), 2 );
+    num_segs = TT_PEEK_USHORT( p ) >> 1;
 
-    if ( !num_segs2 )
+    if ( !num_segs )
       return 0;
 
-    num_segs = num_segs2 >> 1;
-
-    /* make compiler happy */
-    mid = num_segs;
-    end = 0xFFFFU;
-
-    if ( next )
-      charcode++;
+    num_segs2 = num_segs << 1;
 
     min = 0;
     max = num_segs;
 
     /* binary search */
-    while ( min < max )
+    do
     {
       mid    = ( min + max ) >> 1;
       p      = cmap->data + 14 + mid * 2;
@@ -1436,6 +1428,7 @@
         break;
       }
     }
+    while ( min < max );
 
     if ( next )
     {
@@ -1445,12 +1438,8 @@
       /* if `charcode' is not in any segment, then `mid' is */
       /* the segment nearest to `charcode'                  */
 
-      if ( charcode > end )
-      {
-        mid++;
-        if ( mid == num_segs )
-          return 0;
-      }
+      if ( charcode > end && ++mid == num_segs )
+        return 0;
 
       if ( tt_cmap4_set_range( cmap4, mid ) )
       {
@@ -1465,7 +1454,6 @@
           cmap4->cur_gindex = gindex;
         else
         {
-          cmap4->cur_charcode = charcode;
           tt_cmap4_next( cmap4 );
           gindex = cmap4->cur_gindex;
         }
@@ -1493,7 +1481,7 @@
   }
 
 
-  FT_CALLBACK_DEF( FT_UInt32 )
+  FT_CALLBACK_DEF( FT_UInt )
   tt_cmap4_char_next( TT_CMap     cmap,
                       FT_UInt32  *pchar_code )
   {
@@ -1652,7 +1640,7 @@
   }
 
 
-  FT_CALLBACK_DEF( FT_UInt32 )
+  FT_CALLBACK_DEF( FT_UInt )
   tt_cmap6_char_next( TT_CMap     cmap,
                       FT_UInt32  *pchar_code )
   {
@@ -1923,7 +1911,7 @@
   }
 
 
-  FT_CALLBACK_DEF( FT_UInt32 )
+  FT_CALLBACK_DEF( FT_UInt )
   tt_cmap8_char_next( TT_CMap     cmap,
                       FT_UInt32  *pchar_code )
   {
@@ -2121,7 +2109,7 @@
   }
 
 
-  FT_CALLBACK_DEF( FT_UInt32 )
+  FT_CALLBACK_DEF( FT_UInt )
   tt_cmap10_char_next( TT_CMap     cmap,
                        FT_UInt32  *pchar_code )
   {
@@ -2331,9 +2319,6 @@
     FT_UInt   gindex;
 
 
-    if ( cmap->cur_charcode >= 0xFFFFFFFFUL )
-      goto Fail;
-
     char_code = cmap->cur_charcode + 1;
 
     for ( n = cmap->cur_group; n < cmap->num_groups; n++ )
@@ -2391,7 +2376,7 @@
     FT_UInt    gindex     = 0;
     FT_Byte*   p          = cmap->data + 12;
     FT_UInt32  num_groups = TT_PEEK_ULONG( p );
-    FT_UInt32  char_code  = *pchar_code;
+    FT_UInt32  char_code  = *pchar_code + next;
     FT_UInt32  start, end, start_id;
     FT_UInt32  max, min, mid;
 
@@ -2399,23 +2384,11 @@
     if ( !num_groups )
       return 0;
 
-    /* make compiler happy */
-    mid = num_groups;
-    end = 0xFFFFFFFFUL;
-
-    if ( next )
-    {
-      if ( char_code >= 0xFFFFFFFFUL )
-        return 0;
-
-      char_code++;
-    }
-
     min = 0;
     max = num_groups;
 
     /* binary search */
-    while ( min < max )
+    do
     {
       mid = ( min + max ) >> 1;
       p   = cmap->data + 16 + 12 * mid;
@@ -2439,6 +2412,7 @@
         break;
       }
     }
+    while ( min < max );
 
     if ( next )
     {
@@ -2449,12 +2423,8 @@
       /* if `char_code' is not in any group, then `mid' is */
       /* the group nearest to `char_code'                  */
 
-      if ( char_code > end )
-      {
-        mid++;
-        if ( mid == num_groups )
-          return 0;
-      }
+      if ( char_code > end && ++mid == num_groups )
+        return 0;
 
       cmap12->valid        = 1;
       cmap12->cur_charcode = char_code;
@@ -2488,13 +2458,16 @@
   }
 
 
-  FT_CALLBACK_DEF( FT_UInt32 )
+  FT_CALLBACK_DEF( FT_UInt )
   tt_cmap12_char_next( TT_CMap     cmap,
                        FT_UInt32  *pchar_code )
   {
     TT_CMap12  cmap12 = (TT_CMap12)cmap;
     FT_UInt    gindex;
 
+
+    if ( *pchar_code >= 0xFFFFFFFFUL )
+      return 0;
 
     /* no need to search */
     if ( cmap12->valid && cmap12->cur_charcode == *pchar_code )
@@ -2679,9 +2652,6 @@
     FT_UInt   gindex;
 
 
-    if ( cmap->cur_charcode >= 0xFFFFFFFFUL )
-      goto Fail;
-
     char_code = cmap->cur_charcode + 1;
 
     for ( n = cmap->cur_group; n < cmap->num_groups; n++ )
@@ -2709,7 +2679,6 @@
       }
     }
 
-  Fail:
     cmap->valid = 0;
   }
 
@@ -2722,7 +2691,7 @@
     FT_UInt    gindex     = 0;
     FT_Byte*   p          = cmap->data + 12;
     FT_UInt32  num_groups = TT_PEEK_ULONG( p );
-    FT_UInt32  char_code  = *pchar_code;
+    FT_UInt32  char_code  = *pchar_code + next;
     FT_UInt32  start, end;
     FT_UInt32  max, min, mid;
 
@@ -2730,23 +2699,11 @@
     if ( !num_groups )
       return 0;
 
-    /* make compiler happy */
-    mid = num_groups;
-    end = 0xFFFFFFFFUL;
-
-    if ( next )
-    {
-      if ( char_code >= 0xFFFFFFFFUL )
-        return 0;
-
-      char_code++;
-    }
-
     min = 0;
     max = num_groups;
 
     /* binary search */
-    while ( min < max )
+    do
     {
       mid = ( min + max ) >> 1;
       p   = cmap->data + 16 + 12 * mid;
@@ -2765,6 +2722,7 @@
         break;
       }
     }
+    while ( min < max );
 
     if ( next )
     {
@@ -2775,12 +2733,8 @@
       /* if `char_code' is not in any group, then `mid' is */
       /* the group nearest to `char_code'                  */
 
-      if ( char_code > end )
-      {
-        mid++;
-        if ( mid == num_groups )
-          return 0;
-      }
+      if ( char_code > end && ++mid == num_groups )
+        return 0;
 
       cmap13->valid        = 1;
       cmap13->cur_charcode = char_code;
@@ -2814,13 +2768,16 @@
   }
 
 
-  FT_CALLBACK_DEF( FT_UInt32 )
+  FT_CALLBACK_DEF( FT_UInt )
   tt_cmap13_char_next( TT_CMap     cmap,
                        FT_UInt32  *pchar_code )
   {
     TT_CMap13  cmap13 = (TT_CMap13)cmap;
     FT_UInt    gindex;
 
+
+    if ( *pchar_code >= 0xFFFFFFFFUL )
+      return 0;
 
     /* no need to search */
     if ( cmap13->valid && cmap13->cur_charcode == *pchar_code )
@@ -3144,7 +3101,7 @@
   }
 
 
-  FT_CALLBACK_DEF( FT_UInt32 )
+  FT_CALLBACK_DEF( FT_UInt )
   tt_cmap14_char_next( TT_CMap     cmap,
                        FT_UInt32  *pchar_code )
   {
@@ -3714,7 +3671,7 @@
   }
 
 
-  FT_CALLBACK_DEF( FT_UInt32 )
+  FT_CALLBACK_DEF( FT_UInt )
   tt_cmap_unicode_char_next( PS_Unicodes  unicodes,
                              FT_UInt32   *pchar_code )
   {
@@ -3752,6 +3709,7 @@
 
   static const TT_CMap_Class  tt_cmap_classes[] =
   {
+#undef  TTCMAPCITEM
 #define TTCMAPCITEM( a )  &a,
 #include "ttcmapc.h"
     NULL,
@@ -3788,8 +3746,9 @@
     p += 2;
 
     num_cmaps = TT_NEXT_USHORT( p );
-    limit     = table + face->cmap_size;
+    FT_TRACE4(( "tt_face_build_cmaps: %d cmaps\n", num_cmaps ));
 
+    limit = table + face->cmap_size;
     for ( ; num_cmaps > 0 && p + 8 <= limit; num_cmaps-- )
     {
       FT_CharMapRec  charmap;
@@ -3868,12 +3827,13 @@
   }
 
 
-  FT_LOCAL( FT_Error )
+  FT_LOCAL_DEF( FT_Error )
   tt_get_cmap_info( FT_CharMap    charmap,
                     TT_CMapInfo  *cmap_info )
   {
     FT_CMap        cmap  = (FT_CMap)charmap;
     TT_CMap_Class  clazz = (TT_CMap_Class)cmap->clazz;
+
 
     if ( clazz->get_cmap_info )
       return clazz->get_cmap_info( charmap, cmap_info );

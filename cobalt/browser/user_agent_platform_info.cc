@@ -28,6 +28,7 @@
 #include "starboard/common/log.h"
 #include "starboard/common/string.h"
 #include "starboard/common/system_property.h"
+#include "starboard/extension/platform_info.h"
 #if SB_IS(EVERGREEN)
 #include "starboard/extension/installation_manager.h"
 #endif  // SB_IS(EVERGREEN)
@@ -109,7 +110,7 @@ void GetUserAgentInputMap(
 
 namespace {
 
-#if SB_API_VERSION < SB_SYSTEM_DEVICE_TYPE_AS_STRING_API_VERSION
+#if SB_API_VERSION < 15
 
 struct DeviceTypeName {
   SbSystemDeviceType device_type;
@@ -150,7 +151,7 @@ SbSystemDeviceType GetDeviceType(std::string device_type_string) {
   return kSbSystemDeviceTypeUnknown;
 }
 #endif
-#endif  // SB_API_VERSION < SB_SYSTEM_DEVICE_TYPE_AS_STRING_API_VERSION
+#endif  // SB_API_VERSION < 15
 
 static bool isAsciiAlphaDigit(int c) {
   return base::IsAsciiAlpha(c) || base::IsAsciiDigit(c);
@@ -270,6 +271,22 @@ void InitializeUserAgentPlatformInfoFields(UserAgentPlatformInfo& info) {
   }
 #endif
 
+  // Additional Platform Info
+  auto platform_info_extension =
+      static_cast<const CobaltExtensionPlatformInfoApi*>(
+          SbSystemGetExtension(kCobaltExtensionPlatformInfoName));
+  if (platform_info_extension &&
+      strcmp(platform_info_extension->name, kCobaltExtensionPlatformInfoName) ==
+          0 &&
+      platform_info_extension->version >= 1) {
+    result = platform_info_extension->GetFirmwareVersionDetails(
+        value, kSystemPropertyMaxLength);
+    if (result) {
+      info.set_android_build_fingerprint(value);
+    }
+    info.set_android_os_experience(platform_info_extension->GetOsExperience());
+  }
+
   info.set_cobalt_version(COBALT_VERSION);
   info.set_cobalt_build_version_number(COBALT_BUILD_VERSION_NUMBER);
 
@@ -291,7 +308,7 @@ void InitializeUserAgentPlatformInfoFields(UserAgentPlatformInfo& info) {
     info.set_aux_field(value);
   }
 
-#if SB_API_VERSION >= SB_SYSTEM_DEVICE_TYPE_AS_STRING_API_VERSION
+#if SB_API_VERSION >= 15
   result = SbSystemGetProperty(kSbSystemPropertyDeviceType, value,
                                kSystemPropertyMaxLength);
   SB_DCHECK(result);
@@ -366,7 +383,7 @@ void InitializeUserAgentPlatformInfoFields(UserAgentPlatformInfo& info) {
           info.set_original_design_manufacturer(input.second);
           LOG(INFO) << "Set original design manufacturer to " << input.second;
         } else if (!input.first.compare("device_type")) {
-#if SB_API_VERSION < SB_SYSTEM_DEVICE_TYPE_AS_STRING_API_VERSION
+#if SB_API_VERSION < 15
           info.set_device_type(GetDeviceType(input.second));
 #else
           info.set_device_type(input.second);
@@ -405,6 +422,12 @@ void InitializeUserAgentPlatformInfoFields(UserAgentPlatformInfo& info) {
         } else if (!input.first.compare("evergreen_version")) {
           info.set_evergreen_version(input.second);
           LOG(INFO) << "Set evergreen version to " << input.second;
+        } else if (!input.first.compare("android_build_fingerprint")) {
+          info.set_android_build_fingerprint(input.second);
+          LOG(INFO) << "Set android build fingerprint to " << input.second;
+        } else if (!input.first.compare("android_os_experience")) {
+          info.set_android_os_experience(input.second);
+          LOG(INFO) << "Set android os experience to " << input.second;
         } else if (!input.first.compare("cobalt_version")) {
           info.set_cobalt_version(input.second);
           LOG(INFO) << "Set cobalt type to " << input.second;
@@ -446,7 +469,7 @@ void UserAgentPlatformInfo::set_original_design_manufacturer(
   }
 }
 
-#if SB_API_VERSION < SB_SYSTEM_DEVICE_TYPE_AS_STRING_API_VERSION
+#if SB_API_VERSION < 15
 void UserAgentPlatformInfo::set_device_type(SbSystemDeviceType device_type) {
   device_type_ = device_type;
   device_type_string_ = CreateDeviceTypeString(device_type_);
@@ -517,6 +540,17 @@ void UserAgentPlatformInfo::set_evergreen_file_type(
 void UserAgentPlatformInfo::set_evergreen_version(
     const std::string& evergreen_version) {
   evergreen_version_ = Sanitize(evergreen_version, isTCHAR);
+}
+
+void UserAgentPlatformInfo::set_android_build_fingerprint(
+    const std::string& android_build_fingerprint) {
+  android_build_fingerprint_ =
+      Sanitize(android_build_fingerprint, isVCHARorSpace);
+}
+
+void UserAgentPlatformInfo::set_android_os_experience(
+    const std::string& android_os_experience) {
+  android_os_experience_ = Sanitize(android_os_experience, isTCHAR);
 }
 
 void UserAgentPlatformInfo::set_cobalt_version(

@@ -48,17 +48,15 @@ class ServiceWorkerPersistentSettings {
     Options(web::WebSettings* web_settings,
             network::NetworkModule* network_module,
             web::UserAgentPlatformInfo* platform_info,
-            ServiceWorkerJobs* service_worker_jobs, const GURL& url)
+            ServiceWorkerContext* service_worker_context)
         : web_settings(web_settings),
           network_module(network_module),
           platform_info(platform_info),
-          service_worker_jobs(service_worker_jobs),
-          url(url) {}
+          service_worker_context(service_worker_context) {}
     web::WebSettings* web_settings;
     network::NetworkModule* network_module;
     web::UserAgentPlatformInfo* platform_info;
-    ServiceWorkerJobs* service_worker_jobs;
-    const GURL& url;
+    ServiceWorkerContext* service_worker_context;
   };
 
   explicit ServiceWorkerPersistentSettings(const Options& options);
@@ -86,6 +84,8 @@ class ServiceWorkerPersistentSettings {
   void RemoveServiceWorkerObjectSettings(std::string key_string);
 
   void RemoveAll();
+
+  void DeleteAll(base::OnceClosure closure);
 
  private:
   Options options_;

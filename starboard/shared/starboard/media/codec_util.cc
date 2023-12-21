@@ -72,11 +72,17 @@ bool VideoConfig::operator!=(const VideoConfig& that) const {
   return !(*this == that);
 }
 
-SbMediaAudioCodec GetAudioCodecFromString(const char* codec) {
+SbMediaAudioCodec GetAudioCodecFromString(const char* codec,
+                                          const char* subtype) {
+#if SB_API_VERSION < 15
+  const bool kCheckAc3Audio = kSbHasAc3Audio;
+#else
+  const bool kCheckAc3Audio = true;
+#endif  // SB_API_VERSION < 15
   if (strncmp(codec, "mp4a.40.", 8) == 0) {
     return kSbMediaAudioCodecAac;
   }
-  if (kSbHasAc3Audio) {
+  if (kCheckAc3Audio) {
     if (strcmp(codec, "ac-3") == 0) {
       return kSbMediaAudioCodecAc3;
     }
@@ -98,12 +104,19 @@ SbMediaAudioCodec GetAudioCodecFromString(const char* codec) {
   if (strcmp(codec, "flac") == 0) {
     return kSbMediaAudioCodecFlac;
   }
+  // For WAV, the "codecs" parameter of a MIME type refers to the WAVE format
+  // ID, where 1 represents PCM: https://datatracker.ietf.org/doc/html/rfc2361
+  const bool is_wav =
+      strcmp(subtype, "wav") == 0 || strcmp(subtype, "wave") == 0;
+  if (is_wav && strcmp(codec, "1") == 0) {
+    return kSbMediaAudioCodecPcm;
+  }
 #endif  // SB_API_VERSION >= 14
-#if SB_API_VERSION >= SB_MEDIA_IAMF_SUPPORT_API_VERSION
+#if SB_API_VERSION >= 15
   if (strncmp(codec, "iamf.", 5) == 0) {
     return kSbMediaAudioCodecIamf;
   }
-#endif  // SB_API_VERSION >= SB_MEDIA_IAMF_SUPPORT_API_VERSION
+#endif  // SB_API_VERSION >= 15
   return kSbMediaAudioCodecNone;
 }
 

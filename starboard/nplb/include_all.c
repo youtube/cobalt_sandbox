@@ -17,21 +17,23 @@
 #include "starboard/accessibility.h"
 #include "starboard/atomic.h"
 #include "starboard/audio_sink.h"
+#if SB_API_VERSION < 16
 #include "starboard/byte_swap.h"
-#include "starboard/character.h"
+#endif  // SB_API_VERSION < 16
 #include "starboard/condition_variable.h"
 #include "starboard/configuration.h"
 #include "starboard/cpu_features.h"
 #include "starboard/decode_target.h"
 #include "starboard/directory.h"
-#include "starboard/double.h"
 #include "starboard/drm.h"
 #include "starboard/egl.h"
 #include "starboard/event.h"
 #include "starboard/export.h"
 #include "starboard/file.h"
 #include "starboard/gles.h"
+#if SB_API_VERSION < 16
 #include "starboard/image.h"
+#endif  // SB_API_VERSION < 16
 #include "starboard/input.h"
 #include "starboard/key.h"
 #include "starboard/log.h"
@@ -53,7 +55,9 @@
 #include "starboard/time_zone.h"
 #include "starboard/types.h"
 #include "starboard/ui_navigation.h"
+#if SB_API_VERSION < 16
 #include "starboard/user.h"
+#endif  // SB_API_VERSION < 16
 #include "starboard/window.h"
 
 // This doesn't really belong here, but ensures that SB_COMPILE_ASSERT works in

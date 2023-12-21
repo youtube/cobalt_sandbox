@@ -37,13 +37,13 @@
 #include "cobalt/loader/fetch_interceptor_coordinator.h"
 #include "cobalt/loader/fetcher_factory.h"
 #include "cobalt/loader/url_fetcher_string_writer.h"
+#include "cobalt/network/network_module.h"
 #include "cobalt/script/global_environment.h"
 #include "cobalt/script/javascript_engine.h"
 #include "cobalt/web/context.h"
 #include "cobalt/web/csp_delegate.h"
 #include "cobalt/web/environment_settings.h"
 #include "cobalt/xhr/global_stats.h"
-#include "nb/memory_scope.h"
 #include "net/http/http_util.h"
 
 namespace cobalt {
@@ -404,7 +404,6 @@ void XMLHttpRequestImpl::Open(const std::string& method, const std::string& url,
                               const base::Optional<std::string>& username,
                               const base::Optional<std::string>& password,
                               script::ExceptionState* exception_state) {
-  TRACK_MEMORY_SCOPE("XHR");
   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
 
   XMLHttpRequest::State previous_state = state_;
@@ -461,7 +460,6 @@ void XMLHttpRequestImpl::Open(const std::string& method, const std::string& url,
 void XMLHttpRequestImpl::SetRequestHeader(
     const std::string& header, const std::string& value,
     script::ExceptionState* exception_state) {
-  TRACK_MEMORY_SCOPE("XHR");
   // https://www.w3.org/TR/2014/WD-XMLHttpRequest-20140130/#dom-xmlhttprequest-setrequestheader
   if (state_ != XMLHttpRequest::kOpened || sent_) {
     web::DOMException::Raise(web::DOMException::kInvalidStateErr,
@@ -520,11 +518,12 @@ void XMLHttpRequestImpl::Send(
     const base::Optional<XMLHttpRequest::RequestBodyType>& request_body,
     script::ExceptionState* exception_state) {
   error_ = false;
-  bool in_service_worker = environment_settings()
-                               ->context()
-                               ->GetWindowOrWorkerGlobalScope()
-                               ->IsServiceWorker();
-  if (!in_service_worker && method_ == net::URLFetcher::GET) {
+  auto* context = environment_settings()->context();
+  bool in_service_worker =
+      context->GetWindowOrWorkerGlobalScope()->IsServiceWorker();
+  bool has_active_service_worker =
+      !in_service_worker && context->active_service_worker();
+  if (has_active_service_worker && method_ == net::URLFetcher::GET) {
     loader::FetchInterceptorCoordinator::GetInstance()->TryIntercept(
         request_url_, /*main_resource=*/false, request_headers_, task_runner_,
         base::BindOnce(&XMLHttpRequestImpl::SendIntercepted, AsWeakPtr()),
@@ -616,7 +615,6 @@ void XMLHttpRequestImpl::SendFallback(
                        base::Unretained(this), request_body, exception_state));
     return;
   }
-  TRACK_MEMORY_SCOPE("XHR");
   // https://www.w3.org/TR/2014/WD-XMLHttpRequest-20140130/#the-send()-method
   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
   // Step 1
@@ -988,7 +986,6 @@ void XMLHttpRequestImpl::OnURLFetchResponseStarted(
 void XMLHttpRequestImpl::OnURLFetchDownloadProgress(
     const net::URLFetcher* source, int64_t /*current*/, int64_t /*total*/,
     int64_t /*current_network_bytes*/, bool request_done) {
-  TRACK_MEMORY_SCOPE("XHR");
   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
   DCHECK_NE(state_, XMLHttpRequest::kDone);
 
@@ -1094,7 +1091,6 @@ void XMLHttpRequestImpl::OnURLFetchComplete(const net::URLFetcher* source) {
 void XMLHttpRequestImpl::OnURLFetchUploadProgress(const net::URLFetcher* source,
                                                   int64 current_val,
                                                   int64 total_val) {
-  TRACK_MEMORY_SCOPE("XHR");
   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
   if (upload_complete_) {
     return;
@@ -1320,7 +1316,6 @@ void XMLHttpRequestImpl::ChangeState(XMLHttpRequest::State new_state) {
 
 script::Handle<script::ArrayBuffer>
 XMLHttpRequestImpl::response_array_buffer() {
-  TRACK_MEMORY_SCOPE("XHR");
   // https://www.w3.org/TR/XMLHttpRequest/#response-entity-body
   if (error_ || state_ != XMLHttpRequest::kDone) {
     // Return a handle holding a nullptr.
@@ -1371,8 +1366,6 @@ void XMLHttpRequestImpl::UpdateProgress(int64_t received_length) {
 }
 
 void XMLHttpRequestImpl::StartRequest(const std::string& request_body) {
-  TRACK_MEMORY_SCOPE("XHR");
-
   const auto& xhr_settings =
       environment_settings()->context()->web_settings()->xhr_settings();
   const bool fetch_buffer_pool_enabled =
@@ -1423,6 +1416,7 @@ void XMLHttpRequestImpl::StartRequest(const std::string& request_body) {
   // Don't retry, let the caller deal with it.
   url_fetcher_->SetAutomaticallyRetryOn5xx(false);
   url_fetcher_->SetExtraRequestHeaders(request_headers_.ToString());
+  network_module->AddClientHintHeaders(*url_fetcher_, network::kCallTypeXHR);
 
   // We want to do cors check and preflight during redirects
   url_fetcher_->SetStopOnRedirect(true);
@@ -1483,7 +1477,7 @@ void XMLHttpRequestImpl::StartRequest(const std::string& request_body) {
     StartURLFetcher(environment_settings()
                         ->context()
                         ->network_module()
-                        ->max_network_delay(),
+                        ->max_network_delay_usec(),
                     url_fetcher_generation_);
   }
 }
@@ -1531,15 +1525,15 @@ void XMLHttpRequestImpl::PrepareForNewRequest() {
   is_redirect_ = false;
 }
 
-void XMLHttpRequestImpl::StartURLFetcher(const SbTime max_artificial_delay,
-                                         const int url_fetcher_generation) {
-  if (max_artificial_delay > 0) {
+void XMLHttpRequestImpl::StartURLFetcher(
+    const int64_t max_artificial_delay_usec, const int url_fetcher_generation) {
+  if (max_artificial_delay_usec > 0) {
     base::ThreadTaskRunnerHandle::Get()->PostDelayedTask(
         FROM_HERE,
         base::Bind(&XMLHttpRequestImpl::StartURLFetcher, base::Unretained(this),
                    0, url_fetcher_generation_),
         base::TimeDelta::FromMicroseconds(base::RandUint64() %
-                                          max_artificial_delay));
+                                          max_artificial_delay_usec));
     return;
   }
 
@@ -1561,9 +1555,11 @@ void XMLHttpRequestImpl::CORSPreflightErrorCallback() {
 
 void XMLHttpRequestImpl::CORSPreflightSuccessCallback() {
   DCHECK(environment_settings()->context()->network_module());
-  StartURLFetcher(
-      environment_settings()->context()->network_module()->max_network_delay(),
-      url_fetcher_generation_);
+  StartURLFetcher(environment_settings()
+                      ->context()
+                      ->network_module()
+                      ->max_network_delay_usec(),
+                  url_fetcher_generation_);
 }
 
 DOMXMLHttpRequestImpl::DOMXMLHttpRequestImpl(XMLHttpRequest* xhr)

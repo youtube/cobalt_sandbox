@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <malloc.h>
 #include <time.h>
 
 #include "starboard/configuration.h"
@@ -31,6 +32,9 @@
 #include "third_party/crashpad/wrapper/wrapper.h"
 
 extern "C" SB_EXPORT_PLATFORM int main(int argc, char** argv) {
+  // Set M_ARENA_MAX to a low value to slow memory growth due to fragmentation.
+  mallopt(M_ARENA_MAX, 2);
+
   tzset();
   starboard::shared::signal::InstallCrashSignalHandlers();
   starboard::shared::signal::InstallDebugSignalHandlers();
@@ -46,9 +50,9 @@ extern "C" SB_EXPORT_PLATFORM int main(int argc, char** argv) {
           : starboard::common::GetCACertificatesPath(evergreen_content_path);
   if (ca_certificates_path.empty()) {
     SB_LOG(ERROR) << "Failed to get CA certificates path";
-    return 1;
   }
 
+#if !SB_IS(MODULAR)
   bool start_handler_at_crash =
       command_line.HasSwitch(
           starboard::shared::starboard::kStartHandlerAtCrash) ||
@@ -56,6 +60,7 @@ extern "C" SB_EXPORT_PLATFORM int main(int argc, char** argv) {
           starboard::shared::starboard::kStartHandlerAtLaunch);
   third_party::crashpad::wrapper::InstallCrashpadHandler(start_handler_at_crash,
                                                          ca_certificates_path);
+#endif  // !SB_IS(MODULAR)
 #endif
 
 #if SB_HAS_QUIRK(BACKTRACE_DLOPEN_BUG)
@@ -64,7 +69,7 @@ extern "C" SB_EXPORT_PLATFORM int main(int argc, char** argv) {
   SbLogRawDumpStack(3);
 #endif
 
-#if SB_MODULAR_BUILD
+#if SB_API_VERSION >= 15
   int result = SbRunStarboardMain(argc, argv, SbEventHandle);
 #else
   starboard::shared::x11::ApplicationX11 application;
@@ -73,21 +78,9 @@ extern "C" SB_EXPORT_PLATFORM int main(int argc, char** argv) {
     starboard::shared::starboard::LinkReceiver receiver(&application);
     result = application.Run(argc, argv);
   }
-#endif  // SB_MODULAR_BUILD
+#endif  // SB_API_VERSION >= 15
   starboard::shared::signal::UninstallSuspendSignalHandlers();
   starboard::shared::signal::UninstallDebugSignalHandlers();
   starboard::shared::signal::UninstallCrashSignalHandlers();
   return result;
 }
-
-#if SB_MODULAR_BUILD
-int SbRunStarboardMain(int argc, char** argv, SbEventHandleCallback callback) {
-  starboard::shared::x11::ApplicationX11 application(callback);
-  int result = 0;
-  {
-    starboard::shared::starboard::LinkReceiver receiver(&application);
-    result = application.Run(argc, argv);
-  }
-  return result;
-}
-#endif  // SB_MODULAR_BUILD

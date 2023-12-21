@@ -98,7 +98,9 @@ class CobaltRunner(object):
                log_file=None,
                target_params=None,
                success_message=None,
-               log_handler=None):
+               log_handler=None,
+               poll_until_wait_seconds=POLL_UNTIL_WAIT_SECONDS,
+               web_server_port=None):
     """CobaltRunner constructor.
 
     Args:
@@ -110,6 +112,8 @@ class CobaltRunner(object):
         with.
       success_message:  Optional success message to be printed on successful
         exit.
+      poll_until_wait_seconds:  Seconds to wait while polling for an event.
+      web_server_port:  The port to host testdata server before Cobalt starts.
     """
 
     # Tracks if test execution started successfully
@@ -123,12 +127,14 @@ class CobaltRunner(object):
     self.launcher_is_running = False
     self.windowdriver_created = threading.Event()
     self.webmodule_loaded = threading.Event()
+    self.web_server_port = web_server_port
 
     self.selenium_webdriver_module = webdriver_utils.import_selenium_module(
         'webdriver')
 
     self.launcher_params = launcher_params
     self.log_handler = log_handler
+    self.poll_until_wait_seconds = poll_until_wait_seconds
 
     if log_file:
       self.log_file = open(log_file, encoding='utf-8')  # pylint: disable=consider-using-with
@@ -183,6 +189,12 @@ class CobaltRunner(object):
   def SendDeepLink(self, link):
     """Sends a deep link to Cobalt."""
     return self.launcher.SendDeepLink(link)
+
+  def CreateDeviceToHostTunnel(self, host_port, device_port):
+    self.launcher.CreateDeviceToHostTunnel(host_port, device_port)
+
+  def RemoveDeviceToHostTunnel(self, host_port):
+    self.launcher.RemoveDeviceToHostTunnel(host_port)
 
   def GetURL(self):
     return self.url
@@ -255,6 +267,15 @@ class CobaltRunner(object):
     self.launcher_read_pipe = os.fdopen(read_fd, 'r')
     self.launcher_write_pipe = os.fdopen(write_fd, 'w')
 
+    launcher_args = {}
+    if self.launcher_params.target_params:
+      for param in self.launcher_params.target_params:
+        pname = param.replace('--', '')
+        val = True
+        if '=' in pname:
+          pname, val = pname.split('=')
+        launcher_args[pname] = val
+
     self.launcher = abstract_launcher.LauncherFactory(
         self.launcher_params.platform,
         'cobalt',
@@ -265,7 +286,11 @@ class CobaltRunner(object):
         out_directory=self.launcher_params.out_directory,
         loader_platform=self.launcher_params.loader_platform,
         loader_config=self.launcher_params.loader_config,
-        loader_out_directory=self.launcher_params.loader_out_directory)
+        loader_out_directory=self.launcher_params.loader_out_directory,
+        launcher_args=launcher_args)
+    # Start the Device->Host tunnel now in case Cobalt connects the host.
+    if self.web_server_port:
+      self.CreateDeviceToHostTunnel(self.web_server_port, self.web_server_port)
 
     self.runner_thread = threading.Thread(target=self._RunLauncher)
     self.runner_thread.start()
@@ -475,7 +500,7 @@ class CobaltRunner(object):
     """
     start_time = time.time()
     while (not self.FindElements(css_selector) and
-           (time.time() - start_time < POLL_UNTIL_WAIT_SECONDS)):
+           (time.time() - start_time < self.poll_until_wait_seconds)):
       time.sleep(0.5)
     if expected_num:
       self.FindElements(css_selector, expected_num)

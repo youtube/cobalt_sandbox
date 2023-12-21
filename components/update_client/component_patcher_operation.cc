@@ -53,9 +53,11 @@ DeltaUpdateOp* CreateDeltaUpdateOp(const std::string& operation,
   return nullptr;
 }
 
-DeltaUpdateOp::DeltaUpdateOp() {}
+DeltaUpdateOp::DeltaUpdateOp() {
+}
 
-DeltaUpdateOp::~DeltaUpdateOp() {}
+DeltaUpdateOp::~DeltaUpdateOp() {
+}
 
 void DeltaUpdateOp::Run(const base::DictionaryValue* command_args,
                         const base::FilePath& input_dir,
@@ -101,14 +103,22 @@ void DeltaUpdateOp::DoneRunning(UnpackerError error, int extended_error) {
 // Uses the hash as a checksum to confirm that the file now residing in the
 // output directory probably has the contents it should.
 UnpackerError DeltaUpdateOp::CheckHash() {
+#if defined(IN_MEMORY_UPDATES)
+  CHECK(false) << "Delta updates not supported for in-memory updates, or "
+               << "for that matter Cobalt";
+  return UnpackerError::kDeltaUnsupportedCommand;
+#else
   return VerifyFileHash256(output_abs_path_, output_sha256_)
              ? UnpackerError::kNone
              : UnpackerError::kDeltaVerificationFailure;
+#endif
 }
 
-DeltaUpdateOpCopy::DeltaUpdateOpCopy() {}
+DeltaUpdateOpCopy::DeltaUpdateOpCopy() {
+}
 
-DeltaUpdateOpCopy::~DeltaUpdateOpCopy() {}
+DeltaUpdateOpCopy::~DeltaUpdateOpCopy() {
+}
 
 UnpackerError DeltaUpdateOpCopy::DoParseArguments(
     const base::DictionaryValue* command_args,
@@ -131,9 +141,11 @@ void DeltaUpdateOpCopy::DoRun(ComponentPatcher::Callback callback) {
     std::move(callback).Run(UnpackerError::kNone, 0);
 }
 
-DeltaUpdateOpCreate::DeltaUpdateOpCreate() {}
+DeltaUpdateOpCreate::DeltaUpdateOpCreate() {
+}
 
-DeltaUpdateOpCreate::~DeltaUpdateOpCreate() {}
+DeltaUpdateOpCreate::~DeltaUpdateOpCreate() {
+}
 
 UnpackerError DeltaUpdateOpCreate::DoParseArguments(
     const base::DictionaryValue* command_args,
@@ -166,7 +178,8 @@ DeltaUpdateOpPatch::DeltaUpdateOpPatch(const std::string& operation,
   DCHECK(operation == kBsdiff || operation == kCourgette);
 }
 
-DeltaUpdateOpPatch::~DeltaUpdateOpPatch() {}
+DeltaUpdateOpPatch::~DeltaUpdateOpPatch() {
+}
 
 UnpackerError DeltaUpdateOpPatch::DoParseArguments(
     const base::DictionaryValue* command_args,

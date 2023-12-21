@@ -20,24 +20,19 @@
 #include "starboard/android/shared/file_internal.h"
 #include "starboard/common/log.h"
 #include "starboard/common/string.h"
-#include "starboard/shared/nouser/user_internal.h"
+#include "starboard/shared/starboard/get_home_directory.h"
 
 using ::starboard::android::shared::g_app_files_dir;
 
 namespace starboard {
 namespace shared {
-namespace nouser {
+namespace starboard {
 
-// With a single SbUser representing the Android platform, the 'file_storage'
-// SbStorage implementation writes a single SbStorageRecord for all accounts in
-// the home directory we return here.  This is analogous to a web browser
-// providing a single cookie store no matter what any particular web app does to
-// present signing in as different users.
-bool GetHomeDirectory(SbUser user, char* out_path, int path_size) {
-  int len = starboard::strlcpy(out_path, g_app_files_dir, path_size);
+bool GetHomeDirectory(char* out_path, int path_size) {
+  int len = ::starboard::strlcpy(out_path, g_app_files_dir, path_size);
   return len < path_size;
 }
 
-}  // namespace nouser
+}  // namespace starboard
 }  // namespace shared
 }  // namespace starboard

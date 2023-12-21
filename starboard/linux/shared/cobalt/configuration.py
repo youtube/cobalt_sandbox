@@ -13,6 +13,8 @@
 # limitations under the License.
 """Starboard Linux Cobalt shared configuration."""
 
+import os
+
 from cobalt.build import cobalt_configuration
 from starboard.tools.testing import test_filter
 
@@ -61,6 +63,20 @@ _FILTERED_TESTS = {
     ],
 }
 
+if os.getenv('MODULAR_BUILD', '0') == '1':
+  # Tracked by b/294070803
+  _FILTERED_TESTS['layout_tests'] = [
+      'CobaltSpecificLayoutTests/Layout.Test/platform_object_user_properties_survive_gc',  # pylint: disable=line-too-long
+  ]
+  # TODO: b/303260272 Re-enable these tests.
+  _FILTERED_TESTS['blackbox'] = [
+      'cancel_sync_loads_when_suspended',
+      'preload_font',
+      'preload_launch_parameter',
+      'preload_visibility',
+      'suspend_visibility',
+  ]
+
 
 class CobaltLinuxConfiguration(cobalt_configuration.CobaltConfiguration):
   """Starboard Linux Cobalt shared configuration."""
@@ -104,5 +120,9 @@ class CobaltLinuxConfiguration(cobalt_configuration.CobaltConfiguration):
         },
         'net_unittests': {
             'ASAN_OPTIONS': 'detect_leaks=0'
+        },
+        # Tracked by b/294071365
+        'starboard_platform_tests': {
+            'ASAN_OPTIONS': 'detect_odr_violation=0'
         }
     }

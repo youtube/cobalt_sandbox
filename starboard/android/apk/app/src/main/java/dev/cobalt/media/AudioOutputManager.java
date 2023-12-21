@@ -60,8 +60,6 @@ public class AudioOutputManager implements CobaltMediaSession.UpdateVolumeListen
       int sampleRate,
       int channelCount,
       int preferredBufferSizeInBytes,
-      boolean enableAudioDeviceCallback,
-      boolean enablePcmContentTypeMovie,
       int tunnelModeAudioSessionId,
       boolean isWebAudio) {
     AudioTrackBridge audioTrackBridge =
@@ -70,7 +68,6 @@ public class AudioOutputManager implements CobaltMediaSession.UpdateVolumeListen
             sampleRate,
             channelCount,
             preferredBufferSizeInBytes,
-            enablePcmContentTypeMovie,
             tunnelModeAudioSessionId,
             isWebAudio);
     if (!audioTrackBridge.isAudioTrackValid()) {
@@ -80,9 +77,7 @@ public class AudioOutputManager implements CobaltMediaSession.UpdateVolumeListen
     audioTrackBridgeList.add(audioTrackBridge);
     hasAudioDeviceChanged.set(false);
 
-    if (Build.VERSION.SDK_INT < 23
-        || hasRegisteredAudioDeviceCallback
-        || !enableAudioDeviceCallback) {
+    if (hasRegisteredAudioDeviceCallback || isWebAudio) {
       return audioTrackBridge;
     }
 
@@ -106,7 +101,7 @@ public class AudioOutputManager implements CobaltMediaSession.UpdateVolumeListen
                     TAG,
                     "Setting |hasAudioDeviceChanged| to true for audio device %s, %s.",
                     info.getProductName(),
-                    getDeviceTypeNameV23(info.getType()));
+                    getDeviceTypeName(info.getType()));
                 hasAudioDeviceChanged.set(true);
                 break;
               }
@@ -144,52 +139,67 @@ public class AudioOutputManager implements CobaltMediaSession.UpdateVolumeListen
     audioTrackBridgeList.remove(audioTrackBridge);
   }
 
-  /** Returns the maximum number of HDMI channels. */
+  /** Stores info from AudioDeviceInfo to be passed to the native app. */
   @SuppressWarnings("unused")
   @UsedByNative
-  int getMaxChannels() {
-    // The aac audio decoder on this platform will switch its output from 5.1
-    // to stereo right before providing the first output buffer when
-    // attempting to decode 5.1 input.  Since this heavily violates invariants
-    // of the shared starboard player framework, disable 5.1 on this platform.
-    // It is expected that we will be able to resolve this issue with Xiaomi
-    // by Android P, so only do this workaround for SDK versions < 27.
-    if (android.os.Build.MODEL.equals("MIBOX3") && android.os.Build.VERSION.SDK_INT < 27) {
-      return 2;
+  public static class OutputDeviceInfo {
+    @UsedByNative public int type;
+    @UsedByNative public int channels;
+
+    @UsedByNative
+    public int getType() {
+      return type;
     }
 
-    if (Build.VERSION.SDK_INT >= 23) {
-      return getMaxChannelsV23();
+    @UsedByNative
+    public int getChannels() {
+      return channels;
     }
-    return 2;
   }
 
-  /** Returns the maximum number of HDMI channels for API 23 and above. */
-  @RequiresApi(23)
-  private int getMaxChannelsV23() {
+  /** Returns output device info. */
+  @SuppressWarnings("unused")
+  @UsedByNative
+  boolean getOutputDeviceInfo(int index, OutputDeviceInfo outDeviceInfo) {
+    if (index < 0) {
+      return false;
+    }
+
     AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
     AudioDeviceInfo[] deviceInfos = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS);
-    int maxChannels = 2;
-    for (AudioDeviceInfo info : deviceInfos) {
-      int type = info.getType();
-      if (type == AudioDeviceInfo.TYPE_HDMI || type == AudioDeviceInfo.TYPE_HDMI_ARC) {
-        int[] channelCounts = info.getChannelCounts();
-        if (channelCounts.length == 0) {
-          // An empty array indicates that the device supports arbitrary channel masks.
-          return 8;
-        }
+
+    if (index >= 0 && index < deviceInfos.length) {
+      outDeviceInfo.type = deviceInfos[index].getType();
+      outDeviceInfo.channels = 2;
+
+      // The aac audio decoder on this platform will switch its output from 5.1
+      // to stereo right before providing the first output buffer when
+      // attempting to decode 5.1 input.  Since this heavily violates invariants
+      // of the shared starboard player framework, disable 5.1 on this platform.
+      // It is expected that we will be able to resolve this issue with Xiaomi
+      // by Android P, so only do this workaround for SDK versions < 27.
+      if (android.os.Build.MODEL.equals("MIBOX3") && android.os.Build.VERSION.SDK_INT < 27) {
+        return true;
+      }
+
+      int[] channelCounts = deviceInfos[index].getChannelCounts();
+      if (channelCounts.length == 0) {
+        // An empty array indicates that the device supports arbitrary channel masks.
+        outDeviceInfo.channels = 8;
+      } else {
         for (int count : channelCounts) {
-          maxChannels = Math.max(maxChannels, count);
+          outDeviceInfo.channels = Math.max(outDeviceInfo.channels, count);
         }
       }
+      return true;
     }
-    return maxChannels;
+
+    return false;
   }
 
   /** Convert AudioDeviceInfo.TYPE_* to name in String */
-  @RequiresApi(23)
-  private static String getDeviceTypeNameV23(int device_type) {
-    switch (device_type) {
+  private static String getDeviceTypeName(int deviceType) {
+    switch (deviceType) {
       case AudioDeviceInfo.TYPE_AUX_LINE:
         return "TYPE_AUX_LINE";
       case AudioDeviceInfo.TYPE_BLUETOOTH_A2DP:
@@ -236,66 +246,60 @@ public class AudioOutputManager implements CobaltMediaSession.UpdateVolumeListen
         return "TYPE_WIRED_HEADSET";
       default:
         // This may include constants introduced after API 23.
-        return String.format(Locale.US, "TYPE_UNKNOWN (%d)", device_type);
+        return String.format(Locale.US, "TYPE_UNKNOWN (%d)", deviceType);
     }
   }
 
   /** Convert audio encodings in int[] to common separated values in String */
-  @RequiresApi(23)
   private static String getEncodingNames(final int[] encodings) {
-    StringBuffer encodings_in_string = new StringBuffer("[");
+    StringBuffer encodingsInString = new StringBuffer("[");
     for (int i = 0; i < encodings.length; ++i) {
       switch (encodings[i]) {
         case AudioFormat.ENCODING_DEFAULT:
-          encodings_in_string.append("DEFAULT");
+          encodingsInString.append("DEFAULT");
           break;
         case AudioFormat.ENCODING_PCM_8BIT:
-          encodings_in_string.append("PCM_8BIT");
+          encodingsInString.append("PCM_8BIT");
           break;
         case AudioFormat.ENCODING_PCM_16BIT:
-          encodings_in_string.append("PCM_16BIT");
+          encodingsInString.append("PCM_16BIT");
           break;
         case AudioFormat.ENCODING_PCM_FLOAT:
-          encodings_in_string.append("PCM_FLOAT");
+          encodingsInString.append("PCM_FLOAT");
           break;
         case AudioFormat.ENCODING_DTS:
-          encodings_in_string.append("DTS");
+          encodingsInString.append("DTS");
           break;
         case AudioFormat.ENCODING_DTS_HD:
-          encodings_in_string.append("DTS_HD");
+          encodingsInString.append("DTS_HD");
           break;
         case AudioFormat.ENCODING_AC3:
-          encodings_in_string.append("AC3");
+          encodingsInString.append("AC3");
           break;
         case AudioFormat.ENCODING_E_AC3:
-          encodings_in_string.append("E_AC3");
+          encodingsInString.append("E_AC3");
           break;
         case AudioFormat.ENCODING_IEC61937:
-          encodings_in_string.append("IEC61937");
+          encodingsInString.append("IEC61937");
           break;
         case AudioFormat.ENCODING_INVALID:
-          encodings_in_string.append("INVALID");
+          encodingsInString.append("INVALID");
           break;
         default:
           // This may include constants introduced after API 23.
-          encodings_in_string.append(String.format(Locale.US, "UNKNOWN (%d)", encodings[i]));
+          encodingsInString.append(String.format(Locale.US, "UNKNOWN (%d)", encodings[i]));
           break;
       }
       if (i != encodings.length - 1) {
-        encodings_in_string.append(", ");
+        encodingsInString.append(", ");
       }
     }
-    encodings_in_string.append(']');
-    return encodings_in_string.toString();
+    encodingsInString.append(']');
+    return encodingsInString.toString();
   }
 
   /** Dump all audio output devices. */
   public void dumpAllOutputDevices() {
-    if (Build.VERSION.SDK_INT < 23) {
-      Log.i(TAG, "dumpAllOutputDevices() is only supported in API level 23 or above.");
-      return;
-    }
-
     Log.i(TAG, "Dumping all audio output devices:");
 
     AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
@@ -305,7 +309,7 @@ public class AudioOutputManager implements CobaltMediaSession.UpdateVolumeListen
       Log.i(
           TAG,
           "  Audio Device: %s, channels: %s, sample rates: %s, encodings: %s",
-          getDeviceTypeNameV23(info.getType()),
+          getDeviceTypeName(info.getType()),
           Arrays.toString(info.getChannelCounts()),
           Arrays.toString(info.getSampleRates()),
           getEncodingNames(info.getEncodings()));
@@ -363,16 +367,6 @@ public class AudioOutputManager implements CobaltMediaSession.UpdateVolumeListen
   @SuppressWarnings("unused")
   @UsedByNative
   boolean hasPassthroughSupportFor(int encoding) {
-    if (Build.VERSION.SDK_INT < 23) {
-      Log.i(
-          TAG,
-          "Passthrough on encoding %d is rejected on api %d, as passthrough is only"
-              + " supported on api 23 or later.",
-          encoding,
-          Build.VERSION.SDK_INT);
-      return false;
-    }
-
     AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
     AudioDeviceInfo[] deviceInfos = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS);
 
@@ -454,7 +448,6 @@ public class AudioOutputManager implements CobaltMediaSession.UpdateVolumeListen
   }
 
   /** Returns whether passthrough on `encoding` is supported for API 23 and above. */
-  @RequiresApi(23)
   private boolean hasPassthroughSupportForV23(final AudioDeviceInfo[] deviceInfos, int encoding) {
     for (AudioDeviceInfo info : deviceInfos) {
       final int type = info.getType();
@@ -473,7 +466,7 @@ public class AudioOutputManager implements CobaltMediaSession.UpdateVolumeListen
             "Passthrough on encoding %d is supported on %s, because getEncodings() returns"
                 + " an empty array.",
             encoding,
-            getDeviceTypeNameV23(type));
+            getDeviceTypeName(type));
         return true;
       }
       for (int i = 0; i < encodings.length; ++i) {
@@ -482,7 +475,7 @@ public class AudioOutputManager implements CobaltMediaSession.UpdateVolumeListen
               TAG,
               "Passthrough on encoding %d is supported on %s.",
               encoding,
-              getDeviceTypeNameV23(type));
+              getDeviceTypeName(type));
           return true;
         }
       }
@@ -490,7 +483,7 @@ public class AudioOutputManager implements CobaltMediaSession.UpdateVolumeListen
           TAG,
           "Passthrough on encoding %d is not supported on %s.",
           encoding,
-          getDeviceTypeNameV23(type));
+          getDeviceTypeName(type));
     }
     Log.i(TAG, "Passthrough on encoding %d is not supported on any devices.", encoding);
     return false;

@@ -15,10 +15,12 @@
 #include "cobalt/trace_event/json_file_outputter.h"
 
 #include <string>
+#include <utility>
 
 #if defined(ENABLE_DEBUG_COMMAND_LINE_SWITCHES)
 #include "base/command_line.h"
 #endif
+#include "base/files/file_starboard.h"
 #include "base/files/platform_file.h"
 #include "base/logging.h"
 #if defined(ENABLE_DEBUG_COMMAND_LINE_SWITCHES)
@@ -27,7 +29,6 @@
 #endif
 #include "base/synchronization/waitable_event.h"
 #include "base/threading/thread.h"
-
 #include "starboard/common/string.h"
 
 namespace cobalt {
@@ -135,6 +136,7 @@ void JSONFileOutputter::Write(const char* buffer, int length) {
   }
 
   int count = SbFileWrite(file_, buffer, length);
+  base::RecordFileWriteStat(count);
   if (count < 0) {
     Close();
   }

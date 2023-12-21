@@ -17,12 +17,8 @@
 
 #include <string.h> /* for memset() only ! */
 #include <limits.h>
-#ifdef HAVE_CTYPE_H
 #include <ctype.h>
-#endif
-#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
-#endif
 
 #include <libxml/tree.h>
 #include <libxml/globals.h>
@@ -1334,8 +1330,12 @@ xmlBufGetInputBase(xmlBufPtr buf, xmlParserInputPtr input) {
 int
 xmlBufSetInputBaseCur(xmlBufPtr buf, xmlParserInputPtr input,
                       size_t base, size_t cur) {
-    if ((input == NULL) || (buf == NULL) || (buf->error))
+    if (input == NULL)
         return(-1);
+    if ((buf == NULL) || (buf->error)) {
+        input->base = input->cur = input->end = BAD_CAST "";
+        return(-1);
+    }
     CHECK_COMPAT(buf)
     input->base = &buf->content[base];
     input->cur = input->base + cur;
@@ -1343,5 +1343,3 @@ xmlBufSetInputBaseCur(xmlBufPtr buf, xmlParserInputPtr input,
     return(0);
 }
 
-#define bottom_buf
-#include "elfgcchack.h"

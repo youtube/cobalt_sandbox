@@ -121,8 +121,8 @@ Application::Application() {
   SB_CHECK(0 != num_configs);
 
   // Allocate space to receive the matching configs and retrieve them.
-  SbEglConfig* configs = reinterpret_cast<SbEglConfig*>(
-      SbMemoryAllocate(num_configs * sizeof(SbEglConfig)));
+  SbEglConfig* configs =
+      reinterpret_cast<SbEglConfig*>(malloc(num_configs * sizeof(SbEglConfig)));
   EGL_CALL(eglChooseConfig(display_, kAttributeList, configs, num_configs,
                            &num_configs));
 
@@ -141,7 +141,7 @@ Application::Application() {
   }
   SB_DCHECK(surface_ != SB_EGL_NO_SURFACE);
 
-  SbMemoryDeallocate(configs);
+  free(configs);
 
   EGL_CALL(
       eglQuerySurface(display_, surface_, SB_EGL_WIDTH, &egl_surface_width_));
@@ -153,7 +153,9 @@ Application::Application() {
   // Create the GLES2 or GLEX3 Context.
   context_ = SB_EGL_NO_CONTEXT;
   SbEglInt32 context_attrib_list[] = {
-      SB_EGL_CONTEXT_CLIENT_VERSION, 3, SB_EGL_NONE,
+      SB_EGL_CONTEXT_CLIENT_VERSION,
+      3,
+      SB_EGL_NONE,
   };
 
   if (context_ == SB_EGL_NO_CONTEXT) {
@@ -242,6 +244,7 @@ void SbEventHandle(const SbEvent* event) {
       delete s_application;
     } break;
 
-    default: {}
+    default: {
+    }
   }
 }

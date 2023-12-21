@@ -33,14 +33,11 @@
 #  include <config.h>
 #endif
 
-#include <math.h> /* for log() */
-
+#include <math.h>
 #ifndef STARBOARD
 #include <string.h>
 #endif  // STARBOARD
-
 #include "starboard/client_porting/poem/string_poem.h"
-
 #include "private/bitmath.h"
 #include "private/fixed.h"
 #include "FLAC/assert.h"

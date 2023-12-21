@@ -30,12 +30,15 @@ _FILTERED_TESTS = {
         # attribute.
         'SbSystemGetStackTest.SunnyDayStackDirection',
 
+        # These tests are failing. Enable them once they're supported.
+        'MultiplePlayerTests/*beneath_the_canopy_137_avc_dmp*',
+        'SbMediaSetAudioWriteDurationTests/SbMediaSetAudioWriteDurationTest.WriteContinuedLimitedInput*',
+        'SbPlayerWriteSampleTests/SbPlayerWriteSampleTest.SecondaryPlayerTest/*',
+
         # Failures tracked by b/256160416.
         'SbSystemGetPathTest.ReturnsRequiredPaths',
-        'SbPlayerWriteSampleTests/SbPlayerWriteSampleTest.SeekAndDestroy/audio__null__video_beneath_the_canopy_137_avc_dmp_output_DecodeToTexture',
-        'SbPlayerWriteSampleTests/SbPlayerWriteSampleTest.NoInput/audio__null__video_beneath_the_canopy_137_avc_dmp_output_DecodeToTexture',
-        'SbPlayerWriteSampleTests/SbPlayerWriteSampleTest.WriteSingleBatch/audio__null__video_beneath_the_canopy_137_avc_dmp_output_DecodeToTexture',
-        'SbPlayerWriteSampleTests/SbPlayerWriteSampleTest.WriteMultipleBatches/audio__null__video_beneath_the_canopy_137_avc_dmp_output_DecodeToTexture',
+        'SbPlayerGetAudioConfigurationTests/*_video_beneath_the_canopy_137_avc_dmp_output_decode_to_texture_*',
+        'SbPlayerWriteSampleTests/*_video_beneath_the_canopy_137_avc_dmp_output_decode_to_texture_*',
         'SbSocketAddressTypes/SbSocketBindTest.RainyDayBadInterface/type_ipv6_filter_ipv6',
         'SbSocketAddressTypes/SbSocketGetInterfaceAddressTest.SunnyDayDestination/type_ipv6',
         'SbSocketAddressTypes/SbSocketGetInterfaceAddressTest.SunnyDaySourceForDestination/type_ipv6',
@@ -45,6 +48,11 @@ _FILTERED_TESTS = {
         'SbSocketAddressTypes/SbSocketSetOptionsTest.RainyDayInvalidSocket/type_ipv6',
         # Flakiness is tracked in b/278276779.
         'Semaphore.ThreadTakesWait_TimeExpires',
+        # Failure tracked by b/287666606.
+        'VerticalVideoTests/VerticalVideoTest.WriteSamples*',
+
+        # Enable once verified on the platform.
+        'SbMediaCanPlayMimeAndKeySystem.MinimumSupport',
     ],
     'player_filter_tests': [
         # These tests fail on our VMs for win-win32 builds due to missing
@@ -79,6 +87,7 @@ class WinWin32TestFilters(shared_test_filters.TestFilters):
       return [test_filter.DISABLE_TESTING]
     else:
       filters = super().GetTestFilters()
+      _FILTERED_TESTS.update(test_filter.EVERGREEN_ONLY_TESTS)
       for target, tests in _FILTERED_TESTS.items():
         filters.extend(test_filter.TestFilter(target, test) for test in tests)
       if os.environ.get('EXPERIMENTAL_CI', '0') == '1':

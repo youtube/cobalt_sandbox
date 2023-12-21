@@ -63,7 +63,9 @@
 #include "cobalt/dom/text.h"
 #include "cobalt/loader/image/animated_image_tracker.h"
 #include "cobalt/loader/resource_cache.h"
+#include "cobalt/math/clamp.h"
 #include "cobalt/web/csp_delegate.h"
+#include "starboard/common/time.h"
 #include "third_party/icu/source/common/unicode/uchar.h"
 #include "third_party/icu/source/common/unicode/utf8.h"
 
@@ -91,9 +93,9 @@ const char* kPerformanceResourceTimingInitiatorType = "img";
 
 void UiNavCallbackHelper(
     scoped_refptr<base::SingleThreadTaskRunner> task_runner,
-    base::Callback<void(SbTimeMonotonic)> callback) {
-  task_runner->PostTask(FROM_HERE,
-                        base::Bind(callback, SbTimeGetMonotonicNow()));
+    base::Callback<void(int64_t)> callback) {
+  task_runner->PostTask(
+      FROM_HERE, base::Bind(callback, starboard::CurrentMonotonicTime()));
 }
 
 struct NonTrivialStaticFields {
@@ -159,6 +161,22 @@ struct NonTrivialStaticFields {
 
 base::LazyInstance<NonTrivialStaticFields>::DestructorAtExit
     non_trivial_static_fields = LAZY_INSTANCE_INITIALIZER;
+
+void InvalidateScrollAreaCacheOfAncestors(Node* node) {
+  for (Node* ancestor_node = node; ancestor_node;
+       ancestor_node = ancestor_node->parent_node()) {
+    Element* ancestor_element = ancestor_node->AsElement();
+    if (!ancestor_element) {
+      continue;
+    }
+    HTMLElement* ancestor_html_element = ancestor_element->AsHTMLElement();
+    if (!ancestor_html_element) {
+      continue;
+    }
+    if (ancestor_html_element->layout_boxes())
+      ancestor_html_element->layout_boxes()->scroll_area_cache().reset();
+  }
+}
 
 }  // namespace
 
@@ -584,6 +602,10 @@ void HTMLElement::set_scroll_left(float x) {
   node_document()->window()->CancelScroll(ui_nav_item_);
   float left, top;
   ui_nav_item_->GetContentOffset(&left, &top);
+
+  float throwaway, min = x, max = x;
+  ui_nav_item_->GetBounds(&throwaway, &min, &throwaway, &max);
+  x = math::Clamp(x, min, max);
   ui_nav_item_->SetContentOffset(x, top);
 }
 
@@ -638,6 +660,10 @@ void HTMLElement::set_scroll_top(float y) {
   node_document()->window()->CancelScroll(ui_nav_item_);
   float left, top;
   ui_nav_item_->GetContentOffset(&left, &top);
+
+  float throwaway, min = y, max = y;
+  ui_nav_item_->GetBounds(&min, &throwaway, &max, &throwaway);
+  y = math::Clamp(y, min, max);
   ui_nav_item_->SetContentOffset(left, y);
 }
 
@@ -1158,6 +1184,7 @@ void HTMLElement::InvalidateLayoutBoxesOfNodeAndDescendants() {
 }
 
 void HTMLElement::InvalidateLayoutBoxSizes() {
+  InvalidateScrollAreaCacheOfAncestors(parent_node());
   if (layout_boxes_) {
     layout_boxes_->InvalidateSizes();
 
@@ -1203,26 +1230,29 @@ void HTMLElement::InvalidateLayoutBoxes() {
   directionality_ = base::nullopt;
 }
 
-void HTMLElement::OnUiNavBlur(SbTimeMonotonic time) {
+void HTMLElement::OnUiNavBlur(int64_t monotonic_time) {
   if (node_document() && node_document()->ui_nav_focus_element() == this) {
-    if (node_document()->TrySetUiNavFocusElement(nullptr, time)) {
+    if (node_document()->TrySetUiNavFocusElement(nullptr, monotonic_time)) {
       Blur();
     }
   }
 }
 
-void HTMLElement::OnUiNavFocus(SbTimeMonotonic time) {
+void HTMLElement::OnUiNavFocus(int64_t monotonic_time) {
   // Suppress the focus event if this is already focused -- i.e. the HTMLElement
   // initiated the focus change that resulted in this call to OnUiNavFocus.
   if (node_document() && node_document()->ui_nav_focus_element() != this) {
-    if (node_document()->TrySetUiNavFocusElement(this, time)) {
+    if (node_document()->TrySetUiNavFocusElement(this, monotonic_time)) {
       Focus();
     }
   }
 }
 
-void HTMLElement::OnUiNavScroll(SbTimeMonotonic /* time */) {
+void HTMLElement::OnUiNavScroll(int64_t /* monotonic_time */) {
   Document* document = node_document();
+  if (document->hidden()) {
+    return;
+  }
   scoped_refptr<Window> window(document ? document->window() : nullptr);
   DispatchEvent(new UIEvent(base::Tokens::scroll(), web::Event::kNotBubbles,
                             web::Event::kNotCancelable, window));
@@ -1469,8 +1499,8 @@ void HTMLElement::UpdateUiNavigationFocus() {
     // suppressing the Blur call for the previously focused HTMLElement and the
     // Focus call for this HTMLElement as a result of OnUiNavBlur / OnUiNavFocus
     // callbacks that result from initiating the UI navigation focus change.
-    if (node_document()->TrySetUiNavFocusElement(html_element,
-                                                 SbTimeGetMonotonicNow())) {
+    if (node_document()->TrySetUiNavFocusElement(
+            html_element, starboard::CurrentMonotonicTime())) {
       html_element->ui_nav_item_->Focus();
     }
     break;
@@ -1481,13 +1511,22 @@ void HTMLElement::SetUiNavItemBounds() {
   if (!ui_nav_item_->IsContainer()) {
     return;
   }
+
+  DirState dir = GetUsedDirState();
+  if (dir == DirState::kDirNotDefined) {
+    Document* document = node_document();
+    if (document && document->html()) {
+      dir = document->html()->GetUsedDirState();
+    }
+  }
+
   float scrollable_width = scroll_width() - client_width();
   float scroll_top_lower_bound = 0.0f;
   float scroll_left_lower_bound =
-      GetUsedDirState() == DirState::kDirRightToLeft ? -scrollable_width : 0.0f;
+      dir == DirState::kDirRightToLeft ? -scrollable_width : 0.0f;
   float scroll_top_upper_bound = scroll_height() - client_height();
   float scroll_left_upper_bound =
-      GetUsedDirState() == DirState::kDirRightToLeft ? 0.0f : scrollable_width;
+      dir == DirState::kDirRightToLeft ? 0.0f : scrollable_width;
   ui_nav_item_->SetBounds(scroll_top_lower_bound, scroll_left_lower_bound,
                           scroll_top_upper_bound, scroll_left_upper_bound);
 }
@@ -2258,8 +2297,8 @@ void HTMLElement::ReleaseUiNavigationItem() {
       node_document()->RemoveUiNavigationElement(this);
       node_document()->set_ui_nav_needs_layout(true);
       if (node_document()->ui_nav_focus_element() == this) {
-        if (node_document()->TrySetUiNavFocusElement(nullptr,
-                                                     SbTimeGetMonotonicNow())) {
+        if (node_document()->TrySetUiNavFocusElement(
+                nullptr, starboard::CurrentMonotonicTime())) {
           ui_nav_item_->UnfocusAll();
         }
       }

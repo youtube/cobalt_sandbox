@@ -26,13 +26,11 @@
 #include "starboard/testing/fake_graphics_context_provider.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
-#if SB_API_VERSION < SB_MEDIA_ENHANCED_AUDIO_API_VERSION
-
 namespace starboard {
 namespace nplb {
 namespace {
 
-using ::shared::starboard::player::video_dmp::VideoDmpReader;
+using shared::starboard::player::video_dmp::VideoDmpReader;
 using ::starboard::testing::FakeGraphicsContextProvider;
 using ::testing::ValuesIn;
 
@@ -42,8 +40,7 @@ const SbTime kSmallWaitInterval = 10 * kSbTimeMillisecond;
 class SbMediaSetAudioWriteDurationTest
     : public ::testing::TestWithParam<const char*> {
  public:
-  SbMediaSetAudioWriteDurationTest()
-      : dmp_reader_(ResolveTestFileName(GetParam()).c_str()) {}
+  SbMediaSetAudioWriteDurationTest() : dmp_reader_(GetParam()) {}
 
   void TryToWritePendingSample() {
     {
@@ -59,13 +56,13 @@ class SbMediaSetAudioWriteDurationTest
     }
 
     // Check if we're about to input too far beyond the current playback time.
-#if SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#if SB_API_VERSION >= 15
     SbPlayerInfo info;
     SbPlayerGetInfo(pending_decoder_status_->player, &info);
-#else   // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#else   // SB_API_VERSION >= 15
     SbPlayerInfo2 info;
     SbPlayerGetInfo2(pending_decoder_status_->player, &info);
-#endif  // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#endif  // SB_API_VERSION >= 15
     if ((last_input_timestamp_ - info.current_media_timestamp) > kDuration) {
       // Postpone writing samples.
       return;
@@ -79,11 +76,11 @@ class SbMediaSetAudioWriteDurationTest
       pending_decoder_status_ = nullopt;
     }
 
-    CallSbPlayerWriteSamples(player, kSbMediaTypeAudio, dmp_reader_.get(),
-                             index_, 1);
+    CallSbPlayerWriteSamples(player, kSbMediaTypeAudio, &dmp_reader_, index_,
+                             1);
+    last_input_timestamp_ =
+        dmp_reader_.GetPlayerSampleInfo(kSbMediaTypeAudio, index_).timestamp;
     ++index_;
-
-    last_input_timestamp_ = player_sample_info.timestamp;
   }
 
   void PlayerStatus(SbPlayer player, SbPlayerState state, int ticket) {
@@ -103,27 +100,30 @@ class SbMediaSetAudioWriteDurationTest
   }
 
   SbPlayer CreatePlayer() {
-    SbMediaAudioSampleInfo audio_sample_info = dmp_reader_.audio_sample_info();
-    SbMediaAudioCodec kAudioCodec = dmp_reader_.audio_codec();
-    SbDrmSystem kDrmSystem = kSbDrmSystemInvalid;
+    SbMediaAudioCodec audio_codec = dmp_reader_.audio_codec();
+
+    PlayerCreationParam creation_param = CreatePlayerCreationParam(
+        audio_codec, kSbMediaVideoCodecNone, kSbPlayerOutputModeInvalid);
+
+    SbPlayerCreationParam param = {};
+    creation_param.ConvertTo(&param);
+
+    creation_param.output_mode = SbPlayerGetPreferredOutputMode(&param);
+    EXPECT_NE(creation_param.output_mode, kSbPlayerOutputModeInvalid);
+
+    SbPlayer player = CallSbPlayerCreate(
+        fake_graphics_context_provider_.window(), kSbMediaVideoCodecNone,
+        audio_codec, kSbDrmSystemInvalid, &dmp_reader_.audio_stream_info(), "",
+        DummyDeallocateSampleFunc, DecoderStatusFunc, PlayerStatusFunc,
+        DummyErrorFunc, this /* context */, creation_param.output_mode,
+        fake_graphics_context_provider_.decoder_target_provider());
+
+    EXPECT_TRUE(SbPlayerIsValid(player));
 
     last_input_timestamp_ =
         dmp_reader_.GetPlayerSampleInfo(kSbMediaTypeAudio, 0).timestamp;
     first_input_timestamp_ = last_input_timestamp_;
 
-    SbPlayerCreationParam creation_param = CreatePlayerCreationParam(
-        audio_sample_info.codec, kSbMediaVideoCodecNone,
-        SbPlayerGetPreferredOutputMode(&creation_param));
-    creation_param.audio_sample_info = audio_sample_info;
-    EXPECT_NE(creation_param.output_mode, kSbPlayerOutputModeInvalid);
-
-    SbPlayer player = SbPlayerCreate(
-        fake_graphics_context_provider_.window(), &creation_param,
-        DummyDeallocateSampleFunc, DecoderStatusFunc, PlayerStatusFunc,
-        DummyErrorFunc, this /* context */,
-        fake_graphics_context_provider_.decoder_target_provider());
-
-    EXPECT_TRUE(SbPlayerIsValid(player));
     return player;
   }
 
@@ -183,36 +183,38 @@ TEST_P(SbMediaSetAudioWriteDurationTest, WriteLimitedInput) {
   ASSERT_NE(dmp_reader_.audio_codec(), kSbMediaAudioCodecNone);
   ASSERT_GT(dmp_reader_.number_of_audio_buffers(), 0);
 
+#if SB_API_VERSION < 15
   SbMediaSetAudioWriteDuration(kDuration);
+#endif  // SB_API_VERSION < 15
 
   SbPlayer player = CreatePlayer();
   WaitForPlayerState(kSbPlayerStateInitialized);
 
   // Seek to preroll.
-#if SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#if SB_API_VERSION >= 15
   SbPlayerSeek(player, first_input_timestamp_, /* ticket */ 1);
-#else   // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#else   // SB_API_VERSION >= 15
   SbPlayerSeek2(player, first_input_timestamp_, /* ticket */ 1);
-#endif  // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#endif  // SB_API_VERSION >= 15
 
   WaitForPlayerState(kSbPlayerStatePresenting);
 
   // Wait until the playback time is > 0.
   const SbTime kMaxWaitTime = 5 * kSbTimeSecond;
   SbTime start_of_wait = SbTimeGetMonotonicNow();
-#if SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#if SB_API_VERSION >= 15
   SbPlayerInfo info = {};
-#else   // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#else   // SB_API_VERSION >= 15
   SbPlayerInfo2 info = {};
-#endif  // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#endif  // SB_API_VERSION >= 15
   while (SbTimeGetMonotonicNow() - start_of_wait < kMaxWaitTime &&
          info.current_media_timestamp == 0) {
     SbThreadSleep(kSbTimeMillisecond * 500);
-#if SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#if SB_API_VERSION >= 15
     SbPlayerGetInfo(player, &info);
-#else   // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#else   // SB_API_VERSION >= 15
     SbPlayerGetInfo2(player, &info);
-#endif  // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#endif  // SB_API_VERSION >= 15
   }
 
   EXPECT_GT(info.current_media_timestamp, 0);
@@ -224,7 +226,9 @@ TEST_P(SbMediaSetAudioWriteDurationTest, WriteContinuedLimitedInput) {
   ASSERT_NE(dmp_reader_.audio_codec(), kSbMediaAudioCodecNone);
   ASSERT_GT(dmp_reader_.number_of_audio_buffers(), 0);
 
+#if SB_API_VERSION < 15
   SbMediaSetAudioWriteDuration(kDuration);
+#endif  // SB_API_VERSION < 15
 
   // This directly impacts the runtime of the test.
   total_duration_ = 15 * kSbTimeSecond;
@@ -233,11 +237,11 @@ TEST_P(SbMediaSetAudioWriteDurationTest, WriteContinuedLimitedInput) {
   WaitForPlayerState(kSbPlayerStateInitialized);
 
   // Seek to preroll.
-#if SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#if SB_API_VERSION >= 15
   SbPlayerSeek(player, first_input_timestamp_, /* ticket */ 1);
-#else   // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#else   // SB_API_VERSION >= 15
   SbPlayerSeek2(player, first_input_timestamp_, /* ticket */ 1);
-#endif  // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#endif  // SB_API_VERSION >= 15
   WaitForPlayerState(kSbPlayerStatePresenting);
 
   // Wait for the player to play far enough. It may not play all the way to
@@ -245,20 +249,20 @@ TEST_P(SbMediaSetAudioWriteDurationTest, WriteContinuedLimitedInput) {
   SbTime min_ending_playback_time = total_duration_ - kDuration;
   SbTime start_of_wait = SbTimeGetMonotonicNow();
   const SbTime kMaxWaitTime = total_duration_ + 5 * kSbTimeSecond;
-#if SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#if SB_API_VERSION >= 15
   SbPlayerInfo info;
   SbPlayerGetInfo(player, &info);
-#else   // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#else   // SB_API_VERSION >= 15
   SbPlayerInfo2 info;
   SbPlayerGetInfo2(player, &info);
-#endif  // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#endif  // SB_API_VERSION >= 15
   while (info.current_media_timestamp < min_ending_playback_time &&
          (SbTimeGetMonotonicNow() - start_of_wait) < kMaxWaitTime) {
-#if SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#if SB_API_VERSION >= 15
     SbPlayerGetInfo(player, &info);
-#else   // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#else   // SB_API_VERSION >= 15
     SbPlayerGetInfo2(player, &info);
-#endif  // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#endif  // SB_API_VERSION >= 15
     SbThreadSleep(kSmallWaitInterval);
     TryToWritePendingSample();
   }
@@ -277,16 +281,14 @@ std::vector<const char*> GetSupportedTests() {
   }
 
   for (auto filename : kFilenames) {
-    VideoDmpReader dmp_reader(ResolveTestFileName(filename).c_str());
+    VideoDmpReader dmp_reader(filename, VideoDmpReader::kEnableReadOnDemand);
     SB_DCHECK(dmp_reader.number_of_audio_buffers() > 0);
-
-    const SbMediaAudioSampleInfo* audio_sample_info =
-        &dmp_reader.audio_sample_info();
-    if (SbMediaIsAudioSupported(dmp_reader.audio_codec(), nullptr,
-                                dmp_reader.audio_bitrate())) {
+    if (SbMediaCanPlayMimeAndKeySystem(dmp_reader.audio_mime_type().c_str(),
+                                       "")) {
       test_params.push_back(filename);
     }
   }
+
   SB_DCHECK(!test_params.empty());
   return test_params;
 }
@@ -297,5 +299,3 @@ INSTANTIATE_TEST_CASE_P(SbMediaSetAudioWriteDurationTests,
 }  // namespace
 }  // namespace nplb
 }  // namespace starboard
-
-#endif  // SB_API_VERSION < SB_MEDIA_ENHANCED_AUDIO_API_VERSION

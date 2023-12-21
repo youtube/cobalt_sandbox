@@ -373,9 +373,9 @@ ref class App sealed : public IFrameworkView {
   App(SbTimeMonotonic start_time)
       : application_start_time_{start_time},
         previously_activated_(false),
-#if SB_MODULAR_BUILD
+#if SB_API_VERSION >= 15
         application_(SbEventHandle),
-#endif  // SB_MODULAR_BUILD
+#endif  // SB_API_VERSION >= 15
         is_online_(true) {
   }
 
@@ -419,14 +419,14 @@ ref class App sealed : public IFrameworkView {
   }
 
   virtual void Run() {
-#if SB_MODULAR_BUILD
+#if SB_API_VERSION >= 15
     main_return_value =
         SbRunStarboardMain(static_cast<int>(argv_.size()),
                            const_cast<char**>(argv_.data()), SbEventHandle);
 #else
     main_return_value = application_.Run(static_cast<int>(argv_.size()),
                                          const_cast<char**>(argv_.data()));
-#endif  // SB_MODULAR_BUILD
+#endif  // SB_API_VERSION >= 15
   }
   virtual void Uninitialize() {
     SbAudioSinkPrivate::TearDown();
@@ -660,7 +660,8 @@ ref class App sealed : public IFrameworkView {
         TryAddCommandArgsFromStarboardFile(&args_);
         CommandLine cmd_line(args_);
         if (cmd_line.HasSwitch(kNetArgsCommandSwitchWait)) {
-          SbTime timeout = kSbTimeSecond * 2;
+          // Wait for net args is flaky and needs extended wait time on Xbox.
+          SbTime timeout = kSbTimeSecond * 30;
           std::string val = cmd_line.GetSwitchValue(kNetArgsCommandSwitchWait);
           if (!val.empty()) {
             timeout = atoi(val.c_str());
@@ -758,19 +759,14 @@ ref class App sealed : public IFrameworkView {
       SB_LOG(INFO) << "Starting " << GetBinaryName();
 
       CoreWindow::GetForCurrentThread()->Activate();
-// Call DispatchStart async so the UWP system thinks we're activated.
-// Some tools seem to want the application to be activated before
-// interacting with them, some things are disallowed during activation
-// (such as exiting), and DispatchStart (for example) runs
-// automated tests synchronously.
-#if SB_API_VERSION >= 13
+      // Call DispatchStart async so the UWP system thinks we're activated.
+      // Some tools seem to want the application to be activated before
+      // interacting with them, some things are disallowed during activation
+      // (such as exiting), and DispatchStart (for example) runs
+      // automated tests synchronously.
       RunInMainThreadAsync([this]() {
         ApplicationUwp::Get()->DispatchStart(application_start_time_);
       });
-#else   // SB_API_VERSION >= 13
-      RunInMainThreadAsync(
-          [this]() { ApplicationUwp::Get()->DispatchStart(); });
-#endif  // SB_API_VERSION >= 13
     }
     previously_activated_ = true;
   }
@@ -845,16 +841,19 @@ void DisplayStatusWatcher::StopWatcher() {
   }
 }
 
-#if SB_MODULAR_BUILD
+#if SB_API_VERSION >= 15
 ApplicationUwp::ApplicationUwp(SbEventHandleCallback sb_event_handle_callback)
     : shared::starboard::Application(sb_event_handle_callback),
       window_(kSbWindowInvalid),
 #else
 ApplicationUwp::ApplicationUwp()
     : window_(kSbWindowInvalid),
-#endif  // SB_MODULAR_BUILD
+#endif  // SB_API_VERSION >= 15
       localized_strings_(SbSystemGetLocaleId()),
       device_id_(MakeDeviceId()) {
+  SbWindowOptions options;
+  SbWindowSetDefaultOptions(&options);
+  window_size_ = options.size;
   analog_thumbstick_thread_.reset(new AnalogThumbstickThread(this));
 }
 
@@ -892,9 +891,9 @@ SbWindow ApplicationUwp::CreateWindowForUWP(const SbWindowOptions*) {
     watcher_->CreateWatcher();
   }
 
-  SbWindowSize size = GetPreferredWindowSize();
+  window_size_ = GetPreferredWindowSize();
 
-  window_ = new SbWindowPrivate(size.width, size.height);
+  window_ = new SbWindowPrivate(window_size_.width, window_size_.height);
   return window_;
 }
 
@@ -903,7 +902,7 @@ SbWindowSize ApplicationUwp::GetVisibleAreaSize() {
   if (SbWindowGetSize(window_, &size)) {
     return size;
   }
-  return GetPreferredWindowSize();
+  return window_size_;
 }
 
 SbWindowSize ApplicationUwp::GetPreferredWindowSize() {
@@ -1312,7 +1311,7 @@ int InternalMain() {
 
 #if defined(COBALT_BUILD_TYPE_GOLD)
   // Early exit for gold builds on desktop as a security measure.
-#if SB_API_VERSION < SB_SYSTEM_DEVICE_TYPE_AS_STRING_API_VERSION
+#if SB_API_VERSION < 15
   if (SbSystemGetDeviceType() == kSbSystemDeviceTypeDesktopPC) {
     return main_return_value;
   }
@@ -1341,13 +1340,13 @@ int InternalMain() {
   return main_return_value;
 }
 
-#if SB_MODULAR_BUILD
+#if SB_API_VERSION >= 15
 extern "C" int SbRunStarboardMain(int argc,
                                   char** argv,
                                   SbEventHandleCallback callback) {
   return ApplicationUwp::Get()->Run(argc, argv);
 }
-#endif  // SB_MODULAR_BUILD
+#endif  // SB_API_VERSION >= 15
 
 }  // namespace uwp
 }  // namespace shared

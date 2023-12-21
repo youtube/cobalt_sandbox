@@ -14,32 +14,39 @@
 
 #include "starboard/media.h"
 
+#include "starboard/android/shared/jni_env_ext.h"
+#include "starboard/android/shared/jni_utils.h"
 #include "starboard/android/shared/media_capabilities_cache.h"
+#include "starboard/common/media.h"
 
-using starboard::android::shared::MediaCapabilitiesCache;
-
+// TODO(b/284140486): Refine the implementation so it works when the audio
+// outputs are changed during the query.
 bool SbMediaGetAudioConfiguration(
     int output_index,
     SbMediaAudioConfiguration* out_configuration) {
-  if (output_index != 0 || out_configuration == NULL) {
+  using starboard::GetMediaAudioConnectorName;
+  using starboard::android::shared::JniEnvExt;
+  using starboard::android::shared::MediaCapabilitiesCache;
+  using starboard::android::shared::ScopedLocalJavaRef;
+
+  if (output_index < 0) {
+    SB_LOG(WARNING) << "output_index is " << output_index
+                    << ", which cannot be negative.";
     return false;
   }
 
-  *out_configuration = {};
-
-  out_configuration->connector = kSbMediaAudioConnectorHdmi;
-  out_configuration->latency = 0;
-  out_configuration->coding_type = kSbMediaAudioCodingTypePcm;
-
-  int channels =
-      MediaCapabilitiesCache::GetInstance()->GetMaxAudioOutputChannels();
-  if (channels < 2) {
-    SB_DLOG(WARNING)
-        << "The supported channels from output device is smaller than 2. "
-           "Fallback to 2 channels";
-    out_configuration->number_of_channels = 2;
-  } else {
-    out_configuration->number_of_channels = channels;
+  if (out_configuration == nullptr) {
+    SB_LOG(WARNING) << "out_configuration cannot be nullptr.";
+    return false;
   }
-  return true;
+
+  bool result = MediaCapabilitiesCache::GetInstance()->GetAudioConfiguration(
+      output_index, out_configuration);
+
+  SB_LOG(INFO) << "Audio connector type for index " << output_index << " is "
+               << GetMediaAudioConnectorName(out_configuration->connector)
+               << " and it has " << out_configuration->number_of_channels
+               << " channels.";
+
+  return result;
 }

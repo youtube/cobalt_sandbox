@@ -16,19 +16,14 @@
 ARG FROM_IMAGE
 FROM ${FROM_IMAGE}
 
-SHELL ["powershell", "-ExecutionPolicy", "unrestricted", "-Command"]
+SHELL ["powershell", "-ExecutionPolicy", "Unrestricted", "-Command", `
+       "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
 
 # Helper script for quick delete operations in windows
 COPY ./fast-win-rmdir.cmd /fast-win-rmdir.cmd
 
-# Helper script to run an looping command to persist the container instead of
-# running the main command.
-COPY ./spin.ps1 /spin.ps1
-
-# Helper script to output all the running python processes showing the details
-# of the execution, i.e. the full invocation string.
-COPY ./list_python_processes.py /list_python_processes.py
-
+# Pin Choco to 1.4.0 to avoid required reboot in 2.0.0
+ENV chocolateyVersion '1.4.0'
 # Install deps via chocolatey.
 RUN iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'));`
     mkdir C:\choco-cache;`
@@ -40,11 +35,15 @@ RUN iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.or
     choco install -y -c C:\choco-cache nodejs-lts;`
     choco install -y -c C:\choco-cache git;`
     choco install -y -c C:\choco-cache cmake --installargs 'ADD_CMAKE_TO_PATH=System';`
+    choco install -y -c C:\choco-cache nasm;`
     Write-Host ('Deleting the chocolately download cache');`
     Remove-Item -Force -Recurse $env:TEMP\*;`
     C:\fast-win-rmdir.cmd C:\choco-cache;`
     # Create version specific copy of each python executable.
     Copy-Item C:\Python3\python.exe C:\Python3\python3.exe
+
+# Configure PATH for nasm.
+RUN setx /M PATH $($Env:PATH + ';C:\Program Files\NASM')
 
 # Install python3 packages via PIP and set various configurations.
 COPY ./requirements.txt /requirements.txt
@@ -57,6 +56,7 @@ RUN mkdir C:\pip-cache;`
     git config --global core.filemode false;`
     git config --global core.preloadindex true;`
     git config --global core.fscache true;`
+    git config --global --add safe.directory C:/code;`
     # Registry changes to enable long filesystem paths.
     reg add 'HKLM\SYSTEM\CurrentControlSet\Control\FileSystem' /v LongPathsEnabled /t REG_DWORD /reg:64 /d 1 /f;`
     reg add 'HKLM\SYSTEM\CurrentControlSet\Control\FileSystem' /v LongPathsEnabled /t REG_DWORD /d 1 /f;`

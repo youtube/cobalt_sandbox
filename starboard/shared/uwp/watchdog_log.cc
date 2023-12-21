@@ -16,6 +16,7 @@
 
 #include <string>
 
+#include "starboard/common/file.h"
 #include "starboard/common/log.h"
 #include "starboard/common/scoped_ptr.h"
 #include "starboard/common/semaphore.h"
@@ -39,19 +40,16 @@ class WatchDogThread : public Thread {
     Start();
   }
 
-  ~WatchDogThread() {
-    Join();
-  }
+  ~WatchDogThread() { Join(); }
 
   void Run() override {
     static const SbTime kSleepTime = kSbTimeMillisecond * 250;
     int counter = 0;
     bool created_ok = false;
     SbFileError out_error = kSbFileOk;
-    SbFile file_handle = SbFileOpen(file_path_.c_str(),
-                                    kSbFileCreateAlways | kSbFileWrite,
-                                    &created_ok,
-                                    &out_error);
+    SbFile file_handle =
+        SbFileOpen(file_path_.c_str(), kSbFileCreateAlways | kSbFileWrite,
+                   &created_ok, &out_error);
     if (!created_ok) {
       SB_LOG(ERROR) << "Could not create watchdog file " << file_path_;
       return;
@@ -60,11 +58,15 @@ class WatchDogThread : public Thread {
       std::stringstream ss;
       ss << "alive: " << counter++ << "\n";
       std::string str = ss.str();
-      SbFileWrite(file_handle, str.c_str(), static_cast<int>(str.size()));
+      int result =
+          SbFileWrite(file_handle, str.c_str(), static_cast<int>(str.size()));
+      RecordFileWriteStat(result);
       SbFileFlush(file_handle);
     }
     const char kDone[] = "done\n";
-    SbFileWrite(file_handle, kDone, static_cast<int>(strlen(kDone)));
+    int result =
+        SbFileWrite(file_handle, kDone, static_cast<int>(strlen(kDone)));
+    RecordFileWriteStat(result);
     SbFileFlush(file_handle);
     SbThreadSleep(50 * kSbTimeMillisecond);
     bool closed = SbFileClose(file_handle);

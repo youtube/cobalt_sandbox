@@ -23,16 +23,48 @@
 #include "starboard/player.h"
 #include "starboard/shared/starboard/media/media_util.h"
 #include "starboard/shared/starboard/player/video_dmp_reader.h"
+#include "testing/gtest/include/gtest/gtest.h"
 
 namespace starboard {
 namespace nplb {
 
-typedef std::tuple<const char* /* audio_filename */,
-                   const char* /* video_filename */,
-                   SbPlayerOutputMode /* output_mode */>
-    SbPlayerTestConfig;
+struct SbPlayerTestConfig {
+  SbPlayerTestConfig(const char* audio_filename,
+                     const char* video_filename,
+                     SbPlayerOutputMode output_mode,
+                     const char* key_system)
+      : audio_filename(audio_filename),
+        video_filename(video_filename),
+        output_mode(output_mode),
+        key_system(key_system),
+        max_video_capabilities("") {}
+  SbPlayerTestConfig(const char* audio_filename,
+                     const char* video_filename,
+                     SbPlayerOutputMode output_mode,
+                     const char* key_system,
+                     const char* max_video_capabilities)
+      : audio_filename(audio_filename),
+        video_filename(video_filename),
+        output_mode(output_mode),
+        key_system(key_system),
+        max_video_capabilities(max_video_capabilities) {}
+  const char* audio_filename;
+  const char* video_filename;
+  SbPlayerOutputMode output_mode;
+  const char* key_system;
+  const char* max_video_capabilities;
+};
 
-std::vector<SbPlayerTestConfig> GetSupportedSbPlayerTestConfigs();
+std::vector<const char*> GetAudioTestFiles();
+std::vector<const char*> GetVideoTestFiles();
+std::vector<SbPlayerOutputMode> GetPlayerOutputModes();
+std::vector<const char*> GetKeySystems();
+
+std::vector<SbPlayerTestConfig> GetSupportedSbPlayerTestConfigs(
+    const char* key_system = "");
+
+std::string GetSbPlayerTestConfigName(
+    ::testing::TestParamInfo<SbPlayerTestConfig> info);
 
 void DummyDeallocateSampleFunc(SbPlayer player,
                                void* context,
@@ -74,11 +106,17 @@ void CallSbPlayerWriteSamples(
     SbMediaType sample_type,
     shared::starboard::player::video_dmp::VideoDmpReader* dmp_reader,
     int start_index,
-    int number_of_samples_to_write);
+    int number_of_samples_to_write,
+    SbTime timestamp_offset = 0,
+    const std::vector<SbTime>& discarded_durations_from_front = {},
+    const std::vector<SbTime>& discarded_durations_from_back = {});
 
 bool IsOutputModeSupported(SbPlayerOutputMode output_mode,
                            SbMediaAudioCodec audio_codec,
-                           SbMediaVideoCodec video_codec);
+                           SbMediaVideoCodec video_codec,
+                           const char* key_system = "");
+
+bool IsPartialAudioSupported();
 
 }  // namespace nplb
 }  // namespace starboard

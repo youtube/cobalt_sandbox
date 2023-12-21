@@ -15,7 +15,7 @@ group("common") {
     ":crash_key_utils",
   ]
 
-  if (is_mac || is_ios) {
+  if ((is_mac || is_ios) && !use_cobalt_customizations) {
     public_deps += [ ":zombies" ]
   }
 }
@@ -69,7 +69,7 @@ target(crash_key_target_type, "crash_key") {
     "//base",
   ]
 
-  if (use_crash_key_stubs) {
+  if (use_crash_key_stubs || use_cobalt_customizations) {
     sources += [ "crash_key_stubs.cc" ]
   } else if (use_crashpad_annotation) {
     sources += [ "crash_key_crashpad.cc" ]
@@ -106,7 +106,7 @@ static_library("crash_key_utils") {
   ]
 }
 
-if (is_mac || is_ios) {
+if ((is_mac || is_ios) && !use_cobalt_customizations) {
   component("zombies") {
     visibility = [ ":common" ]
 
@@ -126,6 +126,7 @@ if (is_mac || is_ios) {
   }
 }
 
+if (!use_cobalt_customizations) {
 source_set("unit_tests") {
   testonly = true
   sources = [
@@ -151,4 +152,5 @@ source_set("unit_tests") {
   if (is_fuchsia) {
     sources -= [ "crash_key_unittest.cc" ]
   }
+}
 }

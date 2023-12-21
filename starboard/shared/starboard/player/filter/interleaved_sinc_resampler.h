@@ -20,7 +20,8 @@
 #define STARBOARD_SHARED_STARBOARD_PLAYER_FILTER_INTERLEAVED_SINC_RESAMPLER_H_
 
 #include <math.h>
-
+#include <stdlib.h>
+#include <string.h>
 #include <queue>
 
 #include "starboard/common/ref_counted.h"
@@ -109,7 +110,7 @@ class InterleavedSincResampler {
   static const int kBufferSize = kBlockSize + kKernelSize;
 
   // The maximum numbers of buffer can be queued.
-  static const int kMaximumPendingBuffers = 8;
+  static const int kMaximumPendingBuffers = 16;
 
   static const int kMaxChannels = 8;
   static const int kInputBufferSize = kMaxChannels * kBufferSize;

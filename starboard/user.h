@@ -25,6 +25,8 @@
 #ifndef STARBOARD_USER_H_
 #define STARBOARD_USER_H_
 
+#if SB_API_VERSION < 16
+
 #include "starboard/export.h"
 #include "starboard/time.h"
 #include "starboard/types.h"
@@ -40,6 +42,7 @@ typedef struct SbUserPrivate SbUserPrivate;
 typedef SbUserPrivate* SbUser;
 
 // A set of string properties that can be queried on a user.
+#if SB_API_VERSION < 16
 typedef enum SbUserPropertyId {
   // The URL to the avatar for a user. Avatars are not provided on all
   // platforms.
@@ -55,6 +58,7 @@ typedef enum SbUserPropertyId {
   // A unique user ID of a user.
   kSbUserPropertyUserId,
 } SbUserPropertyId;
+#endif
 
 // Well-defined value for an invalid user.
 #define kSbUserInvalid (SbUser) NULL
@@ -63,6 +67,16 @@ typedef enum SbUserPropertyId {
 static SB_C_INLINE bool SbUserIsValid(SbUser user) {
   return user != kSbUserInvalid;
 }
+
+// Gets the current primary user, if one exists. This is the user that is
+// determined, in a platform-specific way, to be the primary user controlling
+// the application. For example, the determination might be made because that
+// user launched the app, though it should be made using whatever criteria are
+// appropriate for the platform.
+//
+// It is expected that there will be a unique SbUser per signed-in user, and
+// that the referenced objects will persist for the lifetime of the app.
+SB_EXPORT SbUser SbUserGetCurrent();
 
 // Gets a list of up to |users_size| signed-in users and places the results in
 // |out_users|. The return value identifies the actual number of signed-in
@@ -74,16 +88,6 @@ static SB_C_INLINE bool SbUserIsValid(SbUser user) {
 // |out_users|: Handles for the retrieved users.
 // |users_size|: The maximum number of signed-in users to retrieve.
 SB_EXPORT int SbUserGetSignedIn(SbUser* out_users, int users_size);
-
-// Gets the current primary user, if one exists. This is the user that is
-// determined, in a platform-specific way, to be the primary user controlling
-// the application. For example, the determination might be made because that
-// user launched the app, though it should be made using whatever criteria are
-// appropriate for the platform.
-//
-// It is expected that there will be a unique SbUser per signed-in user, and
-// that the referenced objects will persist for the lifetime of the app.
-SB_EXPORT SbUser SbUserGetCurrent();
 
 // Returns the size of the value of |property_id| for |user|, INCLUDING the
 // terminating null character. The function returns |0| if |user| is invalid
@@ -107,8 +111,15 @@ SB_EXPORT bool SbUserGetProperty(SbUser user,
                                  SbUserPropertyId property_id,
                                  char* out_value,
                                  int value_size);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif
+
+#else  // SB_API_VERSION < 16
+
+#error This file is deprecated with SB_API_VERSION 16.
+
+#endif  // SB_API_VERSION < 16
 
 #endif  // STARBOARD_USER_H_

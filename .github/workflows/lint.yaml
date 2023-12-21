@@ -37,11 +37,15 @@ jobs:
           unzip /tmp/gn.zip -d /usr/local/bin
           rm /tmp/gn.zip
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: kaidokert/checkout@v3.5.999
+        timeout-minutes: 30
         with:
           fetch-depth: 0
+          persist-credentials: false
       - name: Setup Python
         uses: actions/setup-python@v4
+        with:
+          python-version: '3.7'
       - name: Install Pip Packages
         run: pip install -r ${GITHUB_WORKSPACE}/requirements.txt
       - name: Download Resources
@@ -58,10 +62,7 @@ jobs:
         # v2
         uses: gsactions/commit-message-checker@16fa2d5de096ae0d35626443bcd24f1e756cafee
         with:
-          excludeTitle: true
-          excludeDescription: true
-          checkAllCommitMessages: true
           accessToken: ${{ secrets.GITHUB_TOKEN }}
-          pattern: '^b\/\d+$'
+          pattern: 'b\/\d+'
           flags: 'gm'
-          error: 'Commit message should include at least one bug ID on a separate line (e.g. b/12345).'
+          error: 'PR title or description should include at least one bug ID.'

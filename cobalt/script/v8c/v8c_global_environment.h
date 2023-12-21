@@ -53,6 +53,9 @@ class V8cGlobalEnvironment : public GlobalEnvironment,
         isolate->GetData(kIsolateDataIndex));
   }
 
+  static std::string ExceptionToString(v8::Isolate* isolate,
+                                       const v8::TryCatch& try_catch);
+
   explicit V8cGlobalEnvironment(v8::Isolate* isolate);
   ~V8cGlobalEnvironment() override;
 
@@ -148,8 +151,10 @@ class V8cGlobalEnvironment : public GlobalEnvironment,
     v8::Isolate* isolate_;
   };
 
-  static bool AllowCodeGenerationFromStringsCallback(
-      v8::Local<v8::Context> context, v8::Local<v8::String> source);
+  static v8::ModifyCodeGenerationFromStringsResult
+  ModifyCodeGenerationFromStringsCallback(v8::Local<v8::Context> context,
+                                          v8::Local<v8::Value> source,
+                                          bool is_code_like);
 
   static void MessageHandler(v8::Local<v8::Message> message,
                              v8::Local<v8::Value> data);

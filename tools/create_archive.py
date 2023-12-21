@@ -39,8 +39,6 @@ import subprocess
 import sys
 import time
 
-import worker_tools
-
 # Use strict include filter to pass artifacts to Mobile Harness
 TEST_PATTERNS = [
     'content/*',
@@ -49,9 +47,50 @@ TEST_PATTERNS = [
     '*.apk',
     'ds_archive.zip',
     'app_launcher.zip',
-    'crashpad_handler',
+    'native_target/crashpad_handler',
     'elf_loader_sandbox'
 ]
+
+SOURCE_DIR = r'<source_dir>'
+
+# These files are not final build artifacts nor inetermediate build artifacts
+# needed.
+BUILDBOT_INTERMEDIATE_FILE_NAMES_WILDCARDS = (
+    r'gypfiles',
+    r'gyp-win-tool',
+    r'environment.x64',
+    r'environment.x86',
+    r'obj',
+    r'obj.host',
+    r'gradle',  # Android intermediates
+    SOURCE_DIR + r'lib/*.so',
+    r'intermediates',
+    r'*.ninja',
+    r'*.ninja_deps',
+    r'*.ninja_log',
+    r'*.mp4',
+    r'*.deb',
+)
+
+# These files are not final build artifacts. Values should match those in
+# INTERMEDIATE_WILDCARD_FILE_NAMES_RE
+INTERMEDIATE_FILE_NAMES_WILDCARDS = (
+    r'gen',
+    r'gypfiles',
+    r'gyp-win-tool',
+    r'environment.x64',
+    r'environment.x86',
+    r'obj',
+    r'obj.host',
+    r'gradle',  # Android intermediates
+    SOURCE_DIR + r'lib/*.so',
+    r'intermediates',
+    r'*.ninja',
+    r'*.ninja_deps',
+    r'*.ninja_log',
+    r'*.mp4',
+    r'*.deb',
+)
 
 # Reference: https://sevenzip.osdn.jp/chm/cmdline/switches/
 _7Z_PATH = r'%ProgramFiles%\7-Zip\7z.exe'  # pylint:disable=invalid-name
@@ -249,13 +288,11 @@ def _CreateTarCommand(source_path, intermediate_tar_path, patterns,
 
 def _CreateWindowsTarCmd(source_path, intermediate_tar_path, patterns,
                          intermediate):
-  exclude_patterns = worker_tools.INTERMEDIATE_FILE_NAMES_WILDCARDS
+  exclude_patterns = INTERMEDIATE_FILE_NAMES_WILDCARDS
   if intermediate:
-    exclude_patterns = worker_tools.BUILDBOT_INTERMEDIATE_FILE_NAMES_WILDCARDS
-  excludes = ' '.join([
-      f'-xr!{x.replace(worker_tools.SOURCE_DIR, source_path)}'
-      for x in exclude_patterns
-  ])
+    exclude_patterns = BUILDBOT_INTERMEDIATE_FILE_NAMES_WILDCARDS
+  excludes = ' '.join(
+      [f'-xr!{x.replace(SOURCE_DIR, source_path)}' for x in exclude_patterns])
   contents = [
       os.path.join(source_path, pattern)
       for pattern in patterns
@@ -268,11 +305,11 @@ def _CreateWindowsTarCmd(source_path, intermediate_tar_path, patterns,
 
 def _CreateLinuxTarCmd(source_path, intermediate_tar_path, patterns,
                        intermediate):
-  exclude_patterns = worker_tools.INTERMEDIATE_FILE_NAMES_WILDCARDS
+  exclude_patterns = INTERMEDIATE_FILE_NAMES_WILDCARDS
   if intermediate:
-    exclude_patterns = worker_tools.BUILDBOT_INTERMEDIATE_FILE_NAMES_WILDCARDS
+    exclude_patterns = BUILDBOT_INTERMEDIATE_FILE_NAMES_WILDCARDS
   excludes = ' '.join([
-      f'--exclude="{x.replace(worker_tools.SOURCE_DIR, source_path)}"'
+      f'--exclude="{x.replace(SOURCE_DIR, source_path)}"'
       for x in exclude_patterns
   ])
   mode = 'r' if os.path.exists(intermediate_tar_path) else 'c'
@@ -282,7 +319,7 @@ def _CreateLinuxTarCmd(source_path, intermediate_tar_path, patterns,
       if glob.glob(os.path.join(source_path, pattern))
   ]
   files_to_tar = ' '.join(contents)
-  return (f'tar -{mode}vf {intermediate_tar_path} --format=posix '
+  return (f'tar -{mode}f {intermediate_tar_path} --format=posix '
           f'{excludes} {files_to_tar}')
 
 
@@ -290,7 +327,7 @@ def _CreateUntarCommand(intermediate_tar_path):
   if _IsWindows():
     return f'"{_7Z_PATH}" x -bsp1 -aoa {intermediate_tar_path}'
   else:
-    return f'tar -xvf {intermediate_tar_path}'
+    return f'tar -xf {intermediate_tar_path}'
 
 
 def _CreateZipCommand(intermediate_tar_path, dest_path, is_parallel=False):
@@ -372,7 +409,6 @@ def main():
       help='Archives using parallelized methods.')
   args = parser.parse_args()
 
-  worker_tools.MoveToWindowsShortSymlink()
   if args.extract:
     UncompressArchive(args.source_paths[0], args.dest_path, args.parallel)
   else:

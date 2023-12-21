@@ -27,8 +27,8 @@
 #include "glimp/gles/index_data_type.h"
 #include "glimp/gles/pixel_format.h"
 #include "glimp/tracing/tracing.h"
-#include "nb/pointer_arithmetic.h"
 #include "starboard/common/log.h"
+#include "starboard/common/pointer_arithmetic.h"
 #include "starboard/memory.h"
 #include "starboard/once.h"
 
@@ -52,9 +52,9 @@ SbThreadLocalKey GetThreadLocalKey() {
 
 }  // namespace
 
-Context::Context(nb::scoped_ptr<ContextImpl> context_impl,
+Context::Context(std::unique_ptr<ContextImpl> context_impl,
                  Context* share_context)
-    : impl_(context_impl.Pass()),
+    : impl_(std::move(context_impl)),
       context_id_(s_context_id_counter_++),
       current_thread_(kSbThreadInvalid),
       has_been_current_(false),
@@ -65,7 +65,7 @@ Context::Context(nb::scoped_ptr<ContextImpl> context_impl,
       unpack_alignment_(4),
       unpack_row_length_(0),
       error_(GL_NO_ERROR) {
-  SbAtomicNoBarrier_Store(&has_swapped_buffers_, 0);
+  SbAtomicRelease_Store(&has_swapped_buffers_, 0);
   if (share_context != NULL) {
     resource_manager_ = share_context->resource_manager_;
   } else {
@@ -498,10 +498,10 @@ void Context::CullFace(GLenum mode) {
 
 GLuint Context::CreateProgram() {
   GLIMP_TRACE_EVENT0(__FUNCTION__);
-  nb::scoped_ptr<ProgramImpl> program_impl = impl_->CreateProgram();
+  std::unique_ptr<ProgramImpl> program_impl = impl_->CreateProgram();
   SB_DCHECK(program_impl);
 
-  nb::scoped_refptr<Program> program(new Program(program_impl.Pass()));
+  nb::scoped_refptr<Program> program(new Program(std::move(program_impl)));
 
   return resource_manager_->RegisterProgram(program);
 }
@@ -618,7 +618,7 @@ void Context::UseProgram(GLuint program) {
 
 GLuint Context::CreateShader(GLenum type) {
   GLIMP_TRACE_EVENT0(__FUNCTION__);
-  nb::scoped_ptr<ShaderImpl> shader_impl;
+  std::unique_ptr<ShaderImpl> shader_impl;
   if (type == GL_VERTEX_SHADER) {
     shader_impl = impl_->CreateVertexShader();
   } else if (type == GL_FRAGMENT_SHADER) {
@@ -629,7 +629,7 @@ GLuint Context::CreateShader(GLenum type) {
   }
   SB_DCHECK(shader_impl);
 
-  nb::scoped_refptr<Shader> shader(new Shader(shader_impl.Pass(), type));
+  nb::scoped_refptr<Shader> shader(new Shader(std::move(shader_impl), type));
 
   return resource_manager_->RegisterShader(shader);
 }
@@ -693,10 +693,10 @@ void Context::GenBuffers(GLsizei n, GLuint* buffers) {
   }
 
   for (GLsizei i = 0; i < n; ++i) {
-    nb::scoped_ptr<BufferImpl> buffer_impl = impl_->CreateBuffer();
+    std::unique_ptr<BufferImpl> buffer_impl = impl_->CreateBuffer();
     SB_DCHECK(buffer_impl);
 
-    nb::scoped_refptr<Buffer> buffer(new Buffer(buffer_impl.Pass()));
+    nb::scoped_refptr<Buffer> buffer(new Buffer(std::move(buffer_impl)));
 
     buffers[i] = resource_manager_->RegisterBuffer(buffer);
   }
@@ -710,11 +710,12 @@ void Context::GenBuffersForVideoFrame(GLsizei n, GLuint* buffers) {
   }
 
   for (GLsizei i = 0; i < n; ++i) {
-    nb::scoped_ptr<BufferImpl> buffer_impl = impl_->CreateBufferForVideoFrame();
+    std::unique_ptr<BufferImpl> buffer_impl =
+        impl_->CreateBufferForVideoFrame();
     SB_DCHECK(buffer_impl);
 
     buffers[i] = resource_manager_->RegisterBuffer(
-        nb::make_scoped_refptr(new Buffer(buffer_impl.Pass())));
+        nb::make_scoped_refptr(new Buffer(std::move(buffer_impl))));
   }
 }
 
@@ -1134,10 +1135,10 @@ void Context::GenTextures(GLsizei n, GLuint* textures) {
   }
 
   for (GLsizei i = 0; i < n; ++i) {
-    nb::scoped_ptr<TextureImpl> texture_impl = impl_->CreateTexture();
+    std::unique_ptr<TextureImpl> texture_impl = impl_->CreateTexture();
     SB_DCHECK(texture_impl);
 
-    nb::scoped_refptr<Texture> texture(new Texture(texture_impl.Pass()));
+    nb::scoped_refptr<Texture> texture(new Texture(std::move(texture_impl)));
 
     textures[i] = resource_manager_->RegisterTexture(texture);
   }
@@ -1498,7 +1499,8 @@ void Context::TexImage2D(GLenum target,
 
   // The incoming pixel data should be aligned as the client has specified
   // that it will be.
-  SB_DCHECK(nb::IsAligned(pixels, static_cast<size_t>(unpack_alignment_)));
+  SB_DCHECK(starboard::common::IsAligned(
+      pixels, static_cast<size_t>(unpack_alignment_)));
 
   // Determine pitch taking into account glPixelStorei() settings.
   int pitch_in_bytes = GetPitchForTextureData(width, pixel_format);
@@ -1514,7 +1516,7 @@ void Context::TexImage2D(GLenum target,
 
     texture_object->UpdateDataFromBuffer(
         level, 0, 0, width, height, pitch_in_bytes, bound_pixel_unpack_buffer_,
-        nb::AsInteger(pixels));
+        starboard::common::AsInteger(pixels));
   } else if (pixels) {
     if (!texture_object->UpdateData(level, 0, 0, width, height, pitch_in_bytes,
                                     pixels)) {
@@ -1580,7 +1582,8 @@ void Context::TexSubImage2D(GLenum target,
 
   // The incoming pixel data should be aligned as the client has specified
   // that it will be.
-  SB_DCHECK(nb::IsAligned(pixels, static_cast<size_t>(unpack_alignment_)));
+  SB_DCHECK(starboard::common::IsAligned(
+      pixels, static_cast<size_t>(unpack_alignment_)));
 
   // Determine pitch taking into account glPixelStorei() settings.
   int pitch_in_bytes = GetPitchForTextureData(width, pixel_format);
@@ -1594,7 +1597,7 @@ void Context::TexSubImage2D(GLenum target,
 
     texture_object->UpdateDataFromBuffer(
         level, xoffset, yoffset, width, height, pitch_in_bytes,
-        bound_pixel_unpack_buffer_, nb::AsInteger(pixels));
+        bound_pixel_unpack_buffer_, starboard::common::AsInteger(pixels));
   } else {
     if (!texture_object->UpdateData(level, xoffset, yoffset, width, height,
                                     pitch_in_bytes, pixels)) {
@@ -1823,7 +1826,7 @@ void Context::FramebufferRenderbuffer(GLenum target,
     return;
   }
 
-  nb::scoped_refptr<Renderbuffer> renderbuffer_object = NULL;
+  nb::scoped_refptr<Renderbuffer> renderbuffer_object = nullptr;
 
   // Resolve the actual render buffer object to bind if we are not binding
   // render buffer 0, in which case we leave the value to set as NULL.
@@ -2392,7 +2395,7 @@ void Context::SwapBuffers() {
     Flush();
     impl_->SwapBuffers(surface);
     if (!has_swapped_buffers()) {
-      SbAtomicNoBarrier_Increment(&has_swapped_buffers_, 1);
+      SbAtomicBarrier_Increment(&has_swapped_buffers_, 1);
     }
   }
 }
@@ -2536,7 +2539,7 @@ int Context::GetPitchForTextureData(int width, PixelFormat pixel_format) const {
   if (s >= a) {
     return n * len;
   } else {
-    return nb::AlignUp(s * n * len, a) / s;
+    return starboard::common::AlignUp(s * n * len, a) / s;
   }
 }
 

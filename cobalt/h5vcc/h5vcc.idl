@@ -32,15 +32,16 @@
 
 interface H5vcc {
   readonly attribute H5vccAccessibility accessibility;
-  readonly attribute H5vccAccountInfo accountInfo;
   readonly attribute H5vccAudioConfigArray audioConfig;
   readonly attribute H5vccCrashLog crashLog;
   readonly attribute CValView cVal;
+  readonly attribute H5vccMetrics metrics;
   readonly attribute H5vccRuntime runtime;
   readonly attribute H5vccSettings settings;
   readonly attribute H5vccStorage storage;
   readonly attribute H5vccSystem system;
   readonly attribute H5vccTraceEvent traceEvent;
+  readonly attribute H5vccNetLog netLog;
   [Conditional=SB_IS_EVERGREEN]
       readonly attribute H5vccUpdater updater;
 };

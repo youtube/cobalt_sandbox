@@ -20,7 +20,6 @@
 #include "base/observer_list.h"
 #include "base/posix/eintr_wrapper.h"
 #include "base/time/time.h"
-#include "nb/memory_scope.h"
 #include "starboard/common/socket.h"
 #include "starboard/socket_waiter.h"
 
@@ -171,7 +170,6 @@ void MessagePumpIOStarboard::RemoveIOObserver(IOObserver* obs) {
 
 // Reentrant!
 void MessagePumpIOStarboard::Run(Delegate* delegate) {
-  TRACK_MEMORY_SCOPE("MessageLoop");
   AutoReset<bool> auto_reset_in_run(&in_run_, true);
 
   for (;;) {
@@ -217,7 +215,7 @@ void MessagePumpIOStarboard::Run(Delegate* delegate) {
     } else {
       TimeDelta delay = delayed_work_time_ - TimeTicks::Now();
       if (delay > TimeDelta()) {
-        SbSocketWaiterWaitTimed(waiter_, delay.ToSbTime());
+        SbSocketWaiterWaitTimed(waiter_, delay.InMicroseconds());
       } else {
         // It looks like delayed_work_time_ indicates a time in the past, so we
         // need to call DoDelayedWork now.

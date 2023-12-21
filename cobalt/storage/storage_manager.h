@@ -39,7 +39,7 @@ namespace storage {
 // or WithMemoryStore(). The callback to will run on the store thread.
 // Operations on MemoryStore will block the store thread until the savegame
 // is loaded.
-class StorageManager {
+class StorageManager : public base::MessageLoop::DestructionObserver {
  public:
   struct Options {
     Savegame::Options savegame_options;
@@ -51,13 +51,15 @@ class StorageManager {
   explicit StorageManager(const Options& options);
   virtual ~StorageManager();
 
+  // Ensures the StorageManager thread is started.
+  void EnsureStarted();
+
   void WithReadOnlyMemoryStore(const ReadOnlyMemoryStoreCallback& callback);
   void WithMemoryStore(const MemoryStoreCallback& callback);
 
   // Schedule a write of our memory store to disk to happen at some point in the
   // future after a change occurs. Multiple calls to Flush() do not necessarily
-  // result in multiple writes to disk.
-  // This call returns immediately.
+  // result in multiple writes to disk. This call returns immediately.
   void FlushOnChange();
 
   // Triggers a write to disk to happen immediately.  Each call to FlushNow()
@@ -65,7 +67,11 @@ class StorageManager {
   // |callback|, if provided, will be called when the I/O has completed,
   // and will be run on the storage manager's IO thread.
   // This call returns immediately.
-  void FlushNow(base::OnceClosure callback);
+  void FlushNow(base::OnceClosure callback = base::Closure());
+
+  // Triggers a write to disk to happen immediately and doesn't return until the
+  // I/O has completed.
+  void FlushSynchronous();
 
   const Options& options() const { return options_; }
 
@@ -83,6 +89,10 @@ class StorageManager {
   virtual void QueueFlush(base::OnceClosure callback);
 
  private:
+  // Called by the constructor to create the private implementation object and
+  // perform any other initialization required on the dedicated thread.
+  void InitializeTaskInThread();
+
   // Give StorageManagerTest access, so we can more easily test some internals.
   friend class StorageManagerTest;
 
@@ -112,9 +122,9 @@ class StorageManager {
   // This function will immediately the on change timers if they are running.
   void FireRunningOnChangeTimers();
 
-  // Called by the destructor, to ensure we destroy certain objects on the
-  // store thread
-  void OnDestroy();
+  // Ensure that we destroy certain objects on the store thread.
+  // From base::MessageLoop::DestructionObserver.
+  void WillDestroyCurrentMessageLoop() override;
 
   // Configuration options for the Storage Manager.
   Options options_;

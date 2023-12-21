@@ -33,9 +33,6 @@ config("compiler_flags") {
       "-Werror",
       "-fcolor-diagnostics",
 
-      # Default visibility to hidden, to enable dead stripping.
-      "-fvisibility=hidden",
-
       # Warn for implicit type conversions that may change a value.
       "-Wconversion",
 
@@ -65,6 +62,9 @@ config("compiler_flags") {
 
       # Do not warn about unused function params.
       "-Wno-unused-parameter",
+
+      # Default visibility to hidden, to enable dead stripping.
+      "-fvisibility=hidden",
     ]
 
     if (is_gold) {
@@ -102,7 +102,7 @@ config("compiler_flags") {
     # C11 features that are not supported on some platforms' compilers.
     "-std=c99",
   ]
-  cflags_cc = [ "-std=gnu++14" ]
+  cflags_cc = [ "-std=gnu++17" ]
 
   if (use_asan) {
     cflags += [
@@ -139,7 +139,7 @@ config("platform_configuration") {
     "rt",
   ]
 
-  if (!sb_is_evergreen) {
+  if (!sb_is_modular || current_toolchain != cobalt_toolchain) {
     ldflags += [ "-static-libstdc++" ]
   }
 

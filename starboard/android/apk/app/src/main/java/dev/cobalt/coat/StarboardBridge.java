@@ -40,7 +40,6 @@ import android.view.InputDevice;
 import android.view.accessibility.AccessibilityManager;
 import android.view.accessibility.CaptioningManager;
 import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
 import dev.cobalt.account.UserAuthorizer;
 import dev.cobalt.media.AudioOutputManager;
 import dev.cobalt.media.CaptionSettings;
@@ -86,14 +85,18 @@ public class StarboardBridge {
   static {
     // Even though NativeActivity already loads our library from C++,
     // we still have to load it from Java to make JNI calls into it.
-    System.loadLibrary("coat");
+
+    // GameActivity has code to load the libcobalt.so as well.
+    // It reads the library name from the meta data field "android.app.lib_name" in the
+    // AndroidManifest.xml
+    System.loadLibrary("cobalt");
   }
 
   private final Context appContext;
   private final Holder<Activity> activityHolder;
   private final Holder<Service> serviceHolder;
   private final String[] args;
-  private final String startDeepLink;
+  private String startDeepLink;
   private final Runnable stopRequester =
       new Runnable() {
         @Override
@@ -102,12 +105,16 @@ public class StarboardBridge {
         }
       };
 
-  private volatile boolean starboardStopped = false;
+  private volatile boolean starboardApplicationStopped = false;
+  private volatile boolean starboardApplicationReady = false;
 
   private final HashMap<String, CobaltService.Factory> cobaltServiceFactories = new HashMap<>();
   private final HashMap<String, CobaltService> cobaltServices = new HashMap<>();
   private final HashMap<String, String> crashContext = new HashMap<>();
 
+  private static final String AMATI_EXPERIENCE_FEATURE =
+      "com.google.android.feature.AMATI_EXPERIENCE";
+  private final boolean isAmatiDevice;
   private static final TimeZone DEFAULT_TIME_ZONE = TimeZone.getTimeZone("America/Los_Angeles");
   private final long timeNanosecondsPerMicrosecond = 1000;
 
@@ -139,6 +146,7 @@ public class StarboardBridge {
     this.resourceOverlay = new ResourceOverlay(appContext);
     this.advertisingId = new AdvertisingId(appContext);
     this.volumeStateReceiver = new VolumeStateReceiver(appContext);
+    this.isAmatiDevice = appContext.getPackageManager().hasSystemFeature(AMATI_EXPERIENCE_FEATURE);
   }
 
   private native boolean nativeInitialize();
@@ -159,7 +167,7 @@ public class StarboardBridge {
   }
 
   protected void onActivityDestroy(Activity activity) {
-    if (starboardStopped) {
+    if (starboardApplicationStopped) {
       // We can't restart the starboard app, so kill the process for a clean start next time.
       Log.i(TAG, "Activity destroyed after shutdown; killing app.");
       System.exit(0);
@@ -258,7 +266,7 @@ public class StarboardBridge {
   @SuppressWarnings("unused")
   @UsedByNative
   protected void afterStopped() {
-    starboardStopped = true;
+    starboardApplicationStopped = true;
     ttsHelper.shutdown();
     userAuthorizer.shutdown();
     for (CobaltService service : cobaltServices.values()) {
@@ -278,8 +286,21 @@ public class StarboardBridge {
 
   @SuppressWarnings("unused")
   @UsedByNative
+  protected void starboardApplicationStarted() {
+    starboardApplicationReady = true;
+  }
+
+  @SuppressWarnings("unused")
+  @UsedByNative
+  protected void starboardApplicationStopping() {
+    starboardApplicationReady = false;
+    starboardApplicationStopped = true;
+  }
+
+  @SuppressWarnings("unused")
+  @UsedByNative
   public void requestStop(int errorLevel) {
-    if (!starboardStopped) {
+    if (starboardApplicationReady) {
       Log.i(TAG, "Request to stop");
       nativeStopApp(errorLevel);
     }
@@ -298,7 +319,10 @@ public class StarboardBridge {
   }
 
   public boolean onSearchRequested() {
-    return nativeOnSearchRequested();
+    if (starboardApplicationReady) {
+      return nativeOnSearchRequested();
+    }
+    return false;
   }
 
   private native boolean nativeOnSearchRequested();
@@ -342,7 +366,13 @@ public class StarboardBridge {
 
   /** Sends an event to the web app to navigate to the given URL */
   public void handleDeepLink(String url) {
-    nativeHandleDeepLink(url);
+    if (starboardApplicationReady) {
+      nativeHandleDeepLink(url);
+    } else {
+      // If this deep link event is received before the starboard application
+      // is ready, it replaces the start deep link.
+      startDeepLink = url;
+    }
   }
 
   private native void nativeHandleDeepLink(String url);
@@ -525,23 +555,12 @@ public class StarboardBridge {
   @SuppressWarnings("unused")
   @UsedByNative
   public boolean isMicrophoneDisconnected() {
-    if (Build.VERSION.SDK_INT >= 23) {
-      return !isMicrophoneConnectedV23();
-    } else {
-      // There is no way of checking for a connected microphone/device before API 23, so cannot
-      // guarantee that no microphone is connected.
-      return false;
-    }
-  }
-
-  @RequiresApi(23)
-  private boolean isMicrophoneConnectedV23() {
     // A check specifically for microphones is not available before API 28, so it is assumed that a
     // connected input audio device is a microphone.
     AudioManager audioManager = (AudioManager) appContext.getSystemService(AUDIO_SERVICE);
     AudioDeviceInfo[] devices = audioManager.getDevices(GET_DEVICES_INPUTS);
     if (devices.length > 0) {
-      return true;
+      return false;
     }
 
     // fallback to check for BT voice capable RCU
@@ -551,10 +570,10 @@ public class StarboardBridge {
       final InputDevice inputDevice = inputManager.getInputDevice(inputDeviceId);
       final boolean hasMicrophone = inputDevice.hasMicrophone();
       if (hasMicrophone) {
-        return true;
+        return false;
       }
     }
-    return false;
+    return true;
   }
 
   /**
@@ -575,34 +594,6 @@ public class StarboardBridge {
   @SuppressWarnings("unused")
   @UsedByNative
   boolean isCurrentNetworkWireless() {
-    if (Build.VERSION.SDK_INT >= 23) {
-      return isCurrentNetworkWirelessV23();
-    } else {
-      return isCurrentNetworkWirelessDeprecated();
-    }
-  }
-
-  @SuppressWarnings("deprecation")
-  private boolean isCurrentNetworkWirelessDeprecated() {
-    ConnectivityManager connMgr =
-        (ConnectivityManager) appContext.getSystemService(Context.CONNECTIVITY_SERVICE);
-    android.net.NetworkInfo activeInfo = connMgr.getActiveNetworkInfo();
-    if (activeInfo == null) {
-      return false;
-    }
-    switch (activeInfo.getType()) {
-      case ConnectivityManager.TYPE_ETHERNET:
-        return false;
-      default:
-        // Consider anything that's not definitely wired to be wireless.
-        // For example, TYPE_VPN is ambiguous, but it's highly likely to be
-        // over wifi.
-        return true;
-    }
-  }
-
-  @RequiresApi(23)
-  private boolean isCurrentNetworkWirelessV23() {
     ConnectivityManager connMgr =
         (ConnectivityManager) appContext.getSystemService(Context.CONNECTIVITY_SERVICE);
     Network activeNetwork = connMgr.getActiveNetwork();
@@ -740,7 +731,6 @@ public class StarboardBridge {
   }
 
   /** Return supported hdr types. */
-  @RequiresApi(24)
   @SuppressWarnings("unused")
   @UsedByNative
   public int[] getSupportedHdrTypes() {
@@ -793,6 +783,10 @@ public class StarboardBridge {
     return service;
   }
 
+  public CobaltService getOpenedCobaltService(String serviceName) {
+    return cobaltServices.get(serviceName);
+  }
+
   @SuppressWarnings("unused")
   @UsedByNative
   void closeCobaltService(String serviceName) {
@@ -839,5 +833,17 @@ public class StarboardBridge {
 
   public void registerCrashContextUpdateHandler(CrashContextUpdateHandler handler) {
     this.crashContextUpdateHandler = handler;
+  }
+
+  @SuppressWarnings("unused")
+  @UsedByNative
+  protected boolean getIsAmatiDevice() {
+    return this.isAmatiDevice;
+  }
+
+  @SuppressWarnings("unused")
+  @UsedByNative
+  protected String getBuildFingerprint() {
+    return Build.FINGERPRINT;
   }
 }

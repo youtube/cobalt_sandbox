@@ -33,7 +33,7 @@ if (nasm_exists && (current_cpu == "x86" || current_cpu == "x64")) {
   if (is_starboard) {
     import("//starboard/build/nasm_assemble.gni")
   } else {
-    import("//third_party/nasm/nasm_assemble.gni")
+  import("//third_party/nasm/nasm_assemble.gni")
   }
 
   nasm_assemble("simd_asm") {
@@ -145,9 +145,9 @@ if (nasm_exists && (current_cpu == "x86" || current_cpu == "x64")) {
 }
 
 # TODO(b/206642994): look into whether we should condition on the
-# floating_point_fpu SABI variable, rather than sb_is_evergreen, here as we did
+# floating_point_fpu SABI variable, rather than sb_is_modular, here as we did
 # in third_party/libjpeg-turbo/libjpeg.gyp.
-if (is_starboard && sb_is_evergreen && current_cpu == "arm" && arm_use_neon) {
+if (is_starboard && sb_is_modular && current_cpu == "arm" && arm_use_neon) {
   config("simd_arm_config") {
     cflags = [ "-mfpu=neon" ]
   }
@@ -157,7 +157,7 @@ static_library("simd") {
   include_dirs = [ "." ]
   deps = [ ":libjpeg_headers" ]
   if (!is_starboard) {
-    defines = [ "MANGLE_JPEG_NAMES" ]
+  defines = [ "MANGLE_JPEG_NAMES" ]
   } else {
     defines = []
   }
@@ -201,11 +201,11 @@ static_library("simd") {
     defines += [ "NEON_INTRINSICS" ]
 
     if (!is_starboard) {
-      configs -= [ "//build/config/compiler:default_optimization" ]
+    configs -= [ "//build/config/compiler:default_optimization" ]
     }
     configs += [ "//build/config/compiler:optimize_speed" ]
 
-    if (is_starboard && sb_is_evergreen && current_cpu == "arm") {
+    if (is_starboard && sb_is_modular && current_cpu == "arm") {
       configs += [ ":simd_arm_config" ]
     }
   } else {
@@ -220,7 +220,7 @@ static_library("simd") {
 config("libjpeg_config") {
   include_dirs = [ "." ]
   if (!is_starboard) {
-    defines = [ "MANGLE_JPEG_NAMES" ]
+  defines = [ "MANGLE_JPEG_NAMES" ]
   }
 }
 
@@ -316,7 +316,7 @@ static_library("libjpeg") {
   # TODO(b/236258535): Enable neon instructions once the code is updated
   # to use SbCPUFeatures() at runtime.
   if ((is_msan && (current_cpu == "x86" || current_cpu == "x64")) ||
-      (is_starboard && sb_is_evergreen)) {
+      (is_starboard && sb_is_modular)) {
     sources += [ "jsimd_none.c" ]
   } else {
     public_deps += [ ":simd" ]

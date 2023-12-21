@@ -200,14 +200,13 @@ GraphicsSystemEGL::GraphicsSystemEGL(
 }
 
 GraphicsSystemEGL::~GraphicsSystemEGL() {
-  resource_context_.reset();
-
   if (window_surface_ != EGL_NO_SURFACE) {
     EGL_CALL_SIMPLE(eglDestroySurface(display_, window_surface_));
   }
 
   EGL_CALL_SIMPLE(eglTerminate(display_));
-  LOG(INFO) << "eglTerminate returned " << EGL_CALL_SIMPLE(eglGetError());
+  EGLint result = EGL_CALL_SIMPLE(eglGetError());
+  if (result != EGL_SUCCESS) LOG(INFO) << "eglTerminate returned " << result;
 }
 
 std::unique_ptr<Display> GraphicsSystemEGL::CreateDisplay(
@@ -234,9 +233,8 @@ std::unique_ptr<GraphicsContext> GraphicsSystemEGL::CreateGraphicsContext() {
   // that data from graphics contexts created through this method, we must
   // enable sharing between them and the resource context, which is why we
   // must pass it in here.
-  ResourceContext* resource_context = NULL;
   return std::unique_ptr<GraphicsContext>(
-      new GraphicsContextEGL(this, display_, config_, resource_context));
+      new GraphicsContextEGL(this, display_, config_));
 }
 
 std::unique_ptr<TextureDataEGL> GraphicsSystemEGL::AllocateTextureData(

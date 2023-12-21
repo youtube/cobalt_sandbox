@@ -23,15 +23,14 @@
 #include "base/files/file_util.h"
 #include "base/values.h"
 #include "cobalt/cache/cache.h"
+#include "cobalt/network/disk_cache/cobalt_backend_impl.h"
+#include "cobalt/network/disk_cache/resource_type.h"
 #include "cobalt/persistent_storage/persistent_settings.h"
 #include "cobalt/storage/storage_manager.h"
-#include "cobalt/worker/service_worker_consts.h"
+#include "cobalt/worker/worker_consts.h"
 #include "net/base/completion_once_callback.h"
-#include "net/disk_cache/cobalt/cobalt_backend_impl.h"
-#include "net/disk_cache/cobalt/resource_type.h"
 #include "net/http/http_cache.h"
 #include "net/http/http_transaction_factory.h"
-#include "starboard/common/file.h"
 #include "starboard/common/string.h"
 
 namespace cobalt {
@@ -69,29 +68,34 @@ H5vccStorageSetQuotaResponse SetQuotaResponse(std::string error = "",
   return response;
 }
 
-void DeleteCacheResourceTypeDirectory(disk_cache::ResourceType type) {
-  auto metadata = disk_cache::kTypeMetadata[type];
+void ClearDirectory(const base::FilePath& file_path) {
+  base::DeleteFile(file_path, /*recursive=*/true);
+  base::CreateDirectory(file_path);
+}
+
+void DeleteCacheResourceTypeDirectory(network::disk_cache::ResourceType type) {
+  std::string directory = network::disk_cache::defaults::GetSubdirectory(type);
   std::vector<char> cache_dir(kSbFileMaxPath + 1, 0);
   SbSystemGetPath(kSbSystemPathCacheDirectory, cache_dir.data(),
                   kSbFileMaxPath);
   base::FilePath cache_type_dir =
-      base::FilePath(cache_dir.data())
-          .Append(FILE_PATH_LITERAL(metadata.directory));
-  starboard::SbFileDeleteRecursive(cache_type_dir.value().data(), true);
+      base::FilePath(cache_dir.data()).Append(FILE_PATH_LITERAL(directory));
+  ClearDirectory(cache_type_dir);
 }
 
 void ClearCacheHelper(disk_cache::Backend* backend) {
   backend->DoomAllEntries(base::DoNothing());
 
 
-  for (int type_index = 0; type_index < disk_cache::kTypeCount; type_index++) {
+  for (int type_index = 0; type_index < network::disk_cache::kTypeCount;
+       type_index++) {
     DeleteCacheResourceTypeDirectory(
-        static_cast<disk_cache::ResourceType>(type_index));
+        static_cast<network::disk_cache::ResourceType>(type_index));
   }
 }
 
-void ClearCacheOfTypeHelper(disk_cache::ResourceType type,
-                            disk_cache::CobaltBackendImpl* backend) {
+void ClearCacheOfTypeHelper(network::disk_cache::ResourceType type,
+                            network::disk_cache::CobaltBackendImpl* backend) {
   backend->DoomAllEntriesOfType(type, base::DoNothing());
 
   DeleteCacheResourceTypeDirectory(type);
@@ -128,10 +132,11 @@ void H5vccStorage::ClearCookies() {
 
 void H5vccStorage::Flush(const base::Optional<bool>& sync) {
   if (sync.value_or(false) == true) {
-    DLOG(WARNING) << "Synchronous flush is not supported.";
+    // Synchronously wait for storage to flush before returning.
+    network_module_->storage_manager()->FlushSynchronous();
+  } else {
+    network_module_->storage_manager()->FlushNow();
   }
-
-  network_module_->storage_manager()->FlushNow(base::Closure());
 }
 
 bool H5vccStorage::GetCookiesEnabled() {
@@ -149,21 +154,17 @@ H5vccStorageWriteTestResponse H5vccStorage::WriteTest(uint32 test_size,
   SbSystemGetPath(kSbSystemPathCacheDirectory, cache_dir.data(),
                   kSbFileMaxPath);
 
-  // Delete the contents of cache_dir.
-  starboard::SbFileDeleteRecursive(cache_dir.data(), true);
+  ClearDirectory(base::FilePath(cache_dir.data()));
 
   // Try to Create the test_file.
-  std::string test_file_path =
-      std::string(cache_dir.data()) + kSbFileSepString + kTestFileName;
-  SbFileError test_file_error;
-  starboard::ScopedFile test_file(test_file_path.c_str(),
-                                  kSbFileOpenAlways | kSbFileWrite, NULL,
-                                  &test_file_error);
+  base::FilePath test_file_path =
+      base::FilePath(cache_dir.data()).Append(kTestFileName);
+  base::File test_file(test_file_path,
+                       base::File::FLAG_OPEN_ALWAYS | base::File::FLAG_WRITE);
 
-  if (test_file_error != kSbFileOk) {
-    return WriteTestResponse(
-        starboard::FormatString("SbFileError: %d while opening ScopedFile: %s",
-                                test_file_error, test_file_path.c_str()));
+  if (!test_file.IsValid()) {
+    return WriteTestResponse(starboard::FormatString(
+        "Error while opening ScopedFile: %s", test_file_path.value().c_str()));
   }
 
   // Repeatedly write test_string to test_size bytes of write_buffer.
@@ -179,11 +180,11 @@ H5vccStorageWriteTestResponse H5vccStorage::WriteTest(uint32 test_size,
   uint32 total_bytes_written = 0;
 
   do {
-    auto bytes_written =
-        test_file.Write(write_buf.data() + total_bytes_written,
-                        std::min(kBufferSize, test_size - total_bytes_written));
+    auto bytes_written = test_file.WriteAtCurrentPosNoBestEffort(
+        write_buf.data() + total_bytes_written,
+        std::min(kBufferSize, test_size - total_bytes_written));
     if (bytes_written <= 0) {
-      SbFileDelete(test_file_path.c_str());
+      base::DeleteFile(test_file_path, /*recursive=*/false);
       return WriteTestResponse("SbWrite -1 return value error");
     }
     total_bytes_written += bytes_written;
@@ -200,17 +201,13 @@ H5vccStorageVerifyTestResponse H5vccStorage::VerifyTest(
   SbSystemGetPath(kSbSystemPathCacheDirectory, cache_dir.data(),
                   kSbFileMaxPath);
 
-  std::string test_file_path =
-      std::string(cache_dir.data()) + kSbFileSepString + kTestFileName;
-  SbFileError test_file_error;
-  starboard::ScopedFile test_file(test_file_path.c_str(),
-                                  kSbFileOpenOnly | kSbFileRead, NULL,
-                                  &test_file_error);
-
-  if (test_file_error != kSbFileOk) {
-    return VerifyTestResponse(
-        starboard::FormatString("SbFileError: %d while opening ScopedFile: %s",
-                                test_file_error, test_file_path.c_str()));
+  base::FilePath test_file_path =
+      base::FilePath(cache_dir.data()).Append(kTestFileName);
+  base::File test_file(test_file_path,
+                       base::File::FLAG_OPEN | base::File::FLAG_READ);
+  if (!test_file.IsValid()) {
+    return VerifyTestResponse(starboard::FormatString(
+        "Error while opening ScopedFile: %s", test_file_path.value().c_str()));
   }
 
   // Incremental Reads of test_data, copies SbReadAll, using a maximum
@@ -219,10 +216,10 @@ H5vccStorageVerifyTestResponse H5vccStorage::VerifyTest(
 
   do {
     auto read_buffer = std::make_unique<char[]>(kBufferSize);
-    auto bytes_read = test_file.Read(
+    auto bytes_read = test_file.ReadAtCurrentPosNoBestEffort(
         read_buffer.get(), std::min(kBufferSize, test_size - total_bytes_read));
     if (bytes_read <= 0) {
-      SbFileDelete(test_file_path.c_str());
+      base::DeleteFile(test_file_path, /*recursive=*/false);
       return VerifyTestResponse("SbRead -1 return value error");
     }
 
@@ -239,12 +236,12 @@ H5vccStorageVerifyTestResponse H5vccStorage::VerifyTest(
   } while (total_bytes_read < test_size);
 
   if (total_bytes_read != test_size) {
-    SbFileDelete(test_file_path.c_str());
+    base::DeleteFile(test_file_path, /*recursive=*/false);
     return VerifyTestResponse(
         "File test data size does not match kTestDataSize");
   }
 
-  SbFileDelete(test_file_path.c_str());
+  base::DeleteFile(test_file_path, /*recursive=*/false);
   return VerifyTestResponse("", true, total_bytes_read);
 }
 
@@ -291,31 +288,36 @@ H5vccStorageSetQuotaResponse H5vccStorage::SetQuota(
   ValidatedCacheBackend();
 
   // Write to persistent storage with the new quota values.
-  SetAndSaveQuotaForBackend(disk_cache::kOther,
+  SetAndSaveQuotaForBackend(network::disk_cache::kOther,
                             static_cast<uint32_t>(quota.other()));
-  SetAndSaveQuotaForBackend(disk_cache::kHTML,
+  SetAndSaveQuotaForBackend(network::disk_cache::kHTML,
                             static_cast<uint32_t>(quota.html()));
-  SetAndSaveQuotaForBackend(disk_cache::kCSS,
+  SetAndSaveQuotaForBackend(network::disk_cache::kCSS,
                             static_cast<uint32_t>(quota.css()));
-  SetAndSaveQuotaForBackend(disk_cache::kImage,
+  SetAndSaveQuotaForBackend(network::disk_cache::kImage,
                             static_cast<uint32_t>(quota.image()));
-  SetAndSaveQuotaForBackend(disk_cache::kFont,
+  SetAndSaveQuotaForBackend(network::disk_cache::kFont,
                             static_cast<uint32_t>(quota.font()));
-  SetAndSaveQuotaForBackend(disk_cache::kSplashScreen,
+  SetAndSaveQuotaForBackend(network::disk_cache::kSplashScreen,
                             static_cast<uint32_t>(quota.splash()));
-  SetAndSaveQuotaForBackend(disk_cache::kUncompiledScript,
+  SetAndSaveQuotaForBackend(network::disk_cache::kUncompiledScript,
                             static_cast<uint32_t>(quota.uncompiled_js()));
-  SetAndSaveQuotaForBackend(disk_cache::kCompiledScript,
+  SetAndSaveQuotaForBackend(network::disk_cache::kCompiledScript,
                             static_cast<uint32_t>(quota.compiled_js()));
-  SetAndSaveQuotaForBackend(disk_cache::kCacheApi,
+  SetAndSaveQuotaForBackend(network::disk_cache::kCacheApi,
                             static_cast<uint32_t>(quota.cache_api()));
-  SetAndSaveQuotaForBackend(disk_cache::kServiceWorkerScript,
+  SetAndSaveQuotaForBackend(network::disk_cache::kServiceWorkerScript,
                             static_cast<uint32_t>(quota.service_worker_js()));
   return SetQuotaResponse("", true);
 }
 
-void H5vccStorage::SetAndSaveQuotaForBackend(disk_cache::ResourceType type,
-                                             uint32_t bytes) {
+void H5vccStorage::SetAndSaveQuotaForBackend(
+    network::disk_cache::ResourceType type, uint32_t bytes) {
+  if (network::disk_cache::settings::GetQuota(type) == bytes) {
+    return;
+  }
+  network::disk_cache::settings::SetQuota(type, bytes);
+  network_module_->url_request_context()->UpdateCacheSizeSetting(type, bytes);
   if (cache_backend_) {
     cache_backend_->UpdateSizes(type, bytes);
 
@@ -335,21 +337,26 @@ H5vccStorageResourceTypeQuotaBytesDictionary H5vccStorage::GetQuota() {
     return quota;
   }
 
-  quota.set_other(cache_backend_->GetQuota(disk_cache::kOther));
-  quota.set_html(cache_backend_->GetQuota(disk_cache::kHTML));
-  quota.set_css(cache_backend_->GetQuota(disk_cache::kCSS));
-  quota.set_image(cache_backend_->GetQuota(disk_cache::kImage));
-  quota.set_font(cache_backend_->GetQuota(disk_cache::kFont));
-  quota.set_splash(cache_backend_->GetQuota(disk_cache::kSplashScreen));
-  quota.set_uncompiled_js(
-      cache_backend_->GetQuota(disk_cache::kUncompiledScript));
-  quota.set_compiled_js(
-      cobalt::cache::Cache::GetInstance()
-          ->GetMaxCacheStorageInBytes(disk_cache::kCompiledScript)
-          .value());
-  quota.set_cache_api(cache_backend_->GetQuota(disk_cache::kCacheApi));
-  quota.set_service_worker_js(
-      cache_backend_->GetQuota(disk_cache::kServiceWorkerScript));
+  quota.set_other(
+      network::disk_cache::settings::GetQuota(network::disk_cache::kOther));
+  quota.set_html(
+      network::disk_cache::settings::GetQuota(network::disk_cache::kHTML));
+  quota.set_css(
+      network::disk_cache::settings::GetQuota(network::disk_cache::kCSS));
+  quota.set_image(
+      network::disk_cache::settings::GetQuota(network::disk_cache::kImage));
+  quota.set_font(
+      network::disk_cache::settings::GetQuota(network::disk_cache::kFont));
+  quota.set_splash(network::disk_cache::settings::GetQuota(
+      network::disk_cache::kSplashScreen));
+  quota.set_uncompiled_js(network::disk_cache::settings::GetQuota(
+      network::disk_cache::kUncompiledScript));
+  quota.set_compiled_js(network::disk_cache::settings::GetQuota(
+      network::disk_cache::kCompiledScript));
+  quota.set_cache_api(
+      network::disk_cache::settings::GetQuota(network::disk_cache::kCacheApi));
+  quota.set_service_worker_js(network::disk_cache::settings::GetQuota(
+      network::disk_cache::kServiceWorkerScript));
 
   uint32_t max_quota_size = 24 * 1024 * 1024;
 #if SB_API_VERSION >= 14
@@ -366,10 +373,10 @@ H5vccStorageResourceTypeQuotaBytesDictionary H5vccStorage::GetQuota() {
 
 void H5vccStorage::EnableCache() {
   persistent_settings_->SetPersistentSetting(
-      disk_cache::kCacheEnabledPersistentSettingsKey,
+      network::disk_cache::kCacheEnabledPersistentSettingsKey,
       std::make_unique<base::Value>(true));
 
-  cobalt::cache::Cache::GetInstance()->set_enabled(true);
+  network::disk_cache::settings::SetCacheEnabled(true);
 
   if (http_cache_) {
     http_cache_->set_mode(net::HttpCache::Mode::NORMAL);
@@ -378,10 +385,10 @@ void H5vccStorage::EnableCache() {
 
 void H5vccStorage::DisableCache() {
   persistent_settings_->SetPersistentSetting(
-      disk_cache::kCacheEnabledPersistentSettingsKey,
+      network::disk_cache::kCacheEnabledPersistentSettingsKey,
       std::make_unique<base::Value>(false));
 
-  cobalt::cache::Cache::GetInstance()->set_enabled(false);
+  network::disk_cache::settings::SetCacheEnabled(false);
 
   if (http_cache_) {
     http_cache_->set_mode(net::HttpCache::Mode::DISABLE);
@@ -398,13 +405,13 @@ void H5vccStorage::ClearCache() {
 }
 
 void H5vccStorage::ClearCacheOfType(int type_index) {
-  if (type_index < 0 || type_index > disk_cache::kTypeCount) {
-    DLOG(INFO)
-        << "Invalid type_index, out of bounds of disk_cache::kTypeMetadata";
+  if (type_index < 0 || type_index > network::disk_cache::kTypeCount) {
+    DLOG(INFO) << "Invalid type_index, out of bounds of "
+                  "network::disk_cache::kTypeMetadata";
     return;
   }
-  disk_cache::ResourceType type =
-      static_cast<disk_cache::ResourceType>(type_index);
+  network::disk_cache::ResourceType type =
+      static_cast<network::disk_cache::ResourceType>(type_index);
   if (ValidatedCacheBackend()) {
     network_module_->task_runner()->PostTask(
         FROM_HERE, base::Bind(&ClearCacheOfTypeHelper, type,
@@ -414,16 +421,16 @@ void H5vccStorage::ClearCacheOfType(int type_index) {
 }
 
 void H5vccStorage::ClearServiceWorkerCache() {
-  ClearCacheOfType(
-      static_cast<int>(disk_cache::ResourceType::kServiceWorkerScript));
+  ClearCacheOfType(static_cast<int>(
+      network::disk_cache::ResourceType::kServiceWorkerScript));
   // Add deletion of service worker persistent settings file
   std::vector<char> storage_dir(kSbFileMaxPath, 0);
   SbSystemGetPath(kSbSystemPathCacheDirectory, storage_dir.data(),
                   kSbFileMaxPath);
-  std::string service_worker_file_path =
-      std::string(storage_dir.data()) + kSbFileSepString +
-      worker::ServiceWorkerConsts::kSettingsJson;
-  SbFileDelete(service_worker_file_path.c_str());
+  base::FilePath service_worker_file_path =
+      base::FilePath(storage_dir.data())
+          .Append(worker::WorkerConsts::kSettingsJson);
+  base::DeleteFile(service_worker_file_path, /*recursive=*/false);
 }
 
 bool H5vccStorage::ValidatedCacheBackend() {
@@ -433,7 +440,7 @@ bool H5vccStorage::ValidatedCacheBackend() {
   if (cache_backend_) {
     return true;
   }
-  cache_backend_ = static_cast<disk_cache::CobaltBackendImpl*>(
+  cache_backend_ = static_cast<network::disk_cache::CobaltBackendImpl*>(
       http_cache_->GetCurrentBackend());
   return cache_backend_ != nullptr;
 }

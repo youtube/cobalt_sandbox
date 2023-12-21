@@ -71,35 +71,34 @@ class PersistentSettings : public base::MessageLoop::DestructionObserver {
 
   void SetPersistentSetting(
       const std::string& key, std::unique_ptr<base::Value> value,
-      base::OnceClosure closure = std::move(base::DoNothing()));
+      base::OnceClosure closure = std::move(base::DoNothing()),
+      bool blocking = false);
 
   void RemovePersistentSetting(
       const std::string& key,
-      base::OnceClosure closure = std::move(base::DoNothing()));
+      base::OnceClosure closure = std::move(base::DoNothing()),
+      bool blocking = false);
 
   void DeletePersistentSettings(
       base::OnceClosure closure = std::move(base::DoNothing()));
 
  private:
   // Called by the constructor to initialize pref_store_ from
-  // the dedicated thread_ as a writeable JSONPrefStore.
-  void InitializeWriteablePrefStore();
+  // the dedicated thread_ as a JSONPrefStore.
+  void InitializePrefStore();
 
   void ValidatePersistentSettingsHelper();
 
   void SetPersistentSettingHelper(const std::string& key,
                                   std::unique_ptr<base::Value> value,
-                                  base::OnceClosure closure);
+                                  base::OnceClosure closure, bool blocking);
 
   void RemovePersistentSettingHelper(const std::string& key,
-                                     base::OnceClosure closure);
+                                     base::OnceClosure closure, bool blocking);
 
   void DeletePersistentSettingsHelper(base::OnceClosure closure);
 
-  scoped_refptr<PersistentPrefStore> writeable_pref_store() {
-    writeable_pref_store_initialized_.Wait();
-    return pref_store_;
-  }
+  void CommitPendingWrite(bool blocking);
 
   // Persistent settings file path.
   std::string persistent_settings_file_;
@@ -117,7 +116,7 @@ class PersistentSettings : public base::MessageLoop::DestructionObserver {
 
   // This event is used to signal when Initialize has been called and
   // pref_store_ mutations can now occur.
-  base::WaitableEvent writeable_pref_store_initialized_ = {
+  base::WaitableEvent pref_store_initialized_ = {
       base::WaitableEvent::ResetPolicy::MANUAL,
       base::WaitableEvent::InitialState::NOT_SIGNALED};
 

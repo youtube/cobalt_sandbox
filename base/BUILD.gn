@@ -31,9 +31,9 @@ if (!is_starboard) {
   import("//build/config/allocator.gni")
   import("//build/config/jumbo.gni")
   import("//build/timestamp.gni")
-  import("//testing/libfuzzer/fuzzer_test.gni")
-  import("//testing/test.gni")
 }
+import("//testing/libfuzzer/fuzzer_test.gni")
+import("//testing/test.gni")
 
 declare_args() {
   # Indicates if the Location object contains the source code information
@@ -1215,8 +1215,6 @@ component("base") {
       "memory/platform_shared_memory_region.h",
       "memory/protected_memory_cfi.h",
       "memory/protected_memory_win.cc",
-      "memory/shared_memory_handle.cc",
-      "memory/shared_memory_handle.h",
       "memory/shared_memory_helper.cc",
       "memory/shared_memory_helper.h",
       "memory/shared_memory_mapping.cc",
@@ -1239,12 +1237,6 @@ component("base") {
       "message_loop/message_pump_mac.mm",
       "message_loop/message_pump_win.cc",
       "message_loop/message_pump_win.h",
-      "metrics/field_trial.cc",
-      "metrics/field_trial.h",
-      "metrics/field_trial_param_associator.cc",
-      "metrics/field_trial_param_associator.h",
-      "metrics/field_trial_params.cc",
-      "metrics/field_trial_params.h",
       "native_library.cc",
       "native_library.h",
       "native_library_ios.mm",
@@ -1568,8 +1560,8 @@ component("base") {
     ]
     public_configs = [ ":base_public_defines" ]
     deps += [
-      "//nb",
-      "//starboard",
+      "//starboard/common",
+      "//starboard:starboard_group",
       "//starboard/client_porting/eztime",
     ]
     deps -= [
@@ -1590,7 +1582,7 @@ component("base") {
     # TODO(b/206642994): see if we can remove this condition. It's added for now
     # because linking atomic leads to linker errors for evergreen on arm-hardfp,
     # and it's apparently not really needed (i.e., we can build without it).
-    if (!is_starboard || !sb_is_evergreen) {
+    if (!is_starboard || !sb_is_modular) {
       libs += [ "atomic" ]
     }
   }

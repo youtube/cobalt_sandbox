@@ -25,7 +25,6 @@
 #include "base/strings/string_split.h"
 #include "base/synchronization/waitable_event.h"
 #include "cobalt/media/base/format_support_query_metrics.h"
-#include "nb/memory_scope.h"
 #include "starboard/common/string.h"
 #include "starboard/media.h"
 #include "starboard/window.h"
@@ -189,12 +188,17 @@ bool MediaModule::SetConfiguration(const std::string& name, int32 value) {
     LOG(INFO) << (allow_batched_sample_write_ ? "Enabling" : "Disabling")
               << " batched sample write.";
     return true;
+  } else if (name == "ForcePunchOutByDefault") {
+    force_punch_out_by_default_ = value;
+    LOG(INFO) << "Force punch out by default : "
+              << (force_punch_out_by_default_ ? "enabled" : "disabled");
+    return true;
   } else if (name == "EnableMetrics") {
     sbplayer_interface_->EnableCValStats(value);
     LOG(INFO) << (value ? "Enabling" : "Disabling")
               << " media metrics collection.";
     return true;
-#if SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#if SB_API_VERSION >= 15
   } else if (name == "AudioWriteDurationLocal" && value > 0) {
     audio_write_duration_local_ = value;
     LOG(INFO) << "Set AudioWriteDurationLocal to "
@@ -205,14 +209,14 @@ bool MediaModule::SetConfiguration(const std::string& name, int32 value) {
     LOG(INFO) << "Set AudioWriteDurationRemote to "
               << audio_write_duration_remote_;
     return true;
-#endif  // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#endif  // SB_API_VERSION >= 15
   }
+
   return false;
 }
 
 std::unique_ptr<WebMediaPlayer> MediaModule::CreateWebMediaPlayer(
     WebMediaPlayerClient* client) {
-  TRACK_MEMORY_SCOPE("Media");
   SbWindow window = kSbWindowInvalid;
   if (system_window_) {
     window = system_window_->GetSbWindow();
@@ -223,10 +227,10 @@ std::unique_ptr<WebMediaPlayer> MediaModule::CreateWebMediaPlayer(
       base::Bind(&MediaModule::GetSbDecodeTargetGraphicsContextProvider,
                  base::Unretained(this)),
       client, this, options_.allow_resume_after_suspend,
-      allow_batched_sample_write_,
-#if SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+      allow_batched_sample_write_, force_punch_out_by_default_,
+#if SB_API_VERSION >= 15
       audio_write_duration_local_, audio_write_duration_remote_,
-#endif  // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#endif  // SB_API_VERSION >= 15
       &media_log_));
 }
 

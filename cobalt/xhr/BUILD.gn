@@ -41,11 +41,11 @@ static_library("xhr") {
     "//cobalt/base",
     "//cobalt/dom_parser",
     "//cobalt/loader",
+    "//cobalt/network",
     "//cobalt/script",
     "//cobalt/web",
-    "//nb",
     "//net",
-    "//starboard",
+    "//starboard:starboard_group",
     "//third_party/protobuf:protobuf_lite",
     "//url",
   ]

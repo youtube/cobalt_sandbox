@@ -16,6 +16,7 @@
 
 #include <math.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #define XK_3270  // for XK_3270_BackTab
 #include <X11/XF86keysym.h>
@@ -33,7 +34,6 @@
 #include "starboard/event.h"
 #include "starboard/input.h"
 #include "starboard/key.h"
-#include "starboard/memory.h"
 #include "starboard/player.h"
 #include "starboard/shared/linux/system_network_status.h"
 #include "starboard/shared/posix/time_internal.h"
@@ -696,26 +696,22 @@ int ErrorHandler(Display* display, XErrorEvent* event) {
 
 using shared::starboard::player::filter::CpuVideoFrame;
 
-#if SB_MODULAR_BUILD
+#if SB_API_VERSION >= 15
 ApplicationX11::ApplicationX11(SbEventHandleCallback sb_event_handle_callback)
 #else
 ApplicationX11::ApplicationX11()
-#endif  // SB_MODULAR_BUILD
+#endif  // SB_API_VERSION >= 15
     : wake_up_atom_(None),
       wm_delete_atom_(None),
-#if SB_API_VERSION >= 13
       wm_change_state_atom_(None),
-#endif  // SB_API_VERSION >= 13
-#if SB_MODULAR_BUILD
+#if SB_API_VERSION >= 15
       QueueApplication(sb_event_handle_callback),
-#endif  // SB_MODULAR_BUILD
+#endif  // SB_API_VERSION >= 15
       composite_event_id_(kSbEventIdInvalid),
       display_(NULL),
       paste_buffer_key_release_pending_(false) {
   SbAudioSinkPrivate::Initialize();
-#if SB_API_VERSION >= 13
   NetworkNotifier::GetOrCreateInstance();
-#endif
 }
 
 ApplicationX11::~ApplicationX11() {
@@ -923,7 +919,12 @@ ApplicationX11::WaitForSystemEventWithTimeout(SbTime time) {
     return pending_event;
   }
 
-  SB_DCHECK(dev_input_);
+  // In modular builds, |CreateWindow| is not always called before the event
+  // loop is running.
+  if (!dev_input_) {
+    return nullptr;
+  }
+
   shared::starboard::Application::Event* evdev_event =
       dev_input_->WaitForSystemEventWithTimeout(time);
 
@@ -972,9 +973,7 @@ bool ApplicationX11::EnsureX() {
 
   wake_up_atom_ = XInternAtom(display_, "WakeUpAtom", 0);
   wm_delete_atom_ = XInternAtom(display_, "WM_DELETE_WINDOW", True);
-#if SB_API_VERSION >= 13
   wm_change_state_atom_ = XInternAtom(display_, "WM_CHANGE_STATE", True);
-#endif  // SB_API_VERSION >= 13
 
   Composite();
 
@@ -993,9 +992,7 @@ void ApplicationX11::StopX() {
   display_ = NULL;
   wake_up_atom_ = None;
   wm_delete_atom_ = None;
-#if SB_API_VERSION >= 13
   wm_change_state_atom_ = None;
-#endif  // SB_API_VERSION >= 13
 }
 
 shared::starboard::Application::Event* ApplicationX11::GetPendingEvent() {
@@ -1173,9 +1170,6 @@ shared::starboard::Application::Event* ApplicationX11::GetPendingEvent() {
 
   scoped_ptr<SbInputData> data(new SbInputData());
   memset(data.get(), 0, sizeof(*data));
-#if SB_API_VERSION < 13
-  data->timestamp = SbTimeGetMonotonicNow();
-#endif  // SB_API_VERSION < 13
   data->window = windows_[0];
   SB_DCHECK(SbWindowIsValid(data->window));
   data->type = paste_buffer_key_release_pending_ ? kSbInputEventTypeUnpress
@@ -1211,7 +1205,6 @@ shared::starboard::Application::Event* ApplicationX11::XEventToEvent(
         return NULL;
       }
 
-#if SB_API_VERSION >= 13
       if (client_message->message_type == wm_change_state_atom_) {
         SB_DLOG(INFO) << "Received WM_CHANGE_STATE message.";
         if (x_event->xclient.data.l[0] == IconicState) {
@@ -1222,7 +1215,6 @@ shared::starboard::Application::Event* ApplicationX11::XEventToEvent(
           return NULL;
         }
       }
-#endif  // SB_API_VERSION >= 13
 
       // Unknown event, ignore.
       return NULL;
@@ -1255,9 +1247,6 @@ shared::starboard::Application::Event* ApplicationX11::XEventToEvent(
 
       scoped_ptr<SbInputData> data(new SbInputData());
       memset(data.get(), 0, sizeof(*data));
-#if SB_API_VERSION < 13
-      data->timestamp = SbTimeGetMonotonicNow();
-#endif  // SB_API_VERSION < 13
       data->window = FindWindow(x_key_event->window);
       SB_DCHECK(SbWindowIsValid(data->window));
       data->type = x_event->type == KeyPress ? kSbInputEventTypePress
@@ -1283,9 +1272,6 @@ shared::starboard::Application::Event* ApplicationX11::XEventToEvent(
       }
       scoped_ptr<SbInputData> data(new SbInputData());
       memset(data.get(), 0, sizeof(*data));
-#if SB_API_VERSION < 13
-      data->timestamp = SbTimeGetMonotonicNow();
-#endif  // SB_API_VERSION < 13
       data->window = FindWindow(x_button_event->window);
       SB_DCHECK(SbWindowIsValid(data->window));
       data->key = XButtonEventToSbKey(x_button_event);
@@ -1310,10 +1296,7 @@ shared::starboard::Application::Event* ApplicationX11::XEventToEvent(
     case MotionNotify: {
       XMotionEvent* x_motion_event = reinterpret_cast<XMotionEvent*>(x_event);
       scoped_ptr<SbInputData> data(new SbInputData());
-      memset(data.get(), 0, sizeof(*data));
-#if SB_API_VERSION < 13
-      data->timestamp = SbTimeGetMonotonicNow();
-#endif  // SB_API_VERSION < 13
+      memset(reinterpret_cast<void*>(data.get()), 0, sizeof(*data));
       data->window = FindWindow(x_motion_event->window);
       SB_DCHECK(SbWindowIsValid(data->window));
       data->pressure = NAN;
@@ -1334,7 +1317,6 @@ shared::starboard::Application::Event* ApplicationX11::XEventToEvent(
       return new Event(kSbEventTypeInput, data.release(),
                        &DeleteDestructor<SbInputData>);
     }
-#if SB_API_VERSION >= 13
     case FocusIn: {
       Focus(NULL, NULL);
       return NULL;
@@ -1343,16 +1325,6 @@ shared::starboard::Application::Event* ApplicationX11::XEventToEvent(
       Blur(NULL, NULL);
       return NULL;
     }
-#else
-    case FocusIn: {
-      Unpause(NULL, NULL);
-      return NULL;
-    }
-    case FocusOut: {
-      Pause(NULL, NULL);
-      return NULL;
-    }
-#endif  // SB_API_VERSION >= 13
     case ConfigureNotify: {
       XConfigureEvent* x_configure_event =
           reinterpret_cast<XConfigureEvent*>(x_event);

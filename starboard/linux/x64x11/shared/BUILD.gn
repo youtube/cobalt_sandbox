@@ -22,13 +22,13 @@ group("starboard_platform") {
   deps = [
     "//third_party/libdav1d:dav1d",
     "//third_party/libjpeg-turbo:libjpeg",
+    "//third_party/libvpx",
   ]
 }
 
 static_library("starboard_platform_sources") {
   check_includes = false
   sources = [
-    "//starboard/linux/x64x11/sanitizer_options.cc",
     "//starboard/linux/x64x11/system_get_property.cc",
     "//starboard/linux/x64x11/system_get_property_impl.cc",
     "//starboard/shared/libjpeg/image_decode.cc",
@@ -45,6 +45,10 @@ static_library("starboard_platform_sources") {
     "//starboard/shared/x11/window_get_size.cc",
     "//starboard/shared/x11/window_internal.cc",
   ]
+
+  if (!sb_is_modular || sb_is_evergreen) {
+    sources += [ "//starboard/linux/x64x11/sanitizer_options.cc" ]
+  }
 
   if (is_internal_build) {
     sources += [ "//starboard/keyboxes/linux/system_properties.cc" ]

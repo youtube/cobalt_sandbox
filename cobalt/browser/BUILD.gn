@@ -55,10 +55,10 @@ target(final_executable_type, "cobalt") {
     ":browser",
     ":browser_switches",
     "//cobalt/base",
+    "//cobalt/css_parser",
     "//net",
   ]
   data_deps = [
-    "//cobalt/dom:licenses",
     "//cobalt/network:copy_ssl_certificates",
     "//third_party/icu:icudata",
   ]
@@ -114,9 +114,10 @@ static_library("browser") {
     "application.h",
     "browser_module.cc",
     "browser_module.h",
+    "client_hint_headers.cc",
+    "client_hint_headers.h",
     "device_authentication.cc",
     "device_authentication.h",
-    "lifecycle_observer.h",
     "on_screen_keyboard_starboard_bridge.cc",
     "on_screen_keyboard_starboard_bridge.h",
     "render_tree_combiner.cc",
@@ -152,12 +153,12 @@ static_library("browser") {
     ":browser_switches",
     ":generated_bindings",
     ":generated_types",
-    "//cobalt/account",
     "//cobalt/audio",
     "//cobalt/base",
     "//cobalt/browser/memory_settings:browser_memory_settings",
-    "//cobalt/browser/memory_tracker:memory_tracker_tool",
+    "//cobalt/browser/metrics",
     "//cobalt/build:cobalt_build_id",
+    "//cobalt/build:cobalt_build_info",
     "//cobalt/cache",
     "//cobalt/configuration",
     "//cobalt/css_parser",
@@ -194,10 +195,12 @@ static_library("browser") {
     "//cobalt/websocket",
     "//cobalt/worker",
     "//cobalt/xhr",
+    "//components/metrics",
+    "//components/metrics_services_manager",
     "//crypto",
-    "//nb",
     "//net",
-    "//starboard",
+    "//starboard:starboard_group",
+    "//starboard/common",
     "//third_party/icu:icui18n",
     "//third_party/protobuf:protobuf_lite",
     "//url",
@@ -231,6 +234,7 @@ target(gtest_target_type, "browser_test") {
   has_pedantic_warnings = true
 
   sources = [
+    "client_hint_headers_test.cc",
     "device_authentication_test.cc",
     "memory_settings/auto_mem_settings_test.cc",
     "memory_settings/auto_mem_test.cc",
@@ -239,8 +243,6 @@ target(gtest_target_type, "browser_test") {
     "memory_settings/pretty_print_test.cc",
     "memory_settings/table_printer_test.cc",
     "memory_settings/test_common.h",
-    "memory_tracker/tool/tool_impl_test.cc",
-    "memory_tracker/tool/util_test.cc",
     "user_agent_string_test.cc",
   ]
 
@@ -249,7 +251,6 @@ target(gtest_target_type, "browser_test") {
     ":browser_switches",
     "//cobalt/base",
     "//cobalt/browser/memory_settings:browser_memory_settings",
-    "//cobalt/browser/memory_tracker:memory_tracker_tool",
     "//cobalt/dom",
     "//cobalt/loader",
     "//cobalt/math",
@@ -257,7 +258,6 @@ target(gtest_target_type, "browser_test") {
     "//cobalt/speech",
     "//cobalt/storage",
     "//cobalt/test:run_all_unittests",
-    "//nb",
     "//testing/gmock",
     "//testing/gtest",
   ]
@@ -413,13 +413,9 @@ cache_templates("cached_jinja_templates") {
   output_dir = _bindings_scripts_output_dir
 }
 
-target(final_executable_type, "snapshot_app_stats") {
-  sources = [ "snapshot_app_stats.cc" ]
-  deps = [
-    ":browser",
-    ":browser_switches",
-    ":cobalt",
-    "//cobalt/base",
-    "//third_party/protobuf:protobuf_lite",
-  ]
+group("test_dependencies_on_browser") {
+  testonly = true
+
+  # TODO: 297087147 - Depend on smaller targets than browser.
+  deps = [ "//cobalt/browser" ]
 }

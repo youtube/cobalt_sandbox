@@ -207,6 +207,24 @@ TEST(DecodedAudioTest, CtorWithSize) {
   }
 }
 
+TEST(DecodedAudioTest, CtorWithMoveCtor) {
+  Buffer original(128);
+  memset(original.data(), 'x', 128);
+
+  const uint8_t* original_data_pointer = original.data();
+
+  scoped_refptr<DecodedAudio> decoded_audio(
+      new DecodedAudio(kChannels, kSampleTypes[0], kStorageTypes[0], kTimestamp,
+                       128, std::move(original)));
+  ASSERT_EQ(decoded_audio->size_in_bytes(), 128);
+  ASSERT_NE(decoded_audio->data(), nullptr);
+  ASSERT_EQ(decoded_audio->data(), original_data_pointer);
+
+  for (int i = 0; i < decoded_audio->size_in_bytes(); ++i) {
+    ASSERT_EQ(decoded_audio->data()[i], 'x');
+  }
+}
+
 TEST(DecodedAudioTest, AdjustForSeekTime) {
   for (int channels = 1; channels <= 6; ++channels) {
     for (auto sample_type : kSampleTypes) {
@@ -286,19 +304,16 @@ TEST(DecodedAudioTest, AdjustForDiscardedDurations) {
           kSampleRate, quarter_duration, quarter_duration);
       ASSERT_NEAR(adjusted_decoded_audio->frames(),
                   original_decoded_audio->frames() / 2, 2);
-      ASSERT_NEAR(adjusted_decoded_audio->timestamp(),
-                  original_decoded_audio->timestamp() + quarter_duration,
-                  duration_of_one_frame * 2);
+      ASSERT_EQ(adjusted_decoded_audio->timestamp(),
+                original_decoded_audio->timestamp());
 
       adjusted_decoded_audio = original_decoded_audio->Clone();
       // Adjust more frames than it has from front
       adjusted_decoded_audio->AdjustForDiscardedDurations(
           kSampleRate, duration_of_decoded_audio * 2, 0);
       ASSERT_EQ(adjusted_decoded_audio->frames(), 0);
-      ASSERT_NEAR(
-          adjusted_decoded_audio->timestamp(),
-          original_decoded_audio->timestamp() + duration_of_decoded_audio,
-          duration_of_one_frame * 2);
+      ASSERT_EQ(adjusted_decoded_audio->timestamp(),
+                original_decoded_audio->timestamp());
 
       adjusted_decoded_audio = original_decoded_audio->Clone();
       // Adjust more frames than it has from back

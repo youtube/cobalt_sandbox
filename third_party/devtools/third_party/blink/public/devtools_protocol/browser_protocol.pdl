@@ -8,6 +8,27 @@ version
   major 1
   minor 3
 
+# The Cobalt domain defines custom methods and events for Cobalt
+experimental domain Cobalt
+  command disable
+
+  command enable
+
+  experimental type ConsoleCommand extends object
+    properties
+      string command
+      string shortHelp
+      string longHelp
+
+  experimental command getConsoleCommands
+    returns
+      array of ConsoleCommand commands
+
+  experimental command sendConsoleCommand
+    parameters
+      string command
+      optional string message
+
 experimental domain Accessibility
   depends on DOM
 
@@ -573,8 +594,8 @@ domain Browser
       audioCapture
       backgroundSync
       backgroundFetch
-      clipboardReadWrite
-      clipboardSanitizedWrite
+      clipboardRead
+      clipboardWrite
       durableStorage
       flash
       geolocation
@@ -611,8 +632,6 @@ domain Browser
       optional boolean userVisibleOnly
       # For "wake-lock" permission, must specify type as either "screen" or "system".
       optional string type
-      # For "clipboard" permission, may specify allowWithoutSanitization.
-      optional boolean allowWithoutSanitization
 
   # Set permission settings for given origin.
   experimental command setPermission

@@ -22,6 +22,7 @@
 #include "base/trace_event/trace_event.h"
 #include "cobalt/base/instance_counter.h"
 #include "cobalt/media/base/drm_system.h"
+#include "cobalt/media/base/sbplayer_pipeline.h"
 #include "cobalt/media/player/web_media_player_proxy.h"
 #include "cobalt/media/progressive/data_source_reader.h"
 #include "cobalt/media/progressive/demuxer_extension_wrapper.h"
@@ -68,12 +69,12 @@ const char* kMediaEme = "Media.EME.";
 // end of stream position when the current playback position is also near the
 // end of the stream. In this case, "near the end of stream" means "position
 // greater than or equal to duration() - kEndOfStreamEpsilonInSeconds".
-const double kEndOfStreamEpsilonInSeconds = 2.;
+const double kEndOfStreamEpsilonInSeconds = 2.0;
 
 DECLARE_INSTANCE_COUNTER(WebMediaPlayerImpl);
 
 bool IsNearTheEndOfStream(const WebMediaPlayerImpl* wmpi, double position) {
-  float duration = wmpi->GetDuration();
+  const double duration = wmpi->GetDuration();
   if (std::isfinite(duration)) {
     // If video is very short, we always treat a position as near the end.
     if (duration <= kEndOfStreamEpsilonInSeconds) return true;
@@ -83,19 +84,9 @@ bool IsNearTheEndOfStream(const WebMediaPlayerImpl* wmpi, double position) {
 }
 #endif  // defined(COBALT_SKIP_SEEK_REQUEST_NEAR_END)
 
-base::TimeDelta ConvertSecondsToTimestamp(float seconds) {
-  float microseconds = seconds * base::Time::kMicrosecondsPerSecond;
-  float integer = ceilf(microseconds);
-  float difference = integer - microseconds;
-
-  // Round down if difference is large enough.
-  if ((microseconds > 0 && difference > 0.5f) ||
-      (microseconds <= 0 && difference >= 0.5f)) {
-    integer -= 1.0f;
-  }
-
-  // Now we can safely cast to int64 microseconds.
-  return base::TimeDelta::FromMicroseconds(static_cast<int64>(integer));
+base::TimeDelta ConvertSecondsToTimestamp(double seconds) {
+  return base::TimeDelta::FromMicrosecondsD(std::round(
+      seconds * static_cast<double>(base::Time::kMicrosecondsPerSecond)));
 }
 
 }  // namespace
@@ -118,9 +109,10 @@ WebMediaPlayerImpl::WebMediaPlayerImpl(
         get_decode_target_graphics_context_provider_func,
     WebMediaPlayerClient* client, WebMediaPlayerDelegate* delegate,
     bool allow_resume_after_suspend, bool allow_batched_sample_write,
-#if SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
-    SbTime audio_write_duration_local, SbTime audio_write_duration_remote,
-#endif  // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+    bool force_punch_out_by_default,
+#if SB_API_VERSION >= 15
+    int64_t audio_write_duration_local, int64_t audio_write_duration_remote,
+#endif  // SB_API_VERSION >= 15
     ::media::MediaLog* const media_log)
     : pipeline_thread_("media_pipeline"),
       network_state_(WebMediaPlayer::kNetworkStateEmpty),
@@ -130,6 +122,7 @@ WebMediaPlayerImpl::WebMediaPlayerImpl(
       delegate_(delegate),
       allow_resume_after_suspend_(allow_resume_after_suspend),
       allow_batched_sample_write_(allow_batched_sample_write),
+      force_punch_out_by_default_(force_punch_out_by_default),
       proxy_(new WebMediaPlayerProxy(main_loop_->task_runner(), this)),
       media_log_(media_log),
       is_local_source_(false),
@@ -145,14 +138,15 @@ WebMediaPlayerImpl::WebMediaPlayerImpl(
   media_log_->AddEvent<::media::MediaLogEvent::kWebMediaPlayerCreated>();
 
   pipeline_thread_.Start();
-  pipeline_ =
-      Pipeline::Create(interface, window, pipeline_thread_.task_runner(),
-                       get_decode_target_graphics_context_provider_func,
-                       allow_resume_after_suspend_, allow_batched_sample_write_,
-#if SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
-                       audio_write_duration_local, audio_write_duration_remote,
-#endif  // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
-                       media_log_, decode_target_provider_.get());
+  pipeline_ = new SbPlayerPipeline(
+      interface, window, pipeline_thread_.task_runner(),
+      get_decode_target_graphics_context_provider_func,
+      allow_resume_after_suspend_, allow_batched_sample_write_,
+      force_punch_out_by_default_,
+#if SB_API_VERSION >= 15
+      audio_write_duration_local, audio_write_duration_remote,
+#endif  // SB_API_VERSION >= 15
+      media_log_, &media_metrics_provider_, decode_target_provider_.get());
 
   // Also we want to be notified of |main_loop_| destruction.
   main_loop_->AddDestructionObserver(this);
@@ -240,6 +234,7 @@ void WebMediaPlayerImpl::LoadUrl(const GURL& url) {
   is_local_source_ = !url.SchemeIs("http") && !url.SchemeIs("https");
 
   StartPipeline(url);
+  media_metrics_provider_.Initialize(false);
 }
 #endif  // SB_HAS(PLAYER_WITH_URL)
 
@@ -266,6 +261,7 @@ void WebMediaPlayerImpl::LoadMediaSource() {
 
   state_.is_media_source = true;
   StartPipeline(chunk_demuxer_.get());
+  media_metrics_provider_.Initialize(true);
 }
 
 void WebMediaPlayerImpl::LoadProgressive(
@@ -305,6 +301,7 @@ void WebMediaPlayerImpl::LoadProgressive(
 
   state_.is_progressive = true;
   StartPipeline(progressive_demuxer_.get());
+  media_metrics_provider_.Initialize(false);
 }
 
 void WebMediaPlayerImpl::CancelLoad() {
@@ -320,6 +317,7 @@ void WebMediaPlayerImpl::Play() {
   pipeline_->SetPlaybackRate(state_.playback_rate);
 
   media_log_->AddEvent<::media::MediaLogEvent::kPlay>();
+  media_metrics_provider_.SetHasPlayed();
 }
 
 void WebMediaPlayerImpl::Pause() {
@@ -332,7 +330,7 @@ void WebMediaPlayerImpl::Pause() {
   media_log_->AddEvent<::media::MediaLogEvent::kPause>();
 }
 
-void WebMediaPlayerImpl::Seek(float seconds) {
+void WebMediaPlayerImpl::Seek(double seconds) {
   DCHECK_EQ(main_loop_, base::MessageLoop::current());
 
 #if defined(COBALT_SKIP_SEEK_REQUEST_NEAR_END)
@@ -453,20 +451,20 @@ bool WebMediaPlayerImpl::IsSeeking() const {
   return state_.seeking;
 }
 
-float WebMediaPlayerImpl::GetDuration() const {
+double WebMediaPlayerImpl::GetDuration() const {
   DCHECK_EQ(main_loop_, base::MessageLoop::current());
 
   if (ready_state_ == WebMediaPlayer::kReadyStateHaveNothing)
-    return std::numeric_limits<float>::quiet_NaN();
+    return std::numeric_limits<double>::quiet_NaN();
 
   base::TimeDelta duration = pipeline_->GetMediaDuration();
 
   // Return positive infinity if the resource is unbounded.
   // http://www.whatwg.org/specs/web-apps/current-work/multipage/video.html#dom-media-duration
   if (duration == ::media::kInfiniteDuration)
-    return std::numeric_limits<float>::infinity();
+    return std::numeric_limits<double>::infinity();
 
-  return static_cast<float>(duration.InSecondsF());
+  return duration.InSecondsF();
 }
 
 #if SB_HAS(PLAYER_WITH_URL)
@@ -478,14 +476,17 @@ base::Time WebMediaPlayerImpl::GetStartDate() const {
 
   base::TimeDelta start_date = pipeline_->GetMediaStartDate();
 
-  return base::Time::FromSbTime(start_date.InMicroseconds());
+  return base::Time::FromDeltaSinceWindowsEpoch(
+      base::TimeDelta::FromMicroseconds(start_date.InMicroseconds()));
 }
 #endif  // SB_HAS(PLAYER_WITH_URL)
 
-float WebMediaPlayerImpl::GetCurrentTime() const {
+double WebMediaPlayerImpl::GetCurrentTime() const {
   DCHECK_EQ(main_loop_, base::MessageLoop::current());
-  if (state_.paused) return static_cast<float>(state_.paused_time.InSecondsF());
-  return static_cast<float>(pipeline_->GetMediaTime().InSecondsF());
+  if (state_.paused) {
+    return state_.paused_time.InSecondsF();
+  }
+  return pipeline_->GetMediaTime().InSecondsF();
 }
 
 float WebMediaPlayerImpl::GetPlaybackRate() const {
@@ -525,10 +526,9 @@ void WebMediaPlayerImpl::UpdateBufferedTimeRanges(
   }
 }
 
-float WebMediaPlayerImpl::GetMaxTimeSeekable() const {
+double WebMediaPlayerImpl::GetMaxTimeSeekable() const {
   DCHECK_EQ(main_loop_, base::MessageLoop::current());
-
-  return static_cast<float>(pipeline_->GetMediaDuration().InSecondsF());
+  return pipeline_->GetMediaDuration().InSecondsF();
 }
 
 void WebMediaPlayerImpl::Suspend() { pipeline_->Suspend(); }
@@ -546,7 +546,7 @@ bool WebMediaPlayerImpl::DidLoadingProgress() const {
   return pipeline_->DidLoadingProgress();
 }
 
-float WebMediaPlayerImpl::MediaTimeForTimeValue(float timeValue) const {
+double WebMediaPlayerImpl::MediaTimeForTimeValue(double timeValue) const {
   return ConvertSecondsToTimestamp(timeValue).InSecondsF();
 }
 
@@ -649,6 +649,7 @@ void WebMediaPlayerImpl::OnPipelineError(::media::PipelineStatus error,
   if (suppress_destruction_errors_) return;
 
   media_log_->NotifyError(error);
+  media_metrics_provider_.OnError(error);
 
   if (ready_state_ == WebMediaPlayer::kReadyStateHaveNothing) {
     // Any error that occurs before reaching ReadyStateHaveMetadata should
@@ -781,6 +782,7 @@ void WebMediaPlayerImpl::OnPipelineBufferingState(
       break;
     case Pipeline::kPrerollCompleted:
       SetReadyState(WebMediaPlayer::kReadyStateHaveEnoughData);
+      media_metrics_provider_.SetHaveEnough();
       break;
   }
 }
@@ -807,7 +809,9 @@ void WebMediaPlayerImpl::StartPipeline(const GURL& url) {
 
   state_.starting = true;
 
-  pipeline_->SetDecodeToTextureOutputMode(client_->PreferDecodeToTexture());
+  if (client_->PreferDecodeToTexture()) {
+    pipeline_->SetPreferredOutputModeToDecodeToTexture();
+  }
   pipeline_->Start(
       BIND_TO_RENDER_LOOP(&WebMediaPlayerImpl::SetDrmSystemReadyCB),
       BIND_TO_RENDER_LOOP(
@@ -827,7 +831,9 @@ void WebMediaPlayerImpl::StartPipeline(::media::Demuxer* demuxer) {
 
   state_.starting = true;
 
-  pipeline_->SetDecodeToTextureOutputMode(client_->PreferDecodeToTexture());
+  if (client_->PreferDecodeToTexture()) {
+    pipeline_->SetPreferredOutputModeToDecodeToTexture();
+  }
   pipeline_->Start(
       demuxer, BIND_TO_RENDER_LOOP(&WebMediaPlayerImpl::SetDrmSystemReadyCB),
       BIND_TO_RENDER_LOOP(&WebMediaPlayerImpl::OnPipelineEnded),
@@ -955,6 +961,7 @@ void WebMediaPlayerImpl::OnEncryptedMediaInitDataEncounteredWrapper(
       NOTREACHED();
       break;
   }
+  media_metrics_provider_.SetIsEME();
 }
 
 WebMediaPlayerClient* WebMediaPlayerImpl::GetClient() {

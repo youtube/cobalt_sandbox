@@ -30,7 +30,8 @@ CrxDownloader::DownloadMetrics::DownloadMetrics()
       error(0),
       downloaded_bytes(-1),
       total_bytes(-1),
-      download_time_ms(0) {}
+      download_time_ms(0) {
+}
 
 // On Windows, the first downloader in the chain is a background downloader,
 // which uses the BITS service.
@@ -94,19 +95,34 @@ CrxDownloader::download_metrics() const {
 
 void CrxDownloader::StartDownloadFromUrl(const GURL& url,
                                          const std::string& expected_hash,
+#if defined(IN_MEMORY_UPDATES)
+                                         std::string* dst,
+#endif
                                          DownloadCallback download_callback) {
 #if defined(STARBOARD)
   LOG(INFO) << "CrxDownloader::StartDownloadFromUrl: url=" << url;
 #endif
+
   std::vector<GURL> urls;
   urls.push_back(url);
+#if defined(IN_MEMORY_UPDATES)
+  CHECK(dst != nullptr);
+  StartDownload(urls, expected_hash, dst, std::move(download_callback));
+#else
   StartDownload(urls, expected_hash, std::move(download_callback));
+#endif
 }
 
 void CrxDownloader::StartDownload(const std::vector<GURL>& urls,
                                   const std::string& expected_hash,
+#if defined(IN_MEMORY_UPDATES)
+                                  std::string* dst,
+#endif
                                   DownloadCallback download_callback) {
   DCHECK(thread_checker_.CalledOnValidThread());
+#if defined(IN_MEMORY_UPDATES)
+  CHECK(dst != nullptr);
+#endif
 
   auto error = CrxDownloaderError::NONE;
   if (urls.empty()) {
@@ -123,12 +139,20 @@ void CrxDownloader::StartDownload(const std::vector<GURL>& urls,
     return;
   }
 
+#if defined(IN_MEMORY_UPDATES)
+  dst_str_ = dst;
+#endif
+
   urls_ = urls;
   expected_hash_ = expected_hash;
   current_url_ = urls_.begin();
   download_callback_ = std::move(download_callback);
 
+#if defined(IN_MEMORY_UPDATES)
+  DoStartDownload(*current_url_, dst);
+#else
   DoStartDownload(*current_url_);
+#endif
 }
 
 #if defined(STARBOARD)
@@ -178,7 +202,12 @@ void CrxDownloader::VerifyResponse(bool is_handled,
 #if defined(STARBOARD)
   LOG(INFO) << "CrxDownloader::VerifyResponse";
 #endif
+
+#if defined(IN_MEMORY_UPDATES)
+  if (VerifyHash256(dst_str_, expected_hash_)) {
+#else
   if (VerifyFileHash256(result.response, expected_hash_)) {
+#endif
     download_metrics_.push_back(download_metrics);
     main_task_runner()->PostTask(
         FROM_HERE, base::BindOnce(std::move(download_callback_), result));
@@ -191,11 +220,16 @@ void CrxDownloader::VerifyResponse(bool is_handled,
   result.error = static_cast<int>(CrxDownloaderError::BAD_HASH);
   download_metrics.error = result.error;
 #if defined(STARBOARD)
+#if !defined(IN_MEMORY_UPDATES)
   base::DeleteFile(result.response, false);
-#else
+#endif  // !defined(IN_MEMORY_UPDATES)
+#else  // defined(STARBOARD)
   DeleteFileAndEmptyParentDirectory(result.response);
-#endif
+#endif  // defined(STARBOARD)
+
+#if !defined(IN_MEMORY_UPDATES)
   result.response.clear();
+#endif
 
   main_task_runner()->PostTask(
       FROM_HERE, base::BindOnce(&CrxDownloader::HandleDownloadError,
@@ -209,7 +243,9 @@ void CrxDownloader::HandleDownloadError(
     const DownloadMetrics& download_metrics) {
   DCHECK(thread_checker_.CalledOnValidThread());
   DCHECK_NE(0, result.error);
+#if !defined(IN_MEMORY_UPDATES)
   DCHECK(result.response.empty());
+#endif
   DCHECK_NE(0, download_metrics.error);
 
 #if defined(STARBOARD)
@@ -222,29 +258,42 @@ void CrxDownloader::HandleDownloadError(
   if (result.error != static_cast<int>(CrxDownloaderError::SLOT_UNAVAILABLE)) {
 #endif
 
-    // If an error has occured, try the next url if there is any,
-    // or try the successor in the chain if there is any successor.
-    // If this downloader has received a 5xx error for the current url,
-    // as indicated by the |is_handled| flag, remove that url from the list of
-    // urls so the url is never tried again down the chain.
-    if (is_handled) {
-      current_url_ = urls_.erase(current_url_);
-    } else {
-      ++current_url_;
-    }
+  // If an error has occured, try the next url if there is any,
+  // or try the successor in the chain if there is any successor.
+  // If this downloader has received a 5xx error for the current url,
+  // as indicated by the |is_handled| flag, remove that url from the list of
+  // urls so the url is never tried again down the chain.
+  if (is_handled) {
+    current_url_ = urls_.erase(current_url_);
+  } else {
+    ++current_url_;
+  }
 
-    // Try downloading from another url from the list.
-    if (current_url_ != urls_.end()) {
-      DoStartDownload(*current_url_);
-      return;
-    }
+  // Try downloading from another url from the list.
+  if (current_url_ != urls_.end()) {
+#if defined(IN_MEMORY_UPDATES)
+      // TODO(b/158043520): manually test that Cobalt can update using a
+      // successor URL when an error occurs on the first URL, and/or consider
+      // adding an Evergreen end-to-end test case for this behavior. This is
+      // important since the unit tests are currently disabled (b/290410288).
+      DoStartDownload(*current_url_, dst_str_);
+#else
+    DoStartDownload(*current_url_);
+#endif
+    return;
+  }
 
-    // Try downloading using the next downloader.
-    if (successor_ && !urls_.empty()) {
-      successor_->StartDownload(urls_, expected_hash_,
+  // Try downloading using the next downloader.
+  if (successor_ && !urls_.empty()) {
+#if defined(IN_MEMORY_UPDATES)
+      successor_->StartDownload(urls_, expected_hash_, dst_str_,
                                 std::move(download_callback_));
-      return;
-    }
+#else
+    successor_->StartDownload(urls_, expected_hash_,
+                              std::move(download_callback_));
+#endif
+    return;
+  }
 
 #if defined(STARBOARD)
   }

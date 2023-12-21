@@ -1,7 +1,7 @@
----
-layout: doc
-title: "Starboard Module Reference: ui_navigation.h"
----
+Project: /youtube/cobalt/_project.yaml
+Book: /youtube/cobalt/_book.yaml
+
+# Starboard Module Reference: `ui_navigation.h`
 
 API to allow applications to take advantage of the platform's native UI engine.
 This is mainly to drive the animation of visual elements and to signal which of
@@ -19,20 +19,20 @@ SbUiNavItem in case the native UI engine moves individual items in response to
 user interaction. If the navigation item is a container, then the content offset
 will also be queried to determine the placement of its content items.
 
-## Macros ##
+## Macros
 
-### kSbUiNavItemInvalid ###
+### kSbUiNavItemInvalid
 
 Well-defined value for an invalid navigation item.
 
-## Enums ##
+## Enums
 
-### SbUiNavItemType ###
+### SbUiNavItemType
 
 Navigation items may be one of the following types. This must be specified upon
 item creation and may not change during the item's lifespan.
 
-#### Values ####
+#### Values
 
 *   `kSbUiNavItemTypeFocus`
 
@@ -42,29 +42,29 @@ item creation and may not change during the item's lifespan.
     This is a container of navigation items which can also be containers
     themselves or focusable items. Containers themselves cannot be focused.
 
-## Typedefs ##
+## Typedefs
 
-### SbUiNavItem ###
+### SbUiNavItem
 
 An opaque handle to an implementation-private structure representing a
 navigation item.
 
-#### Definition ####
+#### Definition
 
 ```
 typedef struct SbUiNavItemPrivate* SbUiNavItem
 ```
 
-## Structs ##
+## Structs
 
-### SbUiNavCallbacks ###
+### SbUiNavCallbacks
 
 This structure specifies all the callbacks which the platform UI engine should
 invoke for various interaction events on navigation items. These callbacks may
 be invoked from any thread at any frequency. The `callback_context` is the value
 that was passed on creation of the relevant SbUiNavItem.
 
-#### Members ####
+#### Members
 
 *   `void(*onblur)(SbUiNavItem item, void *callback_context)`
 
@@ -77,12 +77,12 @@ that was passed on creation of the relevant SbUiNavItem.
     Invoke when an item's content offset is changed. This is only used with
     container items.
 
-### SbUiNavInterface ###
+### SbUiNavInterface
 
 This structure declares the interface to the UI navigation implementation. All
 function pointers must be specified if the platform supports UI navigation.
 
-#### Members ####
+#### Members
 
 *   `SbUiNavItem(*create_item)(SbUiNavItemType type, const SbUiNavCallbacks
     *callbacks, void *callback_context)`
@@ -101,8 +101,10 @@ function pointers must be specified if the platform supports UI navigation.
     This is used to manually force focus on a navigation item of type
     kSbUiNavItemTypeFocus. Any previously focused navigation item should receive
     the blur event. If the item is not transitively a content of the root item,
-    then this does nothing. Specifying kSbUiNavItemInvalid should remove focus
-    from the UI navigation system.
+    then this does nothing.
+
+    Specifying kSbUiNavItemInvalid should remove focus from the UI navigation
+    system.
 *   `void(*set_item_enabled)(SbUiNavItem item, bool enabled)`
 
     This is used to enable or disable user interaction with the specified
@@ -116,7 +118,9 @@ function pointers must be specified if the platform supports UI navigation.
 
     This specifies directionality for container items. Containers within
     containers do not inherit directionality. Directionality must be specified
-    for each container explicitly. This should work even if `item` is disabled.
+    for each container explicitly.
+
+    This should work even if `item` is disabled.
 *   `void(*set_item_focus_duration)(SbUiNavItem item, float seconds)`
 
     Set the minimum amount of time the focus item should remain focused once it
@@ -158,13 +162,16 @@ function pointers must be specified if the platform supports UI navigation.
 
     This attaches the given navigation item (which must be a container) to the
     specified window. Navigation items are only interactable if they are
-    transitively attached to a window.The native UI engine should never change
-    this navigation item's content offset. It is assumed to be used as a proxy
-    for the system window.A navigation item may only have a SbUiNavItem or
-    SbWindow as its direct container. The navigation item hierarchy is
-    established using set_item_container_item() with the root container attached
-    to a SbWindow using set_item_container_window() to enable interaction with
-    all enabled items in the hierarchy.
+    transitively attached to a window.
+
+    The native UI engine should never change this navigation item's content
+    offset. It is assumed to be used as a proxy for the system window.
+
+    A navigation item may only have a SbUiNavItem or SbWindow as its direct
+    container. The navigation item hierarchy is established using
+    set_item_container_item() with the root container attached to a SbWindow
+    using set_item_container_window() to enable interaction with all enabled
+    items in the hierarchy.
 
     If `item` is already registered with a different window, then this will
     unregister it from that window then attach it to the given `window`. It is
@@ -195,13 +202,14 @@ function pointers must be specified if the platform supports UI navigation.
     drawn at position (5,15).
 
     Essentially, content items should be drawn at: [container position] +
-    [content position] - [container content offset] Content items may overlap
-    within a container. This can cause obscured items to be unfocusable. The
-    only rule that needs to be followed is that contents which are focus items
-    can obscure other contents which are containers, but not vice versa. The
-    caller must ensure that content focus items do not overlap other content
-    focus items and content container items do not overlap other content
-    container items.
+    [content position] - [container content offset]
+
+    Content items may overlap within a container. This can cause obscured items
+    to be unfocusable. The only rule that needs to be followed is that contents
+    which are focus items can obscure other contents which are containers, but
+    not vice versa. The caller must ensure that content focus items do not
+    overlap other content focus items and content container items do not overlap
+    other content container items.
 *   `void(*set_item_content_offset)(SbUiNavItem item, float content_offset_x,
     float content_offset_y)`
 
@@ -211,23 +219,25 @@ function pointers must be specified if the platform supports UI navigation.
     Essentially, a content item should be drawn at: [container position] +
     [content position] - [container content offset] If `item` is not a
     container, then this does nothing. By default, the content offset is (0,0).
+
     This should update the values returned by get_item_content_offset() even if
     the `item` is disabled.
 *   `void(*get_item_content_offset)(SbUiNavItem item, float
     *out_content_offset_x, float *out_content_offset_y)`
 
     Retrieve the current content offset for the navigation item. If `item` is
-    not a container, then the content offset is (0,0). The native UI engine
-    should not change the content offset of a container unless one of its
-    contents (possibly recursively) is focused. This is to allow seamlessly
-    disabling then re-enabling focus items without having their containers
-    change offsets.
+    not a container, then the content offset is (0,0).
+
+    The native UI engine should not change the content offset of a container
+    unless one of its contents (possibly recursively) is focused. This is to
+    allow seamlessly disabling then re-enabling focus items without having their
+    containers change offsets.
 *   `void(*do_batch_update)(void(*update_function)(void *), void *context)`
 
     Call `update_function` with `context` to perform a series of UI navigation
     changes atomically before returning.
 
-### SbUiNavItemDir ###
+### SbUiNavItemDir
 
 Navigation items of type kSbUiNavItemTypeContainer have directionality. If
 directionality is not specified for a container, it should default to left-to-
@@ -252,7 +262,7 @@ right and top-to-bottom.
 ///     | Negative position. | Positive position. | Positive position. |
 ///     +--------------------+--------------------+--------------------+
 ///                          ^
-///                  Content Offset X = 0. 
+///                  Content Offset X = 0.
 ```
 
 ```
@@ -260,53 +270,53 @@ right and top-to-bottom.
   Bottom-to-top is similar to right-to-left, but for the Y position.
 ```
 
-#### Members ####
+#### Members
 
 *   `bool is_left_to_right`
 *   `bool is_top_to_bottom`
 
-### SbUiNavMatrix2x3 ###
+### SbUiNavMatrix2x3
 
 This represents a 2x3 transform matrix in row-major order.
 
 ```
 ///   | a b tx |
-///   | c d ty | 
+///   | c d ty |
 ```
 
-#### Members ####
+#### Members
 
 *   `float m`
 
-### SbUiNavMatrix4 ###
+### SbUiNavMatrix4
 
 This represents a 4x4 transform matrix in row-major order.
 
-#### Members ####
+#### Members
 
 *   `float m`
 
-## Functions ##
+## Functions
 
-### SbUiNavGetInterface ###
+### SbUiNavGetInterface
 
 Retrieve the platform's UI navigation implementation. If the platform does not
 provide one, then return false without modifying `out_interface`. Otherwise,
-initialize all members of `out_interface` and return true.
+initialize all members of `out_interface` and return true. The `out_interface`
+pointer must not be NULL.
 
-#### Declaration ####
+#### Declaration
 
 ```
 bool SbUiNavGetInterface(SbUiNavInterface *out_interface)
 ```
 
-### SbUiNavItemIsValid ###
+### SbUiNavItemIsValid
 
 Returns whether the given navigation item handle is valid.
 
-#### Declaration ####
+#### Declaration
 
 ```
 static bool SbUiNavItemIsValid(SbUiNavItem item)
 ```
-

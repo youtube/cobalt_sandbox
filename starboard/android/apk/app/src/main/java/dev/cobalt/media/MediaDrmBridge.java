@@ -38,6 +38,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 /** A wrapper of the android MediaDrm class. */
@@ -81,8 +82,7 @@ public class MediaDrmBridge {
   private static final int MEDIA_DRM_EVENT_PROVISION_REQUIRED = MediaDrm.EVENT_PROVISION_REQUIRED;
 
   // Added in API 23.
-  private static final int MEDIA_DRM_EVENT_SESSION_RECLAIMED =
-      Build.VERSION.SDK_INT >= 23 ? MediaDrm.EVENT_SESSION_RECLAIMED : 5;
+  private static final int MEDIA_DRM_EVENT_SESSION_RECLAIMED = MediaDrm.EVENT_SESSION_RECLAIMED;
 
   private MediaDrm mMediaDrm;
   private long mNativeMediaDrmBridge;
@@ -136,7 +136,7 @@ public class MediaDrmBridge {
    * @param nativeMediaDrmBridge The native owner of this class.
    */
   @UsedByNative
-  static MediaDrmBridge create(long nativeMediaDrmBridge) {
+  static MediaDrmBridge create(String keySystem, long nativeMediaDrmBridge) {
     UUID cryptoScheme = WIDEVINE_UUID;
     if (!MediaDrm.isCryptoSchemeSupported(cryptoScheme)) {
       return null;
@@ -144,7 +144,7 @@ public class MediaDrmBridge {
 
     MediaDrmBridge mediaDrmBridge = null;
     try {
-      mediaDrmBridge = new MediaDrmBridge(cryptoScheme, nativeMediaDrmBridge);
+      mediaDrmBridge = new MediaDrmBridge(keySystem, cryptoScheme, nativeMediaDrmBridge);
       Log.d(TAG, "MediaDrmBridge successfully created.");
     } catch (UnsupportedSchemeException e) {
       Log.e(TAG, "Unsupported DRM scheme", e);
@@ -286,10 +286,6 @@ public class MediaDrmBridge {
       }
       Log.d(
           TAG, String.format("Key successfully added for session %s", bytesToHexString(sessionId)));
-      if (Build.VERSION.SDK_INT < 23) {
-        // Pass null to indicate that KeyStatus isn't supported.
-        nativeOnKeyStatusChange(mNativeMediaDrmBridge, sessionId, null);
-      }
       return new UpdateSessionResult(UpdateSessionResult.Status.SUCCESS, "");
     } catch (NotProvisionedException e) {
       // TODO: Should we handle this?
@@ -373,10 +369,15 @@ public class MediaDrmBridge {
     return mMediaCrypto;
   }
 
-  private MediaDrmBridge(UUID schemeUUID, long nativeMediaDrmBridge)
+  private MediaDrmBridge(String keySystem, UUID schemeUUID, long nativeMediaDrmBridge)
       throws android.media.UnsupportedSchemeException {
     mSchemeUUID = schemeUUID;
     mMediaDrm = new MediaDrm(schemeUUID);
+
+    // Get info of hdcp connection
+    if (Build.VERSION.SDK_INT >= 29) {
+      getConnectedHdcpLevelInfoV29(mMediaDrm);
+    }
 
     mNativeMediaDrmBridge = nativeMediaDrmBridge;
     if (!isNativeMediaDrmBridgeValid()) {
@@ -444,16 +445,6 @@ public class MediaDrmBridge {
           }
         });
 
-    if (Build.VERSION.SDK_INT >= 23) {
-      setOnKeyStatusChangeListenerV23();
-    }
-
-    mMediaDrm.setPropertyString("privacyMode", "enable");
-    mMediaDrm.setPropertyString("sessionSharing", "enable");
-  }
-
-  @RequiresApi(23)
-  private void setOnKeyStatusChangeListenerV23() {
     mMediaDrm.setOnKeyStatusChangeListener(
         new MediaDrm.OnKeyStatusChangeListener() {
           @Override
@@ -469,6 +460,13 @@ public class MediaDrmBridge {
           }
         },
         null);
+
+    mMediaDrm.setPropertyString("privacyMode", "enable");
+    mMediaDrm.setPropertyString("sessionSharing", "enable");
+    if (keySystem.equals("com.youtube.widevine.l3")
+        && mMediaDrm.getPropertyString("securityLevel") != "L3") {
+      mMediaDrm.setPropertyString("securityLevel", "L3");
+    }
   }
 
   /** Convert byte array to hex string for logging. */
@@ -487,17 +485,7 @@ public class MediaDrmBridge {
       return;
     }
 
-    int requestType = MediaDrm.KeyRequest.REQUEST_TYPE_INITIAL;
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      requestType = request.getRequestType();
-    } else {
-      // Prior to M, getRequestType() is not supported. Do our best guess here: Assume
-      // requests with a URL are renewals and all others are initial requests.
-      requestType =
-          request.getDefaultUrl().isEmpty()
-              ? MediaDrm.KeyRequest.REQUEST_TYPE_INITIAL
-              : MediaDrm.KeyRequest.REQUEST_TYPE_RENEWAL;
-    }
+    int requestType = request.getRequestType();
 
     nativeOnSessionMessage(
         mNativeMediaDrmBridge, ticket, sessionId, requestType, request.getData());
@@ -528,8 +516,7 @@ public class MediaDrmBridge {
           mMediaDrm.getKeyRequest(
               sessionId, data, mime, MediaDrm.KEY_TYPE_STREAMING, optionalParameters);
     } catch (IllegalStateException e) {
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP
-          && e instanceof android.media.MediaDrm.MediaDrmStateException) {
+      if (e instanceof android.media.MediaDrm.MediaDrmStateException) {
         Log.e(TAG, "MediaDrmStateException fired during getKeyRequest().", e);
       }
     }
@@ -554,41 +541,10 @@ public class MediaDrmBridge {
     if (mMediaDrm == null) {
       throw new IllegalStateException("Cannot create media crypto with null mMediaDrm.");
     }
-    if (mMediaCryptoSession != null) {
-      throw new IllegalStateException(
-          "Cannot create media crypto with non-null mMediaCryptoSession.");
-    }
-    // TODO: Cannot do this during provisioning pending.
-
-    // Open media crypto session.
-    try {
-      mMediaCryptoSession = openSession();
-    } catch (NotProvisionedException e) {
-      Log.d(TAG, "Device not provisioned", e);
-      if (!attemptProvisioning()) {
-        Log.e(TAG, "Failed to provision device during MediaCrypto creation.");
-        return false;
-      }
-      try {
-        mMediaCryptoSession = openSession();
-      } catch (NotProvisionedException e2) {
-        Log.e(TAG, "Device still not provisioned after supposedly successful provisioning", e2);
-        return false;
-      }
-    }
-
-    if (mMediaCryptoSession == null) {
-      Log.e(TAG, "Cannot create MediaCrypto Session.");
-      return false;
-    }
-    Log.d(
-        TAG,
-        String.format("MediaCrypto Session created: %s", bytesToHexString(mMediaCryptoSession)));
-
     // Create MediaCrypto object.
     try {
       if (MediaCrypto.isCryptoSchemeSupported(mSchemeUUID)) {
-        MediaCrypto mediaCrypto = new MediaCrypto(mSchemeUUID, mMediaCryptoSession);
+        MediaCrypto mediaCrypto = new MediaCrypto(mSchemeUUID, new byte[0]);
         Log.d(TAG, "MediaCrypto successfully created!");
         mMediaCrypto = mediaCrypto;
         return true;
@@ -598,14 +554,6 @@ public class MediaDrmBridge {
     } catch (MediaCryptoException e) {
       Log.e(TAG, "Cannot create MediaCrypto", e);
     }
-
-    try {
-      // Some implementations let this method throw exceptions.
-      mMediaDrm.closeSession(mMediaCryptoSession);
-    } catch (Exception e) {
-      Log.e(TAG, "closeSession failed: ", e);
-    }
-    mMediaCryptoSession = null;
 
     return false;
   }
@@ -638,6 +586,59 @@ public class MediaDrmBridge {
       release();
       return null;
     }
+  }
+
+  @UsedByNative
+  boolean createMediaCryptoSession() {
+    if (mMediaCryptoSession != null) {
+      return true;
+    }
+    Log.w(TAG, "MediaDrmBridge createMediaCryptoSession");
+    if (mMediaCrypto == null) {
+      throw new IllegalStateException("Cannot create media crypto session with null mMediaCrypto.");
+    }
+
+    // Open media crypto session.
+    try {
+      mMediaCryptoSession = openSession();
+    } catch (NotProvisionedException e) {
+      Log.w(TAG, "Device not provisioned", e);
+      if (!attemptProvisioning()) {
+        Log.e(TAG, "Failed to provision device during MediaCrypto creation.");
+        return false;
+      }
+      try {
+        mMediaCryptoSession = openSession();
+      } catch (NotProvisionedException e2) {
+        Log.e(TAG, "Device still not provisioned after supposedly successful provisioning", e2);
+        return false;
+      }
+    }
+
+    if (mMediaCryptoSession == null) {
+      Log.e(TAG, "Cannot create MediaCrypto Session.");
+      return false;
+    }
+
+    try {
+      mMediaCrypto.setMediaDrmSession(mMediaCryptoSession);
+    } catch (MediaCryptoException e3) {
+      Log.e(TAG, "Unable to set media drm session", e3);
+      try {
+        // Some implementations let this method throw exceptions.
+        mMediaDrm.closeSession(mMediaCryptoSession);
+      } catch (Exception e) {
+        Log.e(TAG, "closeSession failed: ", e);
+      }
+      mMediaCryptoSession = null;
+      return false;
+    }
+
+    Log.d(
+        TAG,
+        String.format("MediaCrypto Session created: %s", bytesToHexString(mMediaCryptoSession)));
+
+    return true;
   }
 
   /**
@@ -711,7 +712,6 @@ public class MediaDrmBridge {
           String.format("Successfully closed session (%s)", bytesToHexString(sessionId.array())));
     }
     mSessionIds.clear();
-    mSessionIds = null;
 
     // Close mMediaCryptoSession if it's open.
     if (mMediaCryptoSession != null) {
@@ -742,6 +742,40 @@ public class MediaDrmBridge {
   @RequiresApi(28)
   private void closeMediaDrmV28(MediaDrm mediaDrm) {
     mediaDrm.close();
+  }
+
+  @RequiresApi(29)
+  private void getConnectedHdcpLevelInfoV29(MediaDrm mediaDrm) {
+    int hdcpLevel = mediaDrm.getConnectedHdcpLevel();
+    switch (hdcpLevel) {
+      case MediaDrm.HDCP_V1:
+        Log.i(TAG, "MediaDrm HDCP Level is HDCP_V1.");
+        break;
+      case MediaDrm.HDCP_V2:
+        Log.i(TAG, "MediaDrm HDCP Level is HDCP_V2.");
+        break;
+      case MediaDrm.HDCP_V2_1:
+        Log.i(TAG, "MediaDrm HDCP Level is HDCP_V2_1.");
+        break;
+      case MediaDrm.HDCP_V2_2:
+        Log.i(TAG, "MediaDrm HDCP Level is HDCP_V2_2.");
+        break;
+      case MediaDrm.HDCP_V2_3:
+        Log.i(TAG, "MediaDrm HDCP Level is HDCP_V2_3.");
+        break;
+      case MediaDrm.HDCP_NONE:
+        Log.i(TAG, "MediaDrm HDCP Level is HDCP_NONE.");
+        break;
+      case MediaDrm.HDCP_NO_DIGITAL_OUTPUT:
+        Log.i(TAG, "MediaDrm HDCP Level is HDCP_NO_DIGITAL_OUTPUT.");
+        break;
+      case MediaDrm.HDCP_LEVEL_UNKNOWN:
+        Log.i(TAG, "MediaDrm HDCP Level is HDCP_LEVEL_UNKNOWN.");
+        break;
+      default:
+        Log.i(TAG, String.format(Locale.US, "Unknown MediaDrm HDCP level %d.", hdcpLevel));
+        break;
+    }
   }
 
   private boolean isNativeMediaDrmBridgeValid() {

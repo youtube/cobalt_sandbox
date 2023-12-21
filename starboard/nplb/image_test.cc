@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Includes all headers in a C context to make sure they compile as C files.
+#if SB_API_VERSION < 16
 
 #include "starboard/image.h"
 #include "testing/gtest/include/gtest/gtest.h"
@@ -22,22 +22,18 @@ namespace nplb {
 namespace {
 
 const SbDecodeTargetFormat kDecodeTargetFormats[] = {
-  kSbDecodeTargetFormat1PlaneRGBA,
-  kSbDecodeTargetFormat1PlaneBGRA,
-  kSbDecodeTargetFormat2PlaneYUVNV12,
-  kSbDecodeTargetFormat3PlaneYUVI420,
-  kSbDecodeTargetFormat3Plane10BitYUVI420,
-  kSbDecodeTargetFormat1PlaneUYVY,
-  kSbDecodeTargetFormatInvalid,
+    kSbDecodeTargetFormat1PlaneRGBA,
+    kSbDecodeTargetFormat1PlaneBGRA,
+    kSbDecodeTargetFormat2PlaneYUVNV12,
+    kSbDecodeTargetFormat3PlaneYUVI420,
+    kSbDecodeTargetFormat3Plane10BitYUVI420,
+    kSbDecodeTargetFormat1PlaneUYVY,
+    kSbDecodeTargetFormatInvalid,
 };
 
 const char* kMimeTypes[] = {
-  "image/jpeg",
-  "image/png",
-  "image/gif",
-  "application/json",
-  "image/webp",
-  "invalid",
+    "image/jpeg",       "image/png",  "image/gif",
+    "application/json", "image/webp", "invalid",
 };
 
 // Verify SbImageIsDecodeSupported() can be called with any parameter values.
@@ -56,3 +52,5 @@ TEST(ImageTest, IsDecodeSupported) {
 }  // namespace.
 }  // namespace nplb.
 }  // namespace starboard.
+
+#endif  // SB_API_VERSION < 16

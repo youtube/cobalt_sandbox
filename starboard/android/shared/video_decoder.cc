@@ -29,11 +29,14 @@
 #include "starboard/android/shared/media_common.h"
 #include "starboard/android/shared/video_render_algorithm.h"
 #include "starboard/android/shared/window_internal.h"
+#include "starboard/common/media.h"
+#include "starboard/common/player.h"
 #include "starboard/common/string.h"
 #include "starboard/configuration.h"
 #include "starboard/decode_target.h"
 #include "starboard/drm.h"
 #include "starboard/memory.h"
+#include "starboard/shared/starboard/media/mime_type.h"
 #include "starboard/shared/starboard/player/filter/video_frame_internal.h"
 #include "starboard/string.h"
 #include "starboard/thread.h"
@@ -44,11 +47,136 @@ namespace shared {
 
 namespace {
 
+using ::starboard::shared::starboard::media::MimeType;
 using ::starboard::shared::starboard::player::filter::VideoFrame;
 using VideoRenderAlgorithmBase =
     ::starboard::shared::starboard::player::filter::VideoRenderAlgorithm;
 using std::placeholders::_1;
 using std::placeholders::_2;
+
+bool IsSoftwareDecodeRequired(const std::string& max_video_capabilities) {
+  if (max_video_capabilities.empty()) {
+    SB_LOG(INFO)
+        << "Use hardware decoder as `max_video_capabilities` is empty.";
+    return false;
+  }
+
+  // `max_video_capabilities` is in the form of mime type attributes, like
+  // "width=1920; height=1080; ...".  Prepend valid mime type/subtype and codecs
+  // so it can be parsed by MimeType.
+  MimeType mime_type("video/mp4; codecs=\"vp9\"; " + max_video_capabilities);
+  if (!mime_type.is_valid()) {
+    SB_LOG(INFO) << "Use hardware decoder as `max_video_capabilities` ("
+                 << max_video_capabilities << ") is invalid.";
+    return false;
+  }
+
+  std::string software_decoder_expectation =
+      mime_type.GetParamStringValue("softwaredecoder", "");
+  if (software_decoder_expectation == "required" ||
+      software_decoder_expectation == "preferred") {
+    SB_LOG(INFO) << "Use software decoder as `softwaredecoder` is set to \""
+                 << software_decoder_expectation << "\".";
+    return true;
+  } else if (software_decoder_expectation == "disallowed" ||
+             software_decoder_expectation == "unpreferred") {
+    SB_LOG(INFO) << "Use hardware decoder as `softwaredecoder` is set to \""
+                 << software_decoder_expectation << "\".";
+    return false;
+  }
+
+  bool is_low_resolution = mime_type.GetParamIntValue("width", 1920) <= 432 &&
+                           mime_type.GetParamIntValue("height", 1080) <= 240;
+  bool is_low_fps = mime_type.GetParamIntValue("fps", 30) <= 15;
+
+  if (is_low_resolution && is_low_fps) {
+    // Workaround to be compatible with existing backend implementation.
+    SB_LOG(INFO) << "Use software decoder as `max_video_capabilities` ("
+                 << max_video_capabilities
+                 << ") indicates a low resolution and low fps playback.";
+    return true;
+  }
+
+  SB_LOG(INFO)
+      << "Use hardware decoder as `max_video_capabilities` is set to \""
+      << max_video_capabilities << "\".";
+  return false;
+}
+
+void ParseMaxResolution(const std::string& max_video_capabilities,
+                        int frame_width,
+                        int frame_height,
+                        optional<int>* max_width,
+                        optional<int>* max_height) {
+  SB_DCHECK(frame_width > 0);
+  SB_DCHECK(frame_height > 0);
+  SB_DCHECK(max_width);
+  SB_DCHECK(max_height);
+
+  *max_width = nullopt;
+  *max_height = nullopt;
+
+  if (max_video_capabilities.empty()) {
+    SB_LOG(INFO)
+        << "Didn't parse max resolutions as `max_video_capabilities` is empty.";
+    return;
+  }
+
+  SB_LOG(INFO) << "Try to parse max resolutions from `max_video_capabilities` ("
+               << max_video_capabilities << ").";
+
+  // `max_video_capabilities` is in the form of mime type attributes, like
+  // "width=1920; height=1080; ...".  Prepend valid mime type/subtype and codecs
+  // so it can be parsed by MimeType.
+  MimeType mime_type("video/mp4; codecs=\"vp9\"; " + max_video_capabilities);
+  if (!mime_type.is_valid()) {
+    SB_LOG(WARNING) << "Failed to parse max resolutions as "
+                       "`max_video_capabilities` is invalid.";
+    return;
+  }
+
+  int width = mime_type.GetParamIntValue("width", -1);
+  int height = mime_type.GetParamIntValue("height", -1);
+  if (width <= 0 && height <= 0) {
+    SB_LOG(WARNING) << "Failed to parse max resolutions as either width or "
+                       "height isn't set.";
+    return;
+  }
+  if (width != -1 && height != -1) {
+    *max_width = width;
+    *max_height = height;
+    SB_LOG(INFO) << "Parsed max resolutions @ (" << *max_width << ", "
+                 << *max_height << ").";
+    return;
+  }
+
+  if (frame_width <= 0 || frame_height <= 0) {
+    // We DCHECK() above, but just be safe.
+    SB_LOG(WARNING)
+        << "Failed to parse max resolutions due to invalid frame resolutions ("
+        << frame_width << ", " << frame_height << ").";
+    return;
+  }
+
+  if (width > 0) {
+    *max_width = width;
+    *max_height = max_width->value() * frame_height / frame_width;
+    SB_LOG(INFO) << "Inferred max height (" << *max_height
+                 << ") from max_width (" << *max_width
+                 << ") and frame resolution @ (" << frame_width << ", "
+                 << frame_height << ").";
+    return;
+  }
+
+  if (height > 0) {
+    *max_height = height;
+    *max_width = max_height->value() * frame_width / frame_height;
+    SB_LOG(INFO) << "Inferred max width (" << *max_width
+                 << ") from max_height (" << *max_height
+                 << ") and frame resolution @ (" << frame_width << ", "
+                 << frame_height << ").";
+  }
+}
 
 class VideoFrameImpl : public VideoFrame {
  public:
@@ -218,7 +346,7 @@ class VideoDecoder::Sink : public VideoDecoder::VideoRendererSink {
   bool rendered_;
 };
 
-VideoDecoder::VideoDecoder(SbMediaVideoCodec video_codec,
+VideoDecoder::VideoDecoder(const VideoStreamInfo& video_stream_info,
                            SbDrmSystem drm_system,
                            SbPlayerOutputMode output_mode,
                            SbDecodeTargetGraphicsContextProvider*
@@ -228,21 +356,20 @@ VideoDecoder::VideoDecoder(SbMediaVideoCodec video_codec,
                            bool force_secure_pipeline_under_tunnel_mode,
                            bool force_reset_surface_under_tunnel_mode,
                            bool force_big_endian_hdr_metadata,
-                           bool force_improved_support_check,
                            std::string* error_message)
-    : video_codec_(video_codec),
+    : video_codec_(video_stream_info.codec),
       drm_system_(static_cast<DrmSystem*>(drm_system)),
       output_mode_(output_mode),
       decode_target_graphics_context_provider_(
           decode_target_graphics_context_provider),
+      max_video_capabilities_(max_video_capabilities),
       tunnel_mode_audio_session_id_(tunnel_mode_audio_session_id),
       force_reset_surface_under_tunnel_mode_(
           force_reset_surface_under_tunnel_mode),
       has_new_texture_available_(false),
       surface_condition_variable_(surface_destroy_mutex_),
-      require_software_codec_(!max_video_capabilities.empty()),
+      require_software_codec_(IsSoftwareDecodeRequired(max_video_capabilities)),
       force_big_endian_hdr_metadata_(force_big_endian_hdr_metadata),
-      force_improved_support_check_(force_improved_support_check),
       number_of_preroll_frames_(kInitialPrerollFrameCount) {
   SB_DCHECK(error_message);
 
@@ -253,8 +380,8 @@ VideoDecoder::VideoDecoder(SbMediaVideoCodec video_codec,
     SB_DCHECK(tunnel_mode_audio_session_id != -1);
     SB_DCHECK(!drm_system_);
     drm_system_to_enforce_tunnel_mode_.reset(new DrmSystem(
-        nullptr, StubDrmSessionUpdateRequestFunc, StubDrmSessionUpdatedFunc,
-        StubDrmSessionKeyStatusesChangedFunc));
+        "com.youtube.widevine.l3", nullptr, StubDrmSessionUpdateRequestFunc,
+        StubDrmSessionUpdatedFunc, StubDrmSessionKeyStatusesChangedFunc));
     drm_system_ = drm_system_to_enforce_tunnel_mode_.get();
   }
 
@@ -263,13 +390,20 @@ VideoDecoder::VideoDecoder(SbMediaVideoCodec video_codec,
   }
 
   if (video_codec_ != kSbMediaVideoCodecAv1) {
-    if (!InitializeCodec(error_message)) {
+    if (!InitializeCodec(video_stream_info, error_message)) {
       *error_message =
           "Failed to initialize video decoder with error: " + *error_message;
       SB_LOG(ERROR) << *error_message;
       TeardownCodec();
     }
   }
+
+  SB_LOG(INFO) << "Created VideoDecoder for codec "
+               << GetMediaVideoCodecName(video_codec_) << ", with output mode "
+               << GetPlayerOutputModeName(output_mode_)
+               << ", max video capabilities \"" << max_video_capabilities_
+               << "\", and tunnel mode audio session id "
+               << tunnel_mode_audio_session_id_;
 }
 
 VideoDecoder::~VideoDecoder() {
@@ -363,7 +497,8 @@ void VideoDecoder::WriteInputBuffers(const InputBuffers& input_buffers) {
     // because we need to change the color metadata.
     if (video_codec_ != kSbMediaVideoCodecAv1 && media_decoder_ == NULL) {
       std::string error_message;
-      if (!InitializeCodec(&error_message)) {
+      if (!InitializeCodec(input_buffers.front()->video_stream_info(),
+                           &error_message)) {
         error_message =
             "Failed to reinitialize codec with error: " + error_message;
         SB_LOG(ERROR) << error_message;
@@ -392,7 +527,8 @@ void VideoDecoder::WriteInputBuffers(const InputBuffers& input_buffers) {
       return;
     }
     std::string error_message;
-    if (!InitializeCodec(&error_message)) {
+    if (!InitializeCodec(pending_input_buffers_.front()->video_stream_info(),
+                         &error_message)) {
       error_message =
           "Failed to reinitialize codec with error: " + error_message;
       SB_LOG(ERROR) << error_message;
@@ -429,7 +565,8 @@ void VideoDecoder::WriteEndOfStream() {
     SB_DCHECK(pending_input_buffers_.size() == input_buffer_written_);
 
     std::string error_message;
-    if (!InitializeCodec(&error_message)) {
+    if (!InitializeCodec(pending_input_buffers_.front()->video_stream_info(),
+                         &error_message)) {
       error_message =
           "Failed to reinitialize codec with error: " + error_message;
       SB_LOG(ERROR) << error_message;
@@ -459,9 +596,6 @@ void VideoDecoder::Reset() {
   TeardownCodec();
   CancelPendingJobs();
 
-  // After TeardownCodec, buffered_output_frames_ should equal to 0.
-  SB_DCHECK(buffered_output_frames_ == 0);
-
   tunnel_mode_prerolling_.store(true);
   tunnel_mode_frame_rendered_.store(false);
   input_buffer_written_ = 0;
@@ -477,11 +611,12 @@ void VideoDecoder::Reset() {
   //       it depends on the behavior of the video renderer.
 }
 
-bool VideoDecoder::InitializeCodec(std::string* error_message) {
+bool VideoDecoder::InitializeCodec(const VideoStreamInfo& video_stream_info,
+                                   std::string* error_message) {
   SB_DCHECK(BelongsToCurrentThread());
   SB_DCHECK(error_message);
 
-  if (video_codec_ == kSbMediaVideoCodecAv1) {
+  if (video_stream_info.codec == kSbMediaVideoCodecAv1) {
     SB_DCHECK(pending_input_buffers_.size() > 0);
 
     // Guesstimate the video fps.
@@ -555,28 +690,28 @@ bool VideoDecoder::InitializeCodec(std::string* error_message) {
     return false;
   }
 
-  int width, height;
-  if (!GetVideoWindowSize(&width, &height)) {
-    *error_message =
-        "Can't initialize the codec since we don't have a video window.";
-    SB_LOG(ERROR) << *error_message;
-    return false;
-  }
-
   jobject j_media_crypto = drm_system_ ? drm_system_->GetMediaCrypto() : NULL;
   SB_DCHECK(!drm_system_ || j_media_crypto);
-  if (video_codec_ == kSbMediaVideoCodecAv1) {
+  if (video_stream_info.codec == kSbMediaVideoCodecAv1) {
     SB_DCHECK(video_fps_ > 0);
   } else {
     SB_DCHECK(video_fps_ == 0);
   }
+
+  optional<int> max_width, max_height;
+  // TODO(b/281431214): Evaluate if we should also parse the fps from
+  //                    `max_video_capabilities_` and pass to MediaDecoder ctor.
+  ParseMaxResolution(max_video_capabilities_, video_stream_info.frame_width,
+                     video_stream_info.frame_height, &max_width, &max_height);
+
   media_decoder_.reset(new MediaDecoder(
-      this, video_codec_, width, height, video_fps_, j_output_surface,
-      drm_system_, color_metadata_ ? &*color_metadata_ : nullptr,
-      require_software_codec_,
+      this, video_stream_info.codec, video_stream_info.frame_width,
+      video_stream_info.frame_height, max_width, max_height, video_fps_,
+      j_output_surface, drm_system_,
+      color_metadata_ ? &*color_metadata_ : nullptr, require_software_codec_,
       std::bind(&VideoDecoder::OnTunnelModeFrameRendered, this, _1),
       tunnel_mode_audio_session_id_, force_big_endian_hdr_metadata_,
-      force_improved_support_check_, error_message));
+      error_message));
   if (media_decoder_->is_valid()) {
     if (error_cb_) {
       media_decoder_->Initialize(
@@ -584,7 +719,7 @@ bool VideoDecoder::InitializeCodec(std::string* error_message) {
     }
     media_decoder_->SetPlaybackRate(playback_rate_);
 
-    if (video_codec_ == kSbMediaVideoCodecAv1) {
+    if (video_stream_info.codec == kSbMediaVideoCodecAv1) {
       SB_DCHECK(!pending_input_buffers_.empty());
     } else {
       SB_DCHECK(pending_input_buffers_.empty());
@@ -758,11 +893,8 @@ void VideoDecoder::RefreshOutputFormat(MediaCodecBridge* media_codec_bridge) {
   SB_DLOG(INFO) << "Output format changed, trying to dequeue again.";
 
   ScopedLock lock(decode_target_mutex_);
-  // Record the latest width/height of the decoded input.
-  SurfaceDimensions output_dimensions =
-      media_codec_bridge->GetOutputDimensions();
-  frame_width_ = output_dimensions.width;
-  frame_height_ = output_dimensions.height;
+  // Record the latest dimensions of the decoded input.
+  frame_sizes_.push_back(media_codec_bridge->GetOutputSize());
 
   if (tunnel_mode_audio_session_id_ != -1) {
     return;
@@ -775,9 +907,9 @@ void VideoDecoder::RefreshOutputFormat(MediaCodecBridge* media_codec_bridge) {
     output_format_ = starboard::nullopt;
     return;
   }
-  output_format_ = VideoOutputFormat(video_codec_, output_dimensions.width,
-                                     output_dimensions.height,
-                                     (color_metadata_ ? true : false));
+  output_format_ = VideoOutputFormat(
+      video_codec_, frame_sizes_.back().display_width(),
+      frame_sizes_.back().display_height(), (color_metadata_ ? true : false));
   first_output_format_changed_ = true;
   auto max_output_buffers =
       MaxMediaCodecOutputBuffersLookupTable::GetInstance()
@@ -800,6 +932,7 @@ void VideoDecoder::OnFlushing() {
 }
 
 namespace {
+
 void updateTexImage(jobject surface_texture) {
   JniEnvExt* env = JniEnvExt::Get();
   env->CallVoidMethodOrAbort(surface_texture, "updateTexImage", "()V");
@@ -882,6 +1015,7 @@ void SetDecodeTargetContentRegionFromMatrix(
   content_region->top = extent_y * height;
   content_region->bottom = origin_y * height;
 }
+
 }  // namespace
 
 // When in decode-to-texture mode, this returns the current decoded video frame.
@@ -894,17 +1028,7 @@ SbDecodeTarget VideoDecoder::GetCurrentDecodeTarget() {
     bool has_new_texture = has_new_texture_available_.exchange(false);
     if (has_new_texture) {
       updateTexImage(decode_target_->data->surface_texture);
-
-      decode_target_->data->info.planes[0].width = frame_width_;
-      decode_target_->data->info.planes[0].height = frame_height_;
-      decode_target_->data->info.width = frame_width_;
-      decode_target_->data->info.height = frame_height_;
-
-      float matrix4x4[16];
-      getTransformMatrix(decode_target_->data->surface_texture, matrix4x4);
-      SetDecodeTargetContentRegionFromMatrix(
-          &decode_target_->data->info.planes[0].content_region, frame_width_,
-          frame_height_, matrix4x4);
+      UpdateDecodeTargetSizeAndContentRegion_Locked();
 
       if (!first_texture_received_) {
         first_texture_received_ = true;
@@ -918,6 +1042,97 @@ SbDecodeTarget VideoDecoder::GetCurrentDecodeTarget() {
     }
   }
   return kSbDecodeTargetInvalid;
+}
+
+void VideoDecoder::UpdateDecodeTargetSizeAndContentRegion_Locked() {
+  decode_target_mutex_.DCheckAcquired();
+
+  SB_DCHECK(!frame_sizes_.empty());
+
+  while (!frame_sizes_.empty()) {
+    const auto& frame_size = frame_sizes_.front();
+    if (frame_size.has_crop_values()) {
+      decode_target_->data->info.planes[0].width = frame_size.texture_width;
+      decode_target_->data->info.planes[0].height = frame_size.texture_height;
+      decode_target_->data->info.width = frame_size.texture_width;
+      decode_target_->data->info.height = frame_size.texture_height;
+
+      float matrix4x4[16];
+      getTransformMatrix(decode_target_->data->surface_texture, matrix4x4);
+
+      auto& content_region =
+          decode_target_->data->info.planes[0].content_region;
+      SetDecodeTargetContentRegionFromMatrix(
+          &content_region, frame_size.texture_width, frame_size.texture_height,
+          matrix4x4);
+
+      // Now we have two crop rectangles, one from the MediaFormat, one from the
+      // transform of the surface texture.  Their sizes should match.
+      // Note that we cannot compare individual corners directly, as the values
+      // retrieving from the surface texture can be flipped.
+      int content_region_width =
+          std::abs(content_region.left - content_region.right) + 1;
+      int content_region_height =
+          std::abs(content_region.bottom - content_region.top) + 1;
+      // Using 2 as epsilon, as the texture may get clipped by one pixel from
+      // each side.
+      bool are_crop_values_matching =
+          std::abs(content_region_width - frame_size.display_width()) <= 2 &&
+          std::abs(content_region_height - frame_size.display_height()) <= 2;
+      if (are_crop_values_matching) {
+        return;
+      }
+
+#if !defined(COBALT_BUILD_TYPE_GOLD)
+      // If we failed to find any matching clip regions, the crop values
+      // returned from the platform may be inconsistent.
+      // Crash in non-gold mode, and fallback to the old logic in gold mode to
+      // avoid terminating the app in production.
+      SB_LOG_IF(WARNING, frame_sizes_.size() <= 1)
+          << frame_size.texture_width << "x" << frame_size.texture_height
+          << " - (" << content_region.left << ", " << content_region.top << ", "
+          << content_region.right << ", " << content_region.bottom << "), ("
+          << frame_size.crop_left << "), (" << frame_size.crop_top << "), ("
+          << frame_size.crop_right << "), (" << frame_size.crop_bottom << ")";
+#endif  // !defined(COBALT_BUILD_TYPE_GOLD)
+    } else {
+      SB_LOG(WARNING) << "Crop values not set.";
+    }
+
+    if (frame_sizes_.size() == 1) {
+      SB_LOG(WARNING) << "Setting content region frame width/height failed,"
+                      << " fallback to the legacy logic.";
+      break;
+    }
+
+    frame_sizes_.erase(frame_sizes_.begin());
+  }
+
+  SB_DCHECK(!frame_sizes_.empty());
+  if (frame_sizes_.empty()) {
+    // This should never happen.  Appending a default value so it aligns to the
+    // legacy behavior, where a single value (instead of an std::vector<>) is
+    // used.
+    frame_sizes_.resize(1);
+  }
+
+  // The legacy logic works when the crop rectangle has the same aspect ratio as
+  // the video texture, which is true for most of the playbacks.
+  // Leaving the legacy logic in place in case the new logic above doesn't work
+  // on some devices, so at least the majority of playbacks still work.
+  decode_target_->data->info.planes[0].width =
+      frame_sizes_.back().display_width();
+  decode_target_->data->info.planes[0].height =
+      frame_sizes_.back().display_height();
+  decode_target_->data->info.width = frame_sizes_.back().display_width();
+  decode_target_->data->info.height = frame_sizes_.back().display_height();
+
+  float matrix4x4[16];
+  getTransformMatrix(decode_target_->data->surface_texture, matrix4x4);
+  SetDecodeTargetContentRegionFromMatrix(
+      &decode_target_->data->info.planes[0].content_region,
+      frame_sizes_.back().display_width(), frame_sizes_.back().display_height(),
+      matrix4x4);
 }
 
 void VideoDecoder::SetPlaybackRate(double playback_rate) {

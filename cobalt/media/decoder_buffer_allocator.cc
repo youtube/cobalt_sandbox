@@ -18,8 +18,7 @@
 #include <vector>
 
 #include "cobalt/math/size.h"
-#include "nb/allocator.h"
-#include "nb/memory_scope.h"
+#include "starboard/common/allocator.h"
 #include "starboard/configuration.h"
 #include "starboard/media.h"
 #include "starboard/memory.h"
@@ -48,7 +47,7 @@ DecoderBufferAllocator::DecoderBufferAllocator()
       initial_capacity_(SbMediaGetInitialBufferCapacity()),
       allocation_unit_(SbMediaGetBufferAllocationUnit()) {
   if (!using_memory_pool_) {
-    DLOG(INFO) << "Allocated media buffer memory using SbMemory* functions.";
+    DLOG(INFO) << "Allocated media buffer memory using malloc* functions.";
     Allocator::Set(this);
     return;
   }
@@ -58,8 +57,6 @@ DecoderBufferAllocator::DecoderBufferAllocator()
     Allocator::Set(this);
     return;
   }
-
-  TRACK_MEMORY_SCOPE("Media");
 
   ScopedLock scoped_lock(mutex_);
   EnsureReuseAllocatorIsCreated();
@@ -73,8 +70,6 @@ DecoderBufferAllocator::~DecoderBufferAllocator() {
     return;
   }
 
-  TRACK_MEMORY_SCOPE("Media");
-
   ScopedLock scoped_lock(mutex_);
 
   if (reuse_allocator_) {
@@ -87,8 +82,6 @@ void DecoderBufferAllocator::Suspend() {
   if (!using_memory_pool_ || is_memory_pool_allocated_on_demand_) {
     return;
   }
-
-  TRACK_MEMORY_SCOPE("Media");
 
   ScopedLock scoped_lock(mutex_);
 
@@ -104,18 +97,15 @@ void DecoderBufferAllocator::Resume() {
     return;
   }
 
-  TRACK_MEMORY_SCOPE("Media");
-
   ScopedLock scoped_lock(mutex_);
   EnsureReuseAllocatorIsCreated();
 }
 
 void* DecoderBufferAllocator::Allocate(size_t size, size_t alignment) {
-  TRACK_MEMORY_SCOPE("Media");
-
   if (!using_memory_pool_) {
     sbmemory_bytes_used_.fetch_add(size);
-    auto p = SbMemoryAllocateAligned(alignment, size);
+    void* p = nullptr;
+    posix_memalign(&p, alignment, size);
     CHECK(p);
     return p;
   }
@@ -133,8 +123,6 @@ void* DecoderBufferAllocator::Allocate(size_t size, size_t alignment) {
 }
 
 void DecoderBufferAllocator::Free(void* p, size_t size) {
-  TRACK_MEMORY_SCOPE("Media");
-
   if (p == nullptr) {
     DCHECK_EQ(size, 0);
     return;
@@ -142,7 +130,7 @@ void DecoderBufferAllocator::Free(void* p, size_t size) {
 
   if (!using_memory_pool_) {
     sbmemory_bytes_used_.fetch_sub(size);
-    SbMemoryDeallocateAligned(p);
+    free(p);
     return;
   }
 
@@ -167,12 +155,16 @@ int DecoderBufferAllocator::GetAudioBufferBudget() const {
 }
 
 int DecoderBufferAllocator::GetBufferAlignment() const {
+#if SB_API_VERSION < 16
 #if SB_API_VERSION >= 14
   return SbMediaGetBufferAlignment();
 #else   // SB_API_VERSION >= 14
   return std::max(SbMediaGetBufferAlignment(kSbMediaTypeAudio),
                   SbMediaGetBufferAlignment(kSbMediaTypeVideo));
 #endif  // SB_API_VERSION >= 14
+#else
+  return sizeof(void*);
+#endif  // SB_API_VERSION < 16
 }
 
 int DecoderBufferAllocator::GetBufferPadding() const {
@@ -184,7 +176,7 @@ int DecoderBufferAllocator::GetBufferPadding() const {
 #endif  // SB_API_VERSION >= 14
 }
 
-SbTime DecoderBufferAllocator::GetBufferGarbageCollectionDurationThreshold()
+int64_t DecoderBufferAllocator::GetBufferGarbageCollectionDurationThreshold()
     const {
   return SbMediaGetBufferGarbageCollectionDurationThreshold();
 }
@@ -237,7 +229,7 @@ void DecoderBufferAllocator::EnsureReuseAllocatorIsCreated() {
     return;
   }
 
-  reuse_allocator_.reset(new nb::BidirectionalFitReuseAllocator(
+  reuse_allocator_.reset(new BidirectionalFitReuseAllocator(
       &fallback_allocator_, initial_capacity_, kSmallAllocationThreshold,
       allocation_unit_, 0));
   DLOG(INFO) << "Allocated " << initial_capacity_

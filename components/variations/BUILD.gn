@@ -72,7 +72,33 @@ static_library("variations") {
     "variations_url_constants.h",
   ]
 
-  if (is_android || is_ios) {
+  if (is_starboard) {
+    sources -= [
+      # These bring in JNI, which we do not want to bring into Cobalt.
+      "android/variations_associated_data_android.cc",
+      "android/variations_seed_bridge.cc",
+      "android/variations_seed_bridge.h",
+      # The ".proto" files were referenced here directly, but caused the build
+      # to fail.
+      "proto/client_variations.proto",
+      "proto/permuted_entropy_cache.proto",
+      "proto/study.proto",
+      "proto/variations_seed.proto",
+    ]
+  }
+
+  if (use_cobalt_customizations) {
+      # Files with unused symbols. ex: base::FeatureList::RegisterFieldTrialOverride
+      # These files give linker errors about undefined symbols during modualr builds.   
+    sources -= [
+      "variations_seed_processor.cc",
+      "variations_seed_processor.h",
+      "variations_seed_simulator.cc",
+      "variations_seed_simulator.h",
+    ]
+  }
+
+  if (!use_cobalt_customizations && (is_android || is_ios)) {
     sources += [
       "variations_request_scheduler_mobile.cc",
       "variations_request_scheduler_mobile.h",
@@ -89,12 +115,12 @@ static_library("variations") {
     "//third_party/zlib/google:compression_utils",
   ]
 
-  if (is_android) {
+  if (is_android && !use_cobalt_customizations) {
     deps += [ ":jni" ]
   }
 }
 
-if (is_android) {
+if (is_android && !use_cobalt_customizations) {
   generate_jni("jni") {
     sources = [
       "android/java/src/org/chromium/components/variations/VariationsAssociatedData.java",
@@ -113,6 +139,7 @@ if (is_android) {
   }
 }
 
+if (!use_cobalt_customizations) {
 static_library("test_support") {
   testonly = true
   sources = [
@@ -182,4 +209,5 @@ test("variations_unittests") {
     "//components/variations/field_trial_config:unit_tests",
     "//components/variations/service:unit_tests",
   ]
+}
 }

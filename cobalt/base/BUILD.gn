@@ -13,7 +13,7 @@
 # limitations under the License.
 
 config("base_config") {
-  defines = [ "COBALT_ENABLE_VERSION_COMPATIBILITY_VALIDATIONS" ]
+  defines = []
 
   if (is_debug || is_devel) {
     defines += [
@@ -60,6 +60,7 @@ static_library("base") {
     "log_message_handler.cc",
     "log_message_handler.h",
     "message_queue.h",
+    "on_metric_upload_event.h",
     "on_screen_keyboard_hidden_event.h",
     "on_screen_keyboard_shown_event.h",
     "path_provider.cc",
@@ -70,6 +71,7 @@ static_library("base") {
     "ref_counted_lock.h",
     "source_location.cc",
     "source_location.h",
+    "starboard_stats_tracker.h",
     "startup_timer.cc",
     "startup_timer.h",
     "statistics.h",
@@ -120,7 +122,7 @@ target(gtest_target_type, "base_test") {
   deps = [
     ":base",
     "//cobalt/test:run_all_unittests",
-    "//starboard",
+    "//starboard:starboard_group",
     "//testing/gmock",
     "//testing/gtest",
   ]

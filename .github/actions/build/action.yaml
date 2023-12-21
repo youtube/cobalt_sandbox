@@ -5,7 +5,7 @@ runs:
   steps:
     - name: Set up Cloud SDK
       if: startsWith(${{matrix.target_platform}}, 'android')
-      uses: google-github-actions/setup-gcloud@v1
+      uses: isarkis/setup-gcloud@40dce7857b354839efac498d3632050f568090b6 # v1.1.1
     - name: Set Android env vars
       if: startsWith(${{matrix.target_platform}}, 'android')
       run: |
@@ -25,7 +25,7 @@ runs:
           fi
         else
           BUILD_PLATFORM=${COBALT_BOOTLOADER}
-          BUILD_TARGET='loader_app_install elf_loader_sandbox_install crashpad_handler_install'
+          BUILD_TARGET='loader_app_install elf_loader_sandbox_install native_target/crashpad_handler'
         fi
         # GitHub Runners have home set to /github/home.
         if [ -d /root/starboard-toolchains ]; then

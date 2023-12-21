@@ -20,13 +20,8 @@
 #ifdef LIBXML_READER_ENABLED
 #include <string.h> /* for memset() only ! */
 #include <stdarg.h>
-
-#ifdef HAVE_CTYPE_H
 #include <ctype.h>
-#endif
-#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
-#endif
 
 #include <libxml/xmlmemory.h>
 #include <libxml/xmlIO.h>
@@ -47,6 +42,13 @@
 #include "buf.h"
 
 #define MAX_ERR_MSG_SIZE 64000
+
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+/* Keeping free objects can hide memory errors. */
+#define MAX_FREE_NODES 1
+#else
+#define MAX_FREE_NODES 100
+#endif
 
 /*
  * The following VA_COPY was coded following an example in
@@ -222,63 +224,6 @@ static void xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur);
 static void xmlTextReaderFreeNodeList(xmlTextReaderPtr reader, xmlNodePtr cur);
 
 /**
- * xmlFreeID:
- * @not:  A id
- *
- * Deallocate the memory used by an id definition
- */
-static void
-xmlFreeID(xmlIDPtr id) {
-    xmlDictPtr dict = NULL;
-
-    if (id == NULL) return;
-
-    if (id->doc != NULL)
-        dict = id->doc->dict;
-
-    if (id->value != NULL)
-	DICT_FREE(id->value)
-    if (id->name != NULL)
-	DICT_FREE(id->name)
-    xmlFree(id);
-}
-
-/**
- * xmlTextReaderRemoveID:
- * @doc:  the document
- * @attr:  the attribute
- *
- * Remove the given attribute from the ID table maintained internally.
- *
- * Returns -1 if the lookup failed and 0 otherwise
- */
-static int
-xmlTextReaderRemoveID(xmlDocPtr doc, xmlAttrPtr attr) {
-    xmlIDTablePtr table;
-    xmlIDPtr id;
-    xmlChar *ID;
-
-    if (doc == NULL) return(-1);
-    if (attr == NULL) return(-1);
-    table = (xmlIDTablePtr) doc->ids;
-    if (table == NULL)
-        return(-1);
-
-    ID = xmlNodeListGetString(doc, attr->children, 1);
-    if (ID == NULL)
-	return(-1);
-    id = xmlHashLookup(table, ID);
-    xmlFree(ID);
-    if (id == NULL || id->attr != attr) {
-	return(-1);
-    }
-    id->name = attr->name;
-    attr->name = NULL;
-    id->attr = NULL;
-    return(0);
-}
-
-/**
  * xmlTextReaderFreeProp:
  * @reader:  the xmlTextReaderPtr used
  * @cur:  the node
@@ -298,19 +243,12 @@ xmlTextReaderFreeProp(xmlTextReaderPtr reader, xmlAttrPtr cur) {
     if ((__xmlRegisterCallbacks) && (xmlDeregisterNodeDefaultValue))
 	xmlDeregisterNodeDefaultValue((xmlNodePtr) cur);
 
-    /* Check for ID removal -> leading to invalid references ! */
-    if ((cur->parent != NULL) && (cur->parent->doc != NULL) &&
-	((cur->parent->doc->intSubset != NULL) ||
-	 (cur->parent->doc->extSubset != NULL))) {
-        if (xmlIsID(cur->parent->doc, cur->parent, cur))
-	    xmlTextReaderRemoveID(cur->parent->doc, cur);
-    }
     if (cur->children != NULL)
         xmlTextReaderFreeNodeList(reader, cur->children);
 
     DICT_FREE(cur->name);
     if ((reader != NULL) && (reader->ctxt != NULL) &&
-        (reader->ctxt->freeAttrsNr < 100)) {
+        (reader->ctxt->freeAttrsNr < MAX_FREE_NODES)) {
         cur->next = reader->ctxt->freeAttrs;
 	reader->ctxt->freeAttrs = cur;
 	reader->ctxt->freeAttrsNr++;
@@ -411,7 +349,7 @@ xmlTextReaderFreeNodeList(xmlTextReaderPtr reader, xmlNodePtr cur) {
 	    if (((cur->type == XML_ELEMENT_NODE) ||
 		 (cur->type == XML_TEXT_NODE)) &&
 	        (reader != NULL) && (reader->ctxt != NULL) &&
-		(reader->ctxt->freeElemsNr < 100)) {
+		(reader->ctxt->freeElemsNr < MAX_FREE_NODES)) {
 	        cur->next = reader->ctxt->freeElems;
 		reader->ctxt->freeElems = cur;
 		reader->ctxt->freeElemsNr++;
@@ -499,29 +437,13 @@ xmlTextReaderFreeNode(xmlTextReaderPtr reader, xmlNodePtr cur) {
     if (((cur->type == XML_ELEMENT_NODE) ||
 	 (cur->type == XML_TEXT_NODE)) &&
 	(reader != NULL) && (reader->ctxt != NULL) &&
-	(reader->ctxt->freeElemsNr < 100)) {
+	(reader->ctxt->freeElemsNr < MAX_FREE_NODES)) {
 	cur->next = reader->ctxt->freeElems;
 	reader->ctxt->freeElems = cur;
 	reader->ctxt->freeElemsNr++;
     } else {
 	xmlFree(cur);
     }
-}
-
-static void
-xmlTextReaderFreeIDTableEntry(void *id, const xmlChar *name ATTRIBUTE_UNUSED) {
-    xmlFreeID((xmlIDPtr) id);
-}
-
-/**
- * xmlTextReaderFreeIDTable:
- * @table:  An id table
- *
- * Deallocate the memory used by an ID hash table.
- */
-static void
-xmlTextReaderFreeIDTable(xmlIDTablePtr table) {
-    xmlHashFree(table, xmlTextReaderFreeIDTableEntry);
 }
 
 /**
@@ -543,7 +465,7 @@ xmlTextReaderFreeDoc(xmlTextReaderPtr reader, xmlDocPtr cur) {
     /*
      * Do this before freeing the children list to avoid ID lookups
      */
-    if (cur->ids != NULL) xmlTextReaderFreeIDTable((xmlIDTablePtr) cur->ids);
+    if (cur->ids != NULL) xmlFreeIDTable((xmlIDTablePtr) cur->ids);
     cur->ids = NULL;
     if (cur->refs != NULL) xmlFreeRefTable((xmlRefTablePtr) cur->refs);
     cur->refs = NULL;
@@ -1436,6 +1358,8 @@ get_next_node:
             (reader->node->prev->type != XML_DTD_NODE)) {
 	    xmlNodePtr tmp = reader->node->prev;
 	    if ((tmp->extra & NODE_IS_PRESERVED) == 0) {
+                if (oldnode == tmp)
+                    oldnode = NULL;
 		xmlUnlinkNode(tmp);
 		xmlTextReaderFreeNode(reader, tmp);
 	    }
@@ -1521,7 +1445,8 @@ node_found:
     /*
      * Handle XInclude if asked for
      */
-    if ((reader->xinclude) && (reader->node != NULL) &&
+    if ((reader->xinclude) && (reader->in_xinclude == 0) &&
+        (reader->node != NULL) &&
 	(reader->node->type == XML_ELEMENT_NODE) &&
 	(reader->node->ns != NULL) &&
 	((xmlStrEqual(reader->node->ns->href, XINCLUDE_NS)) ||
@@ -2260,6 +2185,7 @@ xmlFreeTextReader(xmlTextReaderPtr reader) {
     if (reader->ctxt != NULL) {
         if (reader->dict == reader->ctxt->dict)
 	    reader->dict = NULL;
+#ifdef LIBXML_VALID_ENABLED
 	if ((reader->ctxt->vctxt.vstateTab != NULL) &&
 	    (reader->ctxt->vctxt.vstateMax > 0)){
 #ifdef LIBXML_REGEXP_ENABLED
@@ -2270,6 +2196,7 @@ xmlFreeTextReader(xmlTextReaderPtr reader) {
 	    reader->ctxt->vctxt.vstateTab = NULL;
 	    reader->ctxt->vctxt.vstateMax = 0;
 	}
+#endif /* LIBXML_VALID_ENABLED */
 	if (reader->ctxt->myDoc != NULL) {
 	    if (reader->preserve == 0)
 		xmlTextReaderFreeDoc(reader, reader->ctxt->myDoc);
@@ -5961,6 +5888,5 @@ main(int argc, char **argv)
 }
 #endif
 #endif /* NOT_USED_YET */
-#define bottom_xmlreader
-#include "elfgcchack.h"
+
 #endif /* LIBXML_READER_ENABLED */

@@ -73,6 +73,25 @@ DecodedAudio::DecodedAudio(int channels,
   //           0);
 }
 
+DecodedAudio::DecodedAudio(int channels,
+                           SbMediaAudioSampleType sample_type,
+                           SbMediaAudioFrameStorageType storage_type,
+                           SbTime timestamp,
+                           int size_in_bytes,
+                           Buffer&& storage)
+    : channels_(channels),
+      sample_type_(sample_type),
+      storage_type_(storage_type),
+      timestamp_(timestamp),
+      storage_(std::move(storage)),
+      offset_in_bytes_(0),
+      size_in_bytes_(size_in_bytes) {
+  SB_DCHECK(channels_ > 0);
+  SB_DCHECK(size_in_bytes_ >= 0);
+  SB_DCHECK(size_in_bytes_ % (GetBytesPerSample(sample_type_) * channels_) ==
+            0);
+}
+
 int DecodedAudio::frames() const {
   int bytes_per_sample = GetBytesPerSample(sample_type_);
   SB_DCHECK(size_in_bytes_ % (bytes_per_sample * channels_) == 0);
@@ -142,19 +161,26 @@ void DecodedAudio::AdjustForDiscardedDurations(
   SB_DCHECK(discarded_duration_from_back >= 0);
   SB_DCHECK(storage_type() == kSbMediaAudioFrameStorageTypeInterleaved);
 
-  const auto bytes_per_frame = GetBytesPerSample(sample_type()) * channels_;
-  auto discarded_frames_from_front =
-      AudioDurationToFrames(discarded_duration_from_front, sample_rate);
+  if (discarded_duration_from_front == 0 && discarded_duration_from_back == 0) {
+    return;
+  }
 
-  discarded_frames_from_front = std::min(discarded_frames_from_front, frames());
+  const auto bytes_per_frame = GetBytesPerSample(sample_type()) * channels_;
+  int current_frames = frames();
+  int discarded_frames_from_front =
+      (discarded_duration_from_front >=
+       AudioFramesToDuration(current_frames, sample_rate))
+          ? current_frames
+          : AudioDurationToFrames(discarded_duration_from_front, sample_rate);
   offset_in_bytes_ += bytes_per_frame * discarded_frames_from_front;
   size_in_bytes_ -= bytes_per_frame * discarded_frames_from_front;
-  timestamp_ +=
-      media::AudioFramesToDuration(discarded_frames_from_front, sample_rate);
 
-  auto discarded_frames_from_back =
-      AudioDurationToFrames(discarded_duration_from_back, sample_rate);
-  discarded_frames_from_back = std::min(discarded_frames_from_back, frames());
+  current_frames = frames();
+  int discarded_frames_from_back =
+      (discarded_duration_from_back >=
+       AudioFramesToDuration(current_frames, sample_rate))
+          ? current_frames
+          : AudioDurationToFrames(discarded_duration_from_back, sample_rate);
   size_in_bytes_ -= bytes_per_frame * discarded_frames_from_back;
 }
 

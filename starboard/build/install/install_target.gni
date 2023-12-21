@@ -13,16 +13,26 @@
 # limitations under the License.
 
 import("//starboard/build/config/install.gni")
+import("//starboard/build/config/starboard_target_type.gni")
 
 template("install_target") {
+  not_needed(invoker, [ "shared_library_target_name" ])
+
   installable_target_name = invoker.installable_target_name
+  installable_target_dep = invoker.installable_target_dep
 
   if (invoker.type == "executable") {
     install_subdir = "bin"
     source_name = installable_target_name
   } else if (invoker.type == "shared_library") {
     install_subdir = "lib"
-    source_name = "lib${installable_target_name}.so"
+    if (installable_target_name == "starboard" ||
+        installable_target_name == "cast_starboard_api") {
+      source_name =
+          "lib${installable_target_name}.${starboard_shared_library_extension}"
+    } else {
+      source_name = "lib${installable_target_name}.so"
+    }
   } else {
     assert(false, "You can only install an executable or shared library.")
   }
@@ -30,7 +40,7 @@ template("install_target") {
   copy("copy_" + target_name) {
     forward_variables_from(invoker, [ "testonly" ])
     deps = invoker.deps
-    deps += [ ":$installable_target_name" ]
+    deps += [ installable_target_dep ]
     sources = [ "$root_out_dir/$source_name" ]
     outputs = [ "$root_out_dir/install/$install_subdir/{{source_file_part}}" ]
   }
@@ -38,8 +48,8 @@ template("install_target") {
   group(target_name) {
     forward_variables_from(invoker, [ "testonly" ])
     deps = [
-      ":$installable_target_name",
       ":copy_${target_name}",
+      installable_target_dep,
     ]
   }
 }

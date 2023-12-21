@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#if SB_API_VERSION < 16
+
 #include "starboard/shared/nouser/user_internal.h"
 
 #include "starboard/user.h"
@@ -21,8 +23,11 @@ namespace shared {
 namespace nouser {
 // The one instance of the signed-in user.
 SbUserPrivate g_user = {
-    "user", "user",
+    "user",
+    "user",
 };
 }  // namespace nouser
 }  // namespace shared
 }  // namespace starboard
+
+#endif  // SB_API_VERSION < 16

@@ -18,6 +18,7 @@
 #include "cobalt/base/wrap_main.h"
 #include "cobalt/browser/application.h"
 #include "cobalt/browser/switches.h"
+#include "cobalt/css_parser/switches.h"
 #include "cobalt/version.h"
 
 namespace {
@@ -41,6 +42,7 @@ bool CheckForAndExecuteHelpSwitch() {
           cobalt::browser::switches::kHelp)) {
     SbLogRaw("Options: \n");
     SbLogRaw(cobalt::browser::switches::HelpMessage().c_str());
+    SbLogRaw(cobalt::css_parser::switches::HelpMessage().c_str());
     return true;
   }
   return false;
@@ -55,50 +57,36 @@ bool CheckForAndExecuteStartupSwitches() {
 }
 
 void PreloadApplication(int argc, char** argv, const char* link,
-                        const base::Closure& quit_closure,
-                        SbTimeMonotonic timestamp) {
+                        const base::Closure& quit_closure, int64_t timestamp) {
   if (CheckForAndExecuteStartupSwitches()) {
     SbSystemRequestStop(0);
     return;
   }
   LOG(INFO) << "Concealing application.";
   DCHECK(!g_application);
-  g_application = new cobalt::browser::Application(quit_closure,
-                                                   true /*should_preload*/,
-                                                   timestamp);
+  g_application = new cobalt::browser::Application(
+      quit_closure, true /*should_preload*/, timestamp);
   DCHECK(g_application);
 }
 
 void StartApplication(int argc, char** argv, const char* link,
-                      const base::Closure& quit_closure,
-                      SbTimeMonotonic timestamp) {
+                      const base::Closure& quit_closure, int64_t timestamp) {
   if (CheckForAndExecuteStartupSwitches()) {
     SbSystemRequestStop(0);
     return;
   }
   LOG(INFO) << "Starting application.";
-#if SB_API_VERSION >= 13
   DCHECK(!g_application);
-  g_application = new cobalt::browser::Application(quit_closure,
-                                                   false /*not_preload*/,
-                                                   timestamp);
+  g_application = new cobalt::browser::Application(
+      quit_closure, false /*not_preload*/, timestamp);
   DCHECK(g_application);
-#else
-  if (!g_application) {
-    g_application = new cobalt::browser::Application(quit_closure,
-                                                     false /*should_preload*/,
-                                                     timestamp);
-    DCHECK(g_application);
-  } else {
-    g_application->Start(timestamp);
-  }
-#endif  // SB_API_VERSION >= 13
 }
 
 void StopApplication() {
   LOG(INFO) << "Stopping application.";
   delete g_application;
   g_application = NULL;
+  LOG(INFO) << "Application stopped.";
 }
 
 void HandleStarboardEvent(const SbEvent* starboard_event) {

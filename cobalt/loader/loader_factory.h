@@ -47,6 +47,7 @@ class LoaderFactory : public ScriptLoaderFactory {
                 const base::DebuggerHooks& debugger_hooks,
                 size_t encoded_image_cache_capacity,
                 base::ThreadPriority loader_thread_priority);
+  ~LoaderFactory();
 
   // Creates a loader that fetches and decodes an image.
   std::unique_ptr<Loader> CreateImageLoader(
@@ -60,7 +61,8 @@ class LoaderFactory : public ScriptLoaderFactory {
   std::unique_ptr<Loader> CreateLinkLoader(
       const GURL& url, const Origin& origin,
       const csp::SecurityCallback& url_security_callback,
-      const loader::RequestMode cors_mode, const disk_cache::ResourceType type,
+      const loader::RequestMode cors_mode,
+      const network::disk_cache::ResourceType type,
       const TextDecoder::TextAvailableCallback& link_available_callback,
       const Loader::OnCompleteFunction& load_complete_callback);
 
@@ -82,7 +84,7 @@ class LoaderFactory : public ScriptLoaderFactory {
   Loader::FetcherCreator MakeCachedFetcherCreator(
       const GURL& url, const csp::SecurityCallback& url_security_callback,
       RequestMode request_mode, const Origin& origin,
-      const disk_cache::ResourceType type);
+      const network::disk_cache::ResourceType type);
 
   // Clears out the loader factory's resource provider, aborting any in-progress
   // loads.
@@ -108,7 +110,7 @@ class LoaderFactory : public ScriptLoaderFactory {
   // Used to cache the fetched raw data.  Note that currently the cache is only
   // used to cache Image data.  We may introduce more caches once we want to
   // cache fetched data for other resource types.
-  std::unique_ptr<FetcherCache> fetcher_cache_;
+  scoped_refptr<FetcherCache> fetcher_cache_;
 
   // Used with CLOG to report errors with the image source.
   const base::DebuggerHooks& debugger_hooks_;

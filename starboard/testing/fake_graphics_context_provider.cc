@@ -65,6 +65,12 @@
 
 #define EGL_CALL_SIMPLE(x) (EGL_CALL_PREFIX x)
 
+#define GL_CALL(x)                                                     \
+  do {                                                                 \
+    SbGetGlesInterface()->x;                                           \
+    SB_DCHECK((SbGetGlesInterface()->glGetError()) == SB_GL_NO_ERROR); \
+  } while (false)
+
 namespace starboard {
 namespace testing {
 
@@ -206,8 +212,8 @@ void FakeGraphicsContextProvider::InitializeEGL() {
   SB_CHECK(0 != num_configs);
 
   // Allocate space to receive the matching configs and retrieve them.
-  EGLConfig* configs = reinterpret_cast<EGLConfig*>(
-      SbMemoryAllocate(num_configs * sizeof(EGLConfig)));
+  EGLConfig* configs =
+      reinterpret_cast<EGLConfig*>(malloc(num_configs * sizeof(EGLConfig)));
   EGL_CALL(eglChooseConfig(display_, kAttributeList, configs, num_configs,
                            &num_configs));
 
@@ -226,8 +232,7 @@ void FakeGraphicsContextProvider::InitializeEGL() {
   }
   SB_DCHECK(surface_ != EGL_NO_SURFACE);
 
-  SbMemoryDeallocate(configs);
-
+  free(configs);
   // Create the GLES2 or GLEX3 Context.
   EGLint context_attrib_list[] = {
       EGL_CONTEXT_CLIENT_VERSION,
@@ -289,6 +294,11 @@ void FakeGraphicsContextProvider::MakeContextCurrent() {
 void FakeGraphicsContextProvider::MakeNoContextCurrent() {
   EGL_CALL(
       eglMakeCurrent(display_, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
+}
+
+void FakeGraphicsContextProvider::Render() {
+  GL_CALL(glClear(SB_GL_COLOR_BUFFER_BIT));
+  EGL_CALL(eglSwapBuffers(display_, surface_));
 }
 
 void FakeGraphicsContextProvider::DestroyContext() {

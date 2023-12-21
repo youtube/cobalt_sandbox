@@ -54,14 +54,13 @@
  * copied and put under another distribution licence
  * [including the GNU Public Licence.] */
 
-#include <openssl/opensslconf.h>
-#if !defined(OPENSSL_SYS_STARBOARD)
+#include <openssl/pem.h>
+
+#if !defined(OPENSSL_SYS_STARBOARD) || SB_API_VERSION >= 16
 #include <stdio.h>
 #include <string.h>
-#endif  // !defined(OPENSSL_SYS_STARBOARD)
-#include <openssl/base.h>
+#endif  // !defined(OPENSSL_SYS_STARBOARD) || SB_API_VERSION >= 16
 
-#include <openssl/pem.h>
 #include <openssl/buf.h>
 #include <openssl/dh.h>
 #include <openssl/err.h>

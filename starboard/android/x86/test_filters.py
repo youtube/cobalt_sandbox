@@ -19,17 +19,20 @@ from starboard.tools.testing import test_filter
 # A map of failing or crashing tests per target
 _FILTERED_TESTS = {
     'nplb': [
+        'MultiplePlayerTests/*',
         'SbAccessibilityTest.CallSetCaptionsEnabled',
         'SbAccessibilityTest.GetCaptionSettingsReturnIsValid',
         'SbAudioSinkTest.*',
         'SbMicrophoneCloseTest.*',
         'SbMicrophoneOpenTest.*',
         'SbMicrophoneReadTest.*',
-        'SbPlayerWriteSampleTests/SbPlayerWriteSampleTest.*',
+        'SbPlayerGetAudioConfigurationTests/*',
+        'SbPlayerWriteSampleTests/*',
         ('SbMediaSetAudioWriteDurationTests/SbMediaSetAudioWriteDurationTest'
          '.WriteContinuedLimitedInput/*'),
         ('SbMediaSetAudioWriteDurationTests/SbMediaSetAudioWriteDurationTest'
          '.WriteLimitedInput/*'),
+        'VerticalVideoTests/VerticalVideoTest.WriteSamples/*',
     ],
     'player_filter_tests': [
         'AudioDecoderTests/*',

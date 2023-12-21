@@ -123,11 +123,19 @@ class MediaModule : public WebMediaPlayerFactory,
   bool suspended_ = false;
 
   bool allow_batched_sample_write_ = false;
+  // When set to `false` (the default value), Cobalt calls
+  // `SbPlayerGetPreferredOutputMode()` with `kSbPlayerOutputModeInvalid` when
+  // there is no preference on output mode.
+  // When set to `true` via `h5vcc.settings`, Cobalt calls
+  // `SbPlayerGetPreferredOutputMode()` with `kSbPlayerOutputModePunchOut` when
+  // there is no preference on output mode.  This allows us to fallback to the
+  // previous behavior.
+  bool force_punch_out_by_default_ = false;
 
-#if SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
-  SbTime audio_write_duration_local_ = kSbPlayerWriteDurationLocal;
-  SbTime audio_write_duration_remote_ = kSbPlayerWriteDurationRemote;
-#endif  // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#if SB_API_VERSION >= 15
+  int64_t audio_write_duration_local_ = kSbPlayerWriteDurationLocal;
+  int64_t audio_write_duration_remote_ = kSbPlayerWriteDurationRemote;
+#endif  // SB_API_VERSION >= 15
 
   DecoderBufferAllocator decoder_buffer_allocator_;
 };

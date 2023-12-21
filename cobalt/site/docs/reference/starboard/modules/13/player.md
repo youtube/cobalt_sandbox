@@ -1,45 +1,45 @@
----
-layout: doc
-title: "Starboard Module Reference: player.h"
----
+Project: /youtube/cobalt/_project.yaml
+Book: /youtube/cobalt/_book.yaml
+
+# Starboard Module Reference: `player.h`
 
 Defines an interface for controlling playback of media elementary streams.
 
-## Macros ##
+## Macros
 
-### SB_PLAYER_INITIAL_TICKET ###
+### SB_PLAYER_INITIAL_TICKET
 
 The value of the initial ticket held by the player before the first seek. The
 player will use this ticket value to make the first call to SbPlayerStatusFunc
 with kSbPlayerStateInitialized.
 
-### SB_PLAYER_NO_DURATION ###
+### SB_PLAYER_NO_DURATION
 
 The value to pass into SbPlayerCreate's `duration_pts` argument for cases where
 the duration is unknown, such as for live streams.
 
-### kSbPlayerInvalid ###
+### kSbPlayerInvalid
 
 Well-defined value for an invalid player.
 
-## Enums ##
+## Enums
 
-### SbPlayerDecoderState ###
+### SbPlayerDecoderState
 
 An indicator of whether the decoder can accept more samples.
 
-#### Values ####
+#### Values
 
 *   `kSbPlayerDecoderStateNeedsData`
 
     The decoder is asking for one more sample.
 
-### SbPlayerSampleSideDataType ###
+### SbPlayerSampleSideDataType
 
 Identify the type of side data accompanied with `SbPlayerSampleInfo`, as side
 data may come from multiple sources.
 
-#### Values ####
+#### Values
 
 *   `kMatroskaBlockAdditional`
 
@@ -48,11 +48,11 @@ data may come from multiple sources.
     . The first 8 bytes of the data contains the value of BlockAddID in big
     endian format, followed by the content of BlockAdditional.
 
-### SbPlayerState ###
+### SbPlayerState
 
 An indicator of the general playback state.
 
-#### Values ####
+#### Values
 
 *   `kSbPlayerStateInitialized`
 
@@ -76,31 +76,31 @@ An indicator of the general playback state.
 
     The player has been destroyed, and will send no more callbacks.
 
-## Typedefs ##
+## Typedefs
 
-### SbPlayer ###
+### SbPlayer
 
 An opaque handle to an implementation-private structure representing a player.
 
-#### Definition ####
+#### Definition
 
 ```
 typedef struct SbPlayerPrivate* SbPlayer
 ```
 
-### SbPlayerDeallocateSampleFunc ###
+### SbPlayerDeallocateSampleFunc
 
 Callback to free the given sample buffer data. When more than one buffer are
 sent in SbPlayerWriteSample(), the implementation only has to call this callback
 with `sample_buffer` points to the the first buffer.
 
-#### Definition ####
+#### Definition
 
 ```
 typedef void(* SbPlayerDeallocateSampleFunc) (SbPlayer player, void *context, const void *sample_buffer)
 ```
 
-### SbPlayerDecoderStatusFunc ###
+### SbPlayerDecoderStatusFunc
 
 Callback for decoder status updates, called in response to a call to
 SbPlayerSeek() or SbPlayerWriteSample(). This callback will never be called
@@ -114,45 +114,45 @@ player will make at most one call to SbPlayerWriteSample() or
 SbPlayerWriteEndOfStream(). The player implementation should update the decoder
 status again after such call to notify its user to continue writing more frames.
 
-#### Definition ####
+#### Definition
 
 ```
 typedef void(* SbPlayerDecoderStatusFunc) (SbPlayer player, void *context, SbMediaType type, SbPlayerDecoderState state, int ticket)
 ```
 
-### SbPlayerErrorFunc ###
+### SbPlayerErrorFunc
 
 Callback for player errors, that may set a `message`. `error`: indicates the
 error code. `message`: provides specific informative diagnostic message about
 the error condition encountered. It is ok for the message to be an empty string
 or NULL if no information is available.
 
-#### Definition ####
+#### Definition
 
 ```
 typedef void(* SbPlayerErrorFunc) (SbPlayer player, void *context, SbPlayerError error, const char *message)
 ```
 
-### SbPlayerStatusFunc ###
+### SbPlayerStatusFunc
 
 Callback for player status updates. These callbacks will happen on a different
 thread than the calling thread, and it is not valid to call SbPlayer functions
 from within this callback.
 
-#### Definition ####
+#### Definition
 
 ```
 typedef void(* SbPlayerStatusFunc) (SbPlayer player, void *context, SbPlayerState state, int ticket)
 ```
 
-## Structs ##
+## Structs
 
-### SbPlayerCreationParam ###
+### SbPlayerCreationParam
 
 The playback related parameters to pass into SbPlayerCreate() and
 SbPlayerGetPreferredOutputMode().
 
-#### Members ####
+#### Members
 
 *   `SbDrmSystem drm_system`
 
@@ -178,11 +178,11 @@ SbPlayerGetPreferredOutputMode().
     should be made available for the application to pull via calls to
     SbPlayerGetCurrentFrame().
 
-### SbPlayerInfo2 ###
+### SbPlayerInfo2
 
 Information about the current media playback state.
 
-#### Members ####
+#### Members
 
 *   `SbTime current_media_timestamp`
 
@@ -229,11 +229,11 @@ Information about the current media playback state.
     faster than normal speed. When it is less than one, the video is played in a
     slower than normal speed. Negative speeds are not supported.
 
-### SbPlayerSampleInfo ###
+### SbPlayerSampleInfo
 
-Information about the samples to be written into SbPlayerWriteSample2.
+Information about the samples to be written into SbPlayerWriteSamples().
 
-#### Members ####
+#### Members
 
 *   `SbMediaType type`
 *   `const void * buffer`
@@ -266,12 +266,12 @@ Information about the samples to be written into SbPlayerWriteSample2.
     The DRM system related info for the media sample. This value is required for
     encrypted samples. Otherwise, it must be `NULL`.
 
-### SbPlayerSampleSideData ###
+### SbPlayerSampleSideData
 
 Side data accompanied with `SbPlayerSampleInfo`, it can be arbitrary binary data
 coming from multiple sources.
 
-#### Members ####
+#### Members
 
 *   `SbPlayerSampleSideDataType type`
 *   `const uint8_t * data`
@@ -282,9 +282,9 @@ coming from multiple sources.
 
     The size of the data pointed by `data`, in bytes.
 
-## Functions ##
+## Functions
 
-### SbPlayerDestroy ###
+### SbPlayerDestroy
 
 Destroys `player`, freeing all associated resources.
 
@@ -297,15 +297,15 @@ Destroys `player`, freeing all associated resources.
 
 *   It is not allowed to pass `player` into any other `SbPlayer` function once
     SbPlayerDestroy has been called on that player. `player`: The player to be
-    destroyed.
+    destroyed. Must not be `kSbPlayerInvalid`.
 
-#### Declaration ####
+#### Declaration
 
 ```
 void SbPlayerDestroy(SbPlayer player)
 ```
 
-### SbPlayerGetCurrentFrame ###
+### SbPlayerGetCurrentFrame
 
 Given a player created with the kSbPlayerOutputModeDecodeToTexture output mode,
 it will return a SbDecodeTarget representing the current frame to be rasterized.
@@ -315,27 +315,15 @@ the frame. If this function is called with a `player` object that was created
 with an output mode other than kSbPlayerOutputModeDecodeToTexture,
 kSbDecodeTargetInvalid is returned.
 
-#### Declaration ####
+`player` must not be `kSbPlayerInvalid`.
+
+#### Declaration
 
 ```
 SbDecodeTarget SbPlayerGetCurrentFrame(SbPlayer player)
 ```
 
-### SbPlayerGetInfo2 ###
-
-Gets a snapshot of the current player state and writes it to `out_player_info`.
-This function may be called very frequently and is expected to be inexpensive.
-
-`player`: The player about which information is being retrieved.
-`out_player_info`: The information retrieved for the player.
-
-#### Declaration ####
-
-```
-void SbPlayerGetInfo2(SbPlayer player, SbPlayerInfo2 *out_player_info2)
-```
-
-### SbPlayerGetMaximumNumberOfSamplesPerWrite ###
+### SbPlayerGetMaximumNumberOfSamplesPerWrite
 
 Writes a single sample of the given media type to `player`'s input stream. Its
 data may be passed in via more than one buffers. The lifetime of
@@ -349,13 +337,13 @@ to retain from those structures.
 of sample for which the number is retrieved. See the `SbMediaType` enum in
 media.h.
 
-#### Declaration ####
+#### Declaration
 
 ```
 int SbPlayerGetMaximumNumberOfSamplesPerWrite(SbPlayer player, SbMediaType sample_type)
 ```
 
-### SbPlayerGetPreferredOutputMode ###
+### SbPlayerGetPreferredOutputMode
 
 Returns the preferred output mode of the implementation when a video described
 by `creation_param` is played. It is assumed that it is okay to call
@@ -371,25 +359,25 @@ the implementation should return an output mode that it is supported, as if
 the call. Note that it is not the responsibility of this function to verify
 whether the video described by `creation_param` can be played on the platform,
 and the implementation should try its best effort to return a valid output mode.
-`creation_param` will never be NULL.
+`creation_param` must not be NULL.
 
-#### Declaration ####
+#### Declaration
 
 ```
 SbPlayerOutputMode SbPlayerGetPreferredOutputMode(const SbPlayerCreationParam *creation_param)
 ```
 
-### SbPlayerIsValid ###
+### SbPlayerIsValid
 
 Returns whether the given player handle is valid.
 
-#### Declaration ####
+#### Declaration
 
 ```
 static bool SbPlayerIsValid(SbPlayer player)
 ```
 
-### SbPlayerSetBounds ###
+### SbPlayerSetBounds
 
 Sets the player bounds to the given graphics plane coordinates. The changes do
 not take effect until the next graphics frame buffer swap. The default bounds
@@ -403,20 +391,20 @@ up to 60 Hz. Since the function could be called up to once per frame,
 implementors should take care to avoid related performance concerns with such
 frequent calls.
 
-`player`: The player that is being resized. `z_index`: The z-index of the
-player. When the bounds of multiple players are overlapped, the one with larger
-z-index will be rendered on top of the ones with smaller z-index. `x`: The
-x-coordinate of the upper-left corner of the player. `y`: The y-coordinate of
-the upper-left corner of the player. `width`: The width of the player, in
-pixels. `height`: The height of the player, in pixels.
+`player`: The player that is being resized. Must not be `kSbPlayerInvalid`.
+`z_index`: The z-index of the player. When the bounds of multiple players are
+overlapped, the one with larger z-index will be rendered on top of the ones with
+smaller z-index. `x`: The x-coordinate of the upper-left corner of the player.
+`y`: The y-coordinate of the upper-left corner of the player. `width`: The width
+of the player, in pixels. `height`: The height of the player, in pixels.
 
-#### Declaration ####
+#### Declaration
 
 ```
 void SbPlayerSetBounds(SbPlayer player, int z_index, int x, int y, int width, int height)
 ```
 
-### SbPlayerSetPlaybackRate ###
+### SbPlayerSetPlaybackRate
 
 Set the playback rate of the `player`. `rate` is default to 1.0 which indicates
 the playback is at its original speed. A `rate` greater than one will make the
@@ -429,28 +417,30 @@ the implementation supports. It returns false when the playback rate is
 unchanged, this can happen when `playback_rate` is negative or if it is too high
 to support.
 
-#### Declaration ####
+`player` must not be `kSbPlayerInvalid`.
+
+#### Declaration
 
 ```
 bool SbPlayerSetPlaybackRate(SbPlayer player, double playback_rate)
 ```
 
-### SbPlayerSetVolume ###
+### SbPlayerSetVolume
 
 Sets the player's volume.
 
-`player`: The player in which the volume is being adjusted. `volume`: The new
-player volume. The value must be between `0.0` and `1.0`, inclusive. A value of
-`0.0` means that the audio should be muted, and a value of `1.0` means that it
-should be played at full volume.
+`player`: The player in which the volume is being adjusted. Must not be
+`kSbPlayerInvalid`. `volume`: The new player volume. The value must be between
+`0.0` and `1.0`, inclusive. A value of `0.0` means that the audio should be
+muted, and a value of `1.0` means that it should be played at full volume.
 
-#### Declaration ####
+#### Declaration
 
 ```
 void SbPlayerSetVolume(SbPlayer player, double volume)
 ```
 
-### SbPlayerWriteEndOfStream ###
+### SbPlayerWriteEndOfStream
 
 Writes a marker to `player`'s input stream of `stream_type` indicating that
 there are no more samples for that media type for the remainder of this media
@@ -460,37 +450,26 @@ contents, after a call to SbPlayerSeek.
 `player`: The player to which the marker is written. `stream_type`: The type of
 stream for which the marker is written.
 
-#### Declaration ####
+#### Declaration
 
 ```
 void SbPlayerWriteEndOfStream(SbPlayer player, SbMediaType stream_type)
 ```
 
-### SbPlayerWriteSample2 ###
+### SbPlayerWriteSample2
 
-Writes samples of the given media type to `player`'s input stream. The lifetime
-of `sample_infos`, and the members of its elements like `buffer`,
-`video_sample_info`, and `drm_info` (as well as member `subsample_mapping`
-contained inside it) are not guaranteed past the call to SbPlayerWriteSample2.
-That means that before returning, the implementation must synchronously copy any
-information it wants to retain from those structures.
-
-SbPlayerWriteSample2 allows writing of multiple samples in one call.
-
-`player`: The player to which the sample is written. `sample_type`: The type of
-sample being written. See the `SbMediaType` enum in media.h. `sample_infos`: A
-pointer to an array of SbPlayerSampleInfo with `number_of_sample_infos`
-elements, each holds the data for an sample, i.e. a sequence of whole NAL Units
-for video, or a complete audio frame. `sample_infos` cannot be assumed to live
-past the call into SbPlayerWriteSample2(), so it must be copied if its content
-will be used after SbPlayerWriteSample2() returns. `number_of_sample_infos`:
-Specify the number of samples contained inside `sample_infos`. It has to be at
-least one, and less than the return value of
+`sample_type`: The type of sample being written. See the `SbMediaType` enum in
+media.h. `sample_infos`: A pointer to an array of SbPlayerSampleInfo with
+`number_of_sample_infos` elements, each holds the data for an sample, i.e. a
+sequence of whole NAL Units for video, or a complete audio frame. `sample_infos`
+cannot be assumed to live past the call into SbPlayerWriteSamples(), so it must
+be copied if its content will be used after SbPlayerWriteSamples() returns.
+`number_of_sample_infos`: Specify the number of samples contained inside
+`sample_infos`. It has to be at least one, and less than the return value of
 SbPlayerGetMaximumNumberOfSamplesPerWrite().
 
-#### Declaration ####
+#### Declaration
 
 ```
 void SbPlayerWriteSample2(SbPlayer player, SbMediaType sample_type, const SbPlayerSampleInfo *sample_infos, int number_of_sample_infos)
 ```
-

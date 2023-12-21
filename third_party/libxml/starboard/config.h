@@ -1,7 +1,5 @@
-#include "starboard/character.h"
 #include "starboard/common/log.h"
 #include "starboard/configuration.h"
-#include "starboard/double.h"
 #include "starboard/memory.h"
 #include "starboard/string.h"
 #include "starboard/types.h"
@@ -338,13 +336,13 @@
 #define XML_LABS labs
 
 /* malloc() wrapping */
-#define XML_MALLOC SbMemoryAllocate
+#define XML_MALLOC malloc 
 
 /* realloc() wrapping */
-#define XML_REALLOC SbMemoryReallocate
+#define XML_REALLOC realloc 
 
 /* free() wrapping */
-#define XML_FREE SbMemoryDeallocate
+#define XML_FREE free 
 
 /* memcpy() wrapping */
 #define XML_MEMCPY memcpy

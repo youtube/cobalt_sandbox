@@ -51,7 +51,6 @@ static_library("script") {
     "typed_arrays.h",
     "union_type.h",
     "union_type_internal.h",
-    "util/stack_trace_helpers.h",
     "value_handle.h",
     "wrappable.h",
   ]
@@ -59,7 +58,6 @@ static_library("script") {
   deps = [
     "//cobalt/base",
     "//cobalt/loader:origin",
-    "//nb",
     "//starboard:starboard_headers_only",
     "//third_party/v8",
     "//third_party/v8:v8_libplatform",

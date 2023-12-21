@@ -15,6 +15,8 @@
 #ifndef STARBOARD_SHARED_NOUSER_USER_INTERNAL_H_
 #define STARBOARD_SHARED_NOUSER_USER_INTERNAL_H_
 
+#if SB_API_VERSION < 16
+
 #include "starboard/shared/internal_only.h"
 #include "starboard/user.h"
 
@@ -30,11 +32,10 @@ namespace shared {
 namespace nouser {
 // The one instance of the signed-in user.
 extern SbUserPrivate g_user;
-
-// A platform implementation of getting the home directory for a user.
-bool GetHomeDirectory(SbUser user, char* out_path, int path_size);
 }  // namespace nouser
 }  // namespace shared
 }  // namespace starboard
+
+#endif  // SB_API_VERSION < 16
 
 #endif  // STARBOARD_SHARED_NOUSER_USER_INTERNAL_H_

@@ -12,46 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "cobalt/media/base/sbplayer_pipeline.h"
+
 #include <algorithm>
-#include <memory>
-#include <string>
-#include <vector>
+#include <utility>
 
 #include "base/basictypes.h"  // For COMPILE_ASSERT
 #include "base/bind.h"
-#include "base/callback_helpers.h"
 #include "base/logging.h"
-#include "base/optional.h"
 #include "base/strings/stringprintf.h"
-#include "base/synchronization/lock.h"
-#include "base/synchronization/waitable_event.h"
-#include "base/task_runner.h"
-#include "base/time/time.h"
 #include "base/trace_event/trace_event.h"
 #include "cobalt/base/c_val.h"
 #include "cobalt/base/startup_timer.h"
-#include "cobalt/math/size.h"
-#include "cobalt/media/base/media_export.h"
-#include "cobalt/media/base/pipeline.h"
-#include "cobalt/media/base/playback_statistics.h"
-#include "cobalt/media/base/sbplayer_bridge.h"
-#include "cobalt/media/base/sbplayer_set_bounds_helper.h"
 #include "starboard/common/media.h"
 #include "starboard/common/string.h"
+#include "starboard/common/time.h"
 #include "starboard/configuration_constants.h"
-#include "starboard/time.h"
-#include "third_party/chromium/media/base/audio_decoder_config.h"
 #include "third_party/chromium/media/base/bind_to_current_loop.h"
 #include "third_party/chromium/media/base/channel_layout.h"
-#include "third_party/chromium/media/base/decoder_buffer.h"
-#include "third_party/chromium/media/base/demuxer.h"
-#include "third_party/chromium/media/base/demuxer_stream.h"
-#include "third_party/chromium/media/base/media_log.h"
-#include "third_party/chromium/media/base/pipeline_status.h"
-#include "third_party/chromium/media/base/ranges.h"
-#include "third_party/chromium/media/base/video_decoder_config.h"
-#include "third_party/chromium/media/cobalt/ui/gfx/geometry/rect.h"
-#include "third_party/chromium/media/cobalt/ui/gfx/geometry/size.h"
 
 namespace cobalt {
 namespace media {
@@ -73,26 +51,7 @@ static const int kRetryDelayAtSuspendInMilliseconds = 100;
 
 unsigned int g_pipeline_identifier_counter = 0;
 
-// Used to post parameters to SbPlayerPipeline::StartTask() as the number of
-// parameters exceed what base::Bind() can support.
-struct StartTaskParameters {
-  Demuxer* demuxer;
-  SetDrmSystemReadyCB set_drm_system_ready_cb;
-  ::media::PipelineStatusCB ended_cb;
-  ErrorCB error_cb;
-  Pipeline::SeekCB seek_cb;
-  Pipeline::BufferingStateCB buffering_state_cb;
-  base::Closure duration_change_cb;
-  base::Closure output_mode_change_cb;
-  base::Closure content_size_change_cb;
-  std::string max_video_capabilities;
-#if SB_HAS(PLAYER_WITH_URL)
-  std::string source_url;
-  bool is_url_based;
-#endif  // SB_HAS(PLAYER_WITH_URL)
-};
-
-#if SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#if SB_API_VERSION >= 15
 bool HasRemoteAudioOutputs(
     const std::vector<SbMediaAudioConfiguration>& configurations) {
   for (auto&& configuration : configurations) {
@@ -121,286 +80,27 @@ bool HasRemoteAudioOutputs(
 
   return false;
 }
-#endif  // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#endif  // SB_API_VERSION >= 15
 
-// SbPlayerPipeline is a PipelineBase implementation that uses the SbPlayer
-// interface internally.
-class MEDIA_EXPORT SbPlayerPipeline : public Pipeline,
-                                      public DemuxerHost,
-                                      public SbPlayerBridge::Host {
- public:
-  // Constructs a media pipeline that will execute on |task_runner|.
-  SbPlayerPipeline(
-      SbPlayerInterface* interface, PipelineWindow window,
-      const scoped_refptr<base::SingleThreadTaskRunner>& task_runner,
-      const GetDecodeTargetGraphicsContextProviderFunc&
-          get_decode_target_graphics_context_provider_func,
-      bool allow_resume_after_suspend, bool allow_batched_sample_write,
-#if SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
-      SbTime audio_write_duration_local, SbTime audio_write_duration_remote,
-#endif  // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
-      MediaLog* media_log, DecodeTargetProvider* decode_target_provider);
-  ~SbPlayerPipeline() override;
+// The function adjusts audio write duration proportionally to the playback
+// rate, when the playback rate is greater than 1.0.
+//
+// Having the right write duration is important:
+// 1. Too small of it causes audio underflow.
+// 2. Too large of it causes excessive audio switch latency.
+// When playback rate is 2x, an 0.5 seconds of write duration effectively only
+// lasts for 0.25 seconds and causes audio underflow, and the function will
+// adjust it to 1 second in this case.
+int64_t AdjustWriteDurationForPlaybackRate(int64_t write_duration,
+                                           float playback_rate) {
+  if (playback_rate <= 1.0) {
+    return write_duration;
+  }
 
-  void Suspend() override;
-  // TODO: This is temporary for supporting background media playback.
-  //       Need to be removed with media refactor.
-  void Resume(PipelineWindow window) override;
+  return static_cast<int64_t>(write_duration * playback_rate);
+}
 
-  void Start(Demuxer* demuxer,
-             const SetDrmSystemReadyCB& set_drm_system_ready_cb,
-             const PipelineStatusCB& ended_cb, const ErrorCB& error_cb,
-             const SeekCB& seek_cb, const BufferingStateCB& buffering_state_cb,
-             const base::Closure& duration_change_cb,
-             const base::Closure& output_mode_change_cb,
-             const base::Closure& content_size_change_cb,
-             const std::string& max_video_capabilities) override;
-#if SB_HAS(PLAYER_WITH_URL)
-  void Start(const SetDrmSystemReadyCB& set_drm_system_ready_cb,
-             const OnEncryptedMediaInitDataEncounteredCB&
-                 encrypted_media_init_data_encountered_cb,
-             const std::string& source_url, const PipelineStatusCB& ended_cb,
-             const ErrorCB& error_cb, const SeekCB& seek_cb,
-             const BufferingStateCB& buffering_state_cb,
-             const base::Closure& duration_change_cb,
-             const base::Closure& output_mode_change_cb,
-             const base::Closure& content_size_change_cb) override;
-#endif  // SB_HAS(PLAYER_WITH_URL)
-
-  void Stop(const base::Closure& stop_cb) override;
-  void Seek(TimeDelta time, const SeekCB& seek_cb);
-  bool HasAudio() const override;
-  bool HasVideo() const override;
-
-  float GetPlaybackRate() const override;
-  void SetPlaybackRate(float playback_rate) override;
-  float GetVolume() const override;
-  void SetVolume(float volume) override;
-
-  TimeDelta GetMediaTime() override;
-  ::media::Ranges<TimeDelta> GetBufferedTimeRanges() override;
-  TimeDelta GetMediaDuration() const override;
-#if SB_HAS(PLAYER_WITH_URL)
-  TimeDelta GetMediaStartDate() const override;
-#endif  // SB_HAS(PLAYER_WITH_URL)
-  void GetNaturalVideoSize(gfx::Size* out_size) const override;
-  std::vector<std::string> GetAudioConnectors() const override;
-
-  bool DidLoadingProgress() const override;
-  PipelineStatistics GetStatistics() const override;
-  SetBoundsCB GetSetBoundsCB() override;
-  void SetDecodeToTextureOutputMode(bool enabled) override;
-
- private:
-  void StartTask(StartTaskParameters parameters);
-  void SetVolumeTask(float volume);
-  void SetPlaybackRateTask(float volume);
-  void SetDurationTask(TimeDelta duration);
-
-  // DemuxerHost implementation.
-  void OnBufferedTimeRangesChanged(
-      const ::media::Ranges<base::TimeDelta>& ranges) override;
-  void SetDuration(TimeDelta duration) override;
-  void OnDemuxerError(PipelineStatus error) override;
-
-#if SB_HAS(PLAYER_WITH_URL)
-  void CreateUrlPlayer(const std::string& source_url);
-  void SetDrmSystem(SbDrmSystem drm_system);
-#endif  // SB_HAS(PLAYER_WITH_URL)
-  void CreatePlayer(SbDrmSystem drm_system);
-
-  void OnDemuxerInitialized(PipelineStatus status);
-  void OnDemuxerSeeked(PipelineStatus status);
-  void OnDemuxerStopped();
-  void OnDemuxerStreamRead(
-      DemuxerStream::Type type, int max_number_buffers_to_read,
-      DemuxerStream::Status status,
-      const std::vector<scoped_refptr<DecoderBuffer>>& buffers);
-  // SbPlayerBridge::Host implementation.
-  void OnNeedData(DemuxerStream::Type type,
-                  int max_number_of_buffers_to_write) override;
-  void OnPlayerStatus(SbPlayerState state) override;
-  void OnPlayerError(SbPlayerError error, const std::string& message) override;
-
-  // Used to make a delayed call to OnNeedData() if |audio_read_delayed_| is
-  // true. If |audio_read_delayed_| is false, that means the delayed call has
-  // been cancelled due to a seek.
-  void DelayedNeedData(int max_number_of_buffers_to_write);
-
-  void UpdateDecoderConfig(DemuxerStream* stream);
-  void CallSeekCB(PipelineStatus status, const std::string& error_message);
-  void CallErrorCB(PipelineStatus status, const std::string& error_message);
-
-  void SuspendTask(base::WaitableEvent* done_event);
-  void ResumeTask(PipelineWindow window, base::WaitableEvent* done_event);
-
-  // Store the media time retrieved by GetMediaTime so we can cache it as an
-  // estimate and avoid calling SbPlayerGetInfo too frequently.
-  void StoreMediaTime(TimeDelta media_time);
-
-  // Retrieve the statistics as a string and append to message.
-  std::string AppendStatisticsString(const std::string& message) const;
-
-  // Get information on the time since app start and the time since the last
-  // playback resume.
-  std::string GetTimeInformation() const;
-
-  void RunSetDrmSystemReadyCB(DrmSystemReadyCB drm_system_ready_cb);
-
-  void SetReadInProgress(DemuxerStream::Type type, bool in_progress);
-  bool GetReadInProgress(DemuxerStream::Type type) const;
-
-  // An identifier string for the pipeline, used in CVal to identify multiple
-  // pipelines.
-  const std::string pipeline_identifier_;
-
-  // A wrapped interface of starboard player functions, which will be used in
-  // underlying SbPlayerBridge.
-  SbPlayerInterface* sbplayer_interface_;
-
-  // Message loop used to execute pipeline tasks.  It is thread-safe.
-  scoped_refptr<base::SingleThreadTaskRunner> task_runner_;
-
-  // Whether we should save DecoderBuffers for resume after suspend.
-  const bool allow_resume_after_suspend_;
-
-  // Whether we enable batched sample write functionality.
-  const bool allow_batched_sample_write_;
-
-  // The window this player associates with.  It should only be assigned in the
-  // dtor and accessed once by SbPlayerCreate().
-  PipelineWindow window_;
-
-  // Call to get the SbDecodeTargetGraphicsContextProvider for SbPlayerCreate().
-  const GetDecodeTargetGraphicsContextProviderFunc
-      get_decode_target_graphics_context_provider_func_;
-
-  // Lock used to serialize access for the following member variables.
-  mutable base::Lock lock_;
-
-  // Amount of available buffered data.  Set by filters.
-  ::media::Ranges<TimeDelta> buffered_time_ranges_;
-
-  // True when AddBufferedByteRange() has been called more recently than
-  // DidLoadingProgress().
-  mutable bool did_loading_progress_;
-
-  // Video's natural width and height.  Set by filters.
-  gfx::Size natural_size_;
-
-  // Current volume level (from 0.0f to 1.0f).  This value is set immediately
-  // via SetVolume() and a task is dispatched on the message loop to notify the
-  // filters.
-  base::CVal<float> volume_;
-
-  // Current playback rate (>= 0.0f).  This value is set immediately via
-  // SetPlaybackRate() and a task is dispatched on the message loop to notify
-  // the filters.
-  base::CVal<float> playback_rate_;
-
-  // The saved audio and video demuxer streams.  Note that it is safe to store
-  // raw pointers of the demuxer streams, as the Demuxer guarantees that its
-  // |DemuxerStream|s live as long as the Demuxer itself.
-  DemuxerStream* audio_stream_ = nullptr;
-  DemuxerStream* video_stream_ = nullptr;
-
-  mutable PipelineStatistics statistics_;
-
-  // The following member variables are only accessed by tasks posted to
-  // |task_runner_|.
-
-  // Temporary callback used for Stop().
-  base::Closure stop_cb_;
-
-  // Permanent callbacks passed in via Start().
-  SetDrmSystemReadyCB set_drm_system_ready_cb_;
-  PipelineStatusCB ended_cb_;
-  ErrorCB error_cb_;
-  BufferingStateCB buffering_state_cb_;
-  base::Closure duration_change_cb_;
-  base::Closure output_mode_change_cb_;
-  base::Closure content_size_change_cb_;
-  base::Optional<bool> decode_to_texture_output_mode_;
-#if SB_HAS(PLAYER_WITH_URL)
-  SbPlayerBridge::OnEncryptedMediaInitDataEncounteredCB
-      on_encrypted_media_init_data_encountered_cb_;
-#endif  //  SB_HAS(PLAYER_WITH_URL)
-
-  // Demuxer reference used for setting the preload value.
-  Demuxer* demuxer_ = nullptr;
-  bool audio_read_in_progress_ = false;
-  bool audio_read_delayed_ = false;
-  bool video_read_in_progress_ = false;
-  base::CVal<TimeDelta> duration_;
-
-#if SB_HAS(PLAYER_WITH_URL)
-  TimeDelta start_date_;
-  bool is_url_based_;
-#endif  // SB_HAS(PLAYER_WITH_URL)
-
-  scoped_refptr<SbPlayerSetBoundsHelper> set_bounds_helper_;
-
-  // The following member variables can be accessed from WMPI thread but all
-  // modifications to them happens on the pipeline thread.  So any access of
-  // them from the WMPI thread and any modification to them on the pipeline
-  // thread has to guarded by lock.  Access to them from the pipeline thread
-  // needn't to be guarded.
-
-  // Temporary callback used for Start() and Seek().
-  SeekCB seek_cb_;
-  TimeDelta seek_time_;
-  std::unique_ptr<SbPlayerBridge> player_bridge_;
-  bool is_initial_preroll_ = true;
-  base::CVal<bool> started_;
-  base::CVal<bool> suspended_;
-  base::CVal<bool> stopped_;
-  base::CVal<bool> ended_;
-  base::CVal<SbPlayerState> player_state_;
-
-  DecodeTargetProvider* decode_target_provider_;
-
-#if SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
-  const SbTime audio_write_duration_local_;
-  const SbTime audio_write_duration_remote_;
-
-  // The two variables below should always contain the same value.  They are
-  // kept as separate variables so we can keep the existing implementation as
-  // is, which simplifies the implementation across multiple Starboard versions.
-  SbTime audio_write_duration_ = 0;
-  SbTime audio_write_duration_for_preroll_ = audio_write_duration_;
-#else   // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
-  // Read audio from the stream if |timestamp_of_last_written_audio_| is less
-  // than |seek_time_| + |audio_write_duration_for_preroll_|, this effectively
-  // allows 10 seconds of audio to be written to the SbPlayer after playback
-  // startup or seek.
-  SbTime audio_write_duration_for_preroll_ = 10 * kSbTimeSecond;
-  // Don't read audio from the stream more than |audio_write_duration_| ahead of
-  // the current media time during playing.
-  SbTime audio_write_duration_ = kSbTimeSecond;
-#endif  // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
-  // Only call GetMediaTime() from OnNeedData if it has been
-  // |kMediaTimeCheckInterval| since the last call to GetMediaTime().
-  static const SbTime kMediaTimeCheckInterval = 0.1 * kSbTimeSecond;
-  // Timestamp for the last written audio.
-  SbTime timestamp_of_last_written_audio_ = 0;
-
-  // Last media time reported by GetMediaTime().
-  base::CVal<SbTime> last_media_time_;
-  // Time when we last checked the media time.
-  SbTime last_time_media_time_retrieved_ = 0;
-  // Counter for retrograde media time.
-  size_t retrograde_media_time_counter_ = 0;
-  // The maximum video playback capabilities required for the playback.
-  base::CVal<std::string> max_video_capabilities_;
-
-  PlaybackStatistics playback_statistics_;
-
-  SbTimeMonotonic last_resume_time_ = -1;
-
-  SbTimeMonotonic set_drm_system_ready_cb_time_ = -1;
-
-  DISALLOW_COPY_AND_ASSIGN(SbPlayerPipeline);
-};
+}  // namespace
 
 SbPlayerPipeline::SbPlayerPipeline(
     SbPlayerInterface* interface, PipelineWindow window,
@@ -408,10 +108,12 @@ SbPlayerPipeline::SbPlayerPipeline(
     const GetDecodeTargetGraphicsContextProviderFunc&
         get_decode_target_graphics_context_provider_func,
     bool allow_resume_after_suspend, bool allow_batched_sample_write,
-#if SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
-    SbTime audio_write_duration_local, SbTime audio_write_duration_remote,
-#endif  // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
-    MediaLog* media_log, DecodeTargetProvider* decode_target_provider)
+    bool force_punch_out_by_default,
+#if SB_API_VERSION >= 15
+    int64_t audio_write_duration_local, int64_t audio_write_duration_remote,
+#endif  // SB_API_VERSION >= 15
+    MediaLog* media_log, MediaMetricsProvider* media_metrics_provider,
+    DecodeTargetProvider* decode_target_provider)
     : pipeline_identifier_(
           base::StringPrintf("%X", g_pipeline_identifier_counter++)),
       sbplayer_interface_(interface),
@@ -452,10 +154,11 @@ SbPlayerPipeline::SbPlayerPipeline(
                     kSbPlayerStateInitialized,
                     "The underlying SbPlayer state of the media pipeline."),
       decode_target_provider_(decode_target_provider),
-#if SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#if SB_API_VERSION >= 15
       audio_write_duration_local_(audio_write_duration_local),
       audio_write_duration_remote_(audio_write_duration_remote),
-#endif  // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#endif  // SB_API_VERSION >= 15
+      media_metrics_provider_(media_metrics_provider),
       last_media_time_(base::StringPrintf("Media.Pipeline.%s.LastMediaTime",
                                           pipeline_identifier_.c_str()),
                        0, "Last media time reported by the underlying player."),
@@ -464,12 +167,15 @@ SbPlayerPipeline::SbPlayerPipeline(
                              pipeline_identifier_.c_str()),
           "", "The max video capabilities required for the media pipeline."),
       playback_statistics_(pipeline_identifier_) {
-#if SB_API_VERSION < SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+  if (force_punch_out_by_default) {
+    default_output_mode_ = kSbPlayerOutputModePunchOut;
+  }
+#if SB_API_VERSION < 15
   SbMediaSetAudioWriteDuration(audio_write_duration_);
   LOG(INFO) << "Setting audio write duration to " << audio_write_duration_
             << ", the duration during preroll is "
             << audio_write_duration_for_preroll_;
-#endif  // SB_API_VERSION < SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#endif  // SB_API_VERSION < 15
 }
 
 SbPlayerPipeline::~SbPlayerPipeline() { DCHECK(!player_bridge_); }
@@ -634,6 +340,8 @@ void SbPlayerPipeline::Stop(const base::Closure& stop_cb) {
   if (demuxer_) {
     stop_cb_ = stop_cb;
     demuxer_->Stop();
+    video_stream_ = nullptr;
+    audio_stream_ = nullptr;
     OnDemuxerStopped();
   } else {
     stop_cb.Run();
@@ -731,8 +439,8 @@ void SbPlayerPipeline::SetVolume(float volume) {
 }
 
 void SbPlayerPipeline::StoreMediaTime(TimeDelta media_time) {
-  last_media_time_ = media_time.ToSbTime();
-  last_time_media_time_retrieved_ = SbTimeGetNow();
+  last_media_time_ = media_time.InMicroseconds();
+  last_time_media_time_retrieved_ = starboard::CurrentPosixTime();
 }
 
 TimeDelta SbPlayerPipeline::GetMediaTime() {
@@ -767,11 +475,11 @@ TimeDelta SbPlayerPipeline::GetMediaTime() {
                           &statistics_.video_frames_dropped, &media_time);
 
   // Guarantee that we report monotonically increasing media time
-  if (media_time.ToSbTime() < last_media_time_) {
+  if (media_time.InMicroseconds() < last_media_time_) {
     if (retrograde_media_time_counter_ == 0) {
       DLOG(WARNING) << "Received retrograde media time, new:"
-                    << media_time.ToSbTime() << ", last: " << last_media_time_
-                    << ".";
+                    << media_time.InMicroseconds()
+                    << ", last: " << last_media_time_ << ".";
     }
     media_time = base::TimeDelta::FromMicroseconds(last_media_time_);
     retrograde_media_time_counter_++;
@@ -852,7 +560,7 @@ void SbPlayerPipeline::GetNaturalVideoSize(gfx::Size* out_size) const {
 }
 
 std::vector<std::string> SbPlayerPipeline::GetAudioConnectors() const {
-#if SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#if SB_API_VERSION >= 15
   base::AutoLock auto_lock(lock_);
   if (!player_bridge_) {
     return std::vector<std::string>();
@@ -860,15 +568,22 @@ std::vector<std::string> SbPlayerPipeline::GetAudioConnectors() const {
 
   std::vector<std::string> connectors;
 
+#if SB_HAS(PLAYER_WITH_URL)
+  // Url based player does not support audio connectors.
+  if (is_url_based_) {
+    return connectors;
+  }
+#endif  // SB_HAS(PLAYER_WITH_URL)
+
   auto configurations = player_bridge_->GetAudioConfigurations();
   for (auto&& configuration : configurations) {
     connectors.push_back(GetMediaAudioConnectorName(configuration.connector));
   }
 
   return connectors;
-#else   // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#else   // SB_API_VERSION >= 15
   return std::vector<std::string>();
-#endif  // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#endif  // SB_API_VERSION >= 15
 }
 
 bool SbPlayerPipeline::DidLoadingProgress() const {
@@ -887,15 +602,15 @@ Pipeline::SetBoundsCB SbPlayerPipeline::GetSetBoundsCB() {
   return base::Bind(&SbPlayerSetBoundsHelper::SetBounds, set_bounds_helper_);
 }
 
-void SbPlayerPipeline::SetDecodeToTextureOutputMode(bool enabled) {
-  TRACE_EVENT1("cobalt::media",
-               "SbPlayerPipeline::SetDecodeToTextureOutputMode", "mode",
-               enabled);
+void SbPlayerPipeline::SetPreferredOutputModeToDecodeToTexture() {
+  TRACE_EVENT0("cobalt::media",
+               "SbPlayerPipeline::SetPreferredOutputModeToDecodeToTexture");
 
   if (!task_runner_->BelongsToCurrentThread()) {
     task_runner_->PostTask(
-        FROM_HERE, base::Bind(&SbPlayerPipeline::SetDecodeToTextureOutputMode,
-                              this, enabled));
+        FROM_HERE,
+        base::Bind(&SbPlayerPipeline::SetPreferredOutputModeToDecodeToTexture,
+                   this));
     return;
   }
 
@@ -903,7 +618,7 @@ void SbPlayerPipeline::SetDecodeToTextureOutputMode(bool enabled) {
   // mode too late.
   DCHECK(!player_bridge_);
 
-  decode_to_texture_output_mode_ = enabled;
+  default_output_mode_ = kSbPlayerOutputModeDecodeToTexture;
 }
 
 void SbPlayerPipeline::StartTask(StartTaskParameters parameters) {
@@ -1017,9 +732,8 @@ void SbPlayerPipeline::CreateUrlPlayer(const std::string& source_url) {
     player_bridge_.reset(new SbPlayerBridge(
         sbplayer_interface_, task_runner_, source_url, window_, this,
         set_bounds_helper_.get(), allow_resume_after_suspend_,
-        *decode_to_texture_output_mode_,
-        on_encrypted_media_init_data_encountered_cb_, decode_target_provider_,
-        pipeline_identifier_));
+        default_output_mode_, on_encrypted_media_init_data_encountered_cb_,
+        decode_target_provider_, pipeline_identifier_));
     if (player_bridge_->IsValid()) {
       SetPlaybackRateTask(playback_rate_);
       SetVolumeTask(volume_);
@@ -1123,10 +837,10 @@ void SbPlayerPipeline::CreatePlayer(SbDrmSystem drm_system) {
         get_decode_target_graphics_context_provider_func_, audio_config,
         audio_mime_type, video_config, video_mime_type, window_, drm_system,
         this, set_bounds_helper_.get(), allow_resume_after_suspend_,
-        *decode_to_texture_output_mode_, decode_target_provider_,
-        max_video_capabilities_, pipeline_identifier_));
+        default_output_mode_, decode_target_provider_, max_video_capabilities_,
+        pipeline_identifier_));
     if (player_bridge_->IsValid()) {
-#if SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#if SB_API_VERSION >= 15
       // TODO(b/267678497): When `player_bridge_->GetAudioConfigurations()`
       // returns no audio configurations, update the write durations again
       // before the SbPlayer reaches `kSbPlayerStatePresenting`.
@@ -1136,7 +850,7 @@ void SbPlayerPipeline::CreatePlayer(SbDrmSystem drm_system) {
               : audio_write_duration_local_;
       LOG(INFO) << "SbPlayerBridge created, with audio write duration at "
                 << audio_write_duration_for_preroll_;
-#endif  // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#endif  // SB_API_VERSION >= 15
 
       SetPlaybackRateTask(playback_rate_);
       SetVolumeTask(volume_);
@@ -1297,12 +1011,17 @@ void SbPlayerPipeline::OnDemuxerStreamRead(
     return;
   }
 
+  if (stopped_) {
+    return;
+  }
+
+  DCHECK(player_bridge_);
+
   DemuxerStream* stream =
       type == DemuxerStream::AUDIO ? audio_stream_ : video_stream_;
   DCHECK(stream);
 
-  // In case if Stop() has been called.
-  if (!player_bridge_) {
+  if (!player_bridge_ || !stream) {
     return;
   }
 
@@ -1328,7 +1047,7 @@ void SbPlayerPipeline::OnDemuxerStreamRead(
     for (const auto& buffer : buffers) {
       playback_statistics_.OnAudioAU(buffer);
       if (!buffer->end_of_stream()) {
-        timestamp_of_last_written_audio_ = buffer->timestamp().ToSbTime();
+        timestamp_of_last_written_audio_ = buffer->timestamp().InMicroseconds();
       }
     }
   } else {
@@ -1366,7 +1085,7 @@ void SbPlayerPipeline::OnNeedData(DemuxerStream::Type type,
     }
 
     // If we haven't checked the media time recently, update it now.
-    if (SbTimeGetNow() - last_time_media_time_retrieved_ >
+    if (starboard::CurrentPosixTime() - last_time_media_time_retrieved_ >
         kMediaTimeCheckInterval) {
       GetMediaTime();
     }
@@ -1375,14 +1094,17 @@ void SbPlayerPipeline::OnNeedData(DemuxerStream::Type type,
     // after the player has received enough audio for preroll, taking into
     // account that our estimate of playback time might be behind by
     // |kMediaTimeCheckInterval|.
-    if (timestamp_of_last_written_audio_ - seek_time_.ToSbTime() >
-        audio_write_duration_for_preroll_) {
+    if (timestamp_of_last_written_audio_ - seek_time_.InMicroseconds() >
+        AdjustWriteDurationForPlaybackRate(audio_write_duration_for_preroll_,
+                                           playback_rate_)) {
       // The estimated time ahead of playback may be negative if no audio has
       // been written.
-      SbTime time_ahead_of_playback =
+      int64_t time_ahead_of_playback =
           timestamp_of_last_written_audio_ - last_media_time_;
+      auto adjusted_write_duration = AdjustWriteDurationForPlaybackRate(
+          audio_write_duration_, playback_rate_);
       if (time_ahead_of_playback >
-          (audio_write_duration_ + kMediaTimeCheckInterval)) {
+          (adjusted_write_duration + kMediaTimeCheckInterval)) {
         task_runner_->PostDelayedTask(
             FROM_HERE,
             base::Bind(&SbPlayerPipeline::DelayedNeedData, this, max_buffers),
@@ -1452,14 +1174,22 @@ void SbPlayerPipeline::OnPlayerStatus(SbPlayerState state) {
         playback_statistics_.OnPresenting(
             video_stream_->video_decoder_config());
       }
-#if SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+
+#if SB_HAS(PLAYER_WITH_URL)
+      // Url based player does not support |audio_write_duration_for_preroll_|.
+      if (is_url_based_) {
+        break;
+      }
+#endif  // SB_HAS(PLAYER_WITH_URL)
+
+#if SB_API_VERSION >= 15
       audio_write_duration_for_preroll_ = audio_write_duration_ =
           HasRemoteAudioOutputs(player_bridge_->GetAudioConfigurations())
               ? audio_write_duration_remote_
               : audio_write_duration_local_;
       LOG(INFO) << "SbPlayerBridge reaches kSbPlayerStatePresenting, with audio"
                 << " write duration at " << audio_write_duration_;
-#endif  // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
+#endif  // SB_API_VERSION >= 15
       break;
     }
     case kSbPlayerStateEndOfStream:
@@ -1524,10 +1254,12 @@ void SbPlayerPipeline::UpdateDecoderConfig(DemuxerStream* stream) {
 
   if (stream->type() == DemuxerStream::AUDIO) {
     const AudioDecoderConfig& decoder_config = stream->audio_decoder_config();
+    media_metrics_provider_->SetHasAudio(decoder_config.codec());
     player_bridge_->UpdateAudioConfig(decoder_config, stream->mime_type());
   } else {
     DCHECK_EQ(stream->type(), DemuxerStream::VIDEO);
     const VideoDecoderConfig& decoder_config = stream->video_decoder_config();
+    media_metrics_provider_->SetHasVideo(decoder_config.codec());
     base::AutoLock auto_lock(lock_);
     bool natural_size_changed =
         (decoder_config.natural_size().width() != natural_size_.width() ||
@@ -1602,7 +1334,7 @@ void SbPlayerPipeline::ResumeTask(PipelineWindow window,
   DCHECK(suspended_);
 
   if (!suspended_) {
-    last_resume_time_ = SbTimeGetMonotonicNow();
+    last_resume_time_ = starboard::CurrentMonotonicTime();
     done_event->Signal();
     return;
   }
@@ -1640,13 +1372,15 @@ void SbPlayerPipeline::ResumeTask(PipelineWindow window,
   }
 
   suspended_ = false;
-  last_resume_time_ = SbTimeGetMonotonicNow();
+  last_resume_time_ = starboard::CurrentMonotonicTime();
 
   done_event->Signal();
 }
 
 std::string SbPlayerPipeline::AppendStatisticsString(
     const std::string& message) const {
+  DCHECK(task_runner_->BelongsToCurrentThread());
+
   if (nullptr == video_stream_) {
     return message + ", playback statistics: n/a.";
   } else {
@@ -1658,8 +1392,8 @@ std::string SbPlayerPipeline::AppendStatisticsString(
 }
 
 std::string SbPlayerPipeline::GetTimeInformation() const {
-  auto round_time_in_seconds = [](const SbTime time) {
-    const int64_t seconds = time / kSbTimeSecond;
+  auto round_time_in_seconds = [](const int64_t time) {
+    const int64_t seconds = time / base::Time::kMicrosecondsPerSecond;
     if (seconds < 15) {
       return seconds / 5 * 5;
     }
@@ -1667,18 +1401,18 @@ std::string SbPlayerPipeline::GetTimeInformation() const {
       return seconds / 15 * 15;
     }
     if (seconds < 3600) {
-      return std::max(static_cast<SbTime>(60), seconds / 600 * 600);
+      return std::max(static_cast<int64_t>(60), seconds / 600 * 600);
     }
-    return std::max(static_cast<SbTime>(3600), seconds / 18000 * 18000);
+    return std::max(static_cast<int64_t>(3600), seconds / 18000 * 18000);
   };
   std::string time_since_start =
-      std::to_string(
-          round_time_in_seconds(base::StartupTimer::TimeElapsed().ToSbTime())) +
+      std::to_string(round_time_in_seconds(
+          base::StartupTimer::TimeElapsed().InMicroseconds())) +
       "s";
   std::string time_since_resume =
       last_resume_time_ != -1
-          ? std::to_string(round_time_in_seconds(SbTimeGetMonotonicNow() -
-                                                 last_resume_time_)) +
+          ? std::to_string(round_time_in_seconds(
+                starboard::CurrentMonotonicTime() - last_resume_time_)) +
                 "s"
           : "null";
   return "time since app start: " + time_since_start +
@@ -1688,7 +1422,7 @@ std::string SbPlayerPipeline::GetTimeInformation() const {
 void SbPlayerPipeline::RunSetDrmSystemReadyCB(
     DrmSystemReadyCB drm_system_ready_cb) {
   TRACE_EVENT0("cobalt::media", "SbPlayerPipeline::RunSetDrmSystemReadyCB");
-  set_drm_system_ready_cb_time_ = SbTimeGetMonotonicNow();
+  set_drm_system_ready_cb_time_ = starboard::CurrentMonotonicTime();
   set_drm_system_ready_cb_.Run(drm_system_ready_cb);
 }
 
@@ -1703,29 +1437,6 @@ void SbPlayerPipeline::SetReadInProgress(DemuxerStream::Type type,
 bool SbPlayerPipeline::GetReadInProgress(DemuxerStream::Type type) const {
   if (type == DemuxerStream::AUDIO) return audio_read_in_progress_;
   return video_read_in_progress_;
-}
-
-}  // namespace
-
-// static
-scoped_refptr<Pipeline> Pipeline::Create(
-    SbPlayerInterface* interface, PipelineWindow window,
-    const scoped_refptr<base::SingleThreadTaskRunner>& task_runner,
-    const GetDecodeTargetGraphicsContextProviderFunc&
-        get_decode_target_graphics_context_provider_func,
-    bool allow_resume_after_suspend, bool allow_batched_sample_write,
-#if SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
-    SbTime audio_write_duration_local, SbTime audio_write_duration_remote,
-#endif  // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
-    MediaLog* media_log, DecodeTargetProvider* decode_target_provider) {
-  return new SbPlayerPipeline(
-      interface, window, task_runner,
-      get_decode_target_graphics_context_provider_func,
-      allow_resume_after_suspend, allow_batched_sample_write,
-#if SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
-      audio_write_duration_local, audio_write_duration_remote,
-#endif  // SB_API_VERSION >= SB_MEDIA_ENHANCED_AUDIO_API_VERSION
-      media_log, decode_target_provider);
 }
 
 }  // namespace media

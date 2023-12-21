@@ -20,8 +20,10 @@
 #include <vector>
 
 #include "base/bind.h"
+#include "base/metrics/histogram_macros.h"
 #include "base/strings/string_tokenizer.h"
 #include "base/threading/thread_task_runner_handle.h"
+#include "base/time/time.h"
 #include "base/trace_event/trace_event.h"
 #include "cobalt/cssom/css_parser.h"
 #include "cobalt/cssom/css_style_sheet.h"
@@ -29,12 +31,20 @@
 #include "cobalt/dom/html_element_context.h"
 #include "cobalt/dom/window.h"
 #include "cobalt/web/csp_delegate.h"
-#include "nb/memory_scope.h"
+#include "starboard/common/time.h"
 #include "url/gurl.h"
 
 namespace cobalt {
 namespace dom {
 namespace {
+
+// Constants for parse time histogram. Do not modify these. If you need to
+// change these, create a new histogram and new constants.
+constexpr size_t kNumParseTimeHistogramBuckets = 100;
+constexpr base::TimeDelta kParseTimeHistogramMinTime =
+    base::TimeDelta::FromMicroseconds(1);
+constexpr base::TimeDelta kParseTimeHistogramMaxTime =
+    base::TimeDelta::FromMilliseconds(10);
 
 bool IsValidRelChar(char const& c) {
   return (isalnum(c) || c == '_' || c == '\\' || c == '-');
@@ -158,7 +168,6 @@ void HTMLLinkElement::ResolveAndSetAbsoluteURL() {
 // Algorithm for Obtain:
 //   https://www.w3.org/TR/html50/document-metadata.html#concept-link-obtain
 void HTMLLinkElement::Obtain() {
-  TRACK_MEMORY_SCOPE("DOM");
   TRACE_EVENT0("cobalt::dom", "HTMLLinkElement::Obtain()");
   // Custom, not in any spec.
   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
@@ -211,11 +220,11 @@ void HTMLLinkElement::Obtain() {
   loader::Origin origin = document->location()
                               ? document->location()->GetOriginAsObject()
                               : loader::Origin();
-  disk_cache::ResourceType type;
+  network::disk_cache::ResourceType type;
   if (rel() == "stylesheet") {
-    type = disk_cache::kCSS;
+    type = network::disk_cache::kCSS;
   } else if (IsValidSplashScreenFormat(rel())) {
-    type = disk_cache::kSplashScreen;
+    type = network::disk_cache::kSplashScreen;
   } else {
     LOG(WARNING) << "<link> has unsupported rel value: " << rel() << ".";
     NOTIMPLEMENTED();
@@ -232,7 +241,6 @@ void HTMLLinkElement::OnContentProduced(const loader::Origin& last_url_origin,
                                         std::unique_ptr<std::string> content) {
   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
   DCHECK(content);
-  TRACK_MEMORY_SCOPE("DOM");
   TRACE_EVENT0("cobalt::dom", "HTMLLinkElement::OnContentProduced()");
 
   // Get resource's final destination url from loader.
@@ -310,9 +318,24 @@ void HTMLLinkElement::OnSplashscreenLoaded(Document* document,
 
 void HTMLLinkElement::OnStylesheetLoaded(Document* document,
                                          const std::string& content) {
+  auto before_parse_micros = starboard::CurrentMonotonicTime();
   scoped_refptr<cssom::CSSStyleSheet> css_style_sheet =
       document->html_element_context()->css_parser()->ParseStyleSheet(
           content, base::SourceLocation(href(), 1, 1));
+  auto after_parse_micros = starboard::CurrentMonotonicTime();
+  auto css_kb = content.length() / 1000;
+  // Only measure non-trivial CSS sizes and ignore non-HTTP schemes (e.g.,
+  // file://), which are primarily used for debug purposes.
+  if (css_kb > 0 && absolute_url_.SchemeIsHTTPOrHTTPS()) {
+    // Get parse time normalized by byte size, see:
+    // go/cobalt-js-css-parsing-metrics.
+    auto micros_per_kb = (after_parse_micros - before_parse_micros) / css_kb;
+    UMA_HISTOGRAM_CUSTOM_MICROSECONDS_TIMES(
+        "Cobalt.DOM.CSS.Link.ParseTimeMicrosPerKB",
+        base::TimeDelta::FromMicroseconds(micros_per_kb),
+        kParseTimeHistogramMinTime, kParseTimeHistogramMaxTime,
+        kNumParseTimeHistogramBuckets);
+  }
   css_style_sheet->SetLocationUrl(absolute_url_);
   // If not loading from network-fetched resources or fetched resource is same
   // origin as the document, set origin-clean flag to true.

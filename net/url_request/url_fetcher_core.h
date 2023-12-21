@@ -114,6 +114,9 @@ class URLFetcherCore : public base::RefCountedThreadSafe<URLFetcherCore>,
   void SaveResponseToFileAtPath(
       const base::FilePath& file_path,
       scoped_refptr<base::SequencedTaskRunner> file_task_runner);
+#if defined(STARBOARD)
+  void SaveResponseToLargeString();
+#endif
   void SaveResponseToTemporaryFile(
       scoped_refptr<base::SequencedTaskRunner> file_task_runner);
   void SaveResponseWithWriter(
@@ -143,6 +146,9 @@ class URLFetcherCore : public base::RefCountedThreadSafe<URLFetcherCore>,
   // headers.
   void ReceivedContentWasMalformed();
   bool GetResponseAsString(std::string* out_response_string) const;
+#if defined(STARBOARD)
+  bool GetResponseAsLargeString(std::string* out_response_string) const;
+#endif
   bool GetResponseAsFilePath(bool take_ownership,
                              base::FilePath* out_response_path);
 
@@ -165,6 +171,7 @@ class URLFetcherCore : public base::RefCountedThreadSafe<URLFetcherCore>,
   static void SetIgnoreCertificateRequests(bool ignored);
 #if defined (STARBOARD)
   void GetLoadTimingInfo(const net::LoadTimingInfo& timing_info);
+  void GetLoadTimingInfoInDelegateThread(const net::LoadTimingInfo& timing_info);
 #endif  // defined(STARBOARD)
  private:
   friend class base::RefCountedThreadSafe<URLFetcherCore>;

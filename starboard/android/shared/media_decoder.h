@@ -82,8 +82,13 @@ class MediaDecoder
                SbDrmSystem drm_system);
   MediaDecoder(Host* host,
                SbMediaVideoCodec video_codec,
-               int width,
-               int height,
+               // `width_hint` and `height_hint` are used to create the Android
+               // video format, which don't have to be directly related to the
+               // resolution of the video.
+               int width_hint,
+               int height_hint,
+               optional<int> max_width,
+               optional<int> max_height,
                int fps,
                jobject j_output_surface,
                SbDrmSystem drm_system,
@@ -92,7 +97,6 @@ class MediaDecoder
                const FrameRenderedCB& frame_rendered_cb,
                int tunnel_mode_audio_session_id,
                bool force_big_endian_hdr_metadata,
-               bool force_improved_support_check,
                std::string* error_message);
   ~MediaDecoder();
 

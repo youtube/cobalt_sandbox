@@ -1,15 +1,11 @@
----
-layout: doc
-title: "Starboard Module Reference: event.h"
----
+Project: /youtube/cobalt/_project.yaml
+Book: /youtube/cobalt/_book.yaml
 
-For SB_API_VERSION >= 13
-
-Module Overview: Starboard Event module
+# Starboard Module Reference: `event.h`
 
 Defines the event system that wraps the Starboard main loop and entry point.
 
-## The Starboard Application Lifecycle ##
+## The Starboard Application Lifecycle
 
 ```
                * ----------
@@ -82,84 +78,15 @@ for a more graceful shutdown.
 Note that the application is always expected to transition through `BLURRED`,
 `CONCEALED` to `FROZEN` before receiving `Stop` or being killed.
 
-For SB_API_VERSION < 13
+## Enums
 
-Module Overview: Starboard Event module
-
-Defines the event system that wraps the Starboard main loop and entry point.
-
-## The Starboard Application Lifecycle ##
-
-```
-    ---------- *
-   |           |
-   |        Preload
-   |           |
-   |           V
- Start   [ PRELOADING ] ------------
-   |           |                    |
-   |         Start                  |
-   |           |                    |
-   |           V                    |
-    ----> [ STARTED ] <----         |
-               |           |        |
-             Pause       Unpause    |
-               |           |     Suspend
-               V           |        |
-    -----> [ PAUSED ] -----         |
-   |           |                    |
-Resume      Suspend                 |
-   |           |                    |
-   |           V                    |
-    ---- [ SUSPENDED ] <------------
-               |
-              Stop
-               |
-               V
-          [ STOPPED ]
-
-```
-
-The first event that a Starboard application receives is either `Start`
-(`kSbEventTypeStart`) or `Preload` (`kSbEventTypePreload`). `Start` puts the
-application in the `STARTED` state, whereas `Preload` puts the application in
-the `PRELOADING` state.
-
-`PRELOADING` can only happen as the first application state. In this state, the
-application should start and run as normal, but will not receive any input, and
-should not try to initialize graphics resources via GL. In `PRELOADING`, the
-application can receive `Start` or `Suspend` events. `Start` will receive the
-same data that was passed into `Preload`.
-
-In the `STARTED` state, the application is in the foreground and can expect to
-do all of the normal things it might want to do. Once in the `STARTED` state, it
-may receive a `Pause` event, putting the application into the `PAUSED` state.
-
-In the `PAUSED` state, the application is still visible, but has lost focus, or
-it is partially obscured by a modal dialog, or it is on its way to being shut
-down. The application should pause activity in this state. In this state, it can
-receive `Unpause` to be brought back to the foreground state (`STARTED`), or
-`Suspend` to be pushed further in the background to the `SUSPENDED` state.
-
-In the `SUSPENDED` state, the application is generally not visible. It should
-immediately release all graphics and video resources, and shut down all
-background activity (timers, rendering, etc). Additionally, the application
-should flush storage to ensure that if the application is killed, the storage
-will be up-to-date. The application may be killed at this point, but will
-ideally receive a `Stop` event for a more graceful shutdown.
-
-Note that the application is always expected to transition through `PAUSED` to
-`SUSPENDED` before receiving `Stop` or being killed.
-
-## Enums ##
-
-### SbEventType ###
+### SbEventType
 
 An enumeration of all possible event types dispatched directly by the system.
 Each event is accompanied by a void* data argument, and each event must define
 the type of the value pointed to by that data argument, if any.
 
-#### Values ####
+#### Values
 
 *   `kSbEventTypePreload`
 
@@ -232,8 +159,7 @@ the type of the value pointed to by that data argument, if any.
 *   `kSbEventTypeUser`
 
     A user change event, which means a new user signed-in or signed-out, or the
-    current user changed. No data argument, call SbUserGetSignedIn() and
-    SbUserGetCurrent() to get the latest changes.
+    current user changed. No data argument.
 *   `kSbEventTypeLink`
 
     A navigational link has come from the system, and the application should
@@ -346,55 +272,55 @@ the type of the value pointed to by that data argument, if any.
     change in the timezone setting). This should trigger the application to re-
     query the relevant APIs to update the date and time.
 
-## Typedefs ##
+## Typedefs
 
-### SbEventCallback ###
+### SbEventCallback
 
 A function that can be called back from the main Starboard event pump.
 
-#### Definition ####
+#### Definition
 
 ```
 typedef void(* SbEventCallback) (void *context)
 ```
 
-### SbEventDataDestructor ###
+### SbEventDataDestructor
 
 A function that will cleanly destroy an event data instance of a specific type.
 
-#### Definition ####
+#### Definition
 
 ```
 typedef void(* SbEventDataDestructor) (void *data)
 ```
 
-### SbEventId ###
+### SbEventId
 
 An ID that can be used to refer to a scheduled event.
 
-#### Definition ####
+#### Definition
 
 ```
 typedef uint32_t SbEventId
 ```
 
-## Structs ##
+## Structs
 
-### SbEvent ###
+### SbEvent
 
 Structure representing a Starboard event and its data.
 
-#### Members ####
+#### Members
 
 *   `SbEventType type`
 *   `SbTimeMonotonic timestamp`
 *   `void * data`
 
-### SbEventStartData ###
+### SbEventStartData
 
 Event data for kSbEventTypeStart events.
 
-#### Members ####
+#### Members
 
 *   `char ** argument_values`
 
@@ -406,31 +332,31 @@ Event data for kSbEventTypeStart events.
 
     The startup link, if any.
 
-### SbEventWindowSizeChangedData ###
+### SbEventWindowSizeChangedData
 
 Event data for kSbEventTypeWindowSizeChanged events.
 
-#### Members ####
+#### Members
 
 *   `SbWindow window`
 *   `SbWindowSize size`
 
-## Functions ##
+## Functions
 
-### SbEventCancel ###
+### SbEventCancel
 
 Cancels the specified `event_id`. Note that this function is a no-op if the
 event already fired. This function can be safely called from any thread, but the
 only way to guarantee that the event does not run anyway is to call it from the
 main Starboard event loop thread.
 
-#### Declaration ####
+#### Declaration
 
 ```
 void SbEventCancel(SbEventId event_id)
 ```
 
-### SbEventHandle ###
+### SbEventHandle
 
 The entry point that Starboard applications MUST implement. Any memory pointed
 at by `event` or the `data` field inside `event` is owned by the system, and
@@ -443,34 +369,34 @@ specification about what other work might happen on this thread, so the
 application should generally do as little work as possible on this thread, and
 just dispatch it over to another thread.
 
-#### Declaration ####
+#### Declaration
 
 ```
 SB_IMPORT void SbEventHandle(const SbEvent *event)
 ```
 
-### SbEventIsIdValid ###
+### SbEventIsIdValid
 
 Returns whether the given event handle is valid.
 
-#### Declaration ####
+#### Declaration
 
 ```
 static bool SbEventIsIdValid(SbEventId handle)
 ```
 
-### SbEventSchedule ###
+### SbEventSchedule
 
 Schedules an event `callback` into the main Starboard event loop. This function
 may be called from any thread, but `callback` is always called from the main
 Starboard thread, queued with other pending events.
 
-`callback`: The callback function to be called. `context`: The context that is
-passed to the `callback` function. `delay`: The minimum number of microseconds
-to wait before calling the `callback` function. Set `delay` to `0` to call the
-callback as soon as possible.
+`callback`: The callback function to be called. Must not be NULL. `context`: The
+context that is passed to the `callback` function. `delay`: The minimum number
+of microseconds to wait before calling the `callback` function. Set `delay` to
+`0` to call the callback as soon as possible.
 
-#### Declaration ####
+#### Declaration
 
 ```
 SbEventId SbEventSchedule(SbEventCallback callback, void *context, SbTime delay)

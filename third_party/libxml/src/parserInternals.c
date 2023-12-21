@@ -10,19 +10,16 @@
 #define IN_LIBXML
 #include "libxml.h"
 
-#if defined(_WIN32) && !defined (__CYGWIN__)
+#if defined(_WIN32)
 #define XML_DIR_SEP '\\'
 #else
 #define XML_DIR_SEP '/'
 #endif
 
 #include <string.h>
-#ifdef HAVE_CTYPE_H
 #include <ctype.h>
-#endif
-#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
-#endif
+
 #ifdef HAVE_SYS_STAT_H
 #include <sys/stat.h>
 #endif
@@ -524,8 +521,6 @@ xmlNextChar(xmlParserCtxtPtr ctxt)
         } else
             /* 1-byte code */
             ctxt->input->cur++;
-
-        ctxt->nbChars++;
     } else {
         /*
          * Assume it's a fixed length encoding (1) with
@@ -538,7 +533,6 @@ xmlNextChar(xmlParserCtxtPtr ctxt)
         } else
             ctxt->input->col++;
         ctxt->input->cur++;
-        ctxt->nbChars++;
     }
     if (*ctxt->input->cur == 0)
         xmlParserInputGrow(ctxt->input, INPUT_CHUNK);
@@ -682,7 +676,6 @@ xmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
 	    }
 	    if (*ctxt->input->cur == 0xD) {
 		if (ctxt->input->cur[1] == 0xA) {
-		    ctxt->nbChars++;
 		    ctxt->input->cur++;
 		}
 		return(0xA);
@@ -698,7 +691,6 @@ xmlCurrentChar(xmlParserCtxtPtr ctxt, int *len) {
     *len = 1;
     if (*ctxt->input->cur == 0xD) {
 	if (ctxt->input->cur[1] == 0xA) {
-	    ctxt->nbChars++;
 	    ctxt->input->cur++;
 	}
 	return(0xA);
@@ -1163,6 +1155,11 @@ xmlSwitchInputEncodingInt(xmlParserCtxtPtr ctxt, xmlParserInputPtr input,
              * Note: this is a bit dangerous, but that's what it
              * takes to use nearly compatible signature for different
              * encodings.
+             *
+             * FIXME: Encoders might buffer partial byte sequences, so
+             * this probably can't work. We should return an error and
+             * make sure that callers never try to switch the encoding
+             * twice.
              */
             xmlCharEncCloseFunc(input->buf->encoder);
             input->buf->encoder = handler;
@@ -1556,8 +1553,10 @@ xmlNewInputFromFile(xmlParserCtxtPtr ctxt, const char *filename) {
     }
 
     inputStream = xmlNewInputStream(ctxt);
-    if (inputStream == NULL)
+    if (inputStream == NULL) {
+	xmlFreeParserInputBuffer(buf);
 	return(NULL);
+    }
 
     inputStream->buf = buf;
     inputStream = xmlCheckHTTPInput(ctxt, inputStream);
@@ -1741,7 +1740,7 @@ xmlInitParserCtxt(xmlParserCtxtPtr ctxt)
 	ctxt->options |= XML_PARSE_NOBLANKS;
     }
 
-    ctxt->vctxt.finishDtd = XML_CTXT_FINISH_DTD_0;
+    ctxt->vctxt.flags = XML_VCTXT_USE_PCTXT;
     ctxt->vctxt.userData = ctxt;
     ctxt->vctxt.error = xmlParserValidityError;
     ctxt->vctxt.warning = xmlParserValidityWarning;
@@ -1758,7 +1757,6 @@ xmlInitParserCtxt(xmlParserCtxtPtr ctxt)
         ctxt->options |= XML_PARSE_NOENT;
     }
     ctxt->record_info = 0;
-    ctxt->nbChars = 0;
     ctxt->checkIndex = 0;
     ctxt->inSubset = 0;
     ctxt->errNo = XML_ERR_OK;
@@ -2171,5 +2169,3 @@ xmlKeepBlanksDefault(int val) {
     return(old);
 }
 
-#define bottom_parserInternals
-#include "elfgcchack.h"

@@ -118,11 +118,42 @@ static_library("metrics") {
     "//third_party/zlib/google:compression_utils",
   ]
 
+  if (use_cobalt_customizations) {
+    sources -= [
+      # Allows removal of unused sampled_profile.proto, which adds ~200KB to
+      # the binary. See b/290819695.
+      "call_stack_profile_metrics_provider.cc",
+      "call_stack_profile_metrics_provider.h",
+
+      # All code should be OS agnostic above SB.
+      "drive_metrics_provider_android.cc",
+      "drive_metrics_provider_ios.mm",
+      "drive_metrics_provider_linux.cc",
+      "drive_metrics_provider_mac.mm",
+      "drive_metrics_provider_win.cc",
+      # Too many non-existent SB functionalities (e.g., base::TouchFile,
+      # MemoryMapped files, etc).
+      "file_metrics_provider.cc",
+      "file_metrics_provider.h",
+      # All code should be OS agnostic above SB.
+      "machine_id_provider_win.cc",
+      "system_memory_stats_recorder_linux.cc",
+      "system_memory_stats_recorder_win.cc",
+      "system_session_analyzer_win.cc",
+      "system_session_analyzer_win.h",
+
+      # Files with unused symbols. ex: DriveMetricsProvider::HasSeekPenalty
+      # These files give linker errors about undefined symbols during modualr builds.
+      "drive_metrics_provider.cc",
+      "drive_metrics_provider.h",
+    ]
+  }
+
   if (is_chromeos) {
     deps += [ ":serialization" ]
   }
 
-  if (is_mac) {
+  if (is_mac && !use_cobalt_customizations) {
     libs = [
       # The below are all needed for drive_metrics_provider_mac.mm.
       "CoreFoundation.framework",
@@ -132,7 +163,7 @@ static_library("metrics") {
     ]
   }
 
-  if (is_win) {
+  if (is_win && !use_cobalt_customizations) {
     sources -= [ "machine_id_provider_stub.cc" ]
     deps += [ "//components/browser_watcher:stability_client" ]
     libs = [ "wevtapi.lib" ]
@@ -143,6 +174,7 @@ static_library("metrics") {
   }
 }
 
+if (!use_cobalt_customizations) {
 # The component metrics provider is a separate target because it depends upon
 # (the large) component_updater code, and is not needed for some entities that
 # depend on :metrics.
@@ -162,8 +194,9 @@ static_library("component_metrics") {
     "//components/component_updater",
   ]
 }
+}
 
-if (!is_ios) {
+if (!is_ios && !use_cobalt_customizations) {
   static_library("gpu") {
     sources = [
       "gpu/gpu_metrics_provider.cc",
@@ -181,6 +214,7 @@ if (!is_ios) {
   }
 }
 
+if (!use_cobalt_customizations) {
 static_library("net") {
   sources = [
     "net/cellular_logic_helper.cc",
@@ -318,6 +352,7 @@ source_set("call_stack_profile_collector") {
     "//components/metrics/public/interfaces:call_stack_mojo_bindings",
   ]
 }
+}
 
 static_library("test_support") {
   testonly = true
@@ -340,7 +375,7 @@ static_library("test_support") {
   ]
 }
 
-if (is_linux) {
+if (is_linux && !use_cobalt_customizations) {
   static_library("serialization") {
     sources = [
       "serialization/metric_sample.cc",
@@ -354,6 +389,7 @@ if (is_linux) {
   }
 }
 
+if (!use_cobalt_customizations) {
 source_set("unit_tests") {
   testonly = true
   sources = [
@@ -439,4 +475,36 @@ test("metrics_unittests") {
     ":unit_tests",
     "//components/test:test_support",
   ]
+}
+}
+
+if (use_cobalt_customizations) {
+  target(gtest_target_type, "components_metrics_tests") {
+    testonly = true
+    has_pedantic_warnings = true
+    sources = [
+      "histogram_encoder_unittest.cc",
+      "metrics_log_manager_unittest.cc",
+      "metrics_log_store_unittest.cc",
+      "metrics_log_unittest.cc",
+      "metrics_service_unittest.cc",
+      "metrics_state_manager_unittest.cc",
+      "reporting_service_unittest.cc",
+      "stability_metrics_helper_unittest.cc",
+      "stability_metrics_provider_unittest.cc",
+    ]
+
+    deps = [
+      ":metrics",
+      ":test_support",
+      "//base",
+      "//base/test:test_support",
+      "//cobalt/test:run_all_unittests",
+      "//components/prefs:test_support",
+      "//components/variations",
+      "//extensions/buildflags",
+      "//testing/gtest",
+      "//third_party/zlib/google:compression_utils",
+    ]
+  }
 }

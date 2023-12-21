@@ -15,23 +15,18 @@
 #
 """Build related constants and helper functions."""
 
-import imp  # pylint: disable=deprecated-module
 import importlib
+import importlib.machinery
+import importlib.util
 import logging
 import os
 import sys
 
 from starboard.build.platforms import PLATFORMS
-from starboard.tools import config
 from starboard.tools import paths
 
 _STARBOARD_TOOLCHAINS_DIR_KEY = 'STARBOARD_TOOLCHAINS_DIR'
 _STARBOARD_TOOLCHAINS_DIR_NAME = 'starboard-toolchains'
-
-# TODO: Rectify consistency of "Build Type" / "Build Config" naming.
-_BUILD_CONFIG_KEY = 'BUILD_TYPE'
-_BUILD_PLATFORM_KEY = 'BUILD_PLATFORM'
-_BUILD_CONFIGURATION_KEY = 'BUILD_CONFIGURATION'
 
 
 class ClangSpecification(object):
@@ -42,72 +37,6 @@ class ClangSpecification(object):
     assert version
     self.revision = revision
     self.version = version
-
-
-def _CheckConfig(key, raw_value, value):
-  if config.IsValid(value):
-    return True
-
-  logging.warning("Environment variable '%s' is '%s', which is invalid.", key,
-                  raw_value)
-  logging.warning('Valid build configurations: %s', config.GetAll())
-  return False
-
-
-def _CheckPlatform(key, raw_value, value):
-  if value in PLATFORMS:
-    return True
-
-  logging.warning("Environment variable '%s' is '%s', which is invalid.", key,
-                  raw_value)
-  logging.warning('Valid platforms: %s', list(PLATFORMS.keys()))
-  return False
-
-
-def GetDefaultConfigAndPlatform():
-  """Returns a (config_name, platform_name) tuple based on the environment."""
-  default_config_name = None
-  default_platform_name = None
-  if _BUILD_CONFIG_KEY in os.environ:
-    raw_config_name = os.environ[_BUILD_CONFIG_KEY]
-    config_name = raw_config_name.lower()
-    if _CheckConfig(_BUILD_CONFIG_KEY, raw_config_name, config_name):
-      default_config_name = config_name
-
-  if _BUILD_PLATFORM_KEY in os.environ:
-    raw_platform_name = os.environ[_BUILD_PLATFORM_KEY]
-    platform_name = raw_platform_name.lower()
-    if _CheckPlatform(_BUILD_PLATFORM_KEY, raw_platform_name, platform_name):
-      default_platform_name = platform_name
-
-  if default_config_name and default_platform_name:
-    return default_config_name, default_platform_name
-
-  # Only check BUILD_CONFIGURATION if either platform or config is not
-  # provided individually, or at least one is invalid.
-  if _BUILD_CONFIGURATION_KEY not in os.environ:
-    return default_config_name, default_platform_name
-
-  raw_configuration = os.environ[_BUILD_CONFIGURATION_KEY]
-  build_configuration = raw_configuration.lower()
-  if '_' not in build_configuration:
-    logging.warning(
-        "Expected a '_' in '%s' and did not find one.  "
-        "'%s' must be of the form <platform>_<config>.",
-        _BUILD_CONFIGURATION_KEY, _BUILD_CONFIGURATION_KEY)
-    return default_config_name, default_platform_name
-
-  platform_name, config_name = build_configuration.split('_', 1)
-  if not default_config_name:
-    if _CheckConfig(_BUILD_CONFIGURATION_KEY, raw_configuration, config_name):
-      default_config_name = config_name
-
-  if not default_platform_name:
-    if _CheckPlatform(_BUILD_CONFIGURATION_KEY, raw_configuration,
-                      platform_name):
-      default_platform_name = platform_name
-
-  return default_config_name, default_platform_name
 
 
 def GetToolchainsDir():
@@ -166,7 +95,12 @@ def _LoadPlatformModule(platform_name, file_name, function_name):
                                    PLATFORMS[platform_name])
       module_path = os.path.join(platform_path, file_name)
       if not _ModuleLoaded('platform_module', module_path):
-        platform_module = imp.load_source('platform_module', module_path)
+        loader = importlib.machinery.SourceFileLoader('platform_module',
+                                                      module_path)
+        spec = importlib.util.spec_from_file_location(
+            'platform_module', module_path, loader=loader)
+        platform_module = importlib.util.module_from_spec(spec)
+        loader.exec_module(platform_module)
       else:
         platform_module = sys.modules['platform_module']
     else:

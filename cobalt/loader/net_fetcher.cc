@@ -26,8 +26,11 @@
 #include "cobalt/loader/cors_preflight.h"
 #include "cobalt/loader/fetch_interceptor_coordinator.h"
 #include "cobalt/loader/url_fetcher_string_writer.h"
+#include "cobalt/network/disk_cache/cobalt_backend_impl.h"
 #include "cobalt/network/network_module.h"
 #include "net/base/mime_util.h"
+#include "net/http/http_cache.h"
+#include "net/http/http_transaction_factory.h"
 #include "net/url_request/url_fetcher.h"
 #if defined(STARBOARD)
 #include "starboard/configuration.h"
@@ -102,9 +105,11 @@ NetFetcher::NetFetcher(const GURL& url, bool main_resource,
       security_callback_(security_callback),
       ALLOW_THIS_IN_INITIALIZER_LIST(start_callback_(
           base::Bind(&NetFetcher::Start, base::Unretained(this)))),
+      cors_policy_(network_module->network_delegate()->cors_policy()),
       request_cross_origin_(false),
       origin_(origin),
-      request_script_(options.resource_type == disk_cache::kUncompiledScript),
+      request_script_(options.resource_type ==
+                      network::disk_cache::kUncompiledScript),
       task_runner_(base::ThreadTaskRunnerHandle::Get()),
       skip_fetch_intercept_(options.skip_fetch_intercept),
       will_destroy_current_message_loop_(false),
@@ -123,10 +128,14 @@ NetFetcher::NetFetcher(const GURL& url, bool main_resource,
     request_cross_origin_ = true;
     url_fetcher_->AddExtraRequestHeader("Origin:" + origin.SerializedOrigin());
   }
-  std::string content_type =
-      std::string(net::HttpRequestHeaders::kResourceType) + ":" +
-      std::to_string(options.resource_type);
-  url_fetcher_->AddExtraRequestHeader(content_type);
+
+  if (url.SchemeIsHTTPOrHTTPS()) {
+    auto url_request_context = network_module->url_request_context();
+    std::string key = net::HttpUtil::SpecForRequest(url);
+    url_request_context->AssociateKeyWithResourceType(key,
+                                                      options.resource_type);
+  }
+
   if ((request_cross_origin_ &&
        (request_mode == kCORSModeSameOriginCredentials)) ||
       request_mode == kCORSModeOmitCredentials) {
@@ -135,6 +144,7 @@ NetFetcher::NetFetcher(const GURL& url, bool main_resource,
         net::LOAD_DO_NOT_SEND_COOKIES | net::LOAD_DO_NOT_SEND_AUTH_DATA;
     url_fetcher_->SetLoadFlags(kDisableCookiesLoadFlags);
   }
+  network_module->AddClientHintHeaders(*url_fetcher_, network::kCallTypeLoader);
 
   // Delay the actual start until this function is complete. Otherwise we might
   // call handler's callbacks at an unexpected time- e.g. receiving OnError()
@@ -224,7 +234,8 @@ void NetFetcher::OnURLFetchResponseStarted(const net::URLFetcher* source) {
   if (request_cross_origin_ &&
       (!source->GetResponseHeaders() ||
        !CORSPreflight::CORSCheck(*source->GetResponseHeaders(),
-                                 origin_.SerializedOrigin(), false))) {
+                                 origin_.SerializedOrigin(), false,
+                                 cors_policy_))) {
     std::string msg(base::StringPrintf(
         "Cross origin request to %s was rejected by Same-Origin-Policy",
         source->GetURL().spec().c_str()));

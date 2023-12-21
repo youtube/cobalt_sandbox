@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <stdlib.h>
 #include <cmath>
 #include <random>
 #include <vector>
@@ -33,10 +34,14 @@ constexpr int kVideoResolutions[][2] = {
     {1920, 1080},
     {2560, 1440},
     {3840, 2160},
+    {7680, 4320},
 };
 
 constexpr int kBitsPerPixelValues[] = {
-    kSbMediaBitsPerPixelInvalid, 8, 10, 12,
+    kSbMediaBitsPerPixelInvalid,
+    8,
+    10,
+    12,
 };
 
 constexpr SbMediaVideoCodec kVideoCodecs[] = {
@@ -48,13 +53,53 @@ constexpr SbMediaVideoCodec kVideoCodecs[] = {
 };
 
 constexpr SbMediaType kMediaTypes[] = {
-    kSbMediaTypeAudio, kSbMediaTypeVideo,
+    kSbMediaTypeAudio,
+    kSbMediaTypeVideo,
 };
 
-// Minimum audio and video budgets required by the 2020 Youtube Software
+// Minimum audio and video budgets required by the 2024 Youtube Hardware
 // Requirements.
 constexpr int kMinAudioBudget = 5 * 1024 * 1024;
-constexpr int kMinVideoBudget = 30 * 1024 * 1024;
+constexpr int kMinVideoBudget1080p = 30 * 1024 * 1024;
+constexpr int kMinVideoBudget4kSdr = 50 * 1024 * 1024;
+constexpr int kMinVideoBudget4kHdr = 80 * 1024 * 1024;
+constexpr int kMinVideoBudget8k = 200 * 1024 * 1024;
+
+int GetVideoBufferBudget(SbMediaVideoCodec codec,
+                         int frame_width,
+                         bool is_hdr) {
+  if (codec != kSbMediaVideoCodecAv1 && codec != kSbMediaVideoCodecH264 &&
+      codec != kSbMediaVideoCodecVp9) {
+    return kMinVideoBudget1080p;
+  }
+
+  static const bool kSupports8k =
+      SbMediaCanPlayMimeAndKeySystem(
+          "video/mp4; codecs=\"av01.0.16M.08\"; width=7680; height=4320", "") ==
+      kSbMediaSupportTypeProbably;
+  static const bool kSupports4kHdr =
+      SbMediaCanPlayMimeAndKeySystem(
+          "video/webm; codecs=\"vp09.02.51.10.01.09.16.09.00\"; width=3840; "
+          "height=2160",
+          "") == kSbMediaSupportTypeProbably;
+  static const bool kSupports4kSdr =
+      SbMediaCanPlayMimeAndKeySystem(
+          "video/webm; codecs=\"vp9\"; width=3840; height=2160", "") ==
+      kSbMediaSupportTypeProbably;
+
+  int video_budget = kMinVideoBudget1080p;
+  if (kSupports8k && frame_width > 3840) {
+    video_budget = kMinVideoBudget8k;
+  } else if (frame_width > 1920 && frame_width <= 3840) {
+    if (kSupports4kHdr && is_hdr) {
+      video_budget = kMinVideoBudget4kHdr;
+    } else if (kSupports4kSdr && !is_hdr) {
+      video_budget = kMinVideoBudget4kSdr;
+    }
+  }
+
+  return video_budget;
+}
 
 std::vector<void*> TryToAllocateMemory(int size,
                                        int allocation_unit,
@@ -70,8 +115,12 @@ std::vector<void*> TryToAllocateMemory(int size,
     int allocation_increment = allocation_unit != 0
                                    ? allocation_unit
                                    : (std::rand() % 500 + 100) * 1024;
-    void* allocated_memory =
-        SbMemoryAllocateAligned(alignment, allocation_increment);
+    void* allocated_memory = NULL;
+#if SB_API_VERSION < 16
+    allocated_memory = SbMemoryAllocateAligned(alignment, allocation_increment);
+#else
+    posix_memalign(&allocated_memory, alignment, allocation_increment);
+#endif
     EXPECT_NE(allocated_memory, nullptr);
     if (!allocated_memory) {
       return allocated_ptrs;
@@ -115,13 +164,14 @@ TEST(SbMediaBufferTest, MediaTypes) {
   }
 }
 
+#if SB_API_VERSION < 16
 TEST(SbMediaBufferTest, Alignment) {
   for (auto type : kMediaTypes) {
 #if SB_API_VERSION >= 14
     // The test will be run more than once, it's redundant but allows us to keep
     // the test logic in one place.
     int alignment = SbMediaGetBufferAlignment();
-#else  // SB_API_VERSION >= 14
+#else   // SB_API_VERSION >= 14
     int alignment = SbMediaGetBufferAlignment(type);
 #endif  // SB_API_VERSION >= 14
     EXPECT_GE(alignment, 1);
@@ -129,6 +179,7 @@ TEST(SbMediaBufferTest, Alignment) {
         << "Alignment must always be a power of 2";
   }
 }
+#endif  // SB_API_VERSION < 16
 
 TEST(SbMediaBufferTest, AllocationUnit) {
   EXPECT_GE(SbMediaGetBufferAllocationUnit(), 0);
@@ -141,19 +192,20 @@ TEST(SbMediaBufferTest, AllocationUnit) {
   std::vector<void*> allocated_ptrs;
   int initial_buffer_capacity = SbMediaGetInitialBufferCapacity();
   if (initial_buffer_capacity > 0) {
-    allocated_ptrs =
-        TryToAllocateMemory(initial_buffer_capacity, allocation_unit, 1);
+    allocated_ptrs = TryToAllocateMemory(initial_buffer_capacity,
+                                         allocation_unit, sizeof(void*));
   }
-
+#if SB_API_VERSION < 16
   if (!HasNonfatalFailure()) {
     for (SbMediaType type : kMediaTypes) {
 #if SB_API_VERSION >= 14
       // The test will be run more than once, it's redundant but allows us to
       // keep the test logic in one place.
       int alignment = SbMediaGetBufferAlignment();
-#else  // SB_API_VERSION >= 14
+#else   // SB_API_VERSION >= 14
       int alignment = SbMediaGetBufferAlignment(type);
 #endif  // SB_API_VERSION >= 14
+      SB_LOG(INFO) << "alignment=" << alignment;
       EXPECT_EQ(alignment & (alignment - 1), 0)
           << "Alignment must always be a power of 2";
       if (HasNonfatalFailure()) {
@@ -161,7 +213,7 @@ TEST(SbMediaBufferTest, AllocationUnit) {
       }
       int media_budget = type == SbMediaType::kSbMediaTypeAudio
                              ? kMinAudioBudget
-                             : kMinVideoBudget;
+                             : kMinVideoBudget1080p;
       std::vector<void*> media_buffer_allocated_memory =
           TryToAllocateMemory(media_budget, allocation_unit, alignment);
       allocated_ptrs.insert(allocated_ptrs.end(),
@@ -172,9 +224,10 @@ TEST(SbMediaBufferTest, AllocationUnit) {
       }
     }
   }
+#endif  // SB_API_VERSION < 16
 
   for (void* ptr : allocated_ptrs) {
-    SbMemoryDeallocateAligned(ptr);
+    free(ptr);
   }
 }
 
@@ -266,9 +319,11 @@ TEST(SbMediaBufferTest, VideoBudget) {
   for (auto codec : kVideoCodecs) {
     for (auto resolution : kVideoResolutions) {
       for (auto bits_per_pixel : kBitsPerPixelValues) {
+        int video_budget =
+            GetVideoBufferBudget(codec, resolution[0], bits_per_pixel > 8);
         EXPECT_GE(SbMediaGetVideoBufferBudget(codec, resolution[0],
                                               resolution[1], bits_per_pixel),
-                  kMinVideoBudget);
+                  video_budget);
       }
     }
   }
@@ -284,6 +339,7 @@ TEST(SbMediaBufferTest, ValidatePerformance) {
   TEST_PERF_FUNCNOARGS_DEFAULT(SbMediaGetBufferStorageType);
   TEST_PERF_FUNCNOARGS_DEFAULT(SbMediaIsBufferUsingMemoryPool);
 
+#if SB_API_VERSION < 16
 #if SB_API_VERSION >= 14
   for (auto type : kMediaTypes) {
     TEST_PERF_FUNCNOARGS_DEFAULT(SbMediaGetBufferAlignment);
@@ -295,6 +351,7 @@ TEST(SbMediaBufferTest, ValidatePerformance) {
     TEST_PERF_FUNCWITHARGS_DEFAULT(SbMediaGetBufferPadding, type);
   }
 #endif  // SB_API_VERSION >= 14
+#endif  // SB_API_VERSION < 16
 
   for (auto resolution : kVideoResolutions) {
     for (auto bits_per_pixel : kBitsPerPixelValues) {

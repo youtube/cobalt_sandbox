@@ -20,6 +20,7 @@
 #include "starboard/android/shared/jni_env_ext.h"
 #include "starboard/android/shared/jni_utils.h"
 #include "starboard/android/shared/media_common.h"
+#include "starboard/common/optional.h"
 #include "starboard/common/scoped_ptr.h"
 #include "starboard/shared/starboard/media/media_util.h"
 
@@ -62,9 +63,53 @@ struct DequeueOutputResult {
   jint num_bytes;
 };
 
-struct SurfaceDimensions {
-  jint width;
-  jint height;
+struct FrameSize {
+  jint texture_width;
+  jint texture_height;
+
+  // Crop values can be set to -1 when they are not provided by the platform
+  jint crop_left = -1;
+  jint crop_top = -1;
+  jint crop_right = -1;
+  jint crop_bottom = -1;
+
+  bool has_crop_values() const {
+    return crop_left >= 0 && crop_top >= 0 && crop_right >= 0 &&
+           crop_bottom >= 0;
+  }
+
+  jint display_width() const {
+    if (has_crop_values()) {
+      return crop_right - crop_left + 1;
+    }
+
+    return texture_width;
+  }
+
+  jint display_height() const {
+    if (has_crop_values()) {
+      return crop_bottom - crop_top + 1;
+    }
+
+    return texture_height;
+  }
+
+  void DCheckValid() const {
+    SB_DCHECK(texture_width >= 0) << texture_width;
+    SB_DCHECK(texture_height >= 0) << texture_height;
+
+    if (crop_left >= 0 || crop_top >= 0 || crop_right >= 0 ||
+        crop_bottom >= 0) {
+      // If there is at least one crop value set, all of them should be set.
+      SB_DCHECK(crop_left >= 0) << crop_left;
+      SB_DCHECK(crop_top >= 0) << crop_top;
+      SB_DCHECK(crop_right >= 0) << crop_right;
+      SB_DCHECK(crop_bottom >= 0) << crop_bottom;
+      SB_DCHECK(has_crop_values());
+      SB_DCHECK(display_width() >= 0) << display_width();
+      SB_DCHECK(display_height() >= 0) << display_height();
+    }
+  }
 };
 
 struct AudioOutputFormatResult {
@@ -104,19 +149,30 @@ class MediaCodecBridge {
       Handler* handler,
       jobject j_media_crypto);
 
+  // `max_width` and `max_height` can be set to positive values to specify the
+  // maximum resolutions the video can be adapted to.
+  // When they are not set, MediaCodecBridge will set them to the maximum
+  // resolutions the platform can decode.
+  // Both of them have to be set at the same time (i.e. we cannot set one of
+  // them without the other), which will be checked in the function.
   static scoped_ptr<MediaCodecBridge> CreateVideoMediaCodecBridge(
       SbMediaVideoCodec video_codec,
-      int width,
-      int height,
+      // `width_hint` and `height_hint` are used to create the Android video
+      // format, which don't have to be directly related to the resolution of
+      // the video.
+      int width_hint,
+      int height_hint,
       int fps,
+      optional<int> max_width,
+      optional<int> max_height,
       Handler* handler,
       jobject j_surface,
       jobject j_media_crypto,
       const SbMediaColorMetadata* color_metadata,
+      bool require_secured_decoder,
       bool require_software_codec,
       int tunnel_mode_audio_session_id,
       bool force_big_endian_hdr_metadata,
-      bool force_improved_support_check,
       std::string* error_message);
 
   ~MediaCodecBridge();
@@ -142,7 +198,7 @@ class MediaCodecBridge {
 
   void SetPlaybackRate(double playback_rate);
   jint Flush();
-  SurfaceDimensions GetOutputDimensions();
+  FrameSize GetOutputSize();
   AudioOutputFormatResult GetAudioOutputFormat();
 
   void OnMediaCodecError(bool is_recoverable,

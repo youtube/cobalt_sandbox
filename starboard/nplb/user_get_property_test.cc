@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#if SB_API_VERSION < 16
+
 #include "starboard/memory.h"
 #include "starboard/user.h"
 #include "testing/gtest/include/gtest/gtest.h"
@@ -53,7 +55,9 @@ TEST(SbUserGetPropertyTest, SunnyDay) {
 
   TestProperty(current, kSbUserPropertyUserName);
   TestProperty(current, kSbUserPropertyUserId);
+#if SB_API_VERSION < 16
   TestProperty(current, kSbUserPropertyAvatarUrl);
+#endif
 }
 
 TEST(SbUserGetPropertyTest, MultipleTimes) {
@@ -69,10 +73,14 @@ TEST(SbUserGetPropertyTest, MultipleTimes) {
   TestProperty(current, kSbUserPropertyUserId);
   TestProperty(current, kSbUserPropertyUserId);
 
+#if SB_API_VERSION < 16
   TestProperty(current, kSbUserPropertyAvatarUrl);
   TestProperty(current, kSbUserPropertyAvatarUrl);
+#endif
 }
 
 }  // namespace
 }  // namespace nplb
 }  // namespace starboard
+
+#endif

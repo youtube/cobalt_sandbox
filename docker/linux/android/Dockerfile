@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM cobalt-build-base
+ARG FROM_IMAGE
+FROM ${FROM_IMAGE:-cobalt-build-base}
 
+# TODO: b/309157124 - add --no-install-recommends.
 RUN apt update -qqy \
-    && apt install -qqy --no-install-recommends \
+    && apt install -qqy \
         libxml2-dev \
         default-jdk \
         binutils-arm-linux-gnueabi \
@@ -48,16 +50,15 @@ RUN cd /tmp \
       --sdk_root=${ANDROID_SDK_ROOT} \
     "build-tools;30.0.0" \
     "build-tools;31.0.0" \
-    "cmake;3.10.2.4988404" \
+    "cmake;3.22.1" \
     "cmdline-tools;1.0" \
     "extras;android;m2repository" \
     "extras;google;m2repository" \
-    "ndk;21.1.6352462" \
-    "patcher;v4" \
+    "ndk;25.2.9519653" \
     "platforms;android-30" \
     "platforms;android-31" \
     "platform-tools" \
   && echo "Android SDK installed"
 
-CMD gn gen ${OUTDIR}/${PLATFORM}_${CONFIG} --args="target_platform=\"${PLATFORM}\" build_type=\"${CONFIG}\" target_os=\"android\" target_cpu=\"${TARGET_CPU}\"" && \
-    ninja -v -j ${NINJA_PARALLEL} -C ${OUTDIR}/${PLATFORM}_${CONFIG} ${TARGET:-cobalt_install}
+CMD gn gen ${OUTDIR}/${PLATFORM}${SB_API_VERSION:+-sbversion-$SB_API_VERSION}_${CONFIG:-debug} --args="target_platform=\"${PLATFORM}\" build_type=\"${CONFIG:-debug}\" target_cpu=\"${TARGET_CPU}\" target_os=\"android\" ${SB_API_VERSION:+sb_api_version=$SB_API_VERSION}" && \
+    ninja -v -j ${NINJA_PARALLEL} -C ${OUTDIR}/${PLATFORM}${SB_API_VERSION:+-sbversion-$SB_API_VERSION}_${CONFIG:-debug} ${TARGET:-cobalt_install}

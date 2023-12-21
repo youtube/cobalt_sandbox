@@ -18,9 +18,12 @@
 #include <atomic>
 #include <deque>
 #include <set>
+#include <string>
+#include <vector>
 
 #include "starboard/common/queue.h"
 #include "starboard/common/scoped_ptr.h"
+#include "starboard/drm.h"
 #include "starboard/nplb/player_test_util.h"
 #include "starboard/player.h"
 #include "starboard/shared/starboard/player/video_dmp_reader.h"
@@ -33,61 +36,44 @@ namespace nplb {
 class SbPlayerTestFixture {
  public:
   // A simple encapsulation of grouped samples.
+  class GroupedSamplesIterator;
   class GroupedSamples {
    public:
-    int start_index() const { return start_index_; }
-    int samples_to_write() const { return samples_to_write_; }
-    bool write_eos() const { return write_eos_; }
+    struct AudioSamplesDescriptor {
+      int start_index = 0;
+      int samples_count = 0;
+      SbTime timestamp_offset = 0;
+      SbTime discarded_duration_from_front = 0;
+      SbTime discarded_duration_from_back = 0;
+      bool is_end_of_stream = false;
+    };
 
-   protected:
-    GroupedSamples(SbMediaType media_type,
-                   int start_index,
-                   int samples_to_write)
-        : media_type_(media_type),
-          start_index_(start_index),
-          samples_to_write_(samples_to_write) {}
+    struct VideoSamplesDescriptor {
+      int start_index = 0;
+      int samples_count = 0;
+      bool is_end_of_stream = false;
+    };
 
-    SbMediaType media_type_;
-    int start_index_ = 0;
-    int samples_to_write_ = 0;
-    bool write_eos_ = false;
+    GroupedSamples& AddAudioSamples(int start_index, int number_of_samples);
+    GroupedSamples& AddAudioSamples(int start_index,
+                                    int number_of_samples,
+                                    SbTime timestamp_offset,
+                                    SbTime discarded_duration_from_front,
+                                    SbTime discarded_duration_from_back);
+    GroupedSamples& AddAudioEOS();
+    GroupedSamples& AddVideoSamples(int start_index, int number_of_samples);
+    GroupedSamples& AddVideoEOS();
+
+    friend class GroupedSamplesIterator;
+
+   private:
+    std::vector<AudioSamplesDescriptor> audio_samples_;
+    std::vector<VideoSamplesDescriptor> video_samples_;
   };
 
-  class AudioSamples : public GroupedSamples {
-   public:
-    AudioSamples() : GroupedSamples(kSbMediaTypeAudio, 0, 0) {}
-    AudioSamples(int start_index, int samples_to_write)
-        : GroupedSamples(kSbMediaTypeAudio, start_index, samples_to_write) {}
-
-    AudioSamples& WithEOS() {
-      write_eos_ = true;
-      return *this;
-    }
-  };
-
-  class VideoSamples : public GroupedSamples {
-   public:
-    VideoSamples() : GroupedSamples(kSbMediaTypeVideo, 0, 0) {}
-    VideoSamples(int start_index, int samples_to_write)
-        : GroupedSamples(kSbMediaTypeVideo, start_index, samples_to_write) {}
-
-    VideoSamples& WithEOS() {
-      write_eos_ = true;
-      return *this;
-    }
-  };
-
-  class AudioEOS : public AudioSamples {
-   public:
-    AudioEOS() { write_eos_ = true; }
-  };
-
-  class VideoEOS : public VideoSamples {
-   public:
-    VideoEOS() { write_eos_ = true; }
-  };
-
-  explicit SbPlayerTestFixture(const SbPlayerTestConfig& config);
+  SbPlayerTestFixture(
+      const SbPlayerTestConfig& config,
+      testing::FakeGraphicsContextProvider* fake_graphics_context_provider);
   ~SbPlayerTestFixture();
 
   void Seek(const SbTime time);
@@ -95,18 +81,24 @@ class SbPlayerTestFixture {
   // |kSbPlayerDecoderStateNeedsData| internally. When writing EOS are
   // requested, the function will write EOS after all samples of the same type
   // are written.
-  void Write(const AudioSamples& audio_samples);
-  void Write(const VideoSamples& video_samples);
-  void Write(const AudioSamples& audio_samples,
-             const VideoSamples& video_samples);
+  void Write(const GroupedSamples& grouped_samples);
+  // Wait until kSbPlayerStatePresenting received.
+  void WaitForPlayerPresenting();
   // Wait until kSbPlayerStateEndOfStream received.
   void WaitForPlayerEndOfStream();
+  SbTime GetCurrentMediaTime() const;
 
-  SbPlayer GetPlayer() { return player_; }
+  void SetAudioWriteDuration(SbTime duration);
+
+  SbPlayer GetPlayer() const { return player_; }
+  bool HasAudio() const { return audio_dmp_reader_; }
+  bool HasVideo() const { return video_dmp_reader_; }
+
+  SbTime GetAudioSampleTimestamp(int index) const;
+  int ConvertDurationToAudioBufferCount(SbTime duration) const;
+  int ConvertDurationToVideoBufferCount(SbTime duration) const;
 
  private:
-  static constexpr SbTime kDefaultWaitForDecoderStateNeedsDataTimeout =
-      5 * kSbTimeSecond;
   static constexpr SbTime kDefaultWaitForPlayerStateTimeout = 5 * kSbTimeSecond;
   static constexpr SbTime kDefaultWaitForCallbackEventTimeout =
       15 * kSbTimeMillisecond;
@@ -160,12 +152,18 @@ class SbPlayerTestFixture {
   void OnPlayerState(SbPlayer player, SbPlayerState state, int ticket);
   void OnError(SbPlayer player, SbPlayerError error, const char* message);
 
-  void InitializePlayer();
-  void TearDownPlayer();
+  void Initialize();
+  void TearDown();
 
-  void WriteSamples(SbMediaType media_type,
-                    int start_index,
-                    int samples_to_write);
+  bool CanWriteMoreAudioData();
+  bool CanWriteMoreVideoData();
+
+  void WriteAudioSamples(int start_index,
+                         int samples_to_write,
+                         SbTime timestamp_offset,
+                         SbTime discarded_duration_from_front,
+                         SbTime discarded_duration_from_back);
+  void WriteVideoSamples(int start_index, int samples_to_write);
   void WriteEndOfStream(SbMediaType media_type);
 
   // Checks if there are pending callback events and, if so, logs the received
@@ -178,7 +176,7 @@ class SbPlayerTestFixture {
 
   // Waits for |kSbPlayerDecoderStateNeedsData| to be sent.
   void WaitForDecoderStateNeedsData(
-      const SbTime timeout = kDefaultWaitForDecoderStateNeedsDataTimeout);
+      const SbTime timeout = kDefaultWaitForCallbackEventTimeout);
 
   // Waits for desired player state update to be sent.
   void WaitForPlayerState(
@@ -199,11 +197,14 @@ class SbPlayerTestFixture {
 
   shared::starboard::ThreadChecker thread_checker_;
   const SbPlayerOutputMode output_mode_;
+  std::string key_system_;
+  std::string max_video_capabilities_;
   scoped_ptr<VideoDmpReader> audio_dmp_reader_;
   scoped_ptr<VideoDmpReader> video_dmp_reader_;
-  testing::FakeGraphicsContextProvider fake_graphics_context_provider_;
+  testing::FakeGraphicsContextProvider* fake_graphics_context_provider_;
 
   SbPlayer player_ = kSbPlayerInvalid;
+  SbDrmSystem drm_system_ = kSbDrmSystemInvalid;
 
   // Queue of events from the underlying player.
   Queue<CallbackEvent> callback_event_queue_;
@@ -211,6 +212,11 @@ class SbPlayerTestFixture {
   // States of if decoder can accept more inputs.
   bool can_accept_more_audio_data_ = false;
   bool can_accept_more_video_data_ = false;
+
+  // The duration of how far past the current playback position we will write
+  // audio samples.
+  SbTime audio_write_duration_ = 0;
+  SbTime last_written_audio_timestamp_ = 0;
 
   // Set of received player state updates from the underlying player. This is
   // used to check that the state updates occur in a valid order during normal

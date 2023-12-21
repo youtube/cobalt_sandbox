@@ -2,7 +2,7 @@ name: stub
 
 on:
   pull_request:
-    types: [ready_for_review, opened, reopened, synchronize, labeled]
+    types: [opened, reopened, synchronize, labeled]
     branches:
       - main
       - feature/*
@@ -26,6 +26,6 @@ jobs:
       pull-requests: write
     with:
       platform: stub
-      nightly: 'false'
+      nightly: ${{ github.event.inputs.nightly }}
       run_api_leak_detector: true
       leak_manifest_filename: "gn_built_docker_debian10_manifest"

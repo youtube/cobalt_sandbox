@@ -156,7 +156,7 @@ void MetricsLog::RecordCoreSystemProfile(MetricsServiceClient* client,
 
   metrics::SystemProfileProto::Hardware* hardware =
       system_profile->mutable_hardware();
-#if !defined(OS_IOS)
+#if !defined(OS_IOS) && !defined(STARBOARD)
   // On iOS, OperatingSystemArchitecture() returns values like iPad4,4 which is
   // not the actual CPU architecture. Don't set it until the API is fixed. See
   // crbug.com/370104 for details.
@@ -265,12 +265,15 @@ const SystemProfileProto& MetricsLog::RecordEnvironment(
   if (client_->GetBrand(&brand_code))
     system_profile->set_brand_code(brand_code);
 
+// TODO(b/283255893): Remove when base::CPU is Starboardized.
+#if !defined(STARBOARD)
   SystemProfileProto::Hardware::CPU* cpu =
       system_profile->mutable_hardware()->mutable_cpu();
   base::CPU cpu_info;
   cpu->set_vendor_name(cpu_info.vendor_name());
   cpu->set_signature(cpu_info.signature());
   cpu->set_num_cores(base::SysInfo::NumberOfProcessors());
+#endif
 
   delegating_provider->ProvideSystemProfileMetrics(system_profile);
 
@@ -327,6 +330,8 @@ void MetricsLog::TruncateEvents() {
         uma_proto_.user_action_event_size() - internal::kUserActionEventLimit);
   }
 
+// Omnibox proto removed for binary size reasons: b/290819695.
+#if !defined(USE_COBALT_CUSTOMIZATIONS)
   if (uma_proto_.omnibox_event_size() > internal::kOmniboxEventLimit) {
     UMA_HISTOGRAM_COUNTS_100000("UMA.TruncatedEvents.Omnibox",
                                 uma_proto_.omnibox_event_size());
@@ -334,6 +339,7 @@ void MetricsLog::TruncateEvents() {
         internal::kOmniboxEventLimit,
         uma_proto_.omnibox_event_size() - internal::kOmniboxEventLimit);
   }
+#endif
 }
 
 void MetricsLog::GetEncodedLog(std::string* encoded_log) {

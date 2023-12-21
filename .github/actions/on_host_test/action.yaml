@@ -8,7 +8,7 @@ runs:
   using: "composite"
   steps:
     - name: Set up Cloud SDK
-      uses: google-github-actions/setup-gcloud@v1
+      uses: isarkis/setup-gcloud@40dce7857b354839efac498d3632050f568090b6 # v1.1.1
     - name: Configure Environment
       id: configure-environment
       shell: bash
@@ -60,36 +60,63 @@ runs:
       run: |
         echo "PYTHONPATH=$GITHUB_WORKSPACE" >> $GITHUB_ENV
         echo "TEST_RESULTS_DIR=${GITHUB_WORKSPACE}/unit-test-results" >> $GITHUB_ENV
-        echo "TEST_REPORT_FILE=${GITHUB_WORKSPACE}/${{matrix.platform}}-${{matrix.shard}}" >> $GITHUB_ENV
+        echo "XML_FILES_DIR=${GITHUB_WORKSPACE}/unit-test-results/${{ matrix.platform }}/${{ matrix.shard }}" >> $GITHUB_ENV
+        echo "COVERAGE_DIR=${GITHUB_WORKSPACE}/coverage" >> $GITHUB_ENV
     - name: Run Tests
+      id: run-tests
       shell: bash
       run: |
         set -x
+
+        # Starboard toolchains are downloaded to a different dir on github. Create a symlink to reassure our tooling that everything is fine.
+        if [ -d /root/starboard-toolchains ]; then
+          ln -s /root/starboard-toolchains /github/home/starboard-toolchains
+        fi
         loader_args=''
         if [ "${COBALT_BOOTLOADER}" != "null" ]; then
           loader_args="--loader_platform ${COBALT_BOOTLOADER} --loader_config ${{matrix.config}}"
         fi
         if [[ "${{matrix.shard}}" == 'integration' ]]; then
           xvfb-run -a --server-args="-screen 0 1920x1080x24i +render +extension GLX -noreset" python3 $GITHUB_WORKSPACE/cobalt/black_box_tests/black_box_tests.py --platform ${{matrix.target_platform}} --config ${{matrix.config}} ${loader_args}
+        elif [[ "${{matrix.shard}}" == 'blackbox' ]]; then
+          xvfb-run -a --server-args="-screen 0 1920x1080x24i +render +extension GLX -noreset" python3 $GITHUB_WORKSPACE/cobalt/black_box_tests/black_box_tests.py --platform ${{matrix.target_platform}} --config ${{matrix.config}} ${loader_args} --test_set blackbox
+        elif [[ "${{matrix.shard}}" == 'wpt' ]]; then
+          xvfb-run -a --server-args="-screen 0 1920x1080x24i +render +extension GLX -noreset" python3 $GITHUB_WORKSPACE/cobalt/black_box_tests/black_box_tests.py --platform ${{matrix.target_platform}} --config ${{matrix.config}} ${loader_args} --test_set wpt
         elif [[ "${{matrix.shard}}" == 'evergreen' ]]; then
           xvfb-run -a --server-args="-screen 0 1920x1080x24i +render +extension GLX -noreset" python3 $GITHUB_WORKSPACE/cobalt/evergreen_tests/evergreen_tests.py --platform ${{matrix.target_platform}} --config ${{matrix.config}} ${loader_args} --no-can_mount_tmpfs
+        elif [[ "${{matrix.shard}}" == 'coverage' ]]; then
+          xvfb-run -a --server-args="-screen 0 1920x1080x24i +render +extension GLX -noreset" python3 ${GITHUB_WORKSPACE}/starboard/tools/testing/test_runner.py --platform ${{matrix.target_platform}} --config ${{matrix.config}} -r ${loader_args} --xml_output_dir=${XML_FILES_DIR} --coverage_dir=${COVERAGE_DIR} --coverage_report
         else
+          # Set 'test_type' output to unit_tests for the upload steps below.
+          echo "test_type=unit_tests" >> $GITHUB_OUTPUT
           if [[ "${{inputs.os}}" == 'windows' ]]; then
-            python3 ${GITHUB_WORKSPACE}/starboard/tools/testing/test_runner.py --platform ${{matrix.target_platform}} --config ${{matrix.config}} -s ${{matrix.shard}} -r
+            python3 ${GITHUB_WORKSPACE}/starboard/tools/testing/test_runner.py --platform ${{matrix.target_platform}} --config ${{matrix.config}} -s ${{matrix.shard}} -r --xml_output_dir=${XML_FILES_DIR}
           else
-            xvfb-run -a --server-args="-screen 0 1920x1080x24i +render +extension GLX -noreset" python3 ${GITHUB_WORKSPACE}/starboard/tools/testing/test_runner.py --platform ${{matrix.target_platform}} --config ${{matrix.config}} -s ${{matrix.shard}} -r ${loader_args} --xml_output_dir=${TEST_RESULTS_DIR}
+            xvfb-run -a --server-args="-screen 0 1920x1080x24i +render +extension GLX -noreset" python3 ${GITHUB_WORKSPACE}/starboard/tools/testing/test_runner.py --platform ${{matrix.target_platform}} --config ${{matrix.config}} -s ${{matrix.shard}} -r ${loader_args} --xml_output_dir=${XML_FILES_DIR}
           fi
         fi
-    - name: Process unit test results
-      if: failure()
+    - name: Populate TAGS for unit test report
+      if: (success() || failure()) && steps.run-tests.outputs.test_type == 'unit_tests'
       shell: bash
       run: |
-        set -x
-        echo "Saving unit test report to ${TEST_REPORT_FILE}"
-        python3 ${GITHUB_WORKSPACE}/starboard/tools/testing/test_report_parser.py ${TEST_RESULTS_DIR} > ${TEST_REPORT_FILE}
-    - name: Upload unit test report
+        # Set tags for test differentiation.
+        tags="platform:${{ matrix.platform }}"
+        tags="${tags},os:${{ inputs.os }}"
+        echo $tags > ${TEST_RESULTS_DIR}/${{ matrix.platform }}/TAGS
+    - name: Archive unit test results
       uses: actions/upload-artifact@v3
-      if: failure()
+      if: (success() || failure()) && steps.run-tests.outputs.test_type == 'unit_tests'
       with:
-        name: unit-test-reports
-        path: ${{env.TEST_REPORT_FILE}}
+        name: unit-test-results
+        path: ${{env.TEST_RESULTS_DIR}}/
+    - name: Archive coverage html report
+      if: success() && matrix.shard == 'coverage'
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-report
+        path: ${{env.COVERAGE_DIR}}/html
+    - name: Upload to Codecov
+      if: success() && matrix.shard == 'coverage'
+      uses: codecov/codecov-action@v3
+      with:
+        files: ${{env.COVERAGE_DIR}}/report.txt

@@ -14,6 +14,11 @@ on:
         required: true
         type: string
         default: 'false'
+      modular:
+        description: 'Whether this is a modular build.'
+        required: false
+        type: boolean
+        default: false
 
 # Global env vars.
 env:
@@ -33,7 +38,7 @@ env:
   STARBOARD_TOOLCHAINS_DIR: /root/starboard-toolchains
 
 concurrency:
-  group: '${{ github.workflow }}-${{ github.event_name }}-${{ inputs.platform }} @ ${{ github.event.pull_request.number || github.sha }}'
+  group: '${{ github.workflow }}-${{ github.event_name }}-${{ inputs.platform }} @ ${{ github.event.label.name || github.event.pull_request.number || github.sha }}'
   cancel-in-progress: true
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
@@ -49,19 +54,18 @@ jobs:
       GITHUB_EVENT_NUMBER: ${{ github.event.number }}
     # All triggers except draft PRs, unless PR is labeled with runtest
     if: |
-      github.event_name != 'pull_request' ||
+      github.event.action != 'labeled' ||
       (
-        github.event.pull_request.draft == false ||
-        (
-          github.event.action == 'labeled' &&
-          github.event.label.name == 'runtest'
-        )
+        github.event.action == 'labeled' &&
+        github.event.label.name == 'runtest' ||
+        github.event.label.name == 'on_device'
       )
     steps:
       - id: Checkout
-        uses: actions/checkout@v3
+        uses: kaidokert/checkout@v3.5.999 # Temporary version
         with:
           fetch-depth: 1
+          persist-credentials: false
       - name: Remove runtest if exists
         if: github.event_name == 'pull_request'
         continue-on-error: true  # Ignore this step if we cannot remove the label.
@@ -74,19 +78,40 @@ jobs:
             ${GITHUB_PR_REPO_URL}/issues/${GITHUB_EVENT_NUMBER}/labels/runtest
         shell: bash
       - id: set-platforms
-        run: echo "platforms=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -c '.platforms')" >> $GITHUB_ENV
+        shell: bash
+        run: |
+          platforms=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -c '.platforms')
+          echo "platforms=${platforms}" >> $GITHUB_ENV
       - id: set-includes
-        run: echo "includes=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -c '.includes')" >> $GITHUB_ENV
+        shell: bash
+        run: |
+          includes=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -c '.includes')
+          echo "includes=${includes}" >> $GITHUB_ENV
       - id: set-on-device-test
-        run: echo "on_device_test=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -rc '.on_device_test.enabled')" >> $GITHUB_ENV
+        shell: bash
+        run: |
+          on_device_test=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -rc '.on_device_test.enabled')
+          echo "on_device_test=${on_device_test}" >> $GITHUB_ENV
       - id: set-on-host-test
-        run: echo "on_host_test=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -rc '.on_host_test')" >> $GITHUB_ENV
+        shell: bash
+        run: |
+          on_host_test=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -rc '.on_host_test')
+          echo "on_host_test=${on_host_test}" >> $GITHUB_ENV
       - id: set-on-host-test-shards
-        run: echo "on_host_test_shards=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -c '.on_host_test_shards')" >> $GITHUB_ENV
+        shell: bash
+        run: |
+          on_host_test_shards=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -c '.on_host_test_shards')
+          echo "on_host_test_shards=${on_host_test_shards}" >> $GITHUB_ENV
       - id: set-docker-service
-        run: echo "docker_service=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -rc '.docker_service')" >> $GITHUB_ENV
+        shell: bash
+        run: |
+          docker_service=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -rc '.docker_service')
+          echo "docker_service=${docker_service}" >> $GITHUB_ENV
       - id: set-docker-runner-service
-        run: echo "docker_runner_service=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -rc '.docker_runner_service')" >> $GITHUB_ENV
+        shell: bash
+        run: |
+          docker_runner_service=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -rc '.docker_runner_service')
+          echo "docker_runner_service=${docker_runner_service}" >> $GITHUB_ENV
     outputs:
       platforms: ${{ env.platforms }}
       includes: ${{ env.includes }}
@@ -103,9 +128,10 @@ jobs:
     runs-on: windows-2019
     steps:
       - name: Checkout files
-        uses: actions/checkout@v3
+        uses: kaidokert/checkout@v3.5.999
         with:
-          fetch-depth: 2
+          fetch-depth: 0
+          persist-credentials: false
       - name: Login to Docker Registry ${{env.REGISTRY}}
         uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a # v2.1.0
         with:
@@ -126,7 +152,7 @@ jobs:
   build:
     needs: [initialize]
     permissions: {}
-    runs-on: [self-hosted, X64, Windows]
+    runs-on: [self-hosted, win32]
     name: ${{matrix.name}}_${{matrix.config}}
     strategy:
       fail-fast: false
@@ -136,10 +162,11 @@ jobs:
         config: [devel, debug, qa, gold]
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: kaidokert/checkout@v3.5.999
         with:
           # Use fetch depth of 0 to get full history for a valid build id.
           fetch-depth: 0
+          persist-credentials: false
       - name: GN
         uses: ./.github/actions/gn
       - name: Build Cobalt
@@ -159,7 +186,7 @@ jobs:
     needs: [initialize, build]
     permissions: {}
     if: needs.initialize.outputs.on_host_test == 'true'
-    runs-on: [self-hosted, Windows, X64]
+    runs-on: [self-hosted, win32]
     name: ${{matrix.name}}_${{matrix.shard}}_test
     strategy:
       fail-fast: false
@@ -168,6 +195,8 @@ jobs:
         shard: ${{ fromJson(needs.initialize.outputs.on_host_test_shards) }}
         config: [devel]
         include: ${{ fromJson(needs.initialize.outputs.includes) }}
+    env:
+      MODULAR_BUILD: ${{ inputs.modular && 1 || 0 }}
     steps:
       - name: Run Tests
         uses: ./.github/actions/on_host_test

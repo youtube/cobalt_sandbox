@@ -24,6 +24,11 @@ on:
         required: false
         type: string
         default: ""
+      modular:
+        description: 'Whether this is a modular build.'
+        required: false
+        type: boolean
+        default: false
 
 # Global env vars.
 env:
@@ -42,7 +47,7 @@ env:
   STARBOARD_TOOLCHAINS_DIR: /root/starboard-toolchains
 
 concurrency:
-  group: '${{ github.workflow }}-${{ github.event_name }}-${{ inputs.platform }} @ ${{ github.event.pull_request.number || github.sha }}'
+  group: '${{ github.workflow }}-${{ github.event_name }}-${{ inputs.platform }} @ ${{ github.event.label.name || github.event.pull_request.number || github.sha }}'
   cancel-in-progress: true
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
@@ -56,21 +61,20 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GITHUB_PR_REPO_URL: ${{ github.event.pull_request.base.repo.url }}
       GITHUB_EVENT_NUMBER: ${{ github.event.number }}
-    # All triggers except draft PRs, unless PR is labeled with runtest
     if: |
-      github.event_name != 'pull_request' ||
+      github.event.action != 'labeled' ||
       (
-        github.event.pull_request.draft == false ||
-        (
-          github.event.action == 'labeled' &&
-          github.event.label.name == 'runtest'
-        )
+        github.event.action == 'labeled' &&
+        github.event.label.name == 'runtest' ||
+        github.event.label.name == 'on_device'
       )
     steps:
       - id: checkout
-        uses: actions/checkout@v3
+        uses: kaidokert/checkout@v3.5.999
+        timeout-minutes: 30
         with:
           fetch-depth: 1
+          persist-credentials: false
       - name: Remove runtest if exists
         if: github.event_name == 'pull_request'
         continue-on-error: true  # Ignore this step if we cannot remove the label.
@@ -83,23 +87,45 @@ jobs:
             ${GITHUB_PR_REPO_URL}/issues/${GITHUB_EVENT_NUMBER}/labels/runtest
         shell: bash
       - id: set-platforms
-        run: echo "platforms=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -c '.platforms')" >> $GITHUB_ENV
-      - id: set-includes
-        run: echo "includes=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -c '.includes')" >> $GITHUB_ENV
-      - id: set-on-device-test
-        run: echo "on_device_test=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -rc '.on_device_test')" >> $GITHUB_ENV
-      - id: set-on-device-test-attempts
-        run: echo "on_device_test_attempts=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -rc '.on_device_test.test_attempts // empty')" >> $GITHUB_ENV
-      - id: set-on-host-test
-        run: echo "on_host_test=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -rc '.on_host_test')" >> $GITHUB_ENV
-      - id: set-on-host-test-shards
-        run: echo "on_host_test_shards=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -c '.on_host_test_shards')" >> $GITHUB_ENV
-      - id: set-on-host-test-bootloader
-        run: echo "bootloader=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -rc '.bootloader')" >> $GITHUB_ENV
-      - id: set-docker-service
+        shell: bash
         run: |
-          echo "docker_service=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -r '.docker_service')" >> $GITHUB_ENV
-          echo $platforms
+          platforms=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -c '.platforms')
+          echo "platforms=${platforms}" >> $GITHUB_ENV
+      - id: set-includes
+        shell: bash
+        run: |
+          includes=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -c '.includes')
+          echo "includes=${includes}" >> $GITHUB_ENV
+      - id: set-on-device-test
+        shell: bash
+        run: |
+          on_device_test=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -rc '.on_device_test')
+          echo "on_device_test=${on_device_test}" >> $GITHUB_ENV
+      - id: set-on-device-test-attempts
+        shell: bash
+        run: |
+          on_device_test_attempts=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -rc '.on_device_test.test_attempts // empty')
+          echo "on_device_test_attempts=${on_device_test_attempts}" >> $GITHUB_ENV
+      - id: set-on-host-test
+        shell: bash
+        run: |
+          on_host_test=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -rc '.on_host_test')
+          echo "on_host_test=${on_host_test}" >> $GITHUB_ENV
+      - id: set-on-host-test-shards
+        shell: bash
+        run: |
+          on_host_test_shards=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -c '.on_host_test_shards')
+          echo "on_host_test_shards=${on_host_test_shards}" >> $GITHUB_ENV
+      - id: set-on-host-test-bootloader
+        shell: bash
+        run: |
+          bootloader=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -rc '.bootloader')
+          echo "bootloader=${bootloader}" >> $GITHUB_ENV
+      - id: set-docker-service
+        shell: bash
+        run: |
+          docker_service=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -r '.docker_service')
+          echo "docker_service=${docker_service}" >> $GITHUB_ENV
     outputs:
       platforms: ${{ env.platforms }}
       includes: ${{ env.includes }}
@@ -113,14 +139,16 @@ jobs:
   # Builds, tags, and pushes Cobalt docker build images to ghr.
   docker-build-image:
     needs: [initialize]
-    runs-on: [self-hosted, linux, X64]
+    runs-on: [self-hosted, linux-runner]
     permissions:
       packages: write
     steps:
       - name: Checkout files
-        uses: actions/checkout@v3
+        uses: kaidokert/checkout@v3.5.999
+        timeout-minutes: 30
         with:
-          fetch-depth: 2
+          fetch-depth: 0
+          persist-credentials: false
       - name: Login to Docker Registry ${{env.REGISTRY}}
         uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a # v2.1.0
         with:
@@ -135,7 +163,9 @@ jobs:
           docker_image: cobalt-${{ needs.initialize.outputs.docker_service }}
       - name: Set Docker Tag Output
         id: set-docker-tag-output
+        shell: bash
         run: |
+          set -u
           echo $DOCKER_TAG
           echo "docker_tag=$DOCKER_TAG"  >> $GITHUB_ENV
     outputs:
@@ -147,12 +177,14 @@ jobs:
     needs: [initialize]
     permissions:
       packages: write
-    runs-on: [self-hosted, linux, X64]
+    runs-on: [self-hosted, linux-runner]
     steps:
       - name: Checkout files
-        uses: actions/checkout@v3
+        uses: kaidokert/checkout@v3.5.999
+        timeout-minutes: 30
         with:
           fetch-depth: 2
+          persist-credentials: false
       - name: Login to Docker Registry ${{env.REGISTRY}}
         uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a # v2.1.0
         with:
@@ -167,7 +199,9 @@ jobs:
           docker_image: cobalt-linux-x64x11-unittest
       - name: Set Docker Tag Output
         id: set-docker-unittest-tag-output
+        shell: bash
         run: |
+          set -u
           echo $DOCKER_TAG
           echo "docker_unittest_tag=$DOCKER_TAG" >> $GITHUB_ENV
     outputs:
@@ -177,7 +211,7 @@ jobs:
   build:
     needs: [initialize, docker-build-image]
     permissions: {}
-    runs-on: [self-hosted, linux, X64]
+    runs-on: [self-hosted, linux-runner]
     name: ${{matrix.name}}_${{matrix.config}}
     strategy:
       fail-fast: false
@@ -193,10 +227,12 @@ jobs:
       TMPDIR: /__w/_temp
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: kaidokert/checkout@v3.5.999
+        timeout-minutes: 30
         with:
           # Use fetch depth of 0 to get full history for a valid build id.
           fetch-depth: 0
+          persist-credentials: false
       - name: GN
         uses: ./.github/actions/gn
       - name: Build Cobalt
@@ -219,7 +255,11 @@ jobs:
       # action didn't work, so instead we set an env var.
       - name: Set bootloader config
         if: ${{ needs.initialize.outputs.bootloader != 'null' }}
-        run: echo "COBALT_BOOTLOADER=${{needs.initialize.outputs.bootloader}}" >> $GITHUB_ENV
+        shell: bash
+        run: |
+           set -u
+           COBALT_BOOTLOADER="${{needs.initialize.outputs.bootloader}}"
+           echo "COBALT_BOOTLOADER=${COBALT_BOOTLOADER}" >> $GITHUB_ENV
       # Build bootloader for on-host tests if necessary.
       - name: Bootloader GN
         if: ${{ needs.initialize.outputs.bootloader != 'null' && matrix.config == 'devel' }}
@@ -246,7 +286,7 @@ jobs:
           type: ondevice
           os: linux
 
-  # Runs on-host integration and unit tests.
+  # Runs on-device integration and unit tests.
   on-device-test:
     needs: [initialize, build]
     # Run ODT when on_device label is applied on PR.
@@ -258,7 +298,7 @@ jobs:
             inputs.nightly == 'true' || github.event_name == 'schedule') &&
             vars.RUN_ODT_TESTS_ON_NIGHTLY != 'False') ||
           ( github.event_name == 'push' && vars.RUN_ODT_TESTS_ON_POSTSUBMIT != 'False' ) )
-    runs-on: [self-hosted, linux, X64]
+    runs-on: [self-hosted, odt-runner]
     name: ${{ matrix.name }}_on_device_${{ matrix.shard }}
     container: ${{ needs.docker-unittest-image.outputs.docker_unittest_tag }}
     permissions: {}
@@ -272,9 +312,14 @@ jobs:
     env:
       COBALT_BOOTLOADER: ${{ needs.initialize.outputs.bootloader }}
       ON_DEVICE_TEST_ATTEMPTS: ${{ needs.initialize.outputs.on_device_test_attempts }}
+      MODULAR_BUILD: ${{ inputs.modular && 1 || 0 }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: kaidokert/checkout@v3.5.999
+        timeout-minutes: 30
+        with:
+          fetch-depth: 1
+          persist-credentials: false
       - name: Run Tests (${{ matrix.shard }})
         uses: ./.github/actions/on_device_tests
 
@@ -283,7 +328,7 @@ jobs:
     needs: [initialize, docker-unittest-image, build]
     permissions: {}
     if: needs.initialize.outputs.on_host_test == 'true'
-    runs-on: [self-hosted, linux, X64]
+    runs-on: [self-hosted, linux-runner]
     name: ${{matrix.name}}_${{matrix.shard}}_test
     strategy:
       fail-fast: false
@@ -299,28 +344,9 @@ jobs:
       # with permission denied error.
       HOME: /root
       COBALT_BOOTLOADER: ${{needs.initialize.outputs.bootloader}}
+      MODULAR_BUILD: ${{ inputs.modular && 1 || 0 }}
     steps:
       - name: Run Tests
         uses: ./.github/actions/on_host_test
         with:
           os: linux
-
-  # Gets unit test report from on host tests and prints it.
-  on-host-unit-test-report:
-    needs: [on-host-test]
-    permissions: {}
-    if: failure()
-    runs-on: ubuntu-latest
-    steps:
-      - name: Collect Unit Test Reports
-        uses: actions/download-artifact@v3
-        with:
-          name: unit-test-reports
-          path: unit-test-reports
-      - name: Print Unit Test Reports
-        run: |
-          for filename in ${GITHUB_WORKSPACE}/unit-test-reports/*; do
-            basename $filename
-            cat $filename
-            echo
-          done
