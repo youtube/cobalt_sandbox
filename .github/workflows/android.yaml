@@ -32,3 +32,6 @@ jobs:
     with:
       platform: android-arm
       nightly: ${{ github.event.inputs.nightly }}
+    steps:
+      - name: foobar
+        run: echo testme
