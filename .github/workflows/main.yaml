@@ -260,7 +260,7 @@ jobs:
         uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4
         if: inputs.keep_artifacts
         with:
-          name: buildoutput-${{ matrix.platform }}-${{ matrix.config }}
+          name: ${{ matrix.platform }}-${{ matrix.config }}
           path: out/${{ matrix.platform }}_${{ matrix.config }}/${{ inputs.keep_artifacts }}
           retention-days: 7
           compression-level: 0 # We expect kept artifacts to be already compressed

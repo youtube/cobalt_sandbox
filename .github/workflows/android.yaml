@@ -61,32 +61,32 @@ jobs:
       - name: Download the gold arm thing
         uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
         with:
-          name: buildoutput-android-arm-gold
+          name: android-arm-gold
           path: android-arm-gold
       - name: Download the qa arm thing
         uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
         with:
-          name: buildoutput-android-arm-qa
+          name: android-arm-qa
           path: anrdoid-arm-qa
       - name: Download the gold arm64 thing
         uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
         with:
-          name: buildoutput-android-arm64-gold
+          name: android-arm64-gold
           path: android-arm64-gold
       - name: Download the qa arm64 thing
         uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
         with:
-          name: buildoutput-android-arm64-gold
+          name: android-arm64-gold
           path: android-arm64-qa
       - name: Download the gold x86 thing
         uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
         with:
-          name: buildoutput-android-x86-gold
+          name: android-x86-gold
           path: android-x86-gold
       - name: Download the qa x86 thing
         uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
         with:
-          name: buildoutput-android-x86-gold
+          name: android-x86-gold
           path: android-x86-qa
       - name: Doublecheck if all is there
         run: find . -type f
