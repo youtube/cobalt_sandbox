@@ -32,6 +32,7 @@ jobs:
     with:
       platform: android-arm64
       nightly: ${{ github.event.inputs.nightly }}
+      keep_artifacts: cobalt.apk
   android-x86:
     uses: ./.github/workflows/main.yaml
     permissions:
@@ -40,6 +41,7 @@ jobs:
     with:
       platform: android-x86
       nightly: ${{ github.event.inputs.nightly }}
+      keep_artifacts: cobalt.apk
   android-arm:
     uses: ./.github/workflows/main.yaml
     permissions:
