@@ -29,6 +29,10 @@ on:
         required: false
         type: boolean
         default: false
+    outputs:
+      first_output:
+        description: "My random output"
+        value: ${{ jobs.build.outputs.output1 }}
 
 # Global env vars.
 env:
@@ -225,6 +229,8 @@ jobs:
       # However, dind container ends up having / folder mounted on overlay
       # filesystem, whereas /__w which contains Cobalt source code is on tmpfs.
       TMPDIR: /__w/_temp
+    outputs:
+      output1: ${{ steps.output_step_1.outputs.firstword }}
     steps:
       - name: Checkout
         uses: kaidokert/checkout@v3.5.999
@@ -237,6 +243,9 @@ jobs:
         uses: ./.github/actions/gn
       - name: Build Cobalt
         uses: ./.github/actions/build
+      - id: output_step_1
+        name: Set output
+        run: echo "firstword=hello"  >> $GITHUB_OUTPUT
       - name: Run API Leak Detector
         uses: ./.github/actions/api_leak_detector
         if: inputs.run_api_leak_detector
