@@ -98,3 +98,8 @@ jobs:
           retention-days: 90
           compression-level: 0 # We expect kept artifacts to be already compressed
           if-no-files-found: error
+      - name: 'Delete intermediates'
+        uses: geekyeggo/delete-artifact@9d15d164b1dcd538ff1b1a2984bc2c0240986c3b # v4.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          name: android-*
