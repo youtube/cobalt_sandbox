@@ -40,3 +40,13 @@ jobs:
     steps:
       - name: Final collections
         run: echo ${{ needs.android-arm.outputs.first_output }}
+      - name: Download the gold thing
+        uses: actions/download-artifact@v3
+        with:
+          name: buildoutput-gold
+      - name: Download the qa thing
+        uses: actions/download-artifact@v3
+        with:
+          name: buildoutput-qa
+      - name: Doublecheck if all is there
+        run: find . -type f

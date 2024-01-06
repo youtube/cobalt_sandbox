@@ -254,14 +254,14 @@ jobs:
           echo "The artifacts we need to keep:" ${{ inputs.keep_artifacts }}
           echo "Full spec" out/${{ matrix.platform}}-${{ matrix.config }}/${{ inputs.keep_artifacts }}
           find . -name "*.apk"
-          ls -la out/${{ matrix.platform}}-${{ matrix.config }}/${{ inputs.keep_artifacts }}
+          ls -la out/${{ matrix.platform}}_${{ matrix.config }}/${{ inputs.keep_artifacts }}
           echo "firstword=hello"  >> $GITHUB_OUTPUT
       - name: 'Upload Artifact'
         uses: actions/upload-artifact@v3
         if: inputs.keep_artifacts
         with:
-          name: buildoutput
-          path: out/${{ matrix.platform}}-${{ matrix.config }}/${{ inputs.keep_artifacts }}
+          name: buildoutput-${{ matrix.config }}
+          path: out/${{ matrix.platform}}_${{ matrix.config }}/${{ inputs.keep_artifacts }}
           retention-days: 5
       - name: Run API Leak Detector
         uses: ./.github/actions/api_leak_detector
