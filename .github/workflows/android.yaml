@@ -43,12 +43,12 @@ jobs:
       - name: Download the gold thing
         uses: actions/download-artifact@v3
         with:
-          name: buildoutput-gold
-          path: gold
+          name: buildoutput-android-arm-gold
+          path: android-arm-gold
       - name: Download the qa thing
         uses: actions/download-artifact@v3
         with:
-          name: buildoutput-qa
-          path: qa
+          name: buildoutput-android-arm-qa
+          path: anrdoid-arm-qa
       - name: Doublecheck if all is there
         run: find . -type f

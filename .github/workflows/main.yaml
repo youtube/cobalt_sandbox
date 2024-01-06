@@ -260,8 +260,8 @@ jobs:
         uses: actions/upload-artifact@v3
         if: inputs.keep_artifacts
         with:
-          name: buildoutput-${{ matrix.config }}
-          path: out/${{ matrix.platform}}_${{ matrix.config }}/${{ inputs.keep_artifacts }}
+          name: buildoutput-${{ matrix.platform }}-${{ matrix.config }}
+          path: out/${{ matrix.platform }}_${{ matrix.config }}/${{ inputs.keep_artifacts }}
           retention-days: 5
       - name: Run API Leak Detector
         uses: ./.github/actions/api_leak_detector
