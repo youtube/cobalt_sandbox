@@ -29,6 +29,11 @@ on:
         required: false
         type: boolean
         default: false
+      keep_artifacts:
+        description: 'Which artifacts to keep for releases'
+        required: false
+        type: string
+        default: ''
     outputs:
       first_output:
         description: "My random output"
@@ -246,6 +251,7 @@ jobs:
       - id: output_step_1
         name: Set output
         run: |
+          echo "The artifacts we need to keep:" ${{ inputs.keep_artifacts }}
           find . -name "*.apk"
           echo "firstword=hello"  >> $GITHUB_OUTPUT
       - name: Run API Leak Detector

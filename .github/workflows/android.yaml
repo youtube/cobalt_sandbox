@@ -32,6 +32,7 @@ jobs:
     with:
       platform: android-arm
       nightly: ${{ github.event.inputs.nightly }}
+      keep_artifacts: foo_bar
 
   final_android_job:
     runs-on: ubuntu-latest
