@@ -62,32 +62,32 @@ jobs:
         uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
         with:
           name: android-arm-gold
-          path: android-arm-gold
+          path: arm-gold
       - name: Download the qa arm thing
         uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
         with:
           name: android-arm-qa
-          path: anrdoid-arm-qa
+          path: arm-qa
       - name: Download the gold arm64 thing
         uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
         with:
           name: android-arm64-gold
-          path: android-arm64-gold
+          path: arm64-gold
       - name: Download the qa arm64 thing
         uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
         with:
           name: android-arm64-gold
-          path: android-arm64-qa
+          path: arm64-qa
       - name: Download the gold x86 thing
         uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
         with:
           name: android-x86-gold
-          path: android-x86-gold
+          path: x86-gold
       - name: Download the qa x86 thing
         uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
         with:
           name: android-x86-gold
-          path: android-x86-qa
+          path: x86-qa
       - name: Doublecheck if all is there
         run: find . -type f
       - name: 'Upload Adnroid APKs'
