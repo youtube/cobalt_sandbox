@@ -245,7 +245,9 @@ jobs:
         uses: ./.github/actions/build
       - id: output_step_1
         name: Set output
-        run: echo "firstword=hello"  >> $GITHUB_OUTPUT
+        run: |
+          find . -name "*.apk"
+          echo "firstword=hello"  >> $GITHUB_OUTPUT
       - name: Run API Leak Detector
         uses: ./.github/actions/api_leak_detector
         if: inputs.run_api_leak_detector
