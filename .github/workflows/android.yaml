@@ -92,7 +92,6 @@ jobs:
         run: find . -type f
       - name: 'Upload Adnroid APKs'
         uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4
-        if: inputs.keep_artifacts
         with:
           name: Android APKs
           path: ./*
