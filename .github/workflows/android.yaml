@@ -24,6 +24,22 @@ on:
         default: false
 
 jobs:
+  android-arm64:
+    uses: ./.github/workflows/main.yaml
+    permissions:
+      packages: write
+      pull-requests: write
+    with:
+      platform: android-arm64
+      nightly: ${{ github.event.inputs.nightly }}
+  android-x86:
+    uses: ./.github/workflows/main.yaml
+    permissions:
+      packages: write
+      pull-requests: write
+    with:
+      platform: android-x86
+      nightly: ${{ github.event.inputs.nightly }}
   android-arm:
     uses: ./.github/workflows/main.yaml
     permissions:
@@ -36,19 +52,29 @@ jobs:
 
   final_android_job:
     runs-on: ubuntu-latest
-    needs: android-arm
+    needs: [ android-arm, android-arm64]
     steps:
       - name: Final collections
         run: echo ${{ needs.android-arm.outputs.first_output }}
-      - name: Download the gold thing
+      - name: Download the gold arm thing
         uses: actions/download-artifact@v3
         with:
           name: buildoutput-android-arm-gold
           path: android-arm-gold
-      - name: Download the qa thing
+      - name: Download the qa arm thing
         uses: actions/download-artifact@v3
         with:
           name: buildoutput-android-arm-qa
           path: anrdoid-arm-qa
+      - name: Download the gold arm64 thing
+        uses: actions/download-artifact@v3
+        with:
+          name: buildoutput-android-arm64-gold
+          path: android-arm64-gold
+      - name: Download the qa arm64 thing
+        uses: actions/download-artifact@v3
+        with:
+          name: buildoutput-android-arm64-gold
+          path: android-arm64-qa
       - name: Doublecheck if all is there
         run: find . -type f
