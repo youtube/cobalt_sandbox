@@ -54,7 +54,7 @@ jobs:
 
   final_android_job:
     runs-on: ubuntu-latest
-    needs: [ android-arm, android-arm64]
+    needs: [ android-arm, android-arm64, android-x86 ]
     steps:
       - name: Final collections
         run: echo ${{ needs.android-arm.outputs.first_output }}
