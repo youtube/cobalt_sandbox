@@ -57,6 +57,8 @@ jobs:
     needs: [ android-arm, android-arm64, android-x86 ]
     permissions:
       actions: write
+      contents: write
+      packages: write
     steps:
       - name: Final collections
         run: echo ${{ needs.android-arm.outputs.first_output }}
