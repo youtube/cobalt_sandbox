@@ -102,8 +102,8 @@ jobs:
         uses: geekyeggo/delete-artifact@9d15d164b1dcd538ff1b1a2984bc2c0240986c3b # v4.0.0
         with:
           token: ${{ github.token }}
-          name: android-arm-qa
-          failOnError: true
+          name: android-*
+          failOnError: false
       - name: Upload the APKs to a release
         if: ${{ github.event_name == 'release' }}
         uses: skx/github-action-publish-binaries@b9ca5643b2f1d7371a6cba7f35333f1461bbc703 # release-2.0

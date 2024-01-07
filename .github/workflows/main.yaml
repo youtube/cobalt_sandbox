@@ -262,7 +262,7 @@ jobs:
         with:
           name: ${{ matrix.platform }}-${{ matrix.config }}
           path: out/${{ matrix.platform }}_${{ matrix.config }}/${{ inputs.keep_artifacts }}
-          retention-days: 7
+          retention-days: 1
           compression-level: 0 # We expect kept artifacts to be already compressed
           if-no-files-found: error
       - name: Run API Leak Detector
