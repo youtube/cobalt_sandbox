@@ -57,11 +57,7 @@ jobs:
     needs: [ android-arm, android-arm64, android-x86 ]
     permissions:
       actions: write
-      contents: write
-      packages: write
     steps:
-      - name: Final collections
-        run: echo ${{ needs.android-arm.outputs.first_output }}
       - name: Download the gold arm thing
         uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
         with:
@@ -92,9 +88,7 @@ jobs:
         with:
           name: android-x86-gold
           path: x86-qa
-      - name: Doublecheck if all is there
-        run: find . -type f
-      - name: 'Upload Adnroid APKs'
+      - name: 'Upload Android APKs'
         uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4
         with:
           name: Android APKs
@@ -105,6 +99,6 @@ jobs:
       - name: 'Delete intermediates'
         uses: geekyeggo/delete-artifact@9d15d164b1dcd538ff1b1a2984bc2c0240986c3b # v4.0.0
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          name: android-*
+          token: ${{ github.token }}
+          name: android-arm-qa
           failOnError: true
