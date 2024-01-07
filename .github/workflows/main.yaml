@@ -258,7 +258,7 @@ jobs:
           echo "firstword=hello"  >> $GITHUB_OUTPUT
       - name: 'Upload Artifact'
         uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4
-        if: inputs.keep_artifacts
+        if: ${{ inputs.keep_artifacts && ( matrix.config == 'gold' || matrix.config == 'qa') }}
         with:
           name: ${{ matrix.platform }}-${{ matrix.config }}
           path: out/${{ matrix.platform }}_${{ matrix.config }}/${{ inputs.keep_artifacts }}
