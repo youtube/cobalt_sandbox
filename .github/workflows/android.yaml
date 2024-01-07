@@ -57,6 +57,8 @@ jobs:
     needs: [ android-arm, android-arm64, android-x86 ]
     permissions:
       actions: write
+    # v4 is unreliable
+    # https://github.com/actions/download-artifact/issues/249
     steps:
       - name: Download the gold arm thing
         uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
@@ -102,3 +104,11 @@ jobs:
           token: ${{ github.token }}
           name: android-arm-qa
           failOnError: true
+      - name: Upload the APKs to a release
+        if: ${{ github.event_name == 'release' }}
+        uses: skx/github-action-publish-binaries@b9ca5643b2f1d7371a6cba7f35333f1461bbc703 # release-2.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: |
+            .
