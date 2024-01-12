@@ -121,6 +121,9 @@ class CobaltLinuxConfiguration(cobalt_configuration.CobaltConfiguration):
         'net_unittests': {
             'ASAN_OPTIONS': 'detect_leaks=0'
         },
+        'renderer_test': {
+            'ASAN_OPTIONS': 'detect_leaks=0'
+        },
         # Tracked by b/294071365
         'starboard_platform_tests': {
             'ASAN_OPTIONS': 'detect_odr_violation=0'
