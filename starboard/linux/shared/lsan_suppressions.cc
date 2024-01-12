@@ -38,4 +38,14 @@ SANITIZER_HOOK_ATTRIBUTE const char* __lsan_default_suppressions() {
   return kLSanDefaultSuppressions;
 }
 
+char kASanDefaultSuppressions[] =
+    // b/312772759
+    "interceptor_via_lib:swrast_dri.so\n";  // NOLINT -- keep the separate line
+
+extern char kASanDefaultSuppressions[];
+
+SANITIZER_HOOK_ATTRIBUTE const char* _asan_default_suppressions() {
+  return kASanDefaultSuppressions;
+}
+
 #endif  // defined(ADDRESS_SANITIZER)
