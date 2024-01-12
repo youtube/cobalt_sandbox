@@ -48,4 +48,6 @@ SANITIZER_HOOK_ATTRIBUTE const char* _asan_default_suppressions() {
   return kASanDefaultSuppressions;
 }
 
+// may consider -fsanitize-blacklist=/home/some/path/blacklist-sgen
+
 #endif  // defined(ADDRESS_SANITIZER)
