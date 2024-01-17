@@ -19,7 +19,7 @@ on:
         default: false
 
 jobs:
-  stub:
+  stub-32:
     uses: ./.github/workflows/main.yaml
     permissions:
       packages: write
