@@ -80,13 +80,6 @@
  * OTHER ENTITY BASED ON INFRINGEMENT OF INTELLECTUAL PROPERTY RIGHTS OR
  * OTHERWISE. */
 
-// Per C99, various stdint.h macros are unavailable in C++ unless some macros
-// are defined. C++11 overruled this decision, but older Android NDKs still
-// require it.
-#if !defined(__STDC_LIMIT_MACROS)
-#define __STDC_LIMIT_MACROS
-#endif
-
 #include <openssl/ssl.h>
 
 #include <limits.h>
@@ -94,7 +87,6 @@
 
 #include <utility>
 
-#include <openssl/buf.h>
 #include <openssl/bytestring.h>
 #include <openssl/err.h>
 #include <openssl/mem.h>
@@ -104,7 +96,7 @@
 #include "internal.h"
 
 
-namespace bssl {
+BSSL_NAMESPACE_BEGIN
 
 // An SSL_SESSION is serialized as the following ASN.1 structure:
 //
@@ -704,11 +696,6 @@ UniquePtr<SSL_SESSION> SSL_SESSION_parse(CBS *cbs,
     }
   }
 
-  if (!x509_method->session_cache_objects(ret.get())) {
-    OPENSSL_PUT_ERROR(SSL, SSL_R_INVALID_SSL_SESSION);
-    return nullptr;
-  }
-
   CBS age_add;
   int age_add_present;
   if (!CBS_get_optional_asn1_octet_string(&session, &age_add, &age_add_present,
@@ -744,6 +731,11 @@ UniquePtr<SSL_SESSION> SSL_SESSION_parse(CBS *cbs,
     return nullptr;
   }
 
+  if (!x509_method->session_cache_objects(ret.get())) {
+    OPENSSL_PUT_ERROR(SSL, SSL_R_INVALID_SSL_SESSION);
+    return nullptr;
+  }
+
   return ret;
 }
 
@@ -751,7 +743,7 @@ int ssl_session_serialize(const SSL_SESSION *in, CBB *cbb) {
   return SSL_SESSION_to_bytes_full(in, cbb, 0);
 }
 
-}  // namespace bssl
+BSSL_NAMESPACE_END
 
 using namespace bssl;
 
@@ -765,7 +757,7 @@ int SSL_SESSION_to_bytes(const SSL_SESSION *in, uint8_t **out_data,
     static const char kNotResumableSession[] = "NOT RESUMABLE";
 
     *out_len = strlen(kNotResumableSession);
-    *out_data = (uint8_t *)BUF_memdup(kNotResumableSession, *out_len);
+    *out_data = (uint8_t *)OPENSSL_memdup(kNotResumableSession, *out_len);
     if (*out_data == NULL) {
       return 0;
     }

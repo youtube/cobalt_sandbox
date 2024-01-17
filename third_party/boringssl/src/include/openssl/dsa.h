@@ -417,12 +417,13 @@ struct dsa_st {
 
 extern "C++" {
 
-namespace bssl {
+BSSL_NAMESPACE_BEGIN
 
 BORINGSSL_MAKE_DELETER(DSA, DSA_free)
+BORINGSSL_MAKE_UP_REF(DSA, DSA_up_ref)
 BORINGSSL_MAKE_DELETER(DSA_SIG, DSA_SIG_free)
 
-}  // namespace bssl
+BSSL_NAMESPACE_END
 
 }  // extern C++
 
@@ -435,5 +436,6 @@ BORINGSSL_MAKE_DELETER(DSA_SIG, DSA_SIG_free)
 #define DSA_R_BAD_VERSION 104
 #define DSA_R_DECODE_ERROR 105
 #define DSA_R_ENCODE_ERROR 106
+#define DSA_R_INVALID_PARAMETERS 107
 
 #endif  // OPENSSL_HEADER_DSA_H

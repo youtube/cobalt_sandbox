@@ -14,10 +14,8 @@
 
 #include <openssl/pkcs7.h>
 
-#if !defined(OPENSSL_SYS_STARBOARD)
 #include <assert.h>
 #include <limits.h>
-#endif  // !defined(OPENSSL_SYS_STARBOARD)
 
 #include <openssl/bytestring.h>
 #include <openssl/err.h>
@@ -262,7 +260,7 @@ static PKCS7 *pkcs7_new(CBS *cbs) {
   }
 
   ret->ber_len = CBS_len(&copy2) - CBS_len(cbs);
-  ret->ber_bytes = BUF_memdup(CBS_data(&copy2), ret->ber_len);
+  ret->ber_bytes = OPENSSL_memdup(CBS_data(&copy2), ret->ber_len);
   if (ret->ber_bytes == NULL) {
     goto err;
   }
@@ -335,17 +333,7 @@ int i2d_PKCS7(const PKCS7 *p7, uint8_t **out) {
 }
 
 int i2d_PKCS7_bio(BIO *bio, const PKCS7 *p7) {
-  size_t written = 0;
-  while (written < p7->ber_len) {
-    size_t todo = p7->ber_len - written;
-    int len = todo > INT_MAX ? INT_MAX : (int)todo;
-    int ret = BIO_write(bio, p7->ber_bytes + written, len);
-    if (ret <= 0) {
-      return 0;
-    }
-    written += (size_t)ret;
-  }
-  return 1;
+  return BIO_write_all(bio, p7->ber_bytes, p7->ber_len);
 }
 
 void PKCS7_free(PKCS7 *p7) {

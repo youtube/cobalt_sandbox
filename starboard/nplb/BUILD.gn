@@ -31,6 +31,7 @@ target(gtest_target_type, "nplb") {
     "//starboard/testing/fake_graphics_context_provider.h",
     "accessibility_test.cc",
     "align_test.cc",
+    "arpa_inet_test.cc",
     "atomic_base_test.cc",
     "atomic_test.cc",
     "audio_sink_create_test.cc",
@@ -134,6 +135,12 @@ target(gtest_target_type, "nplb") {
     "player_test_util.cc",
     "player_test_util.h",
     "player_write_sample_test.cc",
+    "posix_compliance/posix_memory_map_test.cc",
+    "posix_compliance/posix_string_compare_no_case_n_test.cc",
+    "posix_compliance/posix_string_compare_no_case_test.cc",
+    "posix_compliance/posix_string_format_test.cc",
+    "posix_compliance/posix_string_format_wide_test.cc",
+    "posix_compliance/posix_time_test.cc",
     "random_helpers.cc",
     "recursive_mutex_test.cc",
     "rwlock_test.cc",
@@ -173,6 +180,8 @@ target(gtest_target_type, "nplb") {
     "string_compare_no_case_n_test.cc",
     "string_compare_no_case_test.cc",
     "string_duplicate_test.cc",
+
+    # TODO: b/307941391: test "SbStringFormatWideTest" is deprecated in SB16
     "string_format_test.cc",
     "string_format_wide_test.cc",
     "string_scan_test.cc",
@@ -234,7 +243,7 @@ target(gtest_target_type, "nplb") {
   configs += [ "//starboard/build/config:starboard_implementation" ]
 
   deps = [
-    "//starboard",
+    "//starboard:starboard_group",
     "//starboard/common",
     "//starboard/nplb/compiler_compliance:cpp14_supported",
     "//starboard/shared/starboard/media:media_util",

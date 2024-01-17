@@ -319,6 +319,8 @@ static_library("starboard_platform") {
     "get_home_directory.cc",
     "graphics.cc",
     "graphics.h",
+    "h5vcc_config.cc",
+    "h5vcc_config.h",
     "input_events_generator.cc",
     "input_events_generator.h",
     "jni_env_ext.cc",
@@ -440,7 +442,7 @@ static_library("starboard_platform") {
     "//third_party/opus",
   ]
 
-  if (sb_is_evergreen_compatible) {
+  if (sb_is_evergreen_compatible && current_toolchain == starboard_toolchain) {
     sources -= [
       "crash_handler.cc",
       "crash_handler.h",
@@ -489,7 +491,7 @@ target(gtest_target_type, "starboard_platform_tests") {
   configs += [ "//starboard/build/config:starboard_implementation" ]
 
   deps = [
-    "//starboard",
+    "//starboard:starboard_group",
     "//starboard/shared/starboard/player/filter/testing:test_util",
     "//testing/gmock",
     "//testing/gtest",

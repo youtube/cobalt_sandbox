@@ -24,13 +24,14 @@
 #include <openssl/digest.h>
 #include <openssl/err.h>
 #include <openssl/mem.h>
+#include <openssl/sha.h>
 #include <openssl/stack.h>
 
 #include "../crypto/internal.h"
 #include "internal.h"
 
 
-namespace bssl {
+BSSL_NAMESPACE_BEGIN
 
 enum client_hs_state_t {
   state_read_hello_retry_request = 0,
@@ -164,15 +165,17 @@ static enum ssl_hs_wait_t do_read_hello_retry_request(SSL_HANDSHAKE *hs) {
       return ssl_hs_error;
     }
 
-    // Check that the HelloRetryRequest does not request the key share that
-    // was provided in the initial ClientHello.
-    if (hs->key_share->GroupID() == group_id) {
+    // Check that the HelloRetryRequest does not request a key share that was
+    // provided in the initial ClientHello.
+    if (hs->key_shares[0]->GroupID() == group_id ||
+        (hs->key_shares[1] && hs->key_shares[1]->GroupID() == group_id)) {
       ssl_send_alert(ssl, SSL3_AL_FATAL, SSL_AD_ILLEGAL_PARAMETER);
       OPENSSL_PUT_ERROR(SSL, SSL_R_WRONG_CURVE);
       return ssl_hs_error;
     }
 
-    hs->key_share.reset();
+    hs->key_shares[0].reset();
+    hs->key_shares[1].reset();
     hs->retry_group = group_id;
   }
 
@@ -181,10 +184,11 @@ static enum ssl_hs_wait_t do_read_hello_retry_request(SSL_HANDSHAKE *hs) {
   }
 
   ssl->method->next_message(ssl);
-  hs->received_hello_retry_request = true;
+  ssl->s3->used_hello_retry_request = true;
   hs->tls13_state = state_send_second_client_hello;
   // 0-RTT is rejected if we receive a HelloRetryRequest.
   if (hs->in_early_data) {
+    ssl->s3->early_data_reason = ssl_early_data_hello_retry_request;
     return ssl_hs_early_data_rejected;
   }
   return ssl_hs_ok;
@@ -265,8 +269,7 @@ static enum ssl_hs_wait_t do_read_server_hello(SSL_HANDSHAKE *hs) {
   }
 
   // Check that the cipher matches the one in the HelloRetryRequest.
-  if (hs->received_hello_retry_request &&
-      hs->new_cipher != cipher) {
+  if (ssl->s3->used_hello_retry_request && hs->new_cipher != cipher) {
     OPENSSL_PUT_ERROR(SSL, SSL_R_WRONG_CIPHER_RETURNED);
     ssl_send_alert(ssl, SSL3_AL_FATAL, SSL_AD_ILLEGAL_PARAMETER);
     return ssl_hs_error;
@@ -291,16 +294,14 @@ static enum ssl_hs_wait_t do_read_server_hello(SSL_HANDSHAKE *hs) {
     return ssl_hs_error;
   }
 
-  if (ssl_is_draft28(ssl->version)) {
-    // Recheck supported_versions, in case this is the second ServerHello.
-    uint16_t version;
-    if (!have_supported_versions ||
-        !CBS_get_u16(&supported_versions, &version) ||
-        version != ssl->version) {
-      OPENSSL_PUT_ERROR(SSL, SSL_R_SECOND_SERVERHELLO_VERSION_MISMATCH);
-      ssl_send_alert(ssl, SSL3_AL_FATAL, SSL_AD_ILLEGAL_PARAMETER);
-      return ssl_hs_error;
-    }
+  // Recheck supported_versions, in case this is the second ServerHello.
+  uint16_t version;
+  if (!have_supported_versions ||
+      !CBS_get_u16(&supported_versions, &version) ||
+      version != ssl->version) {
+    OPENSSL_PUT_ERROR(SSL, SSL_R_SECOND_SERVERHELLO_VERSION_MISMATCH);
+    ssl_send_alert(ssl, SSL3_AL_FATAL, SSL_AD_ILLEGAL_PARAMETER);
+    return ssl_hs_error;
   }
 
   alert = SSL_AD_DECODE_ERROR;
@@ -363,11 +364,12 @@ static enum ssl_hs_wait_t do_read_server_hello(SSL_HANDSHAKE *hs) {
 
   // Set up the key schedule and incorporate the PSK into the running secret.
   if (ssl->s3->session_reused) {
-    if (!tls13_init_key_schedule(hs, hs->new_session->master_key,
-                                 hs->new_session->master_key_length)) {
+    if (!tls13_init_key_schedule(
+            hs, MakeConstSpan(hs->new_session->master_key,
+                              hs->new_session->master_key_length))) {
       return ssl_hs_error;
     }
-  } else if (!tls13_init_key_schedule(hs, kZeroes, hash_len)) {
+  } else if (!tls13_init_key_schedule(hs, MakeConstSpan(kZeroes, hash_len))) {
     return ssl_hs_error;
   }
 
@@ -387,19 +389,19 @@ static enum ssl_hs_wait_t do_read_server_hello(SSL_HANDSHAKE *hs) {
     return ssl_hs_error;
   }
 
-  if (!tls13_advance_key_schedule(hs, dhe_secret.data(), dhe_secret.size()) ||
+  if (!tls13_advance_key_schedule(hs, dhe_secret) ||
       !ssl_hash_message(hs, msg) ||
       !tls13_derive_handshake_secrets(hs) ||
-      !tls13_set_traffic_key(ssl, evp_aead_open, hs->server_handshake_secret,
-                             hs->hash_len)) {
+      !tls13_set_traffic_key(ssl, ssl_encryption_handshake, evp_aead_open,
+                             hs->server_handshake_secret())) {
     return ssl_hs_error;
   }
 
   if (!hs->early_data_offered) {
     // If not sending early data, set client traffic keys now so that alerts are
     // encrypted.
-    if (!tls13_set_traffic_key(ssl, evp_aead_seal, hs->client_handshake_secret,
-                               hs->hash_len)) {
+    if (!tls13_set_traffic_key(ssl, ssl_encryption_handshake, evp_aead_seal,
+                               hs->client_handshake_secret())) {
       return ssl_hs_error;
     }
   }
@@ -465,7 +467,7 @@ static enum ssl_hs_wait_t do_read_certificate_request(SSL_HANDSHAKE *hs) {
   SSL *const ssl = hs->ssl;
   // CertificateRequest may only be sent in non-resumption handshakes.
   if (ssl->s3->session_reused) {
-    if (ssl->ctx->reverify_on_resume) {
+    if (ssl->ctx->reverify_on_resume && !ssl->s3->early_data_accepted) {
       hs->tls13_state = state_server_certificate_reverify;
       return ssl_hs_ok;
     }
@@ -506,7 +508,6 @@ static enum ssl_hs_wait_t do_read_certificate_request(SSL_HANDSHAKE *hs) {
       !have_sigalgs ||
       !CBS_get_u16_length_prefixed(&sigalgs,
                                    &supported_signature_algorithms) ||
-      CBS_len(&supported_signature_algorithms) == 0 ||
       !tls1_parse_peer_sigalgs(hs, &supported_signature_algorithms)) {
     ssl_send_alert(ssl, SSL3_AL_FATAL, alert);
     OPENSSL_PUT_ERROR(SSL, SSL_R_DECODE_ERROR);
@@ -552,7 +553,7 @@ static enum ssl_hs_wait_t do_read_server_certificate(SSL_HANDSHAKE *hs) {
     return ssl_hs_error;
   }
 
-  if (!tls13_process_certificate(hs, msg, 0 /* certificate required */) ||
+  if (!tls13_process_certificate(hs, msg, false /* certificate required */) ||
       !ssl_hash_message(hs, msg)) {
     return ssl_hs_error;
   }
@@ -592,7 +593,7 @@ static enum ssl_hs_wait_t do_read_server_certificate_verify(
 
 static enum ssl_hs_wait_t do_server_certificate_reverify(
     SSL_HANDSHAKE *hs) {
-  switch (ssl_reverify_peer_cert(hs)) {
+  switch (ssl_reverify_peer_cert(hs, /*send_alert=*/true)) {
     case ssl_verify_ok:
       break;
     case ssl_verify_invalid:
@@ -612,10 +613,11 @@ static enum ssl_hs_wait_t do_read_server_finished(SSL_HANDSHAKE *hs) {
     return ssl_hs_read_message;
   }
   if (!ssl_check_message_type(ssl, msg, SSL3_MT_FINISHED) ||
-      !tls13_process_finished(hs, msg, 0 /* don't use saved value */) ||
+      !tls13_process_finished(hs, msg, false /* don't use saved value */) ||
       !ssl_hash_message(hs, msg) ||
       // Update the secret to the master secret and derive traffic keys.
-      !tls13_advance_key_schedule(hs, kZeroes, hs->hash_len) ||
+      !tls13_advance_key_schedule(
+          hs, MakeConstSpan(kZeroes, hs->transcript.DigestLen())) ||
       !tls13_derive_application_secrets(hs)) {
     return ssl_hs_error;
   }
@@ -630,18 +632,22 @@ static enum ssl_hs_wait_t do_send_end_of_early_data(SSL_HANDSHAKE *hs) {
 
   if (ssl->s3->early_data_accepted) {
     hs->can_early_write = false;
-    ScopedCBB cbb;
-    CBB body;
-    if (!ssl->method->init_message(ssl, cbb.get(), &body,
-                                   SSL3_MT_END_OF_EARLY_DATA) ||
-        !ssl_add_message_cbb(ssl, cbb.get())) {
-      return ssl_hs_error;
+    // QUIC omits the EndOfEarlyData message. See draft-ietf-quic-tls-22,
+    // section 8.3.
+    if (ssl->quic_method == nullptr) {
+      ScopedCBB cbb;
+      CBB body;
+      if (!ssl->method->init_message(ssl, cbb.get(), &body,
+                                     SSL3_MT_END_OF_EARLY_DATA) ||
+          !ssl_add_message_cbb(ssl, cbb.get())) {
+        return ssl_hs_error;
+      }
     }
   }
 
   if (hs->early_data_offered) {
-    if (!tls13_set_traffic_key(ssl, evp_aead_seal, hs->client_handshake_secret,
-                               hs->hash_len)) {
+    if (!tls13_set_traffic_key(ssl, ssl_encryption_handshake, evp_aead_seal,
+                               hs->client_handshake_secret())) {
       return ssl_hs_error;
     }
   }
@@ -684,7 +690,7 @@ static enum ssl_hs_wait_t do_send_client_certificate(SSL_HANDSHAKE *hs) {
 
 static enum ssl_hs_wait_t do_send_client_certificate_verify(SSL_HANDSHAKE *hs) {
   // Don't send CertificateVerify if there is no certificate.
-  if (!ssl_has_certificate(hs->config)) {
+  if (!ssl_has_certificate(hs)) {
     hs->tls13_state = state_complete_second_flight;
     return ssl_hs_ok;
   }
@@ -735,10 +741,10 @@ static enum ssl_hs_wait_t do_complete_second_flight(SSL_HANDSHAKE *hs) {
   }
 
   // Derive the final keys and enable them.
-  if (!tls13_set_traffic_key(ssl, evp_aead_open, hs->server_traffic_secret_0,
-                             hs->hash_len) ||
-      !tls13_set_traffic_key(ssl, evp_aead_seal, hs->client_traffic_secret_0,
-                             hs->hash_len) ||
+  if (!tls13_set_traffic_key(ssl, ssl_encryption_application, evp_aead_open,
+                             hs->server_traffic_secret_0()) ||
+      !tls13_set_traffic_key(ssl, ssl_encryption_application, evp_aead_seal,
+                             hs->client_traffic_secret_0()) ||
       !tls13_derive_resumption_secret(hs)) {
     return ssl_hs_error;
   }
@@ -846,18 +852,18 @@ const char *tls13_client_handshake_state(SSL_HANDSHAKE *hs) {
   return "TLS 1.3 client unknown";
 }
 
-int tls13_process_new_session_ticket(SSL *ssl, const SSLMessage &msg) {
+bool tls13_process_new_session_ticket(SSL *ssl, const SSLMessage &msg) {
   if (ssl->s3->write_shutdown != ssl_shutdown_none) {
     // Ignore tickets on shutdown. Callers tend to indiscriminately call
     // |SSL_shutdown| before destroying an |SSL|, at which point calling the new
     // session callback may be confusing.
-    return 1;
+    return true;
   }
 
   UniquePtr<SSL_SESSION> session = SSL_SESSION_dup(
       ssl->s3->established_session.get(), SSL_SESSION_INCLUDE_NONAUTH);
   if (!session) {
-    return 0;
+    return false;
   }
 
   ssl_session_rebase_time(ssl, session.get());
@@ -873,7 +879,7 @@ int tls13_process_new_session_ticket(SSL *ssl, const SSLMessage &msg) {
       CBS_len(&body) != 0) {
     ssl_send_alert(ssl, SSL3_AL_FATAL, SSL_AD_DECODE_ERROR);
     OPENSSL_PUT_ERROR(SSL, SSL_R_DECODE_ERROR);
-    return 0;
+    return false;
   }
 
   // Cap the renewable lifetime by the server advertised value. This avoids
@@ -883,14 +889,14 @@ int tls13_process_new_session_ticket(SSL *ssl, const SSLMessage &msg) {
   }
 
   if (!tls13_derive_session_psk(session.get(), ticket_nonce)) {
-    return 0;
+    return false;
   }
 
   // Parse out the extensions.
-  bool have_early_data_info = false;
-  CBS early_data_info;
+  bool have_early_data = false;
+  CBS early_data;
   const SSL_EXTENSION_TYPE ext_types[] = {
-      {TLSEXT_TYPE_early_data, &have_early_data_info, &early_data_info},
+      {TLSEXT_TYPE_early_data, &have_early_data, &early_data},
   };
 
   uint8_t alert = SSL_AD_DECODE_ERROR;
@@ -898,17 +904,31 @@ int tls13_process_new_session_ticket(SSL *ssl, const SSLMessage &msg) {
                             OPENSSL_ARRAY_SIZE(ext_types),
                             1 /* ignore unknown */)) {
     ssl_send_alert(ssl, SSL3_AL_FATAL, alert);
-    return 0;
+    return false;
   }
 
-  if (have_early_data_info && ssl->enable_early_data) {
-    if (!CBS_get_u32(&early_data_info, &session->ticket_max_early_data) ||
-        CBS_len(&early_data_info) != 0) {
+  if (have_early_data) {
+    if (!CBS_get_u32(&early_data, &session->ticket_max_early_data) ||
+        CBS_len(&early_data) != 0) {
       ssl_send_alert(ssl, SSL3_AL_FATAL, SSL_AD_DECODE_ERROR);
       OPENSSL_PUT_ERROR(SSL, SSL_R_DECODE_ERROR);
-      return 0;
+      return false;
+    }
+
+    // QUIC does not use the max_early_data_size parameter and always sets it to
+    // a fixed value. See draft-ietf-quic-tls-22, section 4.5.
+    if (ssl->quic_method != nullptr &&
+        session->ticket_max_early_data != 0xffffffff) {
+      ssl_send_alert(ssl, SSL3_AL_FATAL, SSL_AD_ILLEGAL_PARAMETER);
+      OPENSSL_PUT_ERROR(SSL, SSL_R_DECODE_ERROR);
+      return false;
     }
   }
+
+  // Generate a session ID for this session. Some callers expect all sessions to
+  // have a session ID.
+  SHA256(CBS_data(&ticket), CBS_len(&ticket), session->session_id);
+  session->session_id_length = SHA256_DIGEST_LENGTH;
 
   session->ticket_age_add_valid = true;
   session->not_resumable = false;
@@ -920,7 +940,7 @@ int tls13_process_new_session_ticket(SSL *ssl, const SSLMessage &msg) {
     session.release();
   }
 
-  return 1;
+  return true;
 }
 
-}  // namespace bssl
+BSSL_NAMESPACE_END

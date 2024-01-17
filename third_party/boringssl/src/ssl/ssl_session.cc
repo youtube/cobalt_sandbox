@@ -151,7 +151,7 @@
 #include "../crypto/internal.h"
 
 
-namespace bssl {
+BSSL_NAMESPACE_BEGIN
 
 // The address of this is a magic value, a pointer to which is returned by
 // SSL_magic_pending_session_ptr(). It allows a session callback to indicate
@@ -208,7 +208,8 @@ UniquePtr<SSL_SESSION> SSL_SESSION_dup(SSL_SESSION *session, int dup_flags) {
 
   // Copy authentication state.
   if (session->psk_identity != nullptr) {
-    new_session->psk_identity.reset(BUF_strdup(session->psk_identity.get()));
+    new_session->psk_identity.reset(
+        OPENSSL_strdup(session->psk_identity.get()));
     if (new_session->psk_identity == nullptr) {
       return nullptr;
     }
@@ -838,7 +839,7 @@ static void SSL_SESSION_list_add(SSL_CTX *ctx, SSL_SESSION *session) {
   }
 }
 
-}  // namespace bssl
+BSSL_NAMESPACE_END
 
 using namespace bssl;
 
@@ -1048,6 +1049,11 @@ void SSL_SESSION_get0_peer_sha256(const SSL_SESSION *session,
     *out_ptr = nullptr;
     *out_len = 0;
   }
+}
+
+int SSL_SESSION_early_data_capable(const SSL_SESSION *session) {
+  return ssl_session_protocol_version(session) >= TLS1_3_VERSION &&
+         session->ticket_max_early_data != 0;
 }
 
 SSL_SESSION *SSL_magic_pending_session_ptr(void) {

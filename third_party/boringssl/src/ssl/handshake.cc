@@ -122,19 +122,18 @@
 #include "internal.h"
 
 
-namespace bssl {
+BSSL_NAMESPACE_BEGIN
 
 SSL_HANDSHAKE::SSL_HANDSHAKE(SSL *ssl_arg)
     : ssl(ssl_arg),
       scts_requested(false),
       needs_psk_binder(false),
-      received_hello_retry_request(false),
-      sent_hello_retry_request(false),
       handshake_finalized(false),
       accept_psk_mode(false),
       cert_request(false),
       certificate_status_expected(false),
       ocsp_stapling_requested(false),
+      delegated_credential_requested(false),
       should_ack_sni(false),
       in_false_start(false),
       in_early_data(false),
@@ -147,12 +146,20 @@ SSL_HANDSHAKE::SSL_HANDSHAKE(SSL *ssl_arg)
       pending_private_key_op(false),
       grease_seeded(false),
       handback(false),
-      cert_compression_negotiated(false) {
+      cert_compression_negotiated(false),
+      apply_jdk11_workaround(false) {
   assert(ssl);
 }
 
 SSL_HANDSHAKE::~SSL_HANDSHAKE() {
   ssl->ctx->x509_method->hs_flush_cached_ca_names(this);
+}
+
+void SSL_HANDSHAKE::ResizeSecrets(size_t hash_len) {
+  if (hash_len > SSL_MAX_MD_SIZE) {
+    abort();
+  }
+  hash_len_ = hash_len;
 }
 
 UniquePtr<SSL_HANDSHAKE> ssl_handshake_new(SSL *ssl) {
@@ -379,7 +386,8 @@ enum ssl_verify_result_t ssl_verify_peer_cert(SSL_HANDSHAKE *hs) {
 // SSL_VERIFY_NONE
 // 3. We don't call the OCSP callback.
 // 4. We only support custom verify callbacks.
-enum ssl_verify_result_t ssl_reverify_peer_cert(SSL_HANDSHAKE *hs) {
+enum ssl_verify_result_t ssl_reverify_peer_cert(SSL_HANDSHAKE *hs,
+                                                bool send_alert) {
   SSL *const ssl = hs->ssl;
   assert(ssl->s3->established_session == nullptr);
   assert(hs->config->verify_mode != SSL_VERIFY_NONE);
@@ -392,7 +400,9 @@ enum ssl_verify_result_t ssl_reverify_peer_cert(SSL_HANDSHAKE *hs) {
 
   if (ret == ssl_verify_invalid) {
     OPENSSL_PUT_ERROR(SSL, SSL_R_CERTIFICATE_VERIFY_FAILED);
-    ssl_send_alert(ssl, SSL3_AL_FATAL, alert);
+    if (send_alert) {
+      ssl_send_alert(ssl, SSL3_AL_FATAL, alert);
+    }
   }
 
   return ret;
@@ -477,8 +487,9 @@ bool ssl_send_finished(SSL_HANDSHAKE *hs) {
   }
 
   // Log the master secret, if logging is enabled.
-  if (!ssl_log_secret(ssl, "CLIENT_RANDOM", session->master_key,
-                      session->master_key_length)) {
+  if (!ssl_log_secret(
+          ssl, "CLIENT_RANDOM",
+          MakeConstSpan(session->master_key, session->master_key_length))) {
     return 0;
   }
 
@@ -543,6 +554,16 @@ int ssl_run_handshake(SSL_HANDSHAKE *hs, bool *out_early_return) {
       case ssl_hs_read_server_hello:
       case ssl_hs_read_message:
       case ssl_hs_read_change_cipher_spec: {
+        if (ssl->quic_method) {
+          hs->wait = ssl_hs_ok;
+          // The change cipher spec is omitted in QUIC.
+          if (hs->wait != ssl_hs_read_change_cipher_spec) {
+            ssl->s3->rwstate = SSL_ERROR_WANT_READ;
+            return -1;
+          }
+          break;
+        }
+
         uint8_t alert = SSL_AD_DECODE_ERROR;
         size_t consumed = 0;
         ssl_open_record_t ret;
@@ -591,52 +612,53 @@ int ssl_run_handshake(SSL_HANDSHAKE *hs, bool *out_early_return) {
       }
 
       case ssl_hs_certificate_selection_pending:
-        ssl->s3->rwstate = SSL_CERTIFICATE_SELECTION_PENDING;
+        ssl->s3->rwstate = SSL_ERROR_PENDING_CERTIFICATE;
         hs->wait = ssl_hs_ok;
         return -1;
 
       case ssl_hs_handoff:
-        ssl->s3->rwstate = SSL_HANDOFF;
+        ssl->s3->rwstate = SSL_ERROR_HANDOFF;
         hs->wait = ssl_hs_ok;
         return -1;
 
       case ssl_hs_handback:
-        ssl->s3->rwstate = SSL_HANDBACK;
+        ssl->s3->rwstate = SSL_ERROR_HANDBACK;
         hs->wait = ssl_hs_handback;
         return -1;
 
       case ssl_hs_x509_lookup:
-        ssl->s3->rwstate = SSL_X509_LOOKUP;
+        ssl->s3->rwstate = SSL_ERROR_WANT_X509_LOOKUP;
         hs->wait = ssl_hs_ok;
         return -1;
 
       case ssl_hs_channel_id_lookup:
-        ssl->s3->rwstate = SSL_CHANNEL_ID_LOOKUP;
+        ssl->s3->rwstate = SSL_ERROR_WANT_CHANNEL_ID_LOOKUP;
         hs->wait = ssl_hs_ok;
         return -1;
 
       case ssl_hs_private_key_operation:
-        ssl->s3->rwstate = SSL_PRIVATE_KEY_OPERATION;
+        ssl->s3->rwstate = SSL_ERROR_WANT_PRIVATE_KEY_OPERATION;
         hs->wait = ssl_hs_ok;
         return -1;
 
       case ssl_hs_pending_session:
-        ssl->s3->rwstate = SSL_PENDING_SESSION;
+        ssl->s3->rwstate = SSL_ERROR_PENDING_SESSION;
         hs->wait = ssl_hs_ok;
         return -1;
 
       case ssl_hs_pending_ticket:
-        ssl->s3->rwstate = SSL_PENDING_TICKET;
+        ssl->s3->rwstate = SSL_ERROR_PENDING_TICKET;
         hs->wait = ssl_hs_ok;
         return -1;
 
       case ssl_hs_certificate_verify:
-        ssl->s3->rwstate = SSL_CERTIFICATE_VERIFY;
+        ssl->s3->rwstate = SSL_ERROR_WANT_CERTIFICATE_VERIFY;
         hs->wait = ssl_hs_ok;
         return -1;
 
       case ssl_hs_early_data_rejected:
-        ssl->s3->rwstate = SSL_EARLY_DATA_REJECTED;
+        assert(ssl->s3->early_data_reason != ssl_early_data_unknown);
+        ssl->s3->rwstate = SSL_ERROR_EARLY_DATA_REJECTED;
         // Cause |SSL_write| to start failing immediately.
         hs->can_early_write = false;
         return -1;
@@ -667,4 +689,4 @@ int ssl_run_handshake(SSL_HANDSHAKE *hs, bool *out_early_return) {
   }
 }
 
-}  // namespace bssl
+BSSL_NAMESPACE_END

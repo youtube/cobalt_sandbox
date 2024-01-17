@@ -16,9 +16,7 @@
 
 #if defined(BORINGSSL_UNSAFE_DETERMINISTIC_MODE)
 
-#if !defined(OPENSSL_SYS_STARBOARD)
 #include <string.h>
-#endif  // !defined(OPENSSL_SYS_STARBOARD)
 
 #include <openssl/chacha.h>
 
@@ -45,6 +43,14 @@ void CRYPTO_sysrand(uint8_t *out, size_t requested) {
   OPENSSL_memset(out, 0, requested);
   CRYPTO_chacha_20(out, out, requested, kZeroKey, nonce, 0);
   g_num_calls++;
+}
+
+void CRYPTO_sysrand_for_seed(uint8_t *out, size_t requested) {
+  CRYPTO_sysrand(out, requested);
+}
+
+void CRYPTO_sysrand_if_available(uint8_t *out, size_t requested) {
+  CRYPTO_sysrand(out, requested);
 }
 
 #endif  // BORINGSSL_UNSAFE_DETERMINISTIC_MODE

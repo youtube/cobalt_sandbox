@@ -72,7 +72,7 @@
 #include "../internal.h"
 #include "../test/test_util.h"
 
-#if !defined(OPENSSL_NO_THREADS)
+#if defined(OPENSSL_THREADS)
 #include <thread>
 #include <vector>
 #endif
@@ -461,7 +461,8 @@ TEST_P(RSAEncryptTest, TestKey) {
   }
 }
 
-INSTANTIATE_TEST_CASE_P(, RSAEncryptTest, testing::ValuesIn(kRSAEncryptParams));
+INSTANTIATE_TEST_SUITE_P(All, RSAEncryptTest,
+                         testing::ValuesIn(kRSAEncryptParams));
 
 TEST(RSATest, TestDecrypt) {
   bssl::UniquePtr<RSA> rsa(
@@ -1048,7 +1049,7 @@ TEST(RSATest, SqrtTwo) {
 }
 #endif  // !BORINGSSL_SHARED_LIBRARY
 
-#if !defined(OPENSSL_NO_THREADS)
+#if defined(OPENSSL_THREADS)
 TEST(RSATest, Threads) {
   bssl::UniquePtr<RSA> rsa_template(
       RSA_private_key_from_bytes(kKey1, sizeof(kKey1) - 1));
