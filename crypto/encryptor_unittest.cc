@@ -4,14 +4,14 @@
 
 #include "crypto/encryptor.h"
 
+#include <stddef.h>
+
 #include <memory>
 #include <string>
 
 #include "base/macros.h"
 #include "base/strings/string_number_conversions.h"
 #include "crypto/symmetric_key.h"
-#include "starboard/memory.h"
-#include "starboard/types.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
 TEST(EncryptorTest, EncryptDecrypt) {
@@ -421,8 +421,7 @@ TEST(EncryptorTest, EncryptAES256CBC) {
   EXPECT_TRUE(encryptor.Encrypt(plaintext, &ciphertext));
 
   EXPECT_EQ(sizeof(kRawCiphertext), ciphertext.size());
-  EXPECT_EQ(
-      0, memcmp(ciphertext.data(), kRawCiphertext, ciphertext.size()));
+  EXPECT_EQ(0, memcmp(ciphertext.data(), kRawCiphertext, ciphertext.size()));
 
   std::string decrypted;
   EXPECT_TRUE(encryptor.Decrypt(ciphertext, &decrypted));

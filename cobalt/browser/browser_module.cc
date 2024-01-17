@@ -52,15 +52,16 @@
 #include "cobalt/math/matrix3_f.h"
 #include "cobalt/overlay_info/overlay_info_registry.h"
 #include "cobalt/persistent_storage/persistent_settings.h"
+#include "cobalt/trace_event/scoped_trace_to_file.h"
 #include "cobalt/ui_navigation/scroll_engine/scroll_engine.h"
 #include "cobalt/web/csp_delegate_factory.h"
 #include "cobalt/web/navigator_ua_data.h"
 #include "starboard/atomic.h"
 #include "starboard/common/string.h"
+#include "starboard/common/time.h"
 #include "starboard/configuration.h"
 #include "starboard/extension/graphics.h"
 #include "starboard/system.h"
-#include "starboard/time.h"
 #include "third_party/icu/source/i18n/unicode/timezone.h"
 
 #if SB_HAS(CORE_DUMP_HANDLER_SUPPORT)
@@ -87,8 +88,10 @@ struct NonTrivialGlobalVariables {
 
 NonTrivialGlobalVariables::NonTrivialGlobalVariables() {
   last_render_timestamp = &cobalt::timestamp::g_last_render_timestamp;
-  SbAtomicNoBarrier_Exchange64(last_render_timestamp,
-                               static_cast<SbAtomic64>(SbTimeGetNow()));
+  SbAtomicNoBarrier_Exchange64(
+      last_render_timestamp,
+      static_cast<SbAtomic64>(
+          starboard::PosixTimeToWindowsTime(starboard::CurrentPosixTime())));
 }
 
 base::LazyInstance<NonTrivialGlobalVariables>::DestructorAtExit
@@ -160,6 +163,13 @@ const char kDisableMediaCodecsCommandLongHelp[] =
     "supported. This "
     "is useful when trying to target testing to certain codecs, since other "
     "codecs will get picked as a fallback as a result.";
+
+const char kNavigateTimedTrace[] = "navigate_timed_trace";
+const char kNavigateTimedTraceShortHelp[] =
+    "Request a timed trace from the next navigation.";
+const char kNavigateTimedTraceLongHelp[] =
+    "When this is called, a timed trace will start at the next navigation "
+    "and run for the given number of seconds.";
 
 void ScreenshotCompleteCallback(const base::FilePath& output_path) {
   DLOG(INFO) << "Screenshot written to " << output_path.value();
@@ -268,6 +278,11 @@ BrowserModule::BrowserModule(const GURL& url,
                      base::Unretained(this)),
           kDisableMediaCodecsCommandShortHelp,
           kDisableMediaCodecsCommandLongHelp)),
+      ALLOW_THIS_IN_INITIALIZER_LIST(navigate_timed_trace_command_handler_(
+          kNavigateTimedTrace,
+          base::Bind(&BrowserModule::OnNavigateTimedTrace,
+                     base::Unretained(this)),
+          kNavigateTimedTraceShortHelp, kNavigateTimedTraceLongHelp)),
 #endif  // defined(ENABLE_DEBUGGER)
       has_resumed_(base::WaitableEvent::ResetPolicy::MANUAL,
                    base::WaitableEvent::InitialState::NOT_SIGNALED),
@@ -289,7 +304,7 @@ BrowserModule::BrowserModule(const GURL& url,
 
   platform_info_.reset(new browser::UserAgentPlatformInfo());
   service_worker_registry_.reset(new ServiceWorkerRegistry(
-      &web_settings_, network_module, platform_info_.get(), url));
+      &web_settings_, network_module, platform_info_.get()));
 
 #if SB_HAS(CORE_DUMP_HANDLER_SUPPORT)
   SbCoreDumpRegisterHandler(BrowserModule::CoreDumpHandler, this);
@@ -462,7 +477,9 @@ BrowserModule::~BrowserModule() {
   }
   debug_console_.reset();
 #endif
+
   DestroySplashScreen();
+  DestroyScrollEngine();
   // Make sure the WebModule is destroyed before the ServiceWorkerRegistry
   if (web_module_) {
     lifecycle_observers_.RemoveObserver(web_module_.get());
@@ -478,6 +495,7 @@ void BrowserModule::Navigate(const GURL& url_reference) {
   DLOG(INFO) << "In BrowserModule::Navigate " << url;
   TRACE_EVENT1("cobalt::browser", "BrowserModule::Navigate()", "url",
                url.spec());
+
   // Reset the waitable event regardless of the thread. This ensures that the
   // webdriver won't incorrectly believe that the webmodule has finished loading
   // when it calls Navigate() and waits for the |web_module_loaded_| signal.
@@ -492,33 +510,51 @@ void BrowserModule::Navigate(const GURL& url_reference) {
 
   // First try any registered handlers. If one of these handles the URL, we
   // don't use the web module.
-  if (TryURLHandlers(url)) {
+  if (NavigateTryURLHandlers(url)) {
     return;
   }
 
   // Clear error handling once we're told to navigate, either because it's the
   // retry from the error or something decided we should navigate elsewhere.
-  on_error_retry_timer_.Stop();
-  waiting_for_error_retry_ = false;
+  NavigateResetErrorHandling();
 
   // Navigations aren't allowed if the app is frozen. If this is the case,
   // simply set the pending navigate url, which will cause the navigation to
   // occur when Cobalt resumes, and return.
-  if (application_state_ == base::kApplicationStateFrozen) {
-    pending_navigate_url_ = url;
+  if (NavigateHandleStateFrozen(url)) {
     return;
   }
 
-  // Now that we know the navigation is occurring, clear out
-  // |pending_navigate_url_|.
-  pending_navigate_url_ = GURL::EmptyGURL();
+  // Destroys the old WebModule, increments the navigation generation
+  // number, and resets the main WebModule layer
+  NavigateResetWebModule();
 
+  // checks whether a service worker should be started for the given URL
+  auto service_worker_started_event = std::make_unique<base::WaitableEvent>();
+  bool can_start_service_worker =
+      NavigateServiceWorkerSetups(url, service_worker_started_event.get());
+
+  // Wait until after the old WebModule is destroyed before setting the navigate
+  // time so that it won't be included in the time taken to load the URL.
+  navigate_time_ = base::TimeTicks::Now().ToInternalValue();
+
+  const ViewportSize viewport_size = GetViewportSize();
+
+  // Show a splash screen while we're waiting for the web page to load.
+  NavigateSetupSplashScreen(url, viewport_size);
+
+  NavigateSetupScrollEngine();
+
+  NavigateCreateWebModule(url, can_start_service_worker,
+                          service_worker_started_event.get(), viewport_size);
+}
+
+void BrowserModule::NavigateResetWebModule() {
 #if defined(ENABLE_DEBUGGER)
   if (web_module_) {
     web_module_->FreezeDebugger(&debugger_state_);
   }
 #endif  // defined(ENABLE_DEBUGGER)
-
   // Destroy old WebModule first, so we don't get a memory high-watermark after
   // the second WebModule's constructor runs, but before
   // std::unique_ptr::reset() is run.
@@ -535,22 +571,66 @@ void BrowserModule::Navigate(const GURL& url_reference) {
 
   main_web_module_layer_->Reset();
 
+#if defined(ENABLE_DEBUGGER)
+  // Check to see if a timed_trace has been set, indicating that we should
+  // begin a timed trace upon startup.
+  if (navigate_timed_trace_duration_ != base::TimeDelta()) {
+    trace_event::TraceToFileForDuration(
+        base::FilePath(FILE_PATH_LITERAL("timed_trace.json")),
+        navigate_timed_trace_duration_);
+    navigate_timed_trace_duration_ = base::TimeDelta();
+  }
+#endif  // defined(ENABLE_DEBUGGER)
+}
+
+void BrowserModule::NavigateResetErrorHandling() {
+  on_error_retry_timer_.Stop();
+  waiting_for_error_retry_ = false;
+}
+
+bool BrowserModule::NavigateHandleStateFrozen(const GURL& url) {
+  if (application_state_ == base::kApplicationStateFrozen) {
+    pending_navigate_url_ = url;
+    return true;
+  }
+
+  // Now that we know the navigation is occurring, clear out
+  // |pending_navigate_url_|.
+  pending_navigate_url_ = GURL::EmptyGURL();
+  return false;
+}
+
+bool BrowserModule::NavigateServiceWorkerSetups(
+    const GURL& url, base::WaitableEvent* service_worker_started_event) {
   // Service worker should only start for HTTP or HTTPS fetches.
   // https://fetch.spec.whatwg.org/commit-snapshots/8f8ab504da6ca9681db5c7f8aa3d1f4b6bf8840c/#http-fetch
   bool can_start_service_worker = url.SchemeIsHTTPOrHTTPS();
-  auto service_worker_started_event = std::make_unique<base::WaitableEvent>();
+  watchdog::Watchdog* watchdog = watchdog::Watchdog::GetInstance();
+  if (watchdog) {
+    std::vector<std::string> service_worker_clients = {
+        worker::WorkerConsts::kServiceWorkerRegistryName,
+        worker::WorkerConsts::kServiceWorkerName};
+    std::string violation_json =
+        watchdog->GetWatchdogViolations(service_worker_clients);
+    {
+      if (violation_json != "") {
+        LOG(WARNING) << "Service Worker watchdog violation detected: "
+                     << violation_json;
+        LOG(WARNING) << "Erase Service Worker registration map.";
+        can_start_service_worker = false;
+        service_worker_registry_->EraseRegistrationMap();
+      }
+    }
+  }
   if (can_start_service_worker) {
     service_worker_registry_->EnsureServiceWorkerStarted(
-        url::Origin::Create(url), url, service_worker_started_event.get());
+        url::Origin::Create(url), url, service_worker_started_event);
   }
+  return can_start_service_worker;
+}
 
-  // Wait until after the old WebModule is destroyed before setting the navigate
-  // time so that it won't be included in the time taken to load the URL.
-  navigate_time_ = base::TimeTicks::Now().ToInternalValue();
-
-  // Show a splash screen while we're waiting for the web page to load.
-  const ViewportSize viewport_size = GetViewportSize();
-
+void BrowserModule::NavigateSetupSplashScreen(
+    const GURL& url, const ViewportSize viewport_size) {
   DestroySplashScreen();
   if (options_.enable_splash_screen_on_reloads ||
       main_web_module_generation_ == 1) {
@@ -571,10 +651,19 @@ void BrowserModule::Navigate(const GURL& url_reference) {
       lifecycle_observers_.AddObserver(splash_screen_.get());
     }
   }
+}
 
+void BrowserModule::NavigateSetupScrollEngine() {
+  DestroyScrollEngine();
   scroll_engine_.reset(new ui_navigation::scroll_engine::ScrollEngine());
+  lifecycle_observers_.AddObserver(scroll_engine_.get());
   scroll_engine_->thread()->Start();
+}
 
+void BrowserModule::NavigateCreateWebModule(
+    const GURL& url, bool can_start_service_worker,
+    base::WaitableEvent* service_worker_started_event,
+    const ViewportSize viewport_size) {
 // Create new WebModule.
 #if !defined(COBALT_FORCE_CSP)
   options_.web_module_options.csp_insecure_allowed_token =
@@ -604,8 +693,8 @@ void BrowserModule::Navigate(const GURL& url_reference) {
   }
 
   options.provide_screenshot_function =
-      base::Bind(&ScreenShotWriter::RequestScreenshotToMemoryUnencoded,
-                 base::Unretained(screen_shot_writer_.get()));
+      base::Bind(&BrowserModule::RequestScreenshotToMemoryUnencoded,
+                 base::Unretained(this));
 
 #if defined(ENABLE_DEBUGGER)
   if (base::CommandLine::ForCurrentProcess()->HasSwitch(
@@ -719,6 +808,14 @@ bool BrowserModule::WaitForLoad(const base::TimeDelta& timeout) {
   return web_module_loaded_.TimedWait(timeout);
 }
 
+void BrowserModule::EnsureScreenShotWriter() {
+  if (!screen_shot_writer_ && renderer_module_) {
+    screen_shot_writer_.reset(
+        new ScreenShotWriter(renderer_module_->pipeline()));
+  }
+}
+
+#if defined(ENABLE_WEBDRIVER) || defined(ENABLE_DEBUGGER)
 void BrowserModule::RequestScreenshotToFile(
     const base::FilePath& path,
     loader::image::EncodedStaticImage::ImageFormat image_format,
@@ -726,7 +823,9 @@ void BrowserModule::RequestScreenshotToFile(
     const base::Closure& done_callback) {
   TRACE_EVENT0("cobalt::browser", "BrowserModule::RequestScreenshotToFile()");
   DCHECK_EQ(base::MessageLoop::current(), self_message_loop_);
+  EnsureScreenShotWriter();
   DCHECK(screen_shot_writer_);
+  if (!screen_shot_writer_) return;
 
   scoped_refptr<render_tree::Node> render_tree;
   web_module_->DoSynchronousLayoutAndGetRenderTree(&render_tree);
@@ -744,7 +843,9 @@ void BrowserModule::RequestScreenshotToMemory(
     const base::Optional<math::Rect>& clip_rect,
     const ScreenShotWriter::ImageEncodeCompleteCallback& screenshot_ready) {
   TRACE_EVENT0("cobalt::browser", "BrowserModule::RequestScreenshotToMemory()");
+  EnsureScreenShotWriter();
   DCHECK(screen_shot_writer_);
+  if (!screen_shot_writer_) return;
   // Note: This does not have to be called from self_message_loop_.
 
   scoped_refptr<render_tree::Node> render_tree;
@@ -756,6 +857,19 @@ void BrowserModule::RequestScreenshotToMemory(
 
   screen_shot_writer_->RequestScreenshotToMemory(image_format, render_tree,
                                                  clip_rect, screenshot_ready);
+}
+#endif  // defined(ENABLE_WEBDRIVER) || defined(ENABLE_DEBUGGER)
+
+// Request a screenshot to memory without compressing the image.
+void BrowserModule::RequestScreenshotToMemoryUnencoded(
+    const scoped_refptr<render_tree::Node>& render_tree_root,
+    const base::Optional<math::Rect>& clip_rect,
+    const renderer::Pipeline::RasterizationCompleteCallback& callback) {
+  EnsureScreenShotWriter();
+  DCHECK(screen_shot_writer_);
+  if (!screen_shot_writer_) return;
+  screen_shot_writer_->RequestScreenshotToMemoryUnencoded(render_tree_root,
+                                                          clip_rect, callback);
 }
 
 void BrowserModule::ProcessRenderTreeSubmissionQueue() {
@@ -1079,6 +1193,13 @@ void BrowserModule::OnDebugConsoleRenderTreeProduced(
   SubmitCurrentRenderTreeToRenderer();
 }
 
+void BrowserModule::OnNavigateTimedTrace(const std::string& time) {
+  double duration_in_seconds = 0;
+  base::StringToDouble(time, &duration_in_seconds);
+  navigate_timed_trace_duration_ =
+      base::TimeDelta::FromMilliseconds(static_cast<int64_t>(
+          duration_in_seconds * base::Time::kMillisecondsPerSecond));
+}
 #endif  // defined(ENABLE_DEBUGGER)
 
 void BrowserModule::OnOnScreenKeyboardInputEventProduced(
@@ -1345,7 +1466,7 @@ void BrowserModule::RemoveURLHandler(
   }
 }
 
-bool BrowserModule::TryURLHandlers(const GURL& url) {
+bool BrowserModule::NavigateTryURLHandlers(const GURL& url) {
   for (URLHandlerCollection::const_iterator iter = url_handlers_.begin();
        iter != url_handlers_.end(); ++iter) {
     if (iter->Run(url)) {
@@ -1377,6 +1498,20 @@ void BrowserModule::DestroySplashScreen(base::TimeDelta close_time) {
     SubmitCurrentRenderTreeToRenderer();
     splash_screen_.reset();
   }
+}
+
+void BrowserModule::DestroyScrollEngine() {
+  TRACE_EVENT0("cobalt::browser", "BrowserModule::DestroyScrollEngine()");
+  if (base::MessageLoop::current() != self_message_loop_) {
+    self_message_loop_->task_runner()->PostTask(
+        FROM_HERE, base::Bind(&BrowserModule::DestroyScrollEngine, weak_this_));
+    return;
+  }
+  if (scroll_engine_ &&
+      lifecycle_observers_.HasObserver(scroll_engine_.get())) {
+    lifecycle_observers_.RemoveObserver(scroll_engine_.get());
+  }
+  scroll_engine_.reset();
 }
 
 #if defined(ENABLE_WEBDRIVER)
@@ -1445,7 +1580,7 @@ void BrowserModule::SetProxy(const std::string& proxy_rules) {
   network_module_->SetProxy(proxy_rules);
 }
 
-void BrowserModule::Blur(SbTimeMonotonic timestamp) {
+void BrowserModule::Blur(int64_t timestamp) {
   TRACE_EVENT0("cobalt::browser", "BrowserModule::Blur()");
   DCHECK_EQ(base::MessageLoop::current(), self_message_loop_);
   DCHECK(application_state_ == base::kApplicationStateStarted);
@@ -1459,7 +1594,7 @@ void BrowserModule::Blur(SbTimeMonotonic timestamp) {
   }
 }
 
-void BrowserModule::Conceal(SbTimeMonotonic timestamp) {
+void BrowserModule::Conceal(int64_t timestamp) {
   TRACE_EVENT0("cobalt::browser", "BrowserModule::Conceal()");
   DCHECK_EQ(base::MessageLoop::current(), self_message_loop_);
   DCHECK(application_state_ == base::kApplicationStateBlurred);
@@ -1467,7 +1602,7 @@ void BrowserModule::Conceal(SbTimeMonotonic timestamp) {
   ConcealInternal(timestamp);
 }
 
-void BrowserModule::Freeze(SbTimeMonotonic timestamp) {
+void BrowserModule::Freeze(int64_t timestamp) {
   TRACE_EVENT0("cobalt::browser", "BrowserModule::Freeze()");
   DCHECK_EQ(base::MessageLoop::current(), self_message_loop_);
   DCHECK(application_state_ == base::kApplicationStateConcealed);
@@ -1475,7 +1610,7 @@ void BrowserModule::Freeze(SbTimeMonotonic timestamp) {
   FreezeInternal(timestamp);
 }
 
-void BrowserModule::Unfreeze(SbTimeMonotonic timestamp) {
+void BrowserModule::Unfreeze(int64_t timestamp) {
   TRACE_EVENT0("cobalt::browser", "BrowserModule::Unfreeze()");
   DCHECK_EQ(base::MessageLoop::current(), self_message_loop_);
   DCHECK(application_state_ == base::kApplicationStateFrozen);
@@ -1484,7 +1619,7 @@ void BrowserModule::Unfreeze(SbTimeMonotonic timestamp) {
   NavigatePendingURL();
 }
 
-void BrowserModule::Reveal(SbTimeMonotonic timestamp) {
+void BrowserModule::Reveal(int64_t timestamp) {
   TRACE_EVENT0("cobalt::browser", "BrowserModule::Reveal()");
   DCHECK_EQ(base::MessageLoop::current(), self_message_loop_);
   DCHECK(application_state_ == base::kApplicationStateConcealed);
@@ -1492,7 +1627,7 @@ void BrowserModule::Reveal(SbTimeMonotonic timestamp) {
   RevealInternal(timestamp);
 }
 
-void BrowserModule::Focus(SbTimeMonotonic timestamp) {
+void BrowserModule::Focus(int64_t timestamp) {
   TRACE_EVENT0("cobalt::browser", "BrowserModule::Focus()");
   DCHECK_EQ(base::MessageLoop::current(), self_message_loop_);
   DCHECK(application_state_ == base::kApplicationStateBlurred);
@@ -1563,9 +1698,10 @@ void BrowserModule::OnWebModuleRendererSubmissionRasterized() {
 
 #if defined(COBALT_CHECK_RENDER_TIMEOUT)
 void BrowserModule::OnPollForRenderTimeout(const GURL& url) {
-  SbTime last_render_timestamp = static_cast<SbTime>(SbAtomicAcquire_Load64(
+  int64_t last_render_timestamp = static_cast<int64_t>(SbAtomicAcquire_Load64(
       non_trivial_global_variables.Get().last_render_timestamp));
-  base::Time last_render = base::Time::FromSbTime(last_render_timestamp);
+  base::Time last_render = base::Time::FromDeltaSinceWindowsEpoch(
+      base::TimeDelta::FromMicroseconds(last_render_timestamp));
   bool timeout_expiration = base::Time::Now() - base::TimeDelta::FromSeconds(
                                                     kLastRenderTimeoutSeconds) >
                             last_render;
@@ -1587,7 +1723,7 @@ void BrowserModule::OnPollForRenderTimeout(const GURL& url) {
 #endif
     SbAtomicNoBarrier_Exchange64(
         non_trivial_global_variables.Get().last_render_timestamp,
-        static_cast<SbAtomic64>(kSbTimeMax));
+        static_cast<SbAtomic64>(kSbInt64Max));
     if (SbSystemGetRandomUInt64() <
         kRenderTimeoutErrorPercentage * (UINT64_MAX / 100)) {
       OnError(url, std::string("Rendering Timeout"));
@@ -1686,7 +1822,7 @@ void BrowserModule::InstantiateRendererModule() {
       system_window_.get(),
       RendererModuleWithCameraOptions(options_.renderer_module_options,
                                       input_device_manager_->camera_3d())));
-  screen_shot_writer_.reset(new ScreenShotWriter(renderer_module_->pipeline()));
+  screen_shot_writer_.reset();
 }
 
 void BrowserModule::DestroyRendererModule() {
@@ -1756,7 +1892,7 @@ void BrowserModule::UpdateScreenSize() {
   }
 }
 
-void BrowserModule::ConcealInternal(SbTimeMonotonic timestamp) {
+void BrowserModule::ConcealInternal(int64_t timestamp) {
   TRACE_EVENT0("cobalt::browser", "BrowserModule::ConcealInternal()");
   FOR_EACH_OBSERVER(LifecycleObserver, lifecycle_observers_,
                     Conceal(GetResourceProvider(), timestamp));
@@ -1784,7 +1920,7 @@ void BrowserModule::ConcealInternal(SbTimeMonotonic timestamp) {
   }
 }
 
-void BrowserModule::FreezeInternal(SbTimeMonotonic timestamp) {
+void BrowserModule::FreezeInternal(int64_t timestamp) {
   TRACE_EVENT0("cobalt::browser", "BrowserModule::FreezeInternal()");
   FreezeMediaModule();
   // First freeze all our web modules which implies that they will release
@@ -1797,7 +1933,7 @@ void BrowserModule::FreezeInternal(SbTimeMonotonic timestamp) {
   }
 }
 
-void BrowserModule::RevealInternal(SbTimeMonotonic timestamp) {
+void BrowserModule::RevealInternal(int64_t timestamp) {
   TRACE_EVENT0("cobalt::browser", "BrowserModule::RevealInternal()");
   DCHECK(!renderer_module_);
   if (!system_window_) {
@@ -1821,7 +1957,7 @@ void BrowserModule::RevealInternal(SbTimeMonotonic timestamp) {
   }
 }
 
-void BrowserModule::UnfreezeInternal(SbTimeMonotonic timestamp) {
+void BrowserModule::UnfreezeInternal(int64_t timestamp) {
   TRACE_EVENT0("cobalt::browser", "BrowserModule::UnfreezeInternal()");
   // Set the Stub resource provider to media module and to web module
   // at Concealed state.
@@ -2110,7 +2246,7 @@ scoped_refptr<script::Wrappable> BrowserModule::CreateH5vccCallback(
   return scoped_refptr<script::Wrappable>(h5vcc_object);
 }
 
-void BrowserModule::SetDeepLinkTimestamp(SbTimeMonotonic timestamp) {
+void BrowserModule::SetDeepLinkTimestamp(int64_t timestamp) {
   if (base::MessageLoop::current() != self_message_loop_) {
     self_message_loop_->task_runner()->PostTask(
         FROM_HERE, base::Bind(&BrowserModule::SetDeepLinkTimestamp,
@@ -2126,11 +2262,7 @@ void BrowserModule::ValidateCacheBackendSettings() {
   auto url_request_context = network_module_->url_request_context();
   auto http_cache = url_request_context->http_transaction_factory()->GetCache();
   if (!http_cache) return;
-  auto cache_backend = static_cast<disk_cache::CobaltBackendImpl*>(
-      http_cache->GetCurrentBackend());
-  if (cache_backend) {
-    cache_backend->ValidatePersistentSettings();
-  }
+  network_module_->url_request_context()->ValidateCachePersistentSettings();
 }
 
 }  // namespace browser

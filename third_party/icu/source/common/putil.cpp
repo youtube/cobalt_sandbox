@@ -43,8 +43,6 @@
 // compiler errors on some platforms.
 #if defined(STARBOARD)
 #include "starboard/client_porting/poem/assert_poem.h"
-#include "starboard/client_porting/poem/stdio_poem.h"
-#include "starboard/client_porting/poem/string_poem.h"
 #endif  // defined(STARBOARD)
 
 // Defines _XOPEN_SOURCE for access to POSIX functions.
@@ -88,22 +86,20 @@
 #include <math.h>
 
 /* Include standard headers. */
-#if !defined(STARBOARD)
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <locale.h>
 #include <float.h>
-#endif
 
 #ifndef U_COMMON_IMPLEMENTATION
 #error U_COMMON_IMPLEMENTATION not set - must be set for all ICU source files in common/ - see https://unicode-org.github.io/icu/userguide/howtouseicu
 #endif
 
+
 /* include system headers */
 #if (U_PLATFORM == U_STARBOARD)
 #   include "starboard/system.h"
-#   include "starboard/time.h"
 #   include "starboard/time_zone.h"
 #   define getenv(x) NULL
 #elif defined(__LB_XB1__)
@@ -1347,12 +1343,12 @@ u_setDataDirectory(const char *directory) {
 
     if (U_FILE_SEP_CHAR != U_FILE_ALT_SEP_CHAR) {
         {
-                char *p;
-                while((p = uprv_strchr(newDataDir, U_FILE_ALT_SEP_CHAR)) != NULL) {
-                    *p = U_FILE_SEP_CHAR;
-                }
+            char *p;
+            while((p = uprv_strchr(newDataDir, U_FILE_ALT_SEP_CHAR)) != NULL) {
+                *p = U_FILE_SEP_CHAR;
             }
         }
+    }
     }
 
     if (gDataDirectory && *gDataDirectory) {
@@ -1374,9 +1370,9 @@ uprv_pathIsAbsolute(const char *path)
   }
 
   if (U_FILE_SEP_CHAR != U_FILE_ALT_SEP_CHAR) {
-    if (*path == U_FILE_ALT_SEP_CHAR) {
-      return TRUE;
-    }
+  if(*path == U_FILE_ALT_SEP_CHAR) {
+    return TRUE;
+  }
   }
 
 #if U_PLATFORM_USES_ONLY_WIN32_API
@@ -1521,10 +1517,10 @@ static void setTimeZoneFilesDir(const char *path, UErrorCode &status) {
     gTimeZoneFilesDirectory->clear();
     gTimeZoneFilesDirectory->append(path, status);
     if (U_FILE_SEP_CHAR != U_FILE_ALT_SEP_CHAR) {
-        char *p = gTimeZoneFilesDirectory->data();
-        while ((p = uprv_strchr(p, U_FILE_ALT_SEP_CHAR)) != NULL) {
-            *p = U_FILE_SEP_CHAR;
-        }
+    char *p = gTimeZoneFilesDirectory->data();
+    while ((p = uprv_strchr(p, U_FILE_ALT_SEP_CHAR)) != NULL) {
+        *p = U_FILE_SEP_CHAR;
+    }
     }
 }
 

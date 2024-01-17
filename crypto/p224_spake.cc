@@ -9,10 +9,6 @@
 
 #include <algorithm>
 
-#include "starboard/types.h"
-
-#include "starboard/memory.h"
-
 #include "base/logging.h"
 #include "crypto/p224.h"
 #include "crypto/random.h"
@@ -23,6 +19,7 @@ namespace {
 // The following two points (M and N in the protocol) are verifiable random
 // points on the curve and can be generated with the following code:
 
+// #include <stdint.h>
 // #include <stdio.h>
 // #include <string.h>
 //

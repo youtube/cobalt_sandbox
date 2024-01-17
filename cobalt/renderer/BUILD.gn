@@ -25,7 +25,7 @@ source_set("renderer_headers_only") {
     "//base",
     "//cobalt/render_tree",
     "//cobalt/render_tree:animations",
-    "//starboard",
+    "//starboard:starboard_group",
   ]
 }
 
@@ -127,6 +127,7 @@ target(gtest_target_type, "renderer_test") {
     ":renderer",
     ":renderer_headers_only",
     "//base:i18n",
+    "//cobalt//browser:test_dependencies_on_browser",
     "//cobalt/base",
     "//cobalt/loader",
     "//cobalt/math",

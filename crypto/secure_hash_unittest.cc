@@ -4,12 +4,13 @@
 
 #include "crypto/secure_hash.h"
 
+#include <stddef.h>
+#include <stdint.h>
+
 #include <memory>
 #include <string>
 
 #include "crypto/sha2.h"
-#include "starboard/memory.h"
-#include "starboard/types.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
 TEST(SecureHashTest, TestUpdate) {
@@ -66,13 +67,12 @@ TEST(SecureHashTest, TestClone) {
   ctx2->Finish(output2, sizeof(output2));
 
   EXPECT_EQ(0, memcmp(output1, output2, crypto::kSHA256Length));
-  EXPECT_EQ(0, memcmp(output1, kExpectedHashOfInput1And2,
-                      crypto::kSHA256Length));
+  EXPECT_EQ(0,
+            memcmp(output1, kExpectedHashOfInput1And2, crypto::kSHA256Length));
 
   // Finish() ctx3, which should produce the hash of input1.
   ctx3->Finish(&output3, sizeof(output3));
-  EXPECT_EQ(0, memcmp(output3, kExpectedHashOfInput1,
-                      crypto::kSHA256Length));
+  EXPECT_EQ(0, memcmp(output3, kExpectedHashOfInput1, crypto::kSHA256Length));
 }
 
 TEST(SecureHashTest, TestLength) {

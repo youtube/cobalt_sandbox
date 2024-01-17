@@ -60,6 +60,7 @@
 #include "base/time/time.h"
 #include "cobalt/math/size.h"
 #include "cobalt/media/base/decode_target_provider.h"
+#include "cobalt/media/base/metrics_provider.h"
 #include "cobalt/media/base/pipeline.h"
 #include "cobalt/media/base/sbplayer_interface.h"
 #include "cobalt/media/player/web_media_player.h"
@@ -112,8 +113,8 @@ class WebMediaPlayerImpl : public WebMediaPlayer,
                      bool allow_batched_sample_write,
                      bool force_punch_out_by_default,
 #if SB_API_VERSION >= 15
-                     SbTime audio_write_duration_local,
-                     SbTime audio_write_duration_remote,
+                     int64_t audio_write_duration_local,
+                     int64_t audio_write_duration_remote,
 #endif  // SB_API_VERSION >= 15
                      ::media::MediaLog* const media_log);
   ~WebMediaPlayerImpl() override;
@@ -130,12 +131,12 @@ class WebMediaPlayerImpl : public WebMediaPlayer,
   // Playback controls.
   void Play() override;
   void Pause() override;
-  void Seek(float seconds) override;
+  void Seek(double seconds) override;
   void SetRate(float rate) override;
   void SetVolume(float volume) override;
   void SetVisible(bool visible) override;
   void UpdateBufferedTimeRanges(const AddRangeCB& add_range_cb) override;
-  float GetMaxTimeSeekable() const override;
+  double GetMaxTimeSeekable() const override;
 
   // Suspend/Resume
   void Suspend() override;
@@ -157,11 +158,11 @@ class WebMediaPlayerImpl : public WebMediaPlayer,
   // Getters of playback state.
   bool IsPaused() const override;
   bool IsSeeking() const override;
-  float GetDuration() const override;
+  double GetDuration() const override;
 #if SB_HAS(PLAYER_WITH_URL)
   base::Time GetStartDate() const override;
 #endif  // SB_HAS(PLAYER_WITH_URL)
-  float GetCurrentTime() const override;
+  double GetCurrentTime() const override;
   float GetPlaybackRate() const override;
 
   // Get rate of loading the resource.
@@ -175,7 +176,7 @@ class WebMediaPlayerImpl : public WebMediaPlayer,
 
   bool DidLoadingProgress() const override;
 
-  float MediaTimeForTimeValue(float timeValue) const override;
+  double MediaTimeForTimeValue(double timeValue) const override;
 
   PlayerStatistics GetStatistics() const override;
 
@@ -263,7 +264,7 @@ class WebMediaPlayerImpl : public WebMediaPlayer,
           seeking(false),
           playback_rate(0.0f),
           pending_seek(false),
-          pending_seek_seconds(0.0f),
+          pending_seek_seconds(0.0),
           starting(false),
           is_progressive(false),
           is_media_source(false) {}
@@ -287,7 +288,7 @@ class WebMediaPlayerImpl : public WebMediaPlayer,
     // Seek gets pending if another seek is in progress. Only last pending seek
     // will have effect.
     bool pending_seek;
-    float pending_seek_seconds;
+    double pending_seek_seconds;
 
     bool starting;
 
@@ -305,6 +306,8 @@ class WebMediaPlayerImpl : public WebMediaPlayer,
   scoped_refptr<WebMediaPlayerProxy> proxy_;
 
   ::media::MediaLog* const media_log_;
+
+  MediaMetricsProvider media_metrics_provider_;
 
   bool is_local_source_;
 

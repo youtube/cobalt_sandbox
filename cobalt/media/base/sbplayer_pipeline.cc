@@ -26,6 +26,7 @@
 #include "cobalt/base/startup_timer.h"
 #include "starboard/common/media.h"
 #include "starboard/common/string.h"
+#include "starboard/common/time.h"
 #include "starboard/configuration_constants.h"
 #include "third_party/chromium/media/base/bind_to_current_loop.h"
 #include "third_party/chromium/media/base/channel_layout.h"
@@ -90,13 +91,13 @@ bool HasRemoteAudioOutputs(
 // When playback rate is 2x, an 0.5 seconds of write duration effectively only
 // lasts for 0.25 seconds and causes audio underflow, and the function will
 // adjust it to 1 second in this case.
-SbTime AdjustWriteDurationForPlaybackRate(SbTime write_duration,
-                                          float playback_rate) {
+int64_t AdjustWriteDurationForPlaybackRate(int64_t write_duration,
+                                           float playback_rate) {
   if (playback_rate <= 1.0) {
     return write_duration;
   }
 
-  return static_cast<SbTime>(write_duration * playback_rate);
+  return static_cast<int64_t>(write_duration * playback_rate);
 }
 
 }  // namespace
@@ -109,9 +110,10 @@ SbPlayerPipeline::SbPlayerPipeline(
     bool allow_resume_after_suspend, bool allow_batched_sample_write,
     bool force_punch_out_by_default,
 #if SB_API_VERSION >= 15
-    SbTime audio_write_duration_local, SbTime audio_write_duration_remote,
+    int64_t audio_write_duration_local, int64_t audio_write_duration_remote,
 #endif  // SB_API_VERSION >= 15
-    MediaLog* media_log, DecodeTargetProvider* decode_target_provider)
+    MediaLog* media_log, MediaMetricsProvider* media_metrics_provider,
+    DecodeTargetProvider* decode_target_provider)
     : pipeline_identifier_(
           base::StringPrintf("%X", g_pipeline_identifier_counter++)),
       sbplayer_interface_(interface),
@@ -156,6 +158,7 @@ SbPlayerPipeline::SbPlayerPipeline(
       audio_write_duration_local_(audio_write_duration_local),
       audio_write_duration_remote_(audio_write_duration_remote),
 #endif  // SB_API_VERSION >= 15
+      media_metrics_provider_(media_metrics_provider),
       last_media_time_(base::StringPrintf("Media.Pipeline.%s.LastMediaTime",
                                           pipeline_identifier_.c_str()),
                        0, "Last media time reported by the underlying player."),
@@ -337,6 +340,8 @@ void SbPlayerPipeline::Stop(const base::Closure& stop_cb) {
   if (demuxer_) {
     stop_cb_ = stop_cb;
     demuxer_->Stop();
+    video_stream_ = nullptr;
+    audio_stream_ = nullptr;
     OnDemuxerStopped();
   } else {
     stop_cb.Run();
@@ -434,8 +439,8 @@ void SbPlayerPipeline::SetVolume(float volume) {
 }
 
 void SbPlayerPipeline::StoreMediaTime(TimeDelta media_time) {
-  last_media_time_ = media_time.ToSbTime();
-  last_time_media_time_retrieved_ = SbTimeGetNow();
+  last_media_time_ = media_time.InMicroseconds();
+  last_time_media_time_retrieved_ = starboard::CurrentPosixTime();
 }
 
 TimeDelta SbPlayerPipeline::GetMediaTime() {
@@ -470,11 +475,11 @@ TimeDelta SbPlayerPipeline::GetMediaTime() {
                           &statistics_.video_frames_dropped, &media_time);
 
   // Guarantee that we report monotonically increasing media time
-  if (media_time.ToSbTime() < last_media_time_) {
+  if (media_time.InMicroseconds() < last_media_time_) {
     if (retrograde_media_time_counter_ == 0) {
       DLOG(WARNING) << "Received retrograde media time, new:"
-                    << media_time.ToSbTime() << ", last: " << last_media_time_
-                    << ".";
+                    << media_time.InMicroseconds()
+                    << ", last: " << last_media_time_ << ".";
     }
     media_time = base::TimeDelta::FromMicroseconds(last_media_time_);
     retrograde_media_time_counter_++;
@@ -562,6 +567,13 @@ std::vector<std::string> SbPlayerPipeline::GetAudioConnectors() const {
   }
 
   std::vector<std::string> connectors;
+
+#if SB_HAS(PLAYER_WITH_URL)
+  // Url based player does not support audio connectors.
+  if (is_url_based_) {
+    return connectors;
+  }
+#endif  // SB_HAS(PLAYER_WITH_URL)
 
   auto configurations = player_bridge_->GetAudioConfigurations();
   for (auto&& configuration : configurations) {
@@ -999,12 +1011,17 @@ void SbPlayerPipeline::OnDemuxerStreamRead(
     return;
   }
 
+  if (stopped_) {
+    return;
+  }
+
+  DCHECK(player_bridge_);
+
   DemuxerStream* stream =
       type == DemuxerStream::AUDIO ? audio_stream_ : video_stream_;
   DCHECK(stream);
 
-  // In case if Stop() has been called.
-  if (!player_bridge_) {
+  if (!player_bridge_ || !stream) {
     return;
   }
 
@@ -1030,7 +1047,7 @@ void SbPlayerPipeline::OnDemuxerStreamRead(
     for (const auto& buffer : buffers) {
       playback_statistics_.OnAudioAU(buffer);
       if (!buffer->end_of_stream()) {
-        timestamp_of_last_written_audio_ = buffer->timestamp().ToSbTime();
+        timestamp_of_last_written_audio_ = buffer->timestamp().InMicroseconds();
       }
     }
   } else {
@@ -1068,7 +1085,7 @@ void SbPlayerPipeline::OnNeedData(DemuxerStream::Type type,
     }
 
     // If we haven't checked the media time recently, update it now.
-    if (SbTimeGetNow() - last_time_media_time_retrieved_ >
+    if (starboard::CurrentPosixTime() - last_time_media_time_retrieved_ >
         kMediaTimeCheckInterval) {
       GetMediaTime();
     }
@@ -1077,12 +1094,12 @@ void SbPlayerPipeline::OnNeedData(DemuxerStream::Type type,
     // after the player has received enough audio for preroll, taking into
     // account that our estimate of playback time might be behind by
     // |kMediaTimeCheckInterval|.
-    if (timestamp_of_last_written_audio_ - seek_time_.ToSbTime() >
+    if (timestamp_of_last_written_audio_ - seek_time_.InMicroseconds() >
         AdjustWriteDurationForPlaybackRate(audio_write_duration_for_preroll_,
                                            playback_rate_)) {
       // The estimated time ahead of playback may be negative if no audio has
       // been written.
-      SbTime time_ahead_of_playback =
+      int64_t time_ahead_of_playback =
           timestamp_of_last_written_audio_ - last_media_time_;
       auto adjusted_write_duration = AdjustWriteDurationForPlaybackRate(
           audio_write_duration_, playback_rate_);
@@ -1157,6 +1174,14 @@ void SbPlayerPipeline::OnPlayerStatus(SbPlayerState state) {
         playback_statistics_.OnPresenting(
             video_stream_->video_decoder_config());
       }
+
+#if SB_HAS(PLAYER_WITH_URL)
+      // Url based player does not support |audio_write_duration_for_preroll_|.
+      if (is_url_based_) {
+        break;
+      }
+#endif  // SB_HAS(PLAYER_WITH_URL)
+
 #if SB_API_VERSION >= 15
       audio_write_duration_for_preroll_ = audio_write_duration_ =
           HasRemoteAudioOutputs(player_bridge_->GetAudioConfigurations())
@@ -1229,10 +1254,12 @@ void SbPlayerPipeline::UpdateDecoderConfig(DemuxerStream* stream) {
 
   if (stream->type() == DemuxerStream::AUDIO) {
     const AudioDecoderConfig& decoder_config = stream->audio_decoder_config();
+    media_metrics_provider_->SetHasAudio(decoder_config.codec());
     player_bridge_->UpdateAudioConfig(decoder_config, stream->mime_type());
   } else {
     DCHECK_EQ(stream->type(), DemuxerStream::VIDEO);
     const VideoDecoderConfig& decoder_config = stream->video_decoder_config();
+    media_metrics_provider_->SetHasVideo(decoder_config.codec());
     base::AutoLock auto_lock(lock_);
     bool natural_size_changed =
         (decoder_config.natural_size().width() != natural_size_.width() ||
@@ -1307,7 +1334,7 @@ void SbPlayerPipeline::ResumeTask(PipelineWindow window,
   DCHECK(suspended_);
 
   if (!suspended_) {
-    last_resume_time_ = SbTimeGetMonotonicNow();
+    last_resume_time_ = starboard::CurrentMonotonicTime();
     done_event->Signal();
     return;
   }
@@ -1345,13 +1372,15 @@ void SbPlayerPipeline::ResumeTask(PipelineWindow window,
   }
 
   suspended_ = false;
-  last_resume_time_ = SbTimeGetMonotonicNow();
+  last_resume_time_ = starboard::CurrentMonotonicTime();
 
   done_event->Signal();
 }
 
 std::string SbPlayerPipeline::AppendStatisticsString(
     const std::string& message) const {
+  DCHECK(task_runner_->BelongsToCurrentThread());
+
   if (nullptr == video_stream_) {
     return message + ", playback statistics: n/a.";
   } else {
@@ -1363,8 +1392,8 @@ std::string SbPlayerPipeline::AppendStatisticsString(
 }
 
 std::string SbPlayerPipeline::GetTimeInformation() const {
-  auto round_time_in_seconds = [](const SbTime time) {
-    const int64_t seconds = time / kSbTimeSecond;
+  auto round_time_in_seconds = [](const int64_t time) {
+    const int64_t seconds = time / base::Time::kMicrosecondsPerSecond;
     if (seconds < 15) {
       return seconds / 5 * 5;
     }
@@ -1372,18 +1401,18 @@ std::string SbPlayerPipeline::GetTimeInformation() const {
       return seconds / 15 * 15;
     }
     if (seconds < 3600) {
-      return std::max(static_cast<SbTime>(60), seconds / 600 * 600);
+      return std::max(static_cast<int64_t>(60), seconds / 600 * 600);
     }
-    return std::max(static_cast<SbTime>(3600), seconds / 18000 * 18000);
+    return std::max(static_cast<int64_t>(3600), seconds / 18000 * 18000);
   };
   std::string time_since_start =
-      std::to_string(
-          round_time_in_seconds(base::StartupTimer::TimeElapsed().ToSbTime())) +
+      std::to_string(round_time_in_seconds(
+          base::StartupTimer::TimeElapsed().InMicroseconds())) +
       "s";
   std::string time_since_resume =
       last_resume_time_ != -1
-          ? std::to_string(round_time_in_seconds(SbTimeGetMonotonicNow() -
-                                                 last_resume_time_)) +
+          ? std::to_string(round_time_in_seconds(
+                starboard::CurrentMonotonicTime() - last_resume_time_)) +
                 "s"
           : "null";
   return "time since app start: " + time_since_start +
@@ -1393,7 +1422,7 @@ std::string SbPlayerPipeline::GetTimeInformation() const {
 void SbPlayerPipeline::RunSetDrmSystemReadyCB(
     DrmSystemReadyCB drm_system_ready_cb) {
   TRACE_EVENT0("cobalt::media", "SbPlayerPipeline::RunSetDrmSystemReadyCB");
-  set_drm_system_ready_cb_time_ = SbTimeGetMonotonicNow();
+  set_drm_system_ready_cb_time_ = starboard::CurrentMonotonicTime();
   set_drm_system_ready_cb_.Run(drm_system_ready_cb);
 }
 

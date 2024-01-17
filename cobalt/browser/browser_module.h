@@ -25,6 +25,7 @@
 #include "base/synchronization/lock.h"
 #include "base/synchronization/waitable_event.h"
 #include "base/threading/thread.h"
+#include "base/time/time.h"
 #include "base/timer/timer.h"
 #include "cobalt/base/accessibility_caption_settings_changed_event.h"
 #include "cobalt/base/application_state.h"
@@ -70,7 +71,6 @@
 #include "cobalt/web/web_settings.h"
 #include "cobalt/webdriver/session_driver.h"
 #include "starboard/configuration.h"
-#include "starboard/time.h"
 #include "starboard/window.h"
 #include "url/gurl.h"
 
@@ -139,6 +139,7 @@ class BrowserModule {
   // |pending_navigate_url_| to the specified url, which will trigger a
   // navigation when Cobalt resumes.
   void Navigate(const GURL& url_reference);
+
   // Reloads web module.
   void Reload();
 
@@ -150,6 +151,10 @@ class BrowserModule {
   void AddURLHandler(const URLHandler::URLHandlerCallback& callback);
   void RemoveURLHandler(const URLHandler::URLHandlerCallback& callback);
 
+  // Start the ScreenShotWriter if it's not already running.
+  void EnsureScreenShotWriter();
+
+#if defined(ENABLE_WEBDRIVER) || defined(ENABLE_DEBUGGER)
   // Request a screenshot to be written to the specified path. Callback will
   // be fired after the screenshot has been written to disk.
   void RequestScreenshotToFile(
@@ -163,6 +168,13 @@ class BrowserModule {
       loader::image::EncodedStaticImage::ImageFormat image_format,
       const base::Optional<math::Rect>& clip_rect,
       const ScreenShotWriter::ImageEncodeCompleteCallback& screenshot_ready);
+#endif  // defined(ENABLE_WEBDRIVER) || defined(ENABLE_DEBUGGER)
+
+  // Request a screenshot to memory without compressing the image.
+  void RequestScreenshotToMemoryUnencoded(
+      const scoped_refptr<render_tree::Node>& render_tree_root,
+      const base::Optional<math::Rect>& clip_rect,
+      const renderer::Pipeline::RasterizationCompleteCallback& callback);
 
 #if defined(ENABLE_WEBDRIVER)
   std::unique_ptr<webdriver::SessionDriver> CreateSessionDriver(
@@ -180,12 +192,12 @@ class BrowserModule {
   void SetProxy(const std::string& proxy_rules);
 
   // LifecycleObserver-similar interface.
-  void Blur(SbTimeMonotonic timestamp);
-  void Conceal(SbTimeMonotonic timestamp);
-  void Freeze(SbTimeMonotonic timestamp);
-  void Unfreeze(SbTimeMonotonic timestamp);
-  void Reveal(SbTimeMonotonic timestamp);
-  void Focus(SbTimeMonotonic timestamp);
+  void Blur(int64_t timestamp);
+  void Conceal(int64_t timestamp);
+  void Freeze(int64_t timestamp);
+  void Unfreeze(int64_t timestamp);
+  void Reveal(int64_t timestamp);
+  void Focus(int64_t timestamp);
 
   // Gets current application state.
   base::ApplicationState GetApplicationState();
@@ -229,7 +241,7 @@ class BrowserModule {
                           std::map<std::string, std::string>& map);
 
   // Pass the deeplink timestamp from Starboard.
-  void SetDeepLinkTimestamp(SbTimeMonotonic timestamp);
+  void SetDeepLinkTimestamp(int64_t timestamp);
 
  private:
 #if SB_HAS(CORE_DUMP_HANDLER_SUPPORT)
@@ -334,12 +346,33 @@ class BrowserModule {
   bool FilterKeyEventForHotkeys(base::Token type,
                                 const dom::KeyboardEventInit& event);
 
+  void NavigateResetErrorHandling();
+
+  bool NavigateHandleStateFrozen(const GURL& url);
+
+  void NavigateResetWebModule();
+
+  bool NavigateServiceWorkerSetups(
+      const GURL& url, base::WaitableEvent* service_worker_started_event);
+
+  void NavigateSetupSplashScreen(const GURL& url,
+                                 const cssom::ViewportSize viewport_size);
+
+  void NavigateSetupScrollEngine();
+
+  void NavigateCreateWebModule(
+      const GURL& url, bool can_start_service_worker,
+      base::WaitableEvent* service_worker_started_event,
+      const cssom::ViewportSize viewport_size);
+
   // Tries all registered URL handlers for a URL. Returns true if one of the
   // handlers handled the URL, false if otherwise.
-  bool TryURLHandlers(const GURL& url);
+  bool NavigateTryURLHandlers(const GURL& url);
 
   // Destroys the splash screen, if currently displayed.
   void DestroySplashScreen(base::TimeDelta close_time = base::TimeDelta());
+
+  void DestroyScrollEngine();
 
   // Called when web module has received window.close().
   void OnWindowClose(base::TimeDelta close_time);
@@ -363,6 +396,8 @@ class BrowserModule {
       const browser::WebModule::LayoutResults& layout_results);
   void OnDebugConsoleRenderTreeProduced(
       const browser::WebModule::LayoutResults& layout_results);
+
+  void OnNavigateTimedTrace(const std::string& time);
 #endif  // defined(ENABLE_DEBUGGER)
 
 #if defined(ENABLE_WEBDRIVER)
@@ -420,19 +455,19 @@ class BrowserModule {
 
   // Does all the steps for half of a Conceal that happen prior to
   // the app state update.
-  void ConcealInternal(SbTimeMonotonic timestamp);
+  void ConcealInternal(int64_t timestamp);
 
   // Does all the steps for half of a Freeze that happen prior to
   // the app state update.
-  void FreezeInternal(SbTimeMonotonic timestamp);
+  void FreezeInternal(int64_t timestamp);
 
   // Does all the steps for half of a Reveal that happen prior to
   // the app state update.
-  void RevealInternal(SbTimeMonotonic timestamp);
+  void RevealInternal(int64_t timestamp);
 
   // Does all the steps for half of a Unfreeze that happen prior to
   // the app state update.
-  void UnfreezeInternal(SbTimeMonotonic timestamp);
+  void UnfreezeInternal(int64_t timestamp);
 
   // Check debug console, splash screen and web module if they are
   // ready to freeze at Concealed state. If so, call SystemRequestFreeze
@@ -638,6 +673,12 @@ class BrowserModule {
 
   // Saves the previous debugger state to be restored in the new WebModule.
   std::unique_ptr<debug::backend::DebuggerState> debugger_state_;
+
+  // Amount of time to run a Timed Trace after Navigate
+  base::TimeDelta navigate_timed_trace_duration_;
+
+  debug::console::ConsoleCommandManager::CommandHandler
+      navigate_timed_trace_command_handler_;
 #endif  // defined(ENABLE_DEBUGGER)
 
   // The splash screen. The pointer wrapped here should be non-NULL iff

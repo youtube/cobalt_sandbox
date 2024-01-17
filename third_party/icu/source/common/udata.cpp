@@ -18,7 +18,6 @@
 
 #if defined(STARBOARD)
 #include "starboard/client_porting/poem/assert_poem.h"
-#include "starboard/client_porting/poem/string_poem.h"
 #endif  // defined(STARBOARD)
 
 #include "unicode/utypes.h"  /* U_PLATFORM etc. */
@@ -76,13 +75,9 @@ might have to #include some other header
 /* If you are excruciatingly bored turn this on .. */
 /* #define UDATA_DEBUG 1 */
 
-#if defined(STARBOARD)
-#include "starboard/client_porting/poem/stdio_poem.h"
-#else
 #if defined(UDATA_DEBUG)
 #   include <stdio.h>
 #endif
-#endif  // defined(STARBOARD)
 
 U_NAMESPACE_USE
 
@@ -1197,20 +1192,20 @@ doOpenChoice(const char *path, const char *type, const char *name,
     /* Windows:  try "foo\bar" and "foo/bar" */
     /* remap from alternate path char to the main one */
     if (U_FILE_SEP_CHAR != U_FILE_ALT_SEP_CHAR) {
-        CharString altSepPath;
-        if(path) {
-            if(uprv_strchr(path,U_FILE_ALT_SEP_CHAR) != NULL) {
-                altSepPath.append(path, *pErrorCode);
-                char *p;
-                while ((p = uprv_strchr(altSepPath.data(), U_FILE_ALT_SEP_CHAR)) != NULL) {
-                    *p = U_FILE_SEP_CHAR;
-                }
-#if defined (UDATA_DEBUG)
-                fprintf(stderr, "Changed path from [%s] to [%s]\n", path, altSepPath.s);
-#endif
-              path = altSepPath.data();
+    CharString altSepPath;
+    if(path) {
+        if(uprv_strchr(path,U_FILE_ALT_SEP_CHAR) != NULL) {
+            altSepPath.append(path, *pErrorCode);
+            char *p;
+            while ((p = uprv_strchr(altSepPath.data(), U_FILE_ALT_SEP_CHAR)) != NULL) {
+                *p = U_FILE_SEP_CHAR;
             }
+#if defined (UDATA_DEBUG)
+            fprintf(stderr, "Changed path from [%s] to [%s]\n", path, altSepPath.s);
+#endif
+            path = altSepPath.data();
         }
+    }
     }
 
     CharString tocEntryName; /* entry name in tree format. ex:  'icudt28b/coll/ar.res' */

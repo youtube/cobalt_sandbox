@@ -138,7 +138,7 @@ class MediaCodecBridge {
                                                    int size) = 0;
     virtual void OnMediaCodecOutputFormatChanged() = 0;
     // This is only called on video decoder when tunnel mode is enabled.
-    virtual void OnMediaCodecFrameRendered(SbTime frame_timestamp) = 0;
+    virtual void OnMediaCodecFrameRendered(int64_t frame_timestamp) = 0;
 
    protected:
     ~Handler() {}
@@ -173,7 +173,6 @@ class MediaCodecBridge {
       bool require_software_codec,
       int tunnel_mode_audio_session_id,
       bool force_big_endian_hdr_metadata,
-      bool force_improved_support_check,
       std::string* error_message);
 
   ~MediaCodecBridge();
@@ -212,7 +211,7 @@ class MediaCodecBridge {
                                          int64_t presentation_time_us,
                                          int size);
   void OnMediaCodecOutputFormatChanged();
-  void OnMediaCodecFrameRendered(SbTime frame_timestamp);
+  void OnMediaCodecFrameRendered(int64_t frame_timestamp);
 
  private:
   // |MediaCodecBridge|s must only be created through its factory methods.

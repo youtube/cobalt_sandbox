@@ -28,10 +28,6 @@
 namespace cobalt {
 namespace worker {
 
-namespace {
-const char kDedicatedWorkerName[] = "DedicatedWorker";
-}  // namespace
-
 DedicatedWorker::DedicatedWorker(script::EnvironmentSettings* settings,
                                  const std::string& scriptURL,
                                  script::ExceptionState* exception_state)
@@ -89,7 +85,8 @@ void DedicatedWorker::Initialize(script::ExceptionState* exception_state) {
   // 6. Let worker be a new Worker object.
   // 7. Let outside port be a new MessagePort in outside settings's Realm.
   // 8. Associate the outside port with worker.
-  outside_port_ = new web::MessagePort(this);
+  outside_port_ = new web::MessagePort();
+  outside_port_->EntangleWithEventTarget(this);
   // 9. Run this step in parallel:
   //    1. Run a worker given worker, worker URL, outside settings, outside
   //    port, and options.
@@ -111,7 +108,7 @@ void DedicatedWorker::Initialize(script::ExceptionState* exception_state) {
     options.construction_location.file_path =
         environment_settings()->creation_url().spec();
   }
-  worker_.reset(new Worker(kDedicatedWorkerName, options));
+  worker_.reset(new Worker(WorkerConsts::kDedicatedWorkerName, options));
   // 10. Return worker.
 }
 

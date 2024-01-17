@@ -54,15 +54,12 @@
  * copied and put under another distribution licence
  * [including the GNU Public Licence.] */
 
-#include <openssl/opensslconf.h>
-#if !defined(OPENSSL_SYS_STARBOARD)
+#include <openssl/base64.h>
+
 #include <assert.h>
 #include <limits.h>
 #include <string.h>
-#endif  // !defined(OPENSSL_SYS_STARBOARD)
 
-#include <openssl/mem.h>
-#include <openssl/base64.h>
 #include <openssl/type_check.h>
 
 #include "../internal.h"
@@ -101,8 +98,8 @@ static uint8_t conv_bin2ascii(uint8_t a) {
   return ret;
 }
 
-OPENSSL_COMPILE_ASSERT(sizeof(((EVP_ENCODE_CTX *)(NULL))->data) % 3 == 0,
-                       data_length_must_be_multiple_of_base64_chunk_size);
+OPENSSL_STATIC_ASSERT(sizeof(((EVP_ENCODE_CTX *)(NULL))->data) % 3 == 0,
+                      "data length must be a multiple of base64 chunk size");
 
 int EVP_EncodedLength(size_t *out_len, size_t len) {
   if (len + 2 < len) {

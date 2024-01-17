@@ -19,11 +19,8 @@
 
 #if !UCONFIG_NO_FORMATTING
 
-#include <math.h>
 #include <cstdlib>
-#if defined(STARBOARD)
-#include "starboard/client_porting/poem/string_poem.h"
-#endif  // defined(STARBOARD)
+#include <math.h>
 #include "unicode/fmtable.h"
 #include "unicode/ustring.h"
 #include "unicode/measure.h"

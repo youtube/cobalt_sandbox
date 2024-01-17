@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-_is_python2 = exec_script("//build/util/is_python2.py", [], "json")
+_is_python2 = exec_script("//starboard/build/util/is_python2.py", [], "json")
 assert(!_is_python2, "`python` must resolve to Python 3 when building with GN.")
 
 declare_args() {
@@ -36,6 +36,10 @@ declare_args() {
 
   build_with_separate_cobalt_toolchain = false
 }
+
+_is_on_pythonpath = exec_script("//starboard/build/is_on_path.py", [], "json")
+assert(!is_starboard || _is_on_pythonpath,
+       "The current repo is not first on the PYTHONPATH.")
 
 assert(!(is_starboard && is_native_target_build),
        "Targets should be built for Starboard or natively, but not both")
@@ -99,7 +103,7 @@ if (target_cpu == "x86" || target_cpu == "arm") {
 host_toolchain = "//starboard/build/toolchain/$host_os:$_host_toolchain_cpu"
 
 if (build_with_separate_cobalt_toolchain) {
-  cobalt_toolchain = "//starboard/build/toolchain:clang"
+  cobalt_toolchain = "//$starboard_path/toolchain:cobalt"
   starboard_toolchain = "//$starboard_path/toolchain:starboard"
 } else {
   cobalt_toolchain = "//$starboard_path/toolchain:target"
@@ -253,7 +257,8 @@ template("install_content") {
     }
   }
 
-  if (defined(invoker.install_content) && invoker.install_content) {
+  if (defined(invoker.install_content) && invoker.install_content &&
+      current_toolchain == default_toolchain) {
     # We're using a custom script to copy the files here because rebase_path
     # can't be used with {{}} expansions in the outputs of a copy target.
     action("${target_name}_install_content") {
@@ -293,6 +298,13 @@ template("install_content") {
         "--files_list",
         rebase_path(files_list, root_build_dir),
       ]
+    }
+  } else if (current_toolchain == starboard_toolchain &&
+             build_with_separate_cobalt_toolchain) {
+    outer_target_name = target_name
+    group("${target_name}_install_content") {
+      forward_variables_from(invoker, [ "testonly" ])
+      deps = [ ":${outer_target_name}_install_content($default_toolchain)" ]
     }
   }
 }
@@ -349,17 +361,18 @@ template("evergreen_loader") {
       configs += [ "//starboard/build/config:no_pedantic_warnings" ]
     }
 
-    sources = [ "//starboard/elf_loader/sandbox.cc" ]
+    sources = [ "//starboard/elf_loader/elf_loader_sandbox.cc" ]
     configs += [ "//starboard/elf_loader:elf_loader_config" ]
 
     deps = [
       ":copy_loader_app_lib${original_target_name}",
       "//cobalt/content/fonts:copy_font_data",
-      "//starboard",
+      "//starboard:starboard_group",
       "//starboard/elf_loader:constants",
       "//starboard/elf_loader:elf_loader",
       "//starboard/elf_loader:evergreen_info",
       "//starboard/elf_loader:sabi_string",
+      "//starboard/loader_app:copy_crashpad_handler_named_as_so",
       "//starboard/loader_app:copy_loader_app_content",
     ]
 
@@ -373,14 +386,14 @@ template("evergreen_loader") {
         "copy_loader_app_lib${original_target_name}_bundle_content") {
       forward_variables_from(invoker, [ "testonly" ])
 
-      bundle_name = target_name
+      bundle_name = "${original_target_name}_evergreen_loader"
       bundle_deps = shared_data_deps
     }
   }
   copy("copy_loader_app_lib${original_target_name}") {
     install_content = true
     if (target_cpu == "arm" && arm_float_abi == "softfp") {
-      sources = [ "$root_out_dir/../evergreen-$target_cpu-${arm_float_abi}_$build_type/lib${original_target_name}.so" ]
+      sources = [ "$root_out_dir/../evergreen-$target_cpu-${arm_float_abi}_$build_type/install/lib/lib${original_target_name}.so" ]
     } else if (target_cpu == "arm64") {
       sources = [ "$root_out_dir/../evergreen-$target_cpu_$build_type/install/lib/libcobalt.so" ]
     }
@@ -404,7 +417,15 @@ template("evergreen_loader") {
 }
 
 template("executable") {
-  not_needed(invoker, [ "build_loader" ])
+  not_needed(invoker,
+             [
+               "build_loader",
+
+               # TODO(b/305091479): Investigate when this variable is unneeded
+               # so that we can refactor this to avoid the not_needed
+               # declaration.
+               "shared_library_target_name",
+             ])
 
   target_with_platform_configs(target_name) {
     target_type = "executable"
@@ -434,7 +455,16 @@ template("executable") {
     }
 
     install_target(target_name + "_install") {
-      forward_variables_from(invoker, [ "testonly" ])
+      # "shared_library_target_name" is used when this executable install_target
+      # is invoked from within a shared_library target that is building a loader
+      # In this case, it allows the install_target to determine the inputs/deps
+      # for the corresponding shared_library install_target.
+      forward_variables_from(invoker,
+                             [
+                               "testonly",
+                               "shared_library_target_name",
+                             ])
+
       installable_target_name = executable_target_name
       installable_target_dep = ":$executable_target_name"
       not_needed([ "installable_target_dep" ])
@@ -483,14 +513,29 @@ template("shared_library") {
       forward_variables_from(invoker, [ "testonly" ])
       deps = [
         ":${actual_target_name}_loader($starboard_toolchain)",
-        ":${actual_target_name}_loader_copy($starboard_toolchain)",
+        ":${actual_target_name}_loader_install($starboard_toolchain)",
       ]
+      if (!is_host_win) {
+        deps += [ ":${actual_target_name}_loader_copy($starboard_toolchain)" ]
+      }
     }
     if (current_toolchain == starboard_toolchain) {
       executable("${actual_target_name}_loader") {
         output_name = "${actual_target_name}_loader"
-        forward_variables_from(invoker, [ "testonly" ])
+        forward_variables_from(invoker,
+                               [
+                                 "testonly",
+                                 "data_deps",
+                               ])
         sources = [ "//$starboard_path/starboard_loader.cc" ]
+
+        # Forwards the "shared_library_target_name" to allow this loader install
+        # target to depend the corresponding shared_library install_target outputs.
+        shared_library_target_name = actual_target_name
+
+        if (defined(extra_platform_loader_sources)) {
+          sources += extra_platform_loader_sources
+        }
 
         if (use_asan) {
           sources += [ "//$starboard_path/sanitizer_options.cc" ]
@@ -506,18 +551,25 @@ template("shared_library") {
         ldflags = [
           "-Wl,-rpath=" + rebase_path("$root_build_dir/starboard"),
           "-Wl,-rpath=" + rebase_path("$root_build_dir"),
+          "-Wl,-rpath=\$ORIGIN/../lib",
+          "-Wl,-rpath=\$ORIGIN",
         ]
 
         deps = [
           ":$original_target_name($cobalt_toolchain)",
-          "//starboard:starboard_platform_group($starboard_toolchain)",
+          "//starboard($starboard_toolchain)",
         ]
+        if (!separate_install_targets_for_bundling) {
+          deps += [ "//starboard:starboard_install($starboard_toolchain)" ]
+        }
       }
-      copy("${actual_target_name}_loader_copy") {
-        forward_variables_from(invoker, [ "testonly" ])
-        sources = [ "$root_out_dir/${actual_target_name}_loader" ]
-        outputs = [ "$root_build_dir/${actual_target_name}_loader" ]
-        deps = [ ":${actual_target_name}_loader" ]
+      if (!is_host_win) {
+        copy("${actual_target_name}_loader_copy") {
+          forward_variables_from(invoker, [ "testonly" ])
+          sources = [ "$root_out_dir/${actual_target_name}_loader" ]
+          outputs = [ "$root_build_dir/${actual_target_name}_loader" ]
+          deps = [ ":${actual_target_name}_loader" ]
+        }
       }
     }
   }

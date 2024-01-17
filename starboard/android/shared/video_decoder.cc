@@ -29,6 +29,8 @@
 #include "starboard/android/shared/media_common.h"
 #include "starboard/android/shared/video_render_algorithm.h"
 #include "starboard/android/shared/window_internal.h"
+#include "starboard/common/media.h"
+#include "starboard/common/player.h"
 #include "starboard/common/string.h"
 #include "starboard/configuration.h"
 #include "starboard/decode_target.h"
@@ -220,8 +222,8 @@ class VideoFrameImpl : public VideoFrame {
   const VideoFrameReleaseCallback release_callback_;
 };
 
-const SbTime kInitialPrerollTimeout = 250 * kSbTimeMillisecond;
-const SbTime kNeedMoreInputCheckIntervalInTunnelMode = 50 * kSbTimeMillisecond;
+const int64_t kInitialPrerollTimeout = 250'000;                  // 250ms
+const int64_t kNeedMoreInputCheckIntervalInTunnelMode = 50'000;  // 50ms
 
 const int kInitialPrerollFrameCount = 8;
 const int kNonInitialPrerollFrameCount = 1;
@@ -299,7 +301,7 @@ class VideoRenderAlgorithmTunneled : public VideoRenderAlgorithmBase {
   void Render(MediaTimeProvider* media_time_provider,
               std::list<scoped_refptr<VideoFrame>>* frames,
               VideoRendererSink::DrawFrameCB draw_frame_cb) override {}
-  void Seek(SbTime seek_to_time) override {
+  void Seek(int64_t seek_to_time) override {
     frame_tracker_->Seek(seek_to_time);
   }
   int GetDroppedFrames() override {
@@ -354,7 +356,6 @@ VideoDecoder::VideoDecoder(const VideoStreamInfo& video_stream_info,
                            bool force_secure_pipeline_under_tunnel_mode,
                            bool force_reset_surface_under_tunnel_mode,
                            bool force_big_endian_hdr_metadata,
-                           bool force_improved_support_check,
                            std::string* error_message)
     : video_codec_(video_stream_info.codec),
       drm_system_(static_cast<DrmSystem*>(drm_system)),
@@ -369,7 +370,6 @@ VideoDecoder::VideoDecoder(const VideoStreamInfo& video_stream_info,
       surface_condition_variable_(surface_destroy_mutex_),
       require_software_codec_(IsSoftwareDecodeRequired(max_video_capabilities)),
       force_big_endian_hdr_metadata_(force_big_endian_hdr_metadata),
-      force_improved_support_check_(force_improved_support_check),
       number_of_preroll_frames_(kInitialPrerollFrameCount) {
   SB_DCHECK(error_message);
 
@@ -397,6 +397,13 @@ VideoDecoder::VideoDecoder(const VideoStreamInfo& video_stream_info,
       TeardownCodec();
     }
   }
+
+  SB_LOG(INFO) << "Created VideoDecoder for codec "
+               << GetMediaVideoCodecName(video_codec_) << ", with output mode "
+               << GetPlayerOutputModeName(output_mode_)
+               << ", max video capabilities \"" << max_video_capabilities_
+               << "\", and tunnel mode audio session id "
+               << tunnel_mode_audio_session_id_;
 }
 
 VideoDecoder::~VideoDecoder() {
@@ -458,9 +465,9 @@ size_t VideoDecoder::GetPrerollFrameCount() const {
   return number_of_preroll_frames_;
 }
 
-SbTime VideoDecoder::GetPrerollTimeout() const {
+int64_t VideoDecoder::GetPrerollTimeout() const {
   if (input_buffer_written_ > 0 && first_buffer_timestamp_ != 0) {
-    return kSbTimeMax;
+    return kSbInt64Max;
   }
   return kInitialPrerollTimeout;
 }
@@ -616,20 +623,20 @@ bool VideoDecoder::InitializeCodec(const VideoStreamInfo& video_stream_info,
     if (pending_input_buffers_.size() == 1) {
       video_fps_ = 30;
     } else {
-      SbTime first_timestamp = pending_input_buffers_[0]->timestamp();
-      SbTime second_timestamp = pending_input_buffers_[1]->timestamp();
+      int64_t first_timestamp = pending_input_buffers_[0]->timestamp();
+      int64_t second_timestamp = pending_input_buffers_[1]->timestamp();
       if (pending_input_buffers_.size() > 2) {
         second_timestamp =
             std::min(second_timestamp, pending_input_buffers_[2]->timestamp());
       }
-      SbTime frame_duration = second_timestamp - first_timestamp;
+      int64_t frame_duration = second_timestamp - first_timestamp;
       if (frame_duration > 0) {
         // To avoid problems caused by deviation of fps calculation, we use the
         // nearest multiple of 5 to check codec capability. So, the fps like 61,
         // 62 will be capped to 60, and 24 will be increased to 25.
         const double kFpsMinDifference = 5;
         video_fps_ =
-            std::round(kSbTimeSecond / (second_timestamp - first_timestamp) /
+            std::round(1'000'000LL / (second_timestamp - first_timestamp) /
                        kFpsMinDifference) *
             kFpsMinDifference;
       } else {
@@ -704,7 +711,7 @@ bool VideoDecoder::InitializeCodec(const VideoStreamInfo& video_stream_info,
       color_metadata_ ? &*color_metadata_ : nullptr, require_software_codec_,
       std::bind(&VideoDecoder::OnTunnelModeFrameRendered, this, _1),
       tunnel_mode_audio_session_id_, force_big_endian_hdr_metadata_,
-      force_improved_support_check_, error_message));
+      error_message));
   if (media_decoder_->is_valid()) {
     if (error_cb_) {
       media_decoder_->Initialize(
@@ -807,7 +814,7 @@ void VideoDecoder::WriteInputBuffersInternal(
   }
 
   if (tunnel_mode_audio_session_id_ != -1) {
-    SbTime max_timestamp = input_buffers[0]->timestamp();
+    int64_t max_timestamp = input_buffers[0]->timestamp();
     for (const auto& input_buffer : input_buffers) {
       video_frame_tracker_->OnInputBuffer(input_buffer->timestamp());
       max_timestamp = std::max(max_timestamp, input_buffer->timestamp());
@@ -1139,7 +1146,7 @@ void VideoDecoder::OnNewTextureAvailable() {
   has_new_texture_available_.store(true);
 }
 
-void VideoDecoder::OnTunnelModeFrameRendered(SbTime frame_timestamp) {
+void VideoDecoder::OnTunnelModeFrameRendered(int64_t frame_timestamp) {
   SB_DCHECK(tunnel_mode_audio_session_id_ != -1);
 
   tunnel_mode_frame_rendered_.store(true);
@@ -1195,7 +1202,7 @@ void VideoDecoder::OnSurfaceDestroyed() {
     // Wait until codec is stopped.
     ScopedLock lock(surface_destroy_mutex_);
     Schedule(std::bind(&VideoDecoder::OnSurfaceDestroyed, this));
-    surface_condition_variable_.WaitTimed(kSbTimeSecond);
+    surface_condition_variable_.WaitTimed(1'000'000);
     return;
   }
   // When this function is called, the decoder no longer owns the surface.

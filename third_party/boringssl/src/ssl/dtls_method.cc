@@ -59,7 +59,6 @@
 #include <assert.h>
 #include <string.h>
 
-#include <openssl/buf.h>
 #include <openssl/err.h>
 
 #include "../crypto/internal.h"
@@ -121,7 +120,6 @@ static const SSL_PROTOCOL_METHOD kDTLSProtocolMethod = {
     dtls1_finish_message,
     dtls1_add_message,
     dtls1_add_change_cipher_spec,
-    dtls1_add_alert,
     dtls1_flush_flight,
     dtls1_on_handshake_complete,
     dtls1_set_read_state,

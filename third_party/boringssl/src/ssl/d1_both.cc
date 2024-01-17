@@ -117,7 +117,6 @@
 #include <limits.h>
 #include <string.h>
 
-#include <openssl/buf.h>
 #include <openssl/err.h>
 #include <openssl/evp.h>
 #include <openssl/mem.h>
@@ -127,7 +126,7 @@
 #include "internal.h"
 
 
-namespace bssl {
+BSSL_NAMESPACE_BEGIN
 
 // TODO(davidben): 28 comes from the size of IP + UDP header. Is this reasonable
 // for these values? Notably, why is kMinMTU a function of the transport
@@ -405,7 +404,7 @@ ssl_open_record_t dtls1_open_handshake(SSL *ssl, size_t *out_consumed,
   return ssl_open_record_success;
 }
 
-bool dtls1_get_message(SSL *ssl, SSLMessage *out) {
+bool dtls1_get_message(const SSL *ssl, SSLMessage *out) {
   if (!dtls1_is_current_message_complete(ssl)) {
     return false;
   }
@@ -599,15 +598,6 @@ bool dtls1_add_message(SSL *ssl, Array<uint8_t> data) {
 
 bool dtls1_add_change_cipher_spec(SSL *ssl) {
   return add_outgoing(ssl, true /* ChangeCipherSpec */, Array<uint8_t>());
-}
-
-bool dtls1_add_alert(SSL *ssl, uint8_t level, uint8_t desc) {
-  // The |add_alert| path is only used for warning alerts for now, which DTLS
-  // never sends. This will be implemented later once closure alerts are
-  // converted.
-  assert(false);
-  OPENSSL_PUT_ERROR(SSL, ERR_R_INTERNAL_ERROR);
-  return false;
 }
 
 // dtls1_update_mtu updates the current MTU from the BIO, ensuring it is above
@@ -808,14 +798,14 @@ static int send_flight(SSL *ssl) {
       // Retry this packet the next time around.
       ssl->d1->outgoing_written = old_written;
       ssl->d1->outgoing_offset = old_offset;
-      ssl->s3->rwstate = SSL_WRITING;
+      ssl->s3->rwstate = SSL_ERROR_WANT_WRITE;
       ret = bio_ret;
       goto err;
     }
   }
 
   if (BIO_flush(ssl->wbio.get()) <= 0) {
-    ssl->s3->rwstate = SSL_WRITING;
+    ssl->s3->rwstate = SSL_ERROR_WANT_WRITE;
     goto err;
   }
 
@@ -848,4 +838,4 @@ unsigned int dtls1_min_mtu(void) {
   return kMinMTU;
 }
 
-}  // namespace bssl
+BSSL_NAMESPACE_END

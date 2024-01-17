@@ -1,32 +1,68 @@
 # Starboard Version Changelog
 
-This document records all changes made to the Starboard interface, up to the
-current version, but not including the experimental version.  This file will
-be updated each time a new Starboard version is released.  Each section in
-this file describes the changes made to the Starboard interface since the
-version previous to it.
+This document records all changes made to the Starboard interface.
+This file will be updated each time a new Starboard version is released.
+Each section in this file describes the changes made to the Starboard interface
+since the version previous to it.
 
 **NOTE: Starboard versions 9 and below are no longer supported.**
 
-## Experimental Version
-
-A description of all changes currently in the experimental Starboard version
-can be found in the comments of the "Experimental Feature Defines" section of
-[configuration.h](configuration.h).
-
 ## Version 16
+
+### Convert SbUiNavGetInterface Starboard API into an extension
+The `SbUiNavGetInterface` API is deprecated and replaced with a Starboard
+extension named `SbUiNavInterface`.
+
+### Decrecated SbTime APIs and migrated to POSIX time APIs
+The time APIs `SbTimeGetNow`, `SbTimeGetMonotonicNow`,
+`SbTimeIsTimeThreadNowSupported` and `SbTimeGetMonotonicThreadNow` are
+deprecated and the standard APIs `gettimeofday` from `<sys/time.h>` and
+`clock_gettime` from `<time.h>` should be used instead.
+
+### Deprecated SbStringFormat APIs and migrated to POSIX memory APIs
+The StringFormat management APIs `SbStringFormat`, `SbStringFormatF`,
+`SbStringFormatWide`, `SbStringFormatUnsifeF` are deprecated and the
+standard APIs `vsnprintf`, `vfnprintf`, `vswprintf`, `snprintf`
+from `<stdlib.h>` should be used instead.
+
+### Deprecated SbMemoryMap APIs and migrated to POSIX mmap
+The memory mapping APIs `SbMemoryMap`, `SbMemoryUnmap`, `SbMemoryProtect` and
+`SbMemoryFlush` are deprecated and the standard APIs `mmap`, `munmap`,
+`mprotect`, `msync` from `<sys/mman.h>` should be used instead.
+
+### Deprecated SbMemory allocation APIs and migrated to POSIX memory APIs
+The memory management APIs `SbMemoryAllocate`, `SbMemoryReallocate`,
+`SbMemoryCalloc`, `SbMemoryAllocateAligned`, `SbMemoryDeallocate`,
+`SbMemoryDeallocateAligned` `SbStringDuplicate` are deprecated and the
+standard APIs `malloc`, `realloc`, `calloc`, `posix_memalign`, `free`
+from `<stdlib.h>` and `strdup` from `<string.h>` should be used instead.
+
+### Deprecated SbMediaGetBufferAlignment
+The `SbMediaGetBufferAlignment` API was deprecated.
 
 ### Removed SbUser from SbStorageOpenRecord and SbStorageDeleteRecord
 The `SbStorageOpenRecord` and `SbStorageDeleteRecord` APIs defined in
 `starboard/storage.h` no longer have a parameter for `SbUser` as the APIs are
 user-agnostic.
 
-### Removed SbUserGetSignedIn
-The API is no longer used and has been deprecated.
+### Removed SbUserGetCurrent, SbUserGetSignedIn, SbUserGetProperty, SbUserGetPropertySize, and kSbUserMaxSignedIn
+The APIs defined in `starboard/user.h` are no longer used and have been
+deprecated.
 
 ### Removed SbByteSwapS16, SbByteSwapS32, SbByteSwapS64, SbByteSwapU16, SbByteSwapU32, and SbByteSwapU64
 The APIs defined in `starboard/byte_swap.h` are no longer used and have been
 deprecated.
+
+### Removed SbImageDecode and SbImageIsDecodeSupported
+The APIs defined in `starboard/image.h` are no longer used and have been
+deprecated.
+
+### Add a new enum `kIamfConfigObus` to `SbPlayerSampleSideDataType` in `starboard/player.h`
+This value allows IAMF samples to be written to Starboard along with IAMF
+Config OBUs as side data.
+
+### Deprecated SbStringScan and SbStringScanF
+The APIs defined in `starboard/string.h` are deprecated and the standard API `vsscanf` and `sscanf` are used instead.
 
 ## Version 15
 

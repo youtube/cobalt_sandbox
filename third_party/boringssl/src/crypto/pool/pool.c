@@ -12,15 +12,11 @@
  * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
 
+#include <openssl/pool.h>
 
-
-#include <openssl/opensslconf.h>
-#if !defined(OPENSSL_SYS_STARBOARD)
 #include <assert.h>
 #include <string.h>
-#endif  // !defined(OPENSSL_SYS_STARBOARD)
-#include <openssl/pool.h>
-#include <openssl/buf.h>
+
 #include <openssl/bytestring.h>
 #include <openssl/mem.h>
 #include <openssl/thread.h>
@@ -28,6 +24,8 @@
 #include "../internal.h"
 #include "internal.h"
 
+
+DEFINE_LHASH_OF(CRYPTO_BUFFER)
 
 static uint32_t CRYPTO_BUFFER_hash(const CRYPTO_BUFFER *buf) {
   return OPENSSL_hash32(buf->data, buf->len);
@@ -100,7 +98,7 @@ CRYPTO_BUFFER *CRYPTO_BUFFER_new(const uint8_t *data, size_t len,
   }
   OPENSSL_memset(buf, 0, sizeof(CRYPTO_BUFFER));
 
-  buf->data = BUF_memdup(data, len);
+  buf->data = OPENSSL_memdup(data, len);
   if (len != 0 && buf->data == NULL) {
     OPENSSL_free(buf);
     return NULL;

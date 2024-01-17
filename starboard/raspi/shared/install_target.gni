@@ -12,8 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import("//starboard/build/config/starboard_target_type.gni")
 import("//starboard/raspi/shared/toolchain/raspi_shared_toolchain.gni")
+
 template("install_target") {
+  not_needed(invoker, [ "shared_library_target_name" ])
+
   installable_target_name = invoker.installable_target_name
 
   # TODO(b/218889313): raspi relies on install_content being adjacent to the
@@ -21,36 +25,50 @@ template("install_target") {
   # subdir and install content subdir.
   if (invoker.type == "executable") {
     # install_subdir = "bin"
-    install_subdir = ""
+    install_subdir = installable_target_name
     source_name = installable_target_name
   } else if (invoker.type == "shared_library") {
     install_subdir = "lib"
-    source_name = "lib${installable_target_name}.so"
+    if (installable_target_name == "starboard") {
+      source_name =
+          "lib${installable_target_name}.${starboard_shared_library_extension}"
+    } else {
+      source_name = "lib${installable_target_name}.so"
+    }
   } else {
     assert(false, "You can only install an executable or shared library.")
   }
+  output = "$sb_install_output_dir/$install_subdir/$source_name"
+  input = "$root_out_dir/$source_name"
 
-  action(target_name) {
-    forward_variables_from(invoker, [ "testonly" ])
+  if (is_gold || cobalt_fastbuild) {
+    action(target_name) {
+      forward_variables_from(invoker, [ "testonly" ])
 
-    script = "//starboard/build/run_bash.py"
+      script = "//starboard/build/run_bash.py"
 
-    strip_executable = gcc_toolchain_strip
-    inputs = [
-      strip_executable,
-      "$root_out_dir/$source_name",
-    ]
+      strip_executable = gcc_toolchain_strip
+      inputs = [ input ]
 
-    deps = invoker.deps
-    deps += [ ":$installable_target_name" ]
+      deps = invoker.deps
+      deps += [ invoker.installable_target_dep ]
 
-    outputs = [ "$sb_install_output_dir/$install_subdir/$installable_target_name/$source_name" ]
+      outputs = [ output ]
 
-    args = [
-      rebase_path(strip_executable, root_build_dir),
-      "-o",
-      rebase_path(outputs[0], root_out_dir),
-      rebase_path("$root_out_dir/$source_name", root_out_dir),
-    ]
+      args = [
+        rebase_path(strip_executable, root_build_dir),
+        "-o",
+        rebase_path(outputs[0], root_build_dir),
+        rebase_path(inputs[0], root_build_dir),
+      ]
+    }
+  } else {
+    copy(target_name) {
+      forward_variables_from(invoker, [ "testonly" ])
+      sources = [ input ]
+      outputs = [ output ]
+      deps = invoker.deps
+      deps += [ invoker.installable_target_dep ]
+    }
   }
 }

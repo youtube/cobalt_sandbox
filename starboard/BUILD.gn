@@ -51,8 +51,13 @@ group("gn_all") {
   if (sb_filter_based_player) {
     deps += [
       "//starboard/shared/starboard/player/filter/testing:player_filter_tests($starboard_toolchain)",
-      "//starboard/shared/starboard/player/filter/tools:audio_dmp_player($starboard_toolchain)",
+      "//starboard/shared/starboard/player/filter/testing:player_filter_tests_install($starboard_toolchain)",
     ]
+
+    # TODO: b/296715826 - Fix build error for windows modular builds.
+    if (!(sb_is_modular && is_host_win)) {
+      deps += [ "//starboard/shared/starboard/player/filter/tools:audio_dmp_player($starboard_toolchain)" ]
+    }
   }
 
   if (sb_enable_benchmark) {
@@ -67,23 +72,31 @@ group("gn_all") {
     deps += [ "//third_party/lz4_lib:lz4" ]
 
     if (sb_is_evergreen_compatible) {
-      deps += [ "//third_party/crashpad/client" ]
-      data_deps = [
-        "//starboard/loader_app",
-        "//third_party/crashpad/handler:crashpad_handler(//$starboard_path/toolchain:native_target)",
+      deps += [
+        "//starboard/elf_loader:elf_loader_test_install($starboard_toolchain)",
+        "//starboard/loader_app:slot_management_test_install($starboard_toolchain)",
       ]
+
+      if (current_toolchain == starboard_toolchain) {
+        deps += [ "//third_party/crashpad/client" ]
+        data_deps = [
+          "//starboard/loader_app($starboard_toolchain)",
+          "//third_party/crashpad/handler:crashpad_handler(//$starboard_path/toolchain:native_target)",
+          "//third_party/crashpad/tools:crashpad_database_util(//$starboard_path/toolchain:native_target)",
+        ]
+      }
     }
   }
 }
 
 group("default") {
   deps = [
-    ":starboard",
+    ":starboard_group",
     "//starboard/tools:build_app_launcher_zip",
   ]
 }
 
-group("starboard") {
+group("starboard_group") {
   public_deps = [
     ":starboard_headers_only",
     "//starboard/client_porting/cwrappers",
@@ -100,21 +113,22 @@ group("starboard") {
     if (sb_is_evergreen) {
       public_deps += [ "//starboard/elf_loader:sabi_string" ]
     } else {
-      data_deps = [ ":starboard_platform_group($starboard_toolchain)" ]
+      data_deps = [ ":starboard($starboard_toolchain)" ]
     }
 
     # TODO: b/295702296 Fix libunwind for modular builds.
     if (sb_is_evergreen || is_host_win) {
-      public_deps += [ "//third_party/llvm-project/libunwind:unwind_evergreen" ]
+      public_deps += [ "//third_party/llvm-project/libunwind:unwind" ]
     }
   } else {
     public_deps += [
-      ":starboard_platform_group($starboard_toolchain)",
+      ":starboard_static($starboard_toolchain)",
       "//starboard/common",
     ]
 
     if (!sb_is_modular || sb_is_evergreen) {
-      if (sb_is_evergreen_compatible) {
+      if (sb_is_evergreen_compatible &&
+          current_toolchain == starboard_toolchain) {
         public_deps += [ "//third_party/crashpad/wrapper" ]
       } else {
         public_deps += [ "//third_party/crashpad/wrapper:wrapper_stub" ]
@@ -181,7 +195,11 @@ source_set("starboard_headers_only") {
 
 if (current_toolchain == starboard_toolchain) {
   # This is the default 'starboard_platform_target'; use default properties
-  starboard_platform_target("starboard_platform_group") {
+  starboard_platform_target("starboard") {
+  }
+
+  starboard_platform_target("starboard_static") {
+    target_type = "group"
   }
 
   if (platform_tests_path == "") {
@@ -201,7 +219,7 @@ if (current_toolchain == starboard_toolchain) {
   }
 
   group("starboard_with_main") {
-    public_deps = [ ":starboard" ]
+    public_deps = [ ":starboard_group" ]
     if (sb_is_modular && !sb_is_evergreen) {
       public_deps += [ "//$starboard_path:starboard_platform_with_main" ]
     }

@@ -16,12 +16,10 @@
 // (https://github.com/floodyberry/poly1305-donna) and released as public
 // domain.
 
-#include <openssl/opensslconf.h>
-#if !defined(OPENSSL_SYS_STARBOARD)
-#include <string.h>
-#endif  // !defined(OPENSSL_SYS_STARBOARD)
-#include <openssl/mem.h>
 #include <openssl/poly1305.h>
+
+#include <string.h>
+
 #include <openssl/cpu.h>
 
 #include "internal.h"

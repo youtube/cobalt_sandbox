@@ -30,6 +30,7 @@ static_library("ffmpeg_dynamic_load") {
     "ffmpeg_dynamic_load_dispatch_impl.cc",
     "ffmpeg_dynamic_load_video_decoder_impl.cc",
   ]
+
   public_deps = [
     ":ffmpeg.57.107.100",
     ":ffmpeg.58.35.100",
@@ -105,7 +106,7 @@ target(gtest_target_type, "ffmpeg_demuxer_test") {
   deps = [
     ":ffmpeg_dispatch_sources",
     "//cobalt/test:run_all_unittests",
-    "//starboard",
+    "//starboard:starboard_group",
     "//starboard/common",
     "//testing/gmock",
     "//testing/gtest",

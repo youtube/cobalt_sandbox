@@ -1,4 +1,3 @@
-/* crypto/bio/bss_file.c */
 /* Copyright (C) 1995-1998 Eric Young (eay@cryptsoft.com)
  * All rights reserved.
  *
@@ -53,35 +52,26 @@
  * The licence and distribution terms for any publically available version or
  * derivative of this code cannot be changed.  i.e. this code cannot simply be
  * copied and put under another distribution licence
- * [including the GNU Public Licence.]
- */
-
-/*-
- * 03-Dec-1997  rdenny@dc3.com  Fix bug preventing use of stdin/stdout
- *              with binary data (e.g. asn1parse -inform DER < xxx) under
- *              Windows
- */
-
-#ifndef HEADER_BSS_FILE_C
-#define HEADER_BSS_FILE_C
+ * [including the GNU Public Licence.] */
 
 #if defined(__linux) || defined(__sun) || defined(__hpux)
-/*
- * Following definition aliases fopen to fopen64 on above mentioned
- * platforms. This makes it possible to open and sequentially access files
- * larger than 2GB from 32-bit application. It does not allow to traverse
- * them beyond 2GB with fseek/ftell, but on the other hand *no* 32-bit
- * platform permits that, not with fseek/ftell. Not to mention that breaking
- * 2GB limit for seeking would require surgery to *our* API. But sequential
- * access suffices for practical cases when you can run into large files,
- * such as fingerprinting, so we can let API alone. For reference, the list
- * of 32-bit platforms which allow for sequential access of large files
- * without extra "magic" comprise *BSD, Darwin, IRIX...
- */
+// Following definition aliases fopen to fopen64 on above mentioned
+// platforms. This makes it possible to open and sequentially access
+// files larger than 2GB from 32-bit application. It does not allow to
+// traverse them beyond 2GB with fseek/ftell, but on the other hand *no*
+// 32-bit platform permits that, not with fseek/ftell. Not to mention
+// that breaking 2GB limit for seeking would require surgery to *our*
+// API. But sequential access suffices for practical cases when you
+// can run into large files, such as fingerprinting, so we can let API
+// alone. For reference, the list of 32-bit platforms which allow for
+// sequential access of large files without extra "magic" comprise *BSD,
+// Darwin, IRIX...
 #ifndef _FILE_OFFSET_BITS
 #define _FILE_OFFSET_BITS 64
 #endif
 #endif
+
+#include <openssl/bio.h>
 
 #if !defined(MS_CALLBACK)
 #define MS_CALLBACK
@@ -91,17 +81,16 @@
 #define BIO_FLAGS_UPLINK 0
 #endif
 
-#include <string.h>
-
-#include <openssl/opensslconf.h>
 #if !defined(OPENSSL_SYS_STARBOARD)
 #include <errno.h>
 #include <stdio.h>
 #endif  // !defined(OPENSSL_SYS_STARBOARD)
-#include <openssl/base.h>
+#include <string.h>
 
-#include <openssl/bio.h>
 #include <openssl/err.h>
+#include <openssl/mem.h>
+
+#include "../internal.h"
 
 #if defined(OPENSSL_SYS_NETWARE) && defined(NETWARE_CLIB)
 #include <nwfileio.h>
@@ -233,30 +222,32 @@ BIO *BIO_new_file(const char *filename, const char *mode) {
     return (NULL);
 #endif  // NATIVE_TARGET_BUILD
   }
-  if ((ret = BIO_new(BIO_s_file())) == NULL) {
+
+  ret = BIO_new_fp(file, BIO_CLOSE);
+  if (ret == NULL) {
     fclose(file);
-    return (NULL);
+    return NULL;
   }
 
   BIO_clear_flags(ret, BIO_FLAGS_UPLINK); /* we did fopen -> we disengage
                                            * UPLINK */
 
-  BIO_set_fp(ret, file, BIO_CLOSE);
 #endif  // defined(OPENSSL_SYS_STARBOARD)
-  return (ret);
+  return ret;
 }
 
 #if !defined(OPENSSL_NO_FP_API)
 BIO *BIO_new_fp(FILE *stream, int close_flag) {
-  BIO *ret;
+  BIO *ret = BIO_new(BIO_s_file());
 
-  if ((ret = BIO_new(BIO_s_file())) == NULL)
-    return (NULL);
+  if (ret == NULL) {
+    return NULL;
+  }
 
   BIO_set_flags(ret, BIO_FLAGS_UPLINK); /* redundant, left for
                                          * documentation puposes */
   BIO_set_fp(ret, stream, close_flag);
-  return (ret);
+  return ret;
 }
 #endif  // !defined(OPENSSL_NO_FP_API)
 
@@ -296,18 +287,17 @@ static int MS_CALLBACK file_free(BIO *a) {
     }
     a->init = 0;
   }
-  return (1);
+
+  return 1;
 }
 
 static int MS_CALLBACK file_read(BIO *b, char *out, int outl) {
   int ret = 0;
-
   if (b->init && (out != NULL)) {
 #if defined(OPENSSL_SYS_STARBOARD)
     ret = SbFileRead((SbFile)b->ptr, out, outl);
     if (ret < 0) {
       OPENSSL_PUT_SYSTEM_ERROR();
-
       OPENSSL_PUT_ERROR(BIO, ERR_R_SYS_LIB);
     }
 #else   // defined(OPENSSL_SYS_STARBOARD)
@@ -336,7 +326,9 @@ static int MS_CALLBACK file_read(BIO *b, char *out, int outl) {
     }
 #endif  // defined(OPENSSL_SYS_STARBOARD)
   }
-  return (ret);
+
+  // fread reads at most |outl| bytes, so |ret| fits in an int.
+  return (int)ret;
 }
 
 static int MS_CALLBACK file_write(BIO *b, const char *in, int inl) {
@@ -363,7 +355,7 @@ static int MS_CALLBACK file_write(BIO *b, const char *in, int inl) {
        */
 #endif  // defined(OPENSSL_SYS_STARBOARD)
   }
-  return (ret);
+  return ret;
 }
 
 static long MS_CALLBACK file_ctrl(BIO *b, int cmd, long num, void *ptr) {
@@ -485,17 +477,18 @@ static long MS_CALLBACK file_ctrl(BIO *b, int cmd, long num, void *ptr) {
       file_free(b);
       b->shutdown = (int)num & BIO_CLOSE;
       if (num & BIO_FP_APPEND) {
-        if (num & BIO_FP_READ)
-          BUF_strlcpy(p, "a+", sizeof p);
-        else
-          BUF_strlcpy(p, "a", sizeof p);
-      } else if ((num & BIO_FP_READ) && (num & BIO_FP_WRITE))
-        BUF_strlcpy(p, "r+", sizeof p);
-      else if (num & BIO_FP_WRITE)
-        BUF_strlcpy(p, "w", sizeof p);
-      else if (num & BIO_FP_READ)
-        BUF_strlcpy(p, "r", sizeof p);
-      else {
+        if (num & BIO_FP_READ) {
+          OPENSSL_strlcpy(p, "a+", sizeof(p));
+        } else {
+          OPENSSL_strlcpy(p, "a", sizeof(p));
+        }
+      } else if ((num & BIO_FP_READ) && (num & BIO_FP_WRITE)) {
+        OPENSSL_strlcpy(p, "r+", sizeof(p));
+      } else if (num & BIO_FP_WRITE) {
+        OPENSSL_strlcpy(p, "w", sizeof(p));
+      } else if (num & BIO_FP_READ) {
+        OPENSSL_strlcpy(p, "r", sizeof(p));
+      } else {
         OPENSSL_PUT_ERROR(BIO, BIO_R_BAD_FOPEN_MODE);
         ret = 0;
         break;
@@ -587,7 +580,6 @@ static long MS_CALLBACK file_ctrl(BIO *b, int cmd, long num, void *ptr) {
     case BIO_CTRL_DUP:
       ret = 1;
       break;
-
     case BIO_CTRL_WPENDING:
     case BIO_CTRL_PENDING:
     case BIO_CTRL_PUSH:
@@ -596,7 +588,7 @@ static long MS_CALLBACK file_ctrl(BIO *b, int cmd, long num, void *ptr) {
       ret = 0;
       break;
   }
-  return (ret);
+  return ret;
 }
 
 static int MS_CALLBACK file_gets(BIO *bp, char *buf, int size) {
@@ -646,7 +638,7 @@ static int MS_CALLBACK file_gets(BIO *bp, char *buf, int size) {
   if (buf[0] != '\0')
     ret = strlen(buf);
 err:
-  return (ret);
+  return ret;
 }
 
 static int MS_CALLBACK file_puts(BIO *bp, const char *str) {
@@ -688,6 +680,5 @@ int BIO_rw_filename(BIO *bio, const char *filename) {
   return BIO_ctrl(bio, BIO_C_SET_FILENAME,
                   BIO_CLOSE | BIO_FP_READ | BIO_FP_WRITE, (char *)filename);
 }
-#endif  // NATIVE_TARGET_BUILD
 
-#endif /* HEADER_BSS_FILE_C */
+#endif  // NATIVE_TARGET_BUILD

@@ -133,8 +133,7 @@ class CobaltConfiguration(application_configuration.ApplicationConfiguration):
         'media_capture_test',
         'media_session_test',
         'media_stream_test',
-        # TODO(b/292030213): Crashes on evergreen
-        # 'media_test',
+        'media_test',
         'memory_store_test',
         'metrics_test',
         'net_unittests',
@@ -143,6 +142,7 @@ class CobaltConfiguration(application_configuration.ApplicationConfiguration):
         'persistent_settings_test',
         'png_utils_test',
         'poem_unittests',
+        'js_profiler_test',
         'renderer_test',
         'render_tree_test',
         'scroll_engine_tests',
@@ -157,4 +157,9 @@ class CobaltConfiguration(application_configuration.ApplicationConfiguration):
         'worker_test',
         'xhr_test',
         'zip_unittests',
+    ]
+
+  def GetTestBlackBoxTargets(self):
+    return [
+        'blackbox',
     ]

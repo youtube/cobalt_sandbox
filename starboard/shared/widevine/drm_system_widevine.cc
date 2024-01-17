@@ -22,6 +22,7 @@
 #include "starboard/common/log.h"
 #include "starboard/common/mutex.h"
 #include "starboard/common/string.h"
+#include "starboard/common/time.h"
 #include "starboard/configuration_constants.h"
 #include "starboard/memory.h"
 #include "starboard/once.h"
@@ -29,7 +30,6 @@
 #include "starboard/shared/starboard/media/mime_type.h"
 #include "starboard/shared/widevine/widevine_storage.h"
 #include "starboard/shared/widevine/widevine_timer.h"
-#include "starboard/time.h"
 #include "third_party/internal/ce_cdm/core/include/log.h"  // for wvcdm::InitLogging();
 #include "third_party/internal/ce_cdm/core/include/string_conversions.h"
 
@@ -47,14 +47,14 @@ const char kWidevineStorageFileName[] = "wvcdm.dat";
 // Key usage may be blocked due to incomplete HDCP authentication which could
 // take up to 5 seconds. For such a case it is good to give a try few times to
 // get HDCP authentication complete. We set a timeout of 6 seconds for retries.
-const SbTimeMonotonic kUnblockKeyRetryTimeout = kSbTimeSecond * 6;
+const int64_t kUnblockKeyRetryTimeoutUsec = 6'000'000;
 
 DECLARE_INSTANCE_COUNTER(DrmSystemWidevine);
 
 class WidevineClock : public wv3cdm::IClock {
  public:
   int64_t now() override {
-    return SbTimeToPosix(SbTimeGetNow()) / kSbTimeMillisecond;
+    return CurrentPosixTime() / 1000;  // in milliseconds
   }
 };
 
@@ -157,9 +157,10 @@ SbDrmStatus CdmStatusToSbDrmStatus(const wv3cdm::Status status) {
 SB_ONCE_INITIALIZE_FUNCTION(Mutex, GetInitializationMutex);
 
 void EnsureWidevineCdmIsInitialized(const std::string& company_name,
-                                    const std::string& model_name) {
+                                    const std::string& model_name,
+                                    WidevineStorage* storage) {
+  SB_DCHECK(storage) << "|storage| is NULL.";
   static WidevineClock s_clock;
-  static WidevineStorage s_storage(GetWidevineStoragePath());
   static WidevineTimer s_timer;
   static bool s_initialized = false;
 
@@ -190,7 +191,7 @@ void EnsureWidevineCdmIsInitialized(const std::string& company_name,
   log_level = wv3cdm::kSilent;
 #endif  // COBALT_BUILD_TYPE_GOLD
   wv3cdm::Status status =
-      wv3cdm::initialize(wv3cdm::kNoSecureOutput, client_info, &s_storage,
+      wv3cdm::initialize(wv3cdm::kNoSecureOutput, client_info, storage,
                          &s_clock, &s_timer, log_level);
   SB_DCHECK(status == wv3cdm::kSuccess);
   s_initialized = true;
@@ -235,9 +236,10 @@ DrmSystemWidevine::DrmSystemWidevine(
   }
 #endif  // !defined(COBALT_BUILD_TYPE_GOLD)
 
-  EnsureWidevineCdmIsInitialized(company_name, model_name);
-  const bool kEnablePrivacyMode = true;
-  cdm_.reset(wv3cdm::create(this, NULL, kEnablePrivacyMode));
+  static WidevineStorage s_storage(GetWidevineStoragePath());
+  EnsureWidevineCdmIsInitialized(company_name, model_name, &s_storage);
+  const bool kEnablePrivacyMode = false;
+  cdm_.reset(wv3cdm::create(this, &s_storage, kEnablePrivacyMode));
   SB_DCHECK(cdm_);
 
   // Get cert scope and pass to widevine.
@@ -497,11 +499,11 @@ SbDrmSystemPrivate::DecryptStatus DrmSystemWidevine::Decrypt(
           {
             ScopedLock lock(unblock_key_retry_mutex_);
             if (!unblock_key_retry_start_time_) {
-              unblock_key_retry_start_time_ = SbTimeGetMonotonicNow();
+              unblock_key_retry_start_time_ = CurrentMonotonicTime();
             }
           }
-          if (SbTimeGetMonotonicNow() - unblock_key_retry_start_time_.value() <
-              kUnblockKeyRetryTimeout) {
+          if (CurrentMonotonicTime() - unblock_key_retry_start_time_.value() <
+              kUnblockKeyRetryTimeoutUsec) {
             return kRetry;
           }
         }
@@ -631,8 +633,8 @@ void DrmSystemWidevine::onMessage(const std::string& wvcdm_session_id,
   }
 }
 
-void DrmSystemWidevine::onKeyStatusesChange(
-    const std::string& wvcdm_session_id) {
+void DrmSystemWidevine::onKeyStatusesChange(const std::string& wvcdm_session_id,
+                                            bool has_new_usable_key) {
   wv3cdm::KeyStatusMap key_statuses;
   wv3cdm::Status status = cdm_->getKeyStatuses(wvcdm_session_id, &key_statuses);
 

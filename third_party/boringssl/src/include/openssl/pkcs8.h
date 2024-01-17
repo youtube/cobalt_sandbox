@@ -168,12 +168,18 @@ OPENSSL_EXPORT int i2d_PKCS12_fp(FILE *fp, const PKCS12 *p12);
 
 // PKCS12_parse calls |PKCS12_get_key_and_certs| on the ASN.1 data stored in
 // |p12|. The |out_pkey| and |out_cert| arguments must not be NULL and, on
-// successful exit, the private key and first certificate will be stored in
+// successful exit, the private key and matching certificate will be stored in
 // them. The |out_ca_certs| argument may be NULL but, if not, then any extra
 // certificates will be appended to |*out_ca_certs|. If |*out_ca_certs| is NULL
 // then it will be set to a freshly allocated stack containing the extra certs.
 //
+// Note if |p12| does not contain a private key, both |*out_pkey| and
+// |*out_cert| will be set to NULL and all certificates will be returned via
+// |*out_ca_certs|.
+//
 // It returns one on success and zero on error.
+//
+// Use |PKCS12_get_key_and_certs| instead.
 OPENSSL_EXPORT int PKCS12_parse(const PKCS12 *p12, const char *password,
                                 EVP_PKEY **out_pkey, X509 **out_cert,
                                 STACK_OF(X509) **out_ca_certs);
@@ -215,12 +221,12 @@ OPENSSL_EXPORT void PKCS12_free(PKCS12 *p12);
 
 extern "C++" {
 
-namespace bssl {
+BSSL_NAMESPACE_BEGIN
 
 BORINGSSL_MAKE_DELETER(PKCS12, PKCS12_free)
 BORINGSSL_MAKE_DELETER(PKCS8_PRIV_KEY_INFO, PKCS8_PRIV_KEY_INFO_free)
 
-}  // namespace bssl
+BSSL_NAMESPACE_END
 
 }  // extern C++
 

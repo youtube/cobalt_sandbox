@@ -29,6 +29,7 @@
 #include "starboard/common/media.h"
 #include "starboard/common/player.h"
 #include "starboard/common/string.h"
+#include "starboard/common/time.h"
 #include "starboard/configuration.h"
 #include "starboard/memory.h"
 #include "starboard/once.h"
@@ -39,12 +40,13 @@ namespace media {
 
 namespace {
 
+using starboard::FormatString;
 using starboard::GetPlayerOutputModeName;
 
 class StatisticsWrapper {
  public:
   static StatisticsWrapper* GetInstance();
-  base::Statistics<SbTime, int, 1024> startup_latency{
+  base::Statistics<int64_t, int, 1024> startup_latency{
       "Media.PlaybackStartupLatency"};
 };
 
@@ -104,8 +106,10 @@ void SetDiscardPadding(
     CobaltExtensionEnhancedAudioMediaAudioSampleInfo* sample_info) {
   DCHECK(sample_info);
 
-  sample_info->discarded_duration_from_front = discard_padding.first.ToSbTime();
-  sample_info->discarded_duration_from_back = discard_padding.second.ToSbTime();
+  sample_info->discarded_duration_from_front =
+      discard_padding.first.InMicroseconds();
+  sample_info->discarded_duration_from_back =
+      discard_padding.second.InMicroseconds();
 }
 
 void SetDiscardPadding(
@@ -114,8 +118,10 @@ void SetDiscardPadding(
   DCHECK(sample_info);
 
 #if SB_API_VERSION >= 15
-  sample_info->discarded_duration_from_front = discard_padding.first.ToSbTime();
-  sample_info->discarded_duration_from_back = discard_padding.second.ToSbTime();
+  sample_info->discarded_duration_from_front =
+      discard_padding.first.InMicroseconds();
+  sample_info->discarded_duration_from_back =
+      discard_padding.second.InMicroseconds();
 #endif  // SB_API_VERSION >= 15}
 }
 
@@ -692,7 +698,7 @@ void SbPlayerBridge::CreateUrlPlayer(const std::string& url) {
     FormatSupportQueryMetrics::PrintAndResetMetrics();
   }
 
-  player_creation_time_ = SbTimeGetMonotonicNow();
+  player_creation_time_ = starboard::CurrentMonotonicTime();
 
   cval_stats_->StartTimer(MediaTiming::SbPlayerCreate, pipeline_identifier_);
   player_ = sbplayer_interface_->CreateUrlPlayer(
@@ -707,9 +713,9 @@ void SbPlayerBridge::CreateUrlPlayer(const std::string& url) {
     // a method of querying that texture.
     decode_target_provider_->SetGetCurrentSbDecodeTargetFunction(base::Bind(
         &SbPlayerBridge::GetCurrentSbDecodeTarget, base::Unretained(this)));
-    SB_LOG(INFO) << "Playing in decode-to-texture mode.";
+    LOG(INFO) << "Playing in decode-to-texture mode.";
   } else {
-    SB_LOG(INFO) << "Playing in punch-out mode.";
+    LOG(INFO) << "Playing in punch-out mode.";
   }
 
   decode_target_provider_->SetOutputMode(
@@ -730,11 +736,19 @@ void SbPlayerBridge::CreatePlayer() {
 
   is_creating_player_ = true;
 
+  if (output_mode_ == kSbPlayerOutputModeInvalid) {
+    PlayerErrorCB(kSbPlayerInvalid, this, kSbPlayerErrorDecode,
+                  "Invalid output mode returned by "
+                  "SbPlayerBridge::ComputeSbPlayerOutputMode()");
+    is_creating_player_ = false;
+    return;
+  }
+
   if (max_video_capabilities_.empty()) {
     FormatSupportQueryMetrics::PrintAndResetMetrics();
   }
 
-  player_creation_time_ = SbTimeGetMonotonicNow();
+  player_creation_time_ = starboard::CurrentMonotonicTime();
 
   SbPlayerCreationParam creation_param = {};
   creation_param.drm_system = drm_system_;
@@ -777,9 +791,9 @@ void SbPlayerBridge::CreatePlayer() {
     // a method of querying that texture.
     decode_target_provider_->SetGetCurrentSbDecodeTargetFunction(base::Bind(
         &SbPlayerBridge::GetCurrentSbDecodeTarget, base::Unretained(this)));
-    SB_LOG(INFO) << "Playing in decode-to-texture mode.";
+    LOG(INFO) << "Playing in decode-to-texture mode.";
   } else {
-    SB_LOG(INFO) << "Playing in punch-out mode.";
+    LOG(INFO) << "Playing in punch-out mode.";
   }
 
   decode_target_provider_->SetOutputMode(
@@ -879,10 +893,10 @@ void SbPlayerBridge::WriteBuffersInternal(
     }
 
     if (sample_type == kSbMediaTypeAudio && first_audio_sample_time_ == 0) {
-      first_audio_sample_time_ = SbTimeGetMonotonicNow();
+      first_audio_sample_time_ = starboard::CurrentMonotonicTime();
     } else if (sample_type == kSbMediaTypeVideo &&
                first_video_sample_time_ == 0) {
-      first_video_sample_time_ = SbTimeGetMonotonicNow();
+      first_video_sample_time_ = starboard::CurrentMonotonicTime();
     }
 
     gathered_sbplayer_sample_infos_drm_info.push_back(SbDrmSampleInfo());
@@ -1090,7 +1104,7 @@ void SbPlayerBridge::OnPlayerStatus(SbPlayer player, SbPlayerState state,
       ++ticket_;
     }
     if (sb_player_state_initialized_time_ == 0) {
-      sb_player_state_initialized_time_ = SbTimeGetMonotonicNow();
+      sb_player_state_initialized_time_ = starboard::CurrentMonotonicTime();
     }
     sbplayer_interface_->Seek(player_, preroll_timestamp_.InMicroseconds(),
                               ticket_);
@@ -1100,10 +1114,10 @@ void SbPlayerBridge::OnPlayerStatus(SbPlayer player, SbPlayerState state,
   }
   if (state == kSbPlayerStatePrerolling &&
       sb_player_state_prerolling_time_ == 0) {
-    sb_player_state_prerolling_time_ = SbTimeGetMonotonicNow();
+    sb_player_state_prerolling_time_ = starboard::CurrentMonotonicTime();
   } else if (state == kSbPlayerStatePresenting &&
              sb_player_state_presenting_time_ == 0) {
-    sb_player_state_presenting_time_ = SbTimeGetMonotonicNow();
+    sb_player_state_presenting_time_ = starboard::CurrentMonotonicTime();
 #if !defined(COBALT_BUILD_TYPE_GOLD)
     LogStartupLatency();
 #endif  // !defined(COBALT_BUILD_TYPE_GOLD)
@@ -1237,8 +1251,8 @@ SbPlayerOutputMode SbPlayerBridge::ComputeSbPlayerOutputMode(
 
   if (default_output_mode != kSbPlayerOutputModeDecodeToTexture &&
       video_stream_info_.codec != kSbMediaVideoCodecNone) {
-    SB_DCHECK(video_stream_info_.mime);
-    SB_DCHECK(video_stream_info_.max_video_capabilities);
+    DCHECK(video_stream_info_.mime);
+    DCHECK(video_stream_info_.max_video_capabilities);
 
     // Set the `default_output_mode` to `kSbPlayerOutputModeDecodeToTexture` if
     // any of the mime associated with it has `decode-to-texture=true` set.
@@ -1250,13 +1264,12 @@ SbPlayerOutputMode SbPlayerBridge::ComputeSbPlayerOutputMode(
                "decode-to-texture=true");
 
     if (is_decode_to_texture_preferred) {
-      SB_LOG(INFO) << "Setting `default_output_mode` from \""
-                   << GetPlayerOutputModeName(default_output_mode) << "\" to \""
-                   << GetPlayerOutputModeName(
-                          kSbPlayerOutputModeDecodeToTexture)
-                   << "\" because mime is set to \"" << video_stream_info_.mime
-                   << "\", and max_video_capabilities is set to \""
-                   << video_stream_info_.max_video_capabilities << "\"";
+      LOG(INFO) << "Setting `default_output_mode` from \""
+                << GetPlayerOutputModeName(default_output_mode) << "\" to \""
+                << GetPlayerOutputModeName(kSbPlayerOutputModeDecodeToTexture)
+                << "\" because mime is set to \"" << video_stream_info_.mime
+                << "\", and max_video_capabilities is set to \""
+                << video_stream_info_.max_video_capabilities << "\"";
       default_output_mode = kSbPlayerOutputModeDecodeToTexture;
     }
   }
@@ -1265,47 +1278,48 @@ SbPlayerOutputMode SbPlayerBridge::ComputeSbPlayerOutputMode(
 
   auto output_mode =
       sbplayer_interface_->GetPreferredOutputMode(&creation_param);
-  CHECK_NE(kSbPlayerOutputModeInvalid, output_mode);
+
+  LOG(INFO) << "Output mode is set to " << GetPlayerOutputModeName(output_mode);
+
   return output_mode;
 }
 
 void SbPlayerBridge::LogStartupLatency() const {
   std::string first_events_str;
   if (set_drm_system_ready_cb_time_ == -1) {
-    first_events_str =
-        starboard::FormatString("%-40s0 us", "SbPlayerCreate() called");
+    first_events_str = FormatString("%-40s0 us", "SbPlayerCreate() called");
   } else if (set_drm_system_ready_cb_time_ < player_creation_time_) {
-    first_events_str = starboard::FormatString(
+    first_events_str = FormatString(
         "%-40s0 us\n%-40s%" PRId64 " us", "set_drm_system_ready_cb called",
         "SbPlayerCreate() called",
         player_creation_time_ - set_drm_system_ready_cb_time_);
   } else {
-    first_events_str = starboard::FormatString(
+    first_events_str = FormatString(
         "%-40s0 us\n%-40s%" PRId64 " us", "SbPlayerCreate() called",
         "set_drm_system_ready_cb called",
         set_drm_system_ready_cb_time_ - player_creation_time_);
   }
 
-  SbTime first_event_time =
+  int64_t first_event_time =
       std::max(player_creation_time_, set_drm_system_ready_cb_time_);
-  SbTime player_initialization_time_delta =
+  int64_t player_initialization_time_delta =
       sb_player_state_initialized_time_ - first_event_time;
-  SbTime player_preroll_time_delta =
+  int64_t player_preroll_time_delta =
       sb_player_state_prerolling_time_ - sb_player_state_initialized_time_;
-  SbTime first_audio_sample_time_delta = std::max(
-      first_audio_sample_time_ - sb_player_state_prerolling_time_, SbTime(0));
-  SbTime first_video_sample_time_delta = std::max(
-      first_video_sample_time_ - sb_player_state_prerolling_time_, SbTime(0));
-  SbTime player_presenting_time_delta =
+  int64_t first_audio_sample_time_delta = std::max(
+      first_audio_sample_time_ - sb_player_state_prerolling_time_, int64_t());
+  int64_t first_video_sample_time_delta = std::max(
+      first_video_sample_time_ - sb_player_state_prerolling_time_, int64_t());
+  int64_t player_presenting_time_delta =
       sb_player_state_presenting_time_ -
       std::max(first_audio_sample_time_, first_video_sample_time_);
-  SbTime startup_latency = sb_player_state_presenting_time_ - first_event_time;
+  int64_t startup_latency = sb_player_state_presenting_time_ - first_event_time;
 
   StatisticsWrapper::GetInstance()->startup_latency.AddSample(startup_latency,
                                                               1);
 
   // clang-format off
-  LOG(INFO) << starboard::FormatString(
+  LOG(INFO) << FormatString(
       "\nSbPlayer startup latencies: %" PRId64 " us\n"
       "  Event name                              time since last event\n"
       "  %s\n"  // |first_events_str| populated above

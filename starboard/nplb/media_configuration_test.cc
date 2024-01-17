@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "starboard/media.h"
+
 #include "starboard/nplb/performance_helpers.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
@@ -25,9 +26,13 @@ TEST(SbMediaConfigurationTest, ValidatePerformance) {
 
   const int count_audio_output = SbMediaGetAudioOutputCount();
   for (int i = 0; i < count_audio_output; ++i) {
+    constexpr int kNumberOfCalls = 100;
+    constexpr int64_t kMaxAverageTimePerCallUsec = 500;
+
     SbMediaAudioConfiguration configuration;
-    TEST_PERF_FUNCWITHARGS_DEFAULT(SbMediaGetAudioConfiguration, i,
-                                   &configuration);
+    TEST_PERF_FUNCWITHARGS_EXPLICIT(kNumberOfCalls, kMaxAverageTimePerCallUsec,
+                                    SbMediaGetAudioConfiguration, i,
+                                    &configuration);
   }
 }
 

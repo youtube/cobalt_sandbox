@@ -55,11 +55,12 @@
  * copied and put under another distribution licence
  * [including the GNU Public Licence.] */
 
-
 #include <openssl/opensslconf.h>
-#if !defined(OPENSSL_SYS_STARBOARD)
 #include <string.h>
-#endif  // !defined(OPENSSL_SYS_STARBOARD)
+
+#ifndef OPENSSL_NO_POSIX_IO
+#include <sys/stat.h>
+#endif
 
 #ifdef OPENSSL_SYS_STARBOARD
 #include "e_os.h"
@@ -71,9 +72,6 @@
 
 #ifndef NO_SYS_TYPES_H
 #include <sys/types.h>
-#endif
-#ifndef OPENSSL_NO_POSIX_IO
-#include <sys/stat.h>
 #endif
 
 #include <openssl/buf.h>
@@ -258,7 +256,7 @@ static int add_cert_dir(BY_DIR *ctx, const char *dir, int type)
                 by_dir_entry_free(ent);
                 return 0;
             }
-            BUF_strlcpy(ent->dir, ss, len + 1);
+            OPENSSL_strlcpy(ent->dir, ss, len + 1);
             if (!sk_BY_DIR_ENTRY_push(ctx->dirs, ent)) {
                 by_dir_entry_free(ent);
                 return 0;
@@ -384,13 +382,13 @@ static int get_cert_by_subject(X509_LOOKUP *xl, int type, X509_NAME *name,
                                  postfix, k);
                 }
 #ifndef OPENSSL_NO_POSIX_IO
-#if defined(_WIN32) && !defined(__LB_XB1__) && !defined(__LB_XB360__)
-#define stat _stat
-#endif
+# if defined(_WIN32) && !defined(stat)
+#  define stat _stat
+# endif
                 {
                     struct stat st;
                     if (stat(b->data, &st) < 0)
-                      break;
+                        break;
                 }
 #endif
                 /* found one. */

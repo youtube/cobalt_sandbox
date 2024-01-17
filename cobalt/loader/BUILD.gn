@@ -55,8 +55,6 @@ static_library("loader") {
     "image/image_data_decoder.h",
     "image/image_decoder.cc",
     "image/image_decoder.h",
-    "image/image_decoder_starboard.cc",
-    "image/image_decoder_starboard.h",
     "image/image_encoder.cc",
     "image/image_encoder.h",
     "image/jpeg_image_decoder.cc",
@@ -194,6 +192,7 @@ target(gtest_target_type, "loader_test") {
   deps = [
     ":loader",
     "//cobalt/base:base",
+    "//cobalt/browser:test_dependencies_on_browser",
     "//cobalt/dom",
     "//cobalt/dom_parser",
     "//cobalt/math:math",

@@ -279,15 +279,15 @@ class MediaCodecBridge {
     }
 
     private boolean formatHasCropValues() {
-      if (!mFormatHasCropValues.isPresent()) {
+      if (!mFormatHasCropValues.isPresent() && mFormat != null) {
         boolean hasCropValues =
             mFormat.containsKey(KEY_CROP_RIGHT)
                 && mFormat.containsKey(KEY_CROP_LEFT)
                 && mFormat.containsKey(KEY_CROP_BOTTOM)
                 && mFormat.containsKey(KEY_CROP_TOP);
-        mFormatHasCropValues = Optional.of(hasCropValues);
+        mFormatHasCropValues = Optional.ofNullable(hasCropValues);
       }
-      return mFormatHasCropValues.get();
+      return mFormatHasCropValues.orElse(false);
     }
 
     @SuppressWarnings("unused")
@@ -299,13 +299,17 @@ class MediaCodecBridge {
     @SuppressWarnings("unused")
     @UsedByNative
     private int textureWidth() {
-      return mFormat.getInteger(MediaFormat.KEY_WIDTH);
+      return (mFormat != null && mFormat.containsKey(MediaFormat.KEY_WIDTH))
+          ? mFormat.getInteger(MediaFormat.KEY_WIDTH)
+          : 0;
     }
 
     @SuppressWarnings("unused")
     @UsedByNative
     private int textureHeight() {
-      return mFormat.getInteger(MediaFormat.KEY_HEIGHT);
+      return (mFormat != null && mFormat.containsKey(MediaFormat.KEY_HEIGHT))
+          ? mFormat.getInteger(MediaFormat.KEY_HEIGHT)
+          : 0;
     }
 
     @SuppressWarnings("unused")
@@ -796,7 +800,7 @@ class MediaCodecBridge {
       String codecName = mMediaCodec.getName();
       Log.w(TAG, "calling MediaCodec.release() on " + codecName);
       mMediaCodec.release();
-    } catch (IllegalStateException e) {
+    } catch (Exception e) {
       // The MediaCodec is stuck in a wrong state, possibly due to losing
       // the surface.
       Log.e(TAG, "Cannot release media codec", e);
@@ -875,7 +879,7 @@ class MediaCodecBridge {
     }
     try {
       mMediaCodec.stop();
-    } catch (IllegalStateException e) {
+    } catch (Exception e) {
       Log.e(TAG, "Failed to stop MediaCodec", e);
     }
   }

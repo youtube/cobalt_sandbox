@@ -147,8 +147,8 @@ struct X509_VERIFY_PARAM_st
 	{
 	char *name;
         OPENSSL_port_time_t check_time; /* Time to use */
-        unsigned long inh_flags;        /* Inheritance flags */
-        unsigned long flags;	/* Various verify flags */
+	unsigned long inh_flags; /* Inheritance flags */
+	unsigned long flags;	/* Various verify flags */
 	int purpose;		/* purpose to check untrusted certificates */
 	int trust;		/* trust setting to check */
 	int depth;		/* Verify depth */
@@ -370,6 +370,8 @@ OPENSSL_EXPORT void X509_STORE_CTX_set_depth(X509_STORE_CTX *ctx, int depth);
 /* Issuer lookup error */
 #define		X509_V_ERR_STORE_LOOKUP				66
 
+#define		X509_V_ERR_NAME_CONSTRAINTS_WITHOUT_SANS	67
+
 /* Certificate verify flags */
 
 /* Send issuer+subject checks to verify_cb */
@@ -587,8 +589,7 @@ OPENSSL_EXPORT int X509_STORE_CTX_set_trust(X509_STORE_CTX *ctx, int trust);
 OPENSSL_EXPORT int X509_STORE_CTX_purpose_inherit(X509_STORE_CTX *ctx, int def_purpose,
 				int purpose, int trust);
 OPENSSL_EXPORT void X509_STORE_CTX_set_flags(X509_STORE_CTX *ctx, unsigned long flags);
-OPENSSL_EXPORT void X509_STORE_CTX_set_time(X509_STORE_CTX *ctx,
-                                            unsigned long flags,
+OPENSSL_EXPORT void X509_STORE_CTX_set_time(X509_STORE_CTX *ctx, unsigned long flags,
                                             OPENSSL_port_time_t t);
 OPENSSL_EXPORT void X509_STORE_CTX_set_verify_cb(X509_STORE_CTX *ctx,
 				  int (*verify_cb)(int, X509_STORE_CTX *));

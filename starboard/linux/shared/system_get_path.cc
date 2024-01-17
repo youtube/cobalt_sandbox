@@ -41,8 +41,7 @@ bool GetCacheDirectory(char* out_path, int path_size) {
                                                       kMaxPathSize)) {
     return false;
   }
-  int result =
-      SbStringFormatF(out_path, path_size, "%s/.cache", home_path.data());
+  int result = snprintf(out_path, path_size, "%s/.cache", home_path.data());
   if (result < 0 || result >= path_size) {
     out_path[0] = '\0';
     return false;
@@ -57,8 +56,8 @@ bool GetStorageDirectory(char* out_path, int path_size) {
                                                       kMaxPathSize)) {
     return false;
   }
-  int result = SbStringFormatF(out_path, path_size, "%s/.cobalt_storage",
-                               home_path.data());
+  int result =
+      snprintf(out_path, path_size, "%s/.cobalt_storage", home_path.data());
   if (result < 0 || result >= path_size) {
     out_path[0] = '\0';
     return false;
@@ -113,6 +112,19 @@ bool GetEvergreenContentPathOverride(char* out_path, int path_size) {
 }
 #endif
 
+bool GetParentDirectory(char* out_path) {
+  if (!out_path) {
+    return false;
+  }
+  char* last_slash = const_cast<char*>(strrchr(out_path, '/'));
+  if (!last_slash) {
+    return false;
+  }
+
+  *last_slash = '\0';
+  return true;
+}
+
 // Places up to |path_size| - 1 characters of the path to the directory
 // containing the current executable in |out_path|, ensuring it is
 // NULL-terminated. Returns success status. The result being greater than
@@ -122,14 +134,7 @@ bool GetExecutableDirectory(char* out_path, int path_size) {
   if (!GetExecutablePath(out_path, path_size)) {
     return false;
   }
-
-  char* last_slash = const_cast<char*>(strrchr(out_path, '/'));
-  if (!last_slash) {
-    return false;
-  }
-
-  *last_slash = '\0';
-  return true;
+  return GetParentDirectory(out_path);
 }
 
 // Gets only the name portion of the current executable.
@@ -153,8 +158,8 @@ bool GetTemporaryDirectory(char* out_path, int path_size) {
     return false;
   }
 
-  int result = SbStringFormatF(out_path, path_size, "/tmp/%s-%d",
-                               binary_name.data(), static_cast<int>(getpid()));
+  int result = snprintf(out_path, path_size, "/tmp/%s-%d", binary_name.data(),
+                        static_cast<int>(getpid()));
   if (result < 0 || result >= path_size) {
     out_path[0] = '\0';
     return false;
@@ -168,6 +173,11 @@ bool GetContentDirectory(char* out_path, int path_size) {
   if (!GetExecutableDirectory(out_path, path_size)) {
     return false;
   }
+#ifdef USE_COMMON_CONTENT_DIR
+  if (!GetParentDirectory(out_path)) {
+    return false;
+  }
+#endif
   if (starboard::strlcat(out_path, "/content", path_size) >= path_size) {
     return false;
   }

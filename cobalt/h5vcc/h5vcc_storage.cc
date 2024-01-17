@@ -23,12 +23,12 @@
 #include "base/files/file_util.h"
 #include "base/values.h"
 #include "cobalt/cache/cache.h"
+#include "cobalt/network/disk_cache/cobalt_backend_impl.h"
+#include "cobalt/network/disk_cache/resource_type.h"
 #include "cobalt/persistent_storage/persistent_settings.h"
 #include "cobalt/storage/storage_manager.h"
-#include "cobalt/worker/service_worker_consts.h"
+#include "cobalt/worker/worker_consts.h"
 #include "net/base/completion_once_callback.h"
-#include "net/disk_cache/cobalt/cobalt_backend_impl.h"
-#include "net/disk_cache/cobalt/resource_type.h"
 #include "net/http/http_cache.h"
 #include "net/http/http_transaction_factory.h"
 #include "starboard/common/string.h"
@@ -73,14 +73,13 @@ void ClearDirectory(const base::FilePath& file_path) {
   base::CreateDirectory(file_path);
 }
 
-void DeleteCacheResourceTypeDirectory(disk_cache::ResourceType type) {
-  auto metadata = disk_cache::kTypeMetadata[type];
+void DeleteCacheResourceTypeDirectory(network::disk_cache::ResourceType type) {
+  std::string directory = network::disk_cache::defaults::GetSubdirectory(type);
   std::vector<char> cache_dir(kSbFileMaxPath + 1, 0);
   SbSystemGetPath(kSbSystemPathCacheDirectory, cache_dir.data(),
                   kSbFileMaxPath);
   base::FilePath cache_type_dir =
-      base::FilePath(cache_dir.data())
-          .Append(FILE_PATH_LITERAL(metadata.directory));
+      base::FilePath(cache_dir.data()).Append(FILE_PATH_LITERAL(directory));
   ClearDirectory(cache_type_dir);
 }
 
@@ -88,14 +87,15 @@ void ClearCacheHelper(disk_cache::Backend* backend) {
   backend->DoomAllEntries(base::DoNothing());
 
 
-  for (int type_index = 0; type_index < disk_cache::kTypeCount; type_index++) {
+  for (int type_index = 0; type_index < network::disk_cache::kTypeCount;
+       type_index++) {
     DeleteCacheResourceTypeDirectory(
-        static_cast<disk_cache::ResourceType>(type_index));
+        static_cast<network::disk_cache::ResourceType>(type_index));
   }
 }
 
-void ClearCacheOfTypeHelper(disk_cache::ResourceType type,
-                            disk_cache::CobaltBackendImpl* backend) {
+void ClearCacheOfTypeHelper(network::disk_cache::ResourceType type,
+                            network::disk_cache::CobaltBackendImpl* backend) {
   backend->DoomAllEntriesOfType(type, base::DoNothing());
 
   DeleteCacheResourceTypeDirectory(type);
@@ -288,31 +288,36 @@ H5vccStorageSetQuotaResponse H5vccStorage::SetQuota(
   ValidatedCacheBackend();
 
   // Write to persistent storage with the new quota values.
-  SetAndSaveQuotaForBackend(disk_cache::kOther,
+  SetAndSaveQuotaForBackend(network::disk_cache::kOther,
                             static_cast<uint32_t>(quota.other()));
-  SetAndSaveQuotaForBackend(disk_cache::kHTML,
+  SetAndSaveQuotaForBackend(network::disk_cache::kHTML,
                             static_cast<uint32_t>(quota.html()));
-  SetAndSaveQuotaForBackend(disk_cache::kCSS,
+  SetAndSaveQuotaForBackend(network::disk_cache::kCSS,
                             static_cast<uint32_t>(quota.css()));
-  SetAndSaveQuotaForBackend(disk_cache::kImage,
+  SetAndSaveQuotaForBackend(network::disk_cache::kImage,
                             static_cast<uint32_t>(quota.image()));
-  SetAndSaveQuotaForBackend(disk_cache::kFont,
+  SetAndSaveQuotaForBackend(network::disk_cache::kFont,
                             static_cast<uint32_t>(quota.font()));
-  SetAndSaveQuotaForBackend(disk_cache::kSplashScreen,
+  SetAndSaveQuotaForBackend(network::disk_cache::kSplashScreen,
                             static_cast<uint32_t>(quota.splash()));
-  SetAndSaveQuotaForBackend(disk_cache::kUncompiledScript,
+  SetAndSaveQuotaForBackend(network::disk_cache::kUncompiledScript,
                             static_cast<uint32_t>(quota.uncompiled_js()));
-  SetAndSaveQuotaForBackend(disk_cache::kCompiledScript,
+  SetAndSaveQuotaForBackend(network::disk_cache::kCompiledScript,
                             static_cast<uint32_t>(quota.compiled_js()));
-  SetAndSaveQuotaForBackend(disk_cache::kCacheApi,
+  SetAndSaveQuotaForBackend(network::disk_cache::kCacheApi,
                             static_cast<uint32_t>(quota.cache_api()));
-  SetAndSaveQuotaForBackend(disk_cache::kServiceWorkerScript,
+  SetAndSaveQuotaForBackend(network::disk_cache::kServiceWorkerScript,
                             static_cast<uint32_t>(quota.service_worker_js()));
   return SetQuotaResponse("", true);
 }
 
-void H5vccStorage::SetAndSaveQuotaForBackend(disk_cache::ResourceType type,
-                                             uint32_t bytes) {
+void H5vccStorage::SetAndSaveQuotaForBackend(
+    network::disk_cache::ResourceType type, uint32_t bytes) {
+  if (network::disk_cache::settings::GetQuota(type) == bytes) {
+    return;
+  }
+  network::disk_cache::settings::SetQuota(type, bytes);
+  network_module_->url_request_context()->UpdateCacheSizeSetting(type, bytes);
   if (cache_backend_) {
     cache_backend_->UpdateSizes(type, bytes);
 
@@ -332,21 +337,26 @@ H5vccStorageResourceTypeQuotaBytesDictionary H5vccStorage::GetQuota() {
     return quota;
   }
 
-  quota.set_other(cache_backend_->GetQuota(disk_cache::kOther));
-  quota.set_html(cache_backend_->GetQuota(disk_cache::kHTML));
-  quota.set_css(cache_backend_->GetQuota(disk_cache::kCSS));
-  quota.set_image(cache_backend_->GetQuota(disk_cache::kImage));
-  quota.set_font(cache_backend_->GetQuota(disk_cache::kFont));
-  quota.set_splash(cache_backend_->GetQuota(disk_cache::kSplashScreen));
-  quota.set_uncompiled_js(
-      cache_backend_->GetQuota(disk_cache::kUncompiledScript));
-  quota.set_compiled_js(
-      cobalt::cache::Cache::GetInstance()
-          ->GetMaxCacheStorageInBytes(disk_cache::kCompiledScript)
-          .value());
-  quota.set_cache_api(cache_backend_->GetQuota(disk_cache::kCacheApi));
-  quota.set_service_worker_js(
-      cache_backend_->GetQuota(disk_cache::kServiceWorkerScript));
+  quota.set_other(
+      network::disk_cache::settings::GetQuota(network::disk_cache::kOther));
+  quota.set_html(
+      network::disk_cache::settings::GetQuota(network::disk_cache::kHTML));
+  quota.set_css(
+      network::disk_cache::settings::GetQuota(network::disk_cache::kCSS));
+  quota.set_image(
+      network::disk_cache::settings::GetQuota(network::disk_cache::kImage));
+  quota.set_font(
+      network::disk_cache::settings::GetQuota(network::disk_cache::kFont));
+  quota.set_splash(network::disk_cache::settings::GetQuota(
+      network::disk_cache::kSplashScreen));
+  quota.set_uncompiled_js(network::disk_cache::settings::GetQuota(
+      network::disk_cache::kUncompiledScript));
+  quota.set_compiled_js(network::disk_cache::settings::GetQuota(
+      network::disk_cache::kCompiledScript));
+  quota.set_cache_api(
+      network::disk_cache::settings::GetQuota(network::disk_cache::kCacheApi));
+  quota.set_service_worker_js(network::disk_cache::settings::GetQuota(
+      network::disk_cache::kServiceWorkerScript));
 
   uint32_t max_quota_size = 24 * 1024 * 1024;
 #if SB_API_VERSION >= 14
@@ -363,10 +373,10 @@ H5vccStorageResourceTypeQuotaBytesDictionary H5vccStorage::GetQuota() {
 
 void H5vccStorage::EnableCache() {
   persistent_settings_->SetPersistentSetting(
-      disk_cache::kCacheEnabledPersistentSettingsKey,
+      network::disk_cache::kCacheEnabledPersistentSettingsKey,
       std::make_unique<base::Value>(true));
 
-  cobalt::cache::Cache::GetInstance()->set_enabled(true);
+  network::disk_cache::settings::SetCacheEnabled(true);
 
   if (http_cache_) {
     http_cache_->set_mode(net::HttpCache::Mode::NORMAL);
@@ -375,10 +385,10 @@ void H5vccStorage::EnableCache() {
 
 void H5vccStorage::DisableCache() {
   persistent_settings_->SetPersistentSetting(
-      disk_cache::kCacheEnabledPersistentSettingsKey,
+      network::disk_cache::kCacheEnabledPersistentSettingsKey,
       std::make_unique<base::Value>(false));
 
-  cobalt::cache::Cache::GetInstance()->set_enabled(false);
+  network::disk_cache::settings::SetCacheEnabled(false);
 
   if (http_cache_) {
     http_cache_->set_mode(net::HttpCache::Mode::DISABLE);
@@ -395,13 +405,13 @@ void H5vccStorage::ClearCache() {
 }
 
 void H5vccStorage::ClearCacheOfType(int type_index) {
-  if (type_index < 0 || type_index > disk_cache::kTypeCount) {
-    DLOG(INFO)
-        << "Invalid type_index, out of bounds of disk_cache::kTypeMetadata";
+  if (type_index < 0 || type_index > network::disk_cache::kTypeCount) {
+    DLOG(INFO) << "Invalid type_index, out of bounds of "
+                  "network::disk_cache::kTypeMetadata";
     return;
   }
-  disk_cache::ResourceType type =
-      static_cast<disk_cache::ResourceType>(type_index);
+  network::disk_cache::ResourceType type =
+      static_cast<network::disk_cache::ResourceType>(type_index);
   if (ValidatedCacheBackend()) {
     network_module_->task_runner()->PostTask(
         FROM_HERE, base::Bind(&ClearCacheOfTypeHelper, type,
@@ -411,15 +421,15 @@ void H5vccStorage::ClearCacheOfType(int type_index) {
 }
 
 void H5vccStorage::ClearServiceWorkerCache() {
-  ClearCacheOfType(
-      static_cast<int>(disk_cache::ResourceType::kServiceWorkerScript));
+  ClearCacheOfType(static_cast<int>(
+      network::disk_cache::ResourceType::kServiceWorkerScript));
   // Add deletion of service worker persistent settings file
   std::vector<char> storage_dir(kSbFileMaxPath, 0);
   SbSystemGetPath(kSbSystemPathCacheDirectory, storage_dir.data(),
                   kSbFileMaxPath);
   base::FilePath service_worker_file_path =
       base::FilePath(storage_dir.data())
-          .Append(worker::ServiceWorkerConsts::kSettingsJson);
+          .Append(worker::WorkerConsts::kSettingsJson);
   base::DeleteFile(service_worker_file_path, /*recursive=*/false);
 }
 
@@ -430,7 +440,7 @@ bool H5vccStorage::ValidatedCacheBackend() {
   if (cache_backend_) {
     return true;
   }
-  cache_backend_ = static_cast<disk_cache::CobaltBackendImpl*>(
+  cache_backend_ = static_cast<network::disk_cache::CobaltBackendImpl*>(
       http_cache_->GetCurrentBackend());
   return cache_backend_ != nullptr;
 }

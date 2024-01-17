@@ -36,7 +36,6 @@
 #include "starboard/shared/starboard/player/input_buffer_internal.h"
 #include "starboard/shared/starboard/player/job_queue.h"
 #include "starboard/shared/starboard/player/job_thread.h"
-#include "starboard/time.h"
 
 namespace starboard {
 namespace android {
@@ -54,8 +53,7 @@ class AudioRendererPassthrough
       AudioStreamInfo;
 
   AudioRendererPassthrough(const AudioStreamInfo& audio_stream_info,
-                           SbDrmSystem drm_system,
-                           bool enable_audio_device_callback);
+                           SbDrmSystem drm_system);
   ~AudioRendererPassthrough() override;
 
   bool is_valid() const { return decoder_ != nullptr; }
@@ -77,11 +75,11 @@ class AudioRendererPassthrough
   void Play() override;
   void Pause() override;
   void SetPlaybackRate(double playback_rate) override;
-  void Seek(SbTime seek_to_time) override;
-  SbTime GetCurrentMediaTime(bool* is_playing,
-                             bool* is_eos_played,
-                             bool* is_underflow,
-                             double* playback_rate) override;
+  void Seek(int64_t seek_to_time) override;
+  int64_t GetCurrentMediaTime(bool* is_playing,
+                              bool* is_eos_played,
+                              bool* is_underflow,
+                              double* playback_rate) override;
 
  private:
   typedef ::starboard::shared::starboard::player::DecodedAudio DecodedAudio;
@@ -97,14 +95,13 @@ class AudioRendererPassthrough
   };
 
   void CreateAudioTrackAndStartProcessing();
-  void FlushAudioTrackAndStopProcessing(SbTime seek_to_time);
+  void FlushAudioTrackAndStopProcessing(int64_t seek_to_time);
   void UpdateStatusAndWriteData(const AudioTrackState previous_state);
   void OnDecoderConsumed();
   void OnDecoderOutput();
 
-  // The following three variables are set in the ctor.
+  // The following two variables are set in the ctor.
   const AudioStreamInfo audio_stream_info_;
-  const bool enable_audio_device_callback_;
   // The AudioDecoder is used as a decryptor when the stream is encrypted.
   // TODO: Revisit to encapsulate the AudioDecoder as a SbDrmSystemPrivate
   //       instead.  This would need to turn SbDrmSystemPrivate::Decrypt() into
@@ -128,9 +125,9 @@ class AudioRendererPassthrough
   bool stop_called_ = false;
   int64_t total_frames_written_ = 0;
   int64_t playback_head_position_when_stopped_ = 0;
-  SbTimeMonotonic stopped_at_ = 0;
-  SbTime seek_to_time_ = 0;
-  SbTime first_audio_timestamp_ = -1;
+  int64_t stopped_at_ = 0;              // microseconds
+  int64_t seek_to_time_ = 0;            // microseconds
+  int64_t first_audio_timestamp_ = -1;  // microseconds
   double volume_ = 1.0;
   bool paused_ = true;
   double playback_rate_ = 1.0;
