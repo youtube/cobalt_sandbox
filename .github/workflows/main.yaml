@@ -47,8 +47,8 @@ env:
   STARBOARD_TOOLCHAINS_DIR: /root/starboard-toolchains
 
 concurrency:
-  group: '${{ github.workflow }}-${{ github.event_name }}-${{ inputs.platform }} @ ${{ github.event.label.name && github.event.label.name || github.event.pull_request.number || github.sha }} ${{ github.event.label.name && github.event.pull_request.number ||  "" }}'
-
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ inputs.platform }} @ ${{ (github.event.name == 'labeled' && join(fromJson('[github.event.label.name, github.event.pull_request.number]', '@')) || github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # Retrieves configuration from json file.
@@ -76,7 +76,7 @@ jobs:
           GITHUB_LABEL_NAME: ${{ github.event.label.name }}
           GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
           GITHUB_SHA: ${{ github.sha }}
-          GITHUB_CONCURRENCY: ${{ github.workflow }}-${{ github.event_name }}-${{ inputs.platform }} @ ${{ github.event.label.name && github.event.label.name || github.event.pull_request.number || github.sha }} ${{ github.event.label.name && github.event.pull_request.number ||  "" }}
+          GITHUB_CONCURRENCY: ${{ github.workflow }}-${{ github.event_name }}-${{ inputs.platform }} @ ${{ (github.event.name == 'labeled' && join(fromJson('[github.event.label.name, github.event.pull_request.number]', '@')) || github.event.pull_request.number || github.sha }}
         run: |
           echo "GITHUB_WORKFLOW: $GITHUB_WORKFLOW"
           echo "GITHUB_EVENT_NAME: $GITHUB_EVENT_NAME"
