@@ -38,7 +38,6 @@ config("internal_config") {
     # TODO(davidben): Fix size_t truncations in BoringSSL.
     # https://crbug.com/boringssl/22
     "//build/config/compiler:no_size_t_to_int_warning",
-    "//build/config/sanitizers:cfi_icall_generalize_pointers",
   ]
   if (is_posix || is_fuchsia) {
     cflags_c = [ "-std=c99" ]
@@ -82,11 +81,11 @@ all_sources = crypto_sources + ssl_sources
 all_headers = crypto_headers + ssl_headers
 
 if (!use_cobalt_customizations) {
-# Windows' assembly is built with Yasm. The other platforms use the platform
-# assembler.
-if (is_win && !is_msan) {
-  import("//third_party/yasm/yasm_assemble.gni")
-  yasm_assemble("boringssl_asm") {
+# Windows' assembly is built with NASM. The other platforms use the platform
+# assembler. Exclude Windows ARM64 because NASM targets x86 and x64 only.
+if (is_win && !is_msan && current_cpu != "arm64") {
+  import("//third_party/nasm/nasm_assemble.gni")
+  nasm_assemble("boringssl_asm") {
     if (current_cpu == "x64") {
       sources = crypto_sources_win_x86_64
     } else if (current_cpu == "x86") {
@@ -148,9 +147,17 @@ component("boringssl") {
   public = all_headers
   friend = [ ":*" ]
   deps = [
-    ":boringssl_asm",
     "//third_party/boringssl/src/third_party/fiat:fiat_license",
   ]
+
+if (!use_cobalt_customizations) {
+  # Mark boringssl_asm as a public dependency so the OPENSSL_NO_ASM
+  # config is forwarded to callers. In particular, boringssl_crypto_tests
+  # requires it.
+  public_deps = [
+    ":boringssl_asm",
+  ]
+}
 
   public_configs = [ ":external_config" ]
   configs += [ ":internal_config" ]
@@ -181,7 +188,6 @@ if (use_cobalt_customizations) {
       "src/crypto/thread_starboard.cc",
     ]
     public -= [ "src/include/openssl/opensslconf.h" ]
-    deps -= [ ":boringssl_asm" ]
     public_deps = [
       "//starboard:starboard_headers_only",
       "//starboard/client_porting/eztime",
@@ -242,7 +248,6 @@ if (use_cobalt_customizations) {
   } else if (is_native_target_build)  {
     sources += [ "src/crypto/mem_native_target.c" ]
     public -= [ "src/include/openssl/opensslconf.h" ]
-    deps -= [ ":boringssl_asm" ]
     if (is_linux || is_android) {
       if (target_cpu == "x64") {
         sources += crypto_sources_linux_x86_64
@@ -257,64 +262,73 @@ if (use_cobalt_customizations) {
   }
 }
 
-if (!use_cobalt_customizations) {
-# These targets are named "_tests" rather than "_test" to avoid colliding with a
-# historical "boringssl_ssl_test" target. This works around a bug with the iOS
-# build rules.
-
-test("boringssl_crypto_tests") {
-  sources = crypto_test_sources + test_support_sources
-  deps = [
-    ":boringssl",
-    "//testing/gtest",
-  ]
-
-  configs -= [ "//build/config/compiler:chromium_code" ]
-  configs += [
-    ":internal_config",
-    "//build/config/compiler:no_chromium_code",
-  ]
-
-  # Chromium infrastructure does not support GTest, only the //base wrapper.
-  if (build_with_chromium) {
-    sources -= [
-      "src/crypto/test/gtest_main.cc",
-
-      # //base includes its own conflicting malloc shim.
-      "src/crypto/test/malloc.cc",
-    ]
-    sources += [ "gtest_main_chromium.cc" ]
-    deps += [ "//base/test:test_support" ]
-  }
-}
-
-test("boringssl_ssl_tests") {
-  sources = ssl_test_sources + test_support_sources
-  deps = [
-    ":boringssl",
-    "//testing/gtest",
-  ]
-
-  configs -= [ "//build/config/compiler:chromium_code" ]
-  configs += [
-    ":internal_config",
-    "//build/config/compiler:no_chromium_code",
-  ]
-
-  # Chromium infrastructure does not support GTest, only the //base wrapper.
-  if (build_with_chromium) {
-    sources -= [
-      "src/crypto/test/gtest_main.cc",
-
-      # //base includes its own conflicting malloc shim.
-      "src/crypto/test/malloc.cc",
-    ]
-    sources += [ "gtest_main_chromium.cc" ]
-    deps += [ "//base/test:test_support" ]
-  }
-}
-
 if (build_with_chromium) {
+  # These targets are named "_tests" rather than "_test" to avoid colliding with
+  # a historical "boringssl_ssl_test" target. This works around a bug with the
+  # iOS build rules.
+
+  bundle_data("boringssl_crypto_tests_bundle_data") {
+    sources = crypto_test_data
+    testonly = true
+    outputs = [
+      "{{bundle_resources_dir}}/" +
+          "{{source_root_relative_dir}}/{{source_file_part}}",
+    ]
+  }
+
+  test("boringssl_crypto_tests") {
+    sources = crypto_test_sources + test_support_sources
+    data = crypto_test_data
+    deps = [
+      ":boringssl",
+      ":boringssl_crypto_tests_bundle_data",
+      "//testing/gtest",
+    ]
+
+    configs -= [ "//build/config/compiler:chromium_code" ]
+    configs += [
+      ":internal_config",
+      "//build/config/compiler:no_chromium_code",
+    ]
+
+    # Chromium infrastructure does not support GTest, only the //base wrapper.
+    sources -= [
+      "src/crypto/test/gtest_main.cc",
+
+      # //base includes its own conflicting malloc shim.
+      "src/crypto/test/malloc.cc",
+    ]
+    sources += [
+      "gtest_main_chromium.cc",
+      "test_data_chromium.cc",
+    ]
+    deps += [ "//base/test:test_support" ]
+  }
+
+  test("boringssl_ssl_tests") {
+    sources = ssl_test_sources + test_support_sources
+    deps = [
+      ":boringssl",
+      "//testing/gtest",
+    ]
+
+    configs -= [ "//build/config/compiler:chromium_code" ]
+    configs += [
+      ":internal_config",
+      "//build/config/compiler:no_chromium_code",
+    ]
+
+    # Chromium infrastructure does not support GTest, only the //base wrapper.
+    sources -= [
+      "src/crypto/test/gtest_main.cc",
+
+      # //base includes its own conflicting malloc shim.
+      "src/crypto/test/malloc.cc",
+    ]
+    sources += [ "gtest_main_chromium.cc" ]
+    deps += [ "//base/test:test_support" ]
+  }
+
   config("fuzzer_config") {
     visibility = [ ":*" ]  # Only targets in this file can depend on this.
     defines = [
@@ -329,6 +343,13 @@ if (build_with_chromium) {
 
     sources = all_sources
     deps = [
+      "//third_party/boringssl/src/third_party/fiat:fiat_license",
+    ]
+
+    # Mark boringssl_asm as a public dependency so the OPENSSL_NO_ASM
+    # config is forwarded to callers. In particular, boringssl_crypto_tests
+    # requires it.
+    public_deps = [
       ":boringssl_asm",
     ]
 
@@ -347,43 +368,36 @@ if (build_with_chromium) {
   }
 
   foreach(fuzzer, fuzzers) {
-    # The arm_cpuinfo fuzzer depends on some internal symbols that are otherwise
-    # only used on ARM. But fuzzing infrastructure usually uses x86_64, so
-    # BoringSSL compiles them on all platforms and leaves them unexported so the
-    # static linker drops them. This works because fuzzers are usually
-    # statically linked. But Chromium builds fuzzers in all configurations, so
-    # we must exclude that fuzzer in the components build.
-    if (fuzzer != "arm_cpuinfo" || !is_component_build) {
-      fuzzer_test("boringssl_${fuzzer}_fuzzer") {
-        sources = [
-          "src/fuzz/${fuzzer}.cc",
-          "src/ssl/test/fuzzer.h",
-          "src/ssl/test/fuzzer_tags.h",
-        ]
-        deps = [
-          ":boringssl_fuzzer",
-        ]
-        seed_corpus = "src/fuzz/${fuzzer}_corpus"
+    fuzzer_test("boringssl_${fuzzer}_fuzzer") {
+      sources = [
+        "src/fuzz/${fuzzer}.cc",
+        "src/ssl/test/fuzzer.h",
+        "src/ssl/test/fuzzer_tags.h",
+      ]
+      additional_configs = [ ":internal_config" ]
+      deps = [
+        ":boringssl_fuzzer",
+      ]
+      seed_corpus = "src/fuzz/${fuzzer}_corpus"
 
-        if ("cert" == fuzzer) {
-          libfuzzer_options = [ "max_len=3072" ]
-        } else if ("client" == fuzzer) {
-          libfuzzer_options = [ "max_len=20000" ]
-        } else if ("pkcs8" == fuzzer) {
-          libfuzzer_options = [ "max_len=2048" ]
-        } else if ("privkey" == fuzzer) {
-          libfuzzer_options = [ "max_len=2048" ]
-        } else if ("read_pem" == fuzzer) {
-          libfuzzer_options = [ "max_len=512" ]
-        } else if ("session" == fuzzer) {
-          libfuzzer_options = [ "max_len=8192" ]
-        } else if ("server" == fuzzer) {
-          libfuzzer_options = [ "max_len=4096" ]
-        } else if ("spki" == fuzzer) {
-          libfuzzer_options = [ "max_len=1024" ]
-        } else if ("ssl_ctx_api" == fuzzer) {
-          libfuzzer_options = [ "max_len=256" ]
-        }
+      if ("cert" == fuzzer) {
+        libfuzzer_options = [ "max_len=3072" ]
+      } else if ("client" == fuzzer) {
+        libfuzzer_options = [ "max_len=20000" ]
+      } else if ("pkcs8" == fuzzer) {
+        libfuzzer_options = [ "max_len=2048" ]
+      } else if ("privkey" == fuzzer) {
+        libfuzzer_options = [ "max_len=2048" ]
+      } else if ("read_pem" == fuzzer) {
+        libfuzzer_options = [ "max_len=512" ]
+      } else if ("session" == fuzzer) {
+        libfuzzer_options = [ "max_len=8192" ]
+      } else if ("server" == fuzzer) {
+        libfuzzer_options = [ "max_len=4096" ]
+      } else if ("spki" == fuzzer) {
+        libfuzzer_options = [ "max_len=1024" ]
+      } else if ("ssl_ctx_api" == fuzzer) {
+        libfuzzer_options = [ "max_len=256" ]
       }
     }
   }
@@ -399,6 +413,13 @@ if (build_with_chromium) {
 
     sources = all_sources
     deps = [
+      "//third_party/boringssl/src/third_party/fiat:fiat_license",
+    ]
+
+    # Mark boringssl_asm as a public dependency so the OPENSSL_NO_ASM
+    # config is forwarded to callers. In particular, boringssl_crypto_tests
+    # requires it.
+    public_deps = [
       ":boringssl_asm",
     ]
 
@@ -422,6 +443,7 @@ if (build_with_chromium) {
       "src/ssl/test/fuzzer.h",
       "src/ssl/test/fuzzer_tags.h",
     ]
+    additional_configs = [ ":internal_config" ]
     deps = [
       ":boringssl_fuzzer_no_fuzzer_mode",
     ]
@@ -434,10 +456,10 @@ if (build_with_chromium) {
       "src/ssl/test/fuzzer.h",
       "src/ssl/test/fuzzer_tags.h",
     ]
+    additional_configs = [ ":internal_config" ]
     deps = [
       ":boringssl_fuzzer_no_fuzzer_mode",
     ]
     seed_corpus = "src/fuzz/server_corpus_no_fuzzer_mode"
   }
-}
 }

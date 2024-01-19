@@ -143,7 +143,6 @@
 #include <assert.h>
 #include <string.h>
 
-#include <openssl/buf.h>
 #include <openssl/err.h>
 #include <openssl/md5.h>
 #include <openssl/mem.h>
@@ -156,7 +155,6 @@
 
 BSSL_NAMESPACE_BEGIN
 
-// kCiphers is an array of all supported ciphers, sorted by id.
 static constexpr SSL_CIPHER kCiphers[] = {
     // The RSA ciphers
     // Cipher 02
@@ -464,7 +462,9 @@ static constexpr SSL_CIPHER kCiphers[] = {
 
 };
 
-static const size_t kCiphersLen = OPENSSL_ARRAY_SIZE(kCiphers);
+Span<const SSL_CIPHER> AllCiphers() {
+  return MakeConstSpan(kCiphers, OPENSSL_ARRAY_SIZE(kCiphers));
+}
 
 #define CIPHER_ADD 1
 #define CIPHER_KILL 2
@@ -707,7 +707,7 @@ static bool ssl_cipher_collect_ciphers(Array<CIPHER_ORDER> *out_co_list,
                                        CIPHER_ORDER **out_head,
                                        CIPHER_ORDER **out_tail) {
   Array<CIPHER_ORDER> co_list;
-  if (!co_list.Init(kCiphersLen)) {
+  if (!co_list.Init(OPENSSL_ARRAY_SIZE(kCiphers))) {
     return false;
   }
 
@@ -770,6 +770,31 @@ bool SSLCipherPreferenceList::Init(UniquePtr<STACK_OF(SSL_CIPHER)> ciphers_arg,
   size_t unused_len;
   copy.Release(&in_group_flags, &unused_len);
   return true;
+}
+
+bool SSLCipherPreferenceList::Init(const SSLCipherPreferenceList& other) {
+  size_t size = sk_SSL_CIPHER_num(other.ciphers.get());
+  Span<const bool> other_flags(other.in_group_flags, size);
+  UniquePtr<STACK_OF(SSL_CIPHER)> other_ciphers(sk_SSL_CIPHER_dup(
+      other.ciphers.get()));
+  if (!other_ciphers) {
+    return false;
+  }
+  return Init(std::move(other_ciphers), other_flags);
+}
+
+void SSLCipherPreferenceList::Remove(const SSL_CIPHER *cipher) {
+  size_t index;
+  if (!sk_SSL_CIPHER_find(ciphers.get(), &index, cipher)) {
+    return;
+  }
+  if (!in_group_flags[index] /* last element of group */ && index > 0) {
+    in_group_flags[index-1] = false;
+  }
+  for (size_t i = index; i < sk_SSL_CIPHER_num(ciphers.get()) - 1; ++i) {
+    in_group_flags[i] = in_group_flags[i+1];
+  }
+  sk_SSL_CIPHER_delete(ciphers.get(), index);
 }
 
 // ssl_cipher_apply_rule applies the rule type |rule| to ciphers matching its
@@ -1051,7 +1076,7 @@ static bool ssl_cipher_process_rulestr(const char *rule_str,
       // Look for a matching exact cipher. These aren't allowed in multipart
       // rules.
       if (!multi && ch != '+') {
-        for (j = 0; j < kCiphersLen; j++) {
+        for (j = 0; j < OPENSSL_ARRAY_SIZE(kCiphers); j++) {
           const SSL_CIPHER *cipher = &kCiphers[j];
           if (rule_equals(cipher->name, buf, buf_len) ||
               rule_equals(cipher->standard_name, buf, buf_len)) {
@@ -1217,7 +1242,7 @@ bool ssl_create_cipher_list(UniquePtr<SSLCipherPreferenceList> *out_cipher_list,
   UniquePtr<STACK_OF(SSL_CIPHER)> cipherstack(sk_SSL_CIPHER_new_null());
   Array<bool> in_group_flags;
   if (cipherstack == nullptr ||
-      !in_group_flags.Init(kCiphersLen)) {
+      !in_group_flags.Init(OPENSSL_ARRAY_SIZE(kCiphers))) {
     return false;
   }
 
@@ -1345,10 +1370,15 @@ const SSL_CIPHER *SSL_get_cipher_by_value(uint16_t value) {
 
   c.id = 0x03000000L | value;
   return reinterpret_cast<const SSL_CIPHER *>(bsearch(
-      &c, kCiphers, kCiphersLen, sizeof(SSL_CIPHER), ssl_cipher_id_cmp));
+      &c, kCiphers, OPENSSL_ARRAY_SIZE(kCiphers), sizeof(SSL_CIPHER),
+      ssl_cipher_id_cmp));
 }
 
 uint32_t SSL_CIPHER_get_id(const SSL_CIPHER *cipher) { return cipher->id; }
+
+uint16_t SSL_CIPHER_get_value(const SSL_CIPHER *cipher) {
+  return static_cast<uint16_t>(cipher->id);
+}
 
 int SSL_CIPHER_is_aead(const SSL_CIPHER *cipher) {
   return (cipher->algorithm_mac & SSL_AEAD) != 0;

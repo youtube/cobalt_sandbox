@@ -124,6 +124,11 @@ extern "C" {
 
 #if defined(__APPLE__)
 #define OPENSSL_APPLE
+// Note |TARGET_OS_MAC| is set for all Apple OS variants. |TARGET_OS_OSX|
+// targets macOS specifically.
+#if defined(TARGET_OS_OSX) && TARGET_OS_OSX
+#define OPENSSL_MACOS
+#endif
 #if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
 #define OPENSSL_IOS
 #endif
@@ -148,15 +153,6 @@ extern "C" {
 
 #if defined(__ANDROID_API__)
 #define OPENSSL_ANDROID
-#endif
-
-// OPENSSL_NO_THREADS has been deprecated in favor of this much longer and
-// louder name, to better reflect exactly what that option did.
-//
-// TODO(davidben): Remove this block when callers have migrated.
-#if defined(OPENSSL_NO_THREADS) && \
-    !defined(OPENSSL_NO_THREADS_CORRUPT_MEMORY_AND_LEAK_SECRETS_IF_THREADED)
-#define OPENSSL_NO_THREADS_CORRUPT_MEMORY_AND_LEAK_SECRETS_IF_THREADED
 #endif
 
 // BoringSSL requires platform's locking APIs to make internal global state
@@ -300,6 +296,24 @@ extern "C" {
 #endif
 #endif  // OPENSSL_ASM_INCOMPATIBLE
 
+#if defined(__cplusplus)
+// enums can be predeclared, but only in C++ and only if given an explicit type.
+// C doesn't support setting an explicit type for enums thus a #define is used
+// to do this only for C++. However, the ABI type between C and C++ need to have
+// equal sizes, which is confirmed in a unittest.
+#define BORINGSSL_ENUM_INT : int
+enum ssl_early_data_reason_t BORINGSSL_ENUM_INT;
+enum ssl_encryption_level_t BORINGSSL_ENUM_INT;
+enum ssl_private_key_result_t BORINGSSL_ENUM_INT;
+enum ssl_renegotiate_mode_t BORINGSSL_ENUM_INT;
+enum ssl_select_cert_result_t BORINGSSL_ENUM_INT;
+enum ssl_select_cert_result_t BORINGSSL_ENUM_INT;
+enum ssl_ticket_aead_result_t BORINGSSL_ENUM_INT;
+enum ssl_verify_result_t BORINGSSL_ENUM_INT;
+#else
+#define BORINGSSL_ENUM_INT
+#endif
+
 // CRYPTO_THREADID is a dummy value.
 typedef int CRYPTO_THREADID;
 
@@ -403,6 +417,7 @@ typedef struct ssl_cipher_st SSL_CIPHER;
 typedef struct ssl_ctx_st SSL_CTX;
 typedef struct ssl_method_st SSL_METHOD;
 typedef struct ssl_private_key_method_st SSL_PRIVATE_KEY_METHOD;
+typedef struct ssl_quic_method_st SSL_QUIC_METHOD;
 typedef struct ssl_session_st SSL_SESSION;
 typedef struct ssl_st SSL;
 typedef struct ssl_ticket_aead_method_st SSL_TICKET_AEAD_METHOD;

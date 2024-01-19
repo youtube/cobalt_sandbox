@@ -22,7 +22,6 @@ import (
 )
 
 var errNoCertificateAlert = errors.New("tls: no certificate alert")
-var errEndOfEarlyDataAlert = errors.New("tls: end of early data alert")
 
 // A Conn represents a secured connection.
 // It implements the net.Conn interface.
@@ -106,6 +105,7 @@ type Conn struct {
 	pendingFragments [][]byte // pending outgoing handshake fragments.
 	pendingPacket    []byte   // pending outgoing packet.
 
+	keyUpdateSeen      bool
 	keyUpdateRequested bool
 	seenOneByteRecord  bool
 
@@ -453,7 +453,7 @@ func (hc *halfConn) decrypt(b *block) (ok bool, prefixLen int, contentType recor
 				n := len(payload) - c.Overhead()
 				additionalData[11] = byte(n >> 8)
 				additionalData[12] = byte(n)
-			} else if isDraft28(hc.wireVersion) {
+			} else {
 				additionalData = b.data[:recordHeaderLen]
 			}
 			var err error
@@ -619,7 +619,7 @@ func (hc *halfConn) encrypt(b *block, explicitIVLen int, typ recordType) (bool, 
 				copy(additionalData[8:], b.data[:3])
 				additionalData[11] = byte(payloadLen >> 8)
 				additionalData[12] = byte(payloadLen)
-			} else if isDraft28(hc.wireVersion) {
+			} else {
 				additionalData = make([]byte, 5)
 				copy(additionalData, b.data[:3])
 				n := len(b.data) - recordHeaderLen
@@ -1007,10 +1007,6 @@ Again:
 				c.in.freeBlock(b)
 				return errNoCertificateAlert
 			}
-			if alert(data[1]) == alertEndOfEarlyData {
-				c.in.freeBlock(b)
-				return errEndOfEarlyDataAlert
-			}
 
 			// drop on the floor
 			c.in.freeBlock(b)
@@ -1086,7 +1082,7 @@ func (c *Conn) sendAlertLocked(level byte, err alert) error {
 // L < c.out.Mutex.
 func (c *Conn) sendAlert(err alert) error {
 	level := byte(alertLevelError)
-	if err == alertNoRenegotiation || err == alertCloseNotify || err == alertNoCertificate || err == alertEndOfEarlyData {
+	if err == alertNoRenegotiation || err == alertCloseNotify || err == alertNoCertificate {
 		level = alertLevelWarning
 	}
 	return c.SendAlert(level, err)
@@ -1320,9 +1316,6 @@ func (c *Conn) doReadHandshake() ([]byte, error) {
 		if err := c.readRecord(recordTypeHandshake); err != nil {
 			return nil, err
 		}
-	}
-	if c.hand.Len() > 4+n && c.config.Bugs.ForbidHandshakePacking {
-		return nil, errors.New("tls: forbidden trailing data after a handshake message")
 	}
 	return c.hand.Next(4 + n), nil
 }
@@ -1635,6 +1628,8 @@ func (c *Conn) handlePostHandshakeMessage() error {
 	}
 
 	if keyUpdate, ok := msg.(*keyUpdateMsg); ok {
+		c.keyUpdateSeen = true
+
 		if c.config.Bugs.RejectUnsolicitedKeyUpdate {
 			return errors.New("tls: unexpected KeyUpdate message")
 		}
@@ -1665,7 +1660,7 @@ func (c *Conn) ReadKeyUpdateACK() error {
 	keyUpdate, ok := msg.(*keyUpdateMsg)
 	if !ok {
 		c.sendAlert(alertUnexpectedMessage)
-		return errors.New("tls: unexpected message when reading KeyUpdate")
+		return fmt.Errorf("tls: unexpected message (%T) when reading KeyUpdate", msg)
 	}
 
 	if keyUpdate.keyUpdateRequest != keyUpdateNotRequested {
@@ -1708,13 +1703,12 @@ func (c *Conn) Read(b []byte) (n int, err error) {
 				// Soft error, like EAGAIN
 				return 0, err
 			}
-			if c.hand.Len() > 0 {
+			for c.hand.Len() > 0 {
 				// We received handshake bytes, indicating a
 				// post-handshake message.
 				if err := c.handlePostHandshakeMessage(); err != nil {
 					return 0, err
 				}
-				continue
 			}
 		}
 		if err := c.in.err; err != nil {

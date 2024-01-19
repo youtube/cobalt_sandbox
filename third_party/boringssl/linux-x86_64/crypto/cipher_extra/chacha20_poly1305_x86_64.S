@@ -1,3 +1,6 @@
+# This file is generated from a similarly-named Perl script in the BoringSSL
+# source tree. Do not edit by hand.
+
 #if defined(__has_feature)
 #if __has_feature(memory_sanitizer) && !defined(OPENSSL_NO_ASM)
 #define OPENSSL_NO_ASM
@@ -8981,3 +8984,4 @@ seal_avx2_short_tail:
 	jmp	seal_sse_tail_16
 .cfi_endproc	
 #endif
+.section	.note.GNU-stack,"",@progbits

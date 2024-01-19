@@ -13,17 +13,19 @@
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE. */
 
 #include <algorithm>
-#include <string>
 #include <functional>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include <assert.h>
+#include <errno.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include <openssl/aead.h>
+#include <openssl/aes.h>
 #include <openssl/bn.h>
 #include <openssl/curve25519.h>
 #include <openssl/digest.h>
@@ -32,6 +34,7 @@
 #include <openssl/ecdsa.h>
 #include <openssl/ec_key.h>
 #include <openssl/evp.h>
+#include <openssl/hrss.h>
 #include <openssl/nid.h>
 #include <openssl/rand.h>
 #include <openssl/rsa.h>
@@ -49,6 +52,8 @@ OPENSSL_MSVC_PRAGMA(warning(pop))
 #include "../crypto/internal.h"
 #include "internal.h"
 
+// g_print_json is true if printed output is JSON formatted.
+static bool g_print_json = false;
 
 // TimeResults represents the results of benchmarking a function.
 struct TimeResults {
@@ -57,19 +62,53 @@ struct TimeResults {
   // us is the number of microseconds that elapsed in the time period.
   unsigned us;
 
-  void Print(const std::string &description) {
-    printf("Did %u %s operations in %uus (%.1f ops/sec)\n", num_calls,
-           description.c_str(), us,
-           (static_cast<double>(num_calls) / us) * 1000000);
+  void Print(const std::string &description) const {
+    if (g_print_json) {
+      PrintJSON(description);
+    } else {
+      printf("Did %u %s operations in %uus (%.1f ops/sec)\n", num_calls,
+             description.c_str(), us,
+             (static_cast<double>(num_calls) / us) * 1000000);
+    }
   }
 
-  void PrintWithBytes(const std::string &description, size_t bytes_per_call) {
-    printf("Did %u %s operations in %uus (%.1f ops/sec): %.1f MB/s\n",
-           num_calls, description.c_str(), us,
-           (static_cast<double>(num_calls) / us) * 1000000,
-           static_cast<double>(bytes_per_call * num_calls) / us);
+  void PrintWithBytes(const std::string &description,
+                      size_t bytes_per_call) const {
+    if (g_print_json) {
+      PrintJSON(description, bytes_per_call);
+    } else {
+      printf("Did %u %s operations in %uus (%.1f ops/sec): %.1f MB/s\n",
+             num_calls, description.c_str(), us,
+             (static_cast<double>(num_calls) / us) * 1000000,
+             static_cast<double>(bytes_per_call * num_calls) / us);
+    }
   }
+
+ private:
+  void PrintJSON(const std::string &description,
+                 size_t bytes_per_call = 0) const {
+    if (first_json_printed) {
+      puts(",");
+    }
+
+    printf("{\"description\": \"%s\", \"numCalls\": %u, \"microseconds\": %u",
+           description.c_str(), num_calls, us);
+
+    if (bytes_per_call > 0) {
+      printf(", \"bytesPerCall\": %zu", bytes_per_call);
+    }
+
+    printf("}");
+    first_json_printed = true;
+  }
+
+  // first_json_printed is true if |g_print_json| is true and the first item in
+  // the JSON results has been printed already. This is used to handle the
+  // commas between each item in the result list.
+  static bool first_json_printed;
 };
+
+bool TimeResults::first_json_printed = false;
 
 #if defined(OPENSSL_WINDOWS)
 static uint64_t time_now() { return GetTickCount64() * 1000; }
@@ -97,6 +136,7 @@ static uint64_t time_now() {
 #endif
 
 static uint64_t g_timeout_seconds = 1;
+static std::vector<size_t> g_chunk_lengths = {16, 256, 1350, 8192, 16384};
 
 static bool TimeFunction(TimeResults *results, std::function<bool()> func) {
   // total_us is the total amount of time that we'll aim to measure a function
@@ -268,15 +308,29 @@ static bool SpeedRSAKeyGen(const std::string &selected) {
     }
 
     std::sort(durations.begin(), durations.end());
-    printf("Did %u RSA %d key-gen operations in %uus (%.1f ops/sec)\n",
-           num_calls, size, us,
-           (static_cast<double>(num_calls) / us) * 1000000);
+    const std::string description =
+        std::string("RSA ") + std::to_string(size) + std::string(" key-gen");
+    const TimeResults results = {num_calls, us};
+    results.Print(description);
     const size_t n = durations.size();
     assert(n > 0);
-    unsigned median = n & 1 ? durations[n / 2]
-                            : (durations[n / 2 - 1] + durations[n / 2]) / 2;
-    printf("  min: %uus, median: %uus, max: %uus\n", durations[0], median,
-           durations[n - 1]);
+
+    // Distribution information is useful, but doesn't fit into the standard
+    // format used by |g_print_json|.
+    if (!g_print_json) {
+      // |min| and |max| must be stored in temporary variables to avoid an MSVC
+      // bug on x86. There, size_t is a typedef for unsigned, but MSVC's printf
+      // warning tries to retain the distinction and suggest %zu for size_t
+      // instead of %u. It gets confused if std::vector<unsigned> and
+      // std::vector<size_t> are both instantiated. Being typedefs, the two
+      // instantiations are identical, which somehow breaks the size_t vs
+      // unsigned metadata.
+      unsigned min = durations[0];
+      unsigned median = n & 1 ? durations[n / 2]
+                              : (durations[n / 2 - 1] + durations[n / 2]) / 2;
+      unsigned max = durations[n - 1];
+      printf("  min: %uus, median: %uus, max: %uus\n", min, median, max);
+    }
   }
 
   return true;
@@ -288,11 +342,19 @@ static uint8_t *align(uint8_t *in, unsigned alignment) {
       ~static_cast<size_t>(alignment - 1));
 }
 
-static bool SpeedAEADChunk(const EVP_AEAD *aead, const std::string &name,
+static std::string ChunkLenSuffix(size_t chunk_len) {
+  char buf[32];
+  snprintf(buf, sizeof(buf), " (%zu byte%s)", chunk_len,
+           chunk_len != 1 ? "s" : "");
+  return buf;
+}
+
+static bool SpeedAEADChunk(const EVP_AEAD *aead, std::string name,
                            size_t chunk_len, size_t ad_len,
                            evp_aead_direction_t direction) {
   static const unsigned kAlignment = 16;
 
+  name += ChunkLenSuffix(chunk_len);
   bssl::ScopedEVP_AEAD_CTX ctx;
   const size_t key_len = EVP_AEAD_key_length(aead);
   const size_t nonce_len = EVP_AEAD_nonce_length(aead);
@@ -389,12 +451,12 @@ static bool SpeedAEAD(const EVP_AEAD *aead, const std::string &name,
     return true;
   }
 
-  return SpeedAEADChunk(aead, name + " (16 bytes)", 16, ad_len,
-                        evp_aead_seal) &&
-         SpeedAEADChunk(aead, name + " (1350 bytes)", 1350, ad_len,
-                        evp_aead_seal) &&
-         SpeedAEADChunk(aead, name + " (8192 bytes)", 8192, ad_len,
-                        evp_aead_seal);
+  for (size_t chunk_len : g_chunk_lengths) {
+    if (!SpeedAEADChunk(aead, name, chunk_len, ad_len, evp_aead_seal)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 static bool SpeedAEADOpen(const EVP_AEAD *aead, const std::string &name,
@@ -403,23 +465,94 @@ static bool SpeedAEADOpen(const EVP_AEAD *aead, const std::string &name,
     return true;
   }
 
-  return SpeedAEADChunk(aead, name + " (16 bytes)", 16, ad_len,
-                        evp_aead_open) &&
-         SpeedAEADChunk(aead, name + " (1350 bytes)", 1350, ad_len,
-                        evp_aead_open) &&
-         SpeedAEADChunk(aead, name + " (8192 bytes)", 8192, ad_len,
-                        evp_aead_open);
+  for (size_t chunk_len : g_chunk_lengths) {
+    if (!SpeedAEADChunk(aead, name, chunk_len, ad_len, evp_aead_open)) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
-static bool SpeedHashChunk(const EVP_MD *md, const std::string &name,
+static bool SpeedAESBlock(const std::string &name, unsigned bits,
+                          const std::string &selected) {
+  if (!selected.empty() && name.find(selected) == std::string::npos) {
+    return true;
+  }
+
+  static const uint8_t kZero[32] = {0};
+
+  {
+    TimeResults results;
+    if (!TimeFunction(&results, [&]() -> bool {
+          AES_KEY key;
+          return AES_set_encrypt_key(kZero, bits, &key) == 0;
+        })) {
+      fprintf(stderr, "AES_set_encrypt_key failed.\n");
+      return false;
+    }
+    results.Print(name + " encrypt setup");
+  }
+
+  {
+    AES_KEY key;
+    if (AES_set_encrypt_key(kZero, bits, &key) != 0) {
+      return false;
+    }
+    uint8_t block[16] = {0};
+    TimeResults results;
+    if (!TimeFunction(&results, [&]() -> bool {
+          AES_encrypt(block, block, &key);
+          return true;
+        })) {
+      fprintf(stderr, "AES_encrypt failed.\n");
+      return false;
+    }
+    results.Print(name + " encrypt");
+  }
+
+  {
+    TimeResults results;
+    if (!TimeFunction(&results, [&]() -> bool {
+          AES_KEY key;
+          return AES_set_decrypt_key(kZero, bits, &key) == 0;
+        })) {
+      fprintf(stderr, "AES_set_decrypt_key failed.\n");
+      return false;
+    }
+    results.Print(name + " decrypt setup");
+  }
+
+  {
+    AES_KEY key;
+    if (AES_set_decrypt_key(kZero, bits, &key) != 0) {
+      return false;
+    }
+    uint8_t block[16] = {0};
+    TimeResults results;
+    if (!TimeFunction(&results, [&]() -> bool {
+          AES_decrypt(block, block, &key);
+          return true;
+        })) {
+      fprintf(stderr, "AES_decrypt failed.\n");
+      return false;
+    }
+    results.Print(name + " decrypt");
+  }
+
+  return true;
+}
+
+static bool SpeedHashChunk(const EVP_MD *md, std::string name,
                            size_t chunk_len) {
   bssl::ScopedEVP_MD_CTX ctx;
-  uint8_t scratch[8192];
+  uint8_t scratch[16384];
 
   if (chunk_len > sizeof(scratch)) {
     return false;
   }
 
+  name += ChunkLenSuffix(chunk_len);
   TimeResults results;
   if (!TimeFunction(&results, [&ctx, md, chunk_len, &scratch]() -> bool {
         uint8_t digest[EVP_MAX_MD_SIZE];
@@ -437,24 +570,30 @@ static bool SpeedHashChunk(const EVP_MD *md, const std::string &name,
   results.PrintWithBytes(name, chunk_len);
   return true;
 }
+
 static bool SpeedHash(const EVP_MD *md, const std::string &name,
                       const std::string &selected) {
   if (!selected.empty() && name.find(selected) == std::string::npos) {
     return true;
   }
 
-  return SpeedHashChunk(md, name + " (16 bytes)", 16) &&
-         SpeedHashChunk(md, name + " (256 bytes)", 256) &&
-         SpeedHashChunk(md, name + " (8192 bytes)", 8192);
+  for (size_t chunk_len : g_chunk_lengths) {
+    if (!SpeedHashChunk(md, name, chunk_len)) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
-static bool SpeedRandomChunk(const std::string &name, size_t chunk_len) {
-  uint8_t scratch[8192];
+static bool SpeedRandomChunk(std::string name, size_t chunk_len) {
+  uint8_t scratch[16384];
 
   if (chunk_len > sizeof(scratch)) {
     return false;
   }
 
+  name += ChunkLenSuffix(chunk_len);
   TimeResults results;
   if (!TimeFunction(&results, [chunk_len, &scratch]() -> bool {
         RAND_bytes(scratch, chunk_len);
@@ -472,9 +611,13 @@ static bool SpeedRandom(const std::string &selected) {
     return true;
   }
 
-  return SpeedRandomChunk("RNG (16 bytes)", 16) &&
-         SpeedRandomChunk("RNG (256 bytes)", 256) &&
-         SpeedRandomChunk("RNG (8192 bytes)", 8192);
+  for (size_t chunk_len : g_chunk_lengths) {
+    if (!SpeedRandomChunk("RNG", chunk_len)) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 static bool SpeedECDHCurve(const std::string &name, int nid,
@@ -744,17 +887,92 @@ static bool SpeedScrypt(const std::string &selected) {
   return true;
 }
 
+static bool SpeedHRSS(const std::string &selected) {
+  if (!selected.empty() && selected != "HRSS") {
+    return true;
+  }
+
+  TimeResults results;
+
+  if (!TimeFunction(&results, []() -> bool {
+    struct HRSS_public_key pub;
+    struct HRSS_private_key priv;
+    uint8_t entropy[HRSS_GENERATE_KEY_BYTES];
+    RAND_bytes(entropy, sizeof(entropy));
+    HRSS_generate_key(&pub, &priv, entropy);
+    return true;
+  })) {
+    fprintf(stderr, "Failed to time HRSS_generate_key.\n");
+    return false;
+  }
+
+  results.Print("HRSS generate");
+
+  struct HRSS_public_key pub;
+  struct HRSS_private_key priv;
+  uint8_t key_entropy[HRSS_GENERATE_KEY_BYTES];
+  RAND_bytes(key_entropy, sizeof(key_entropy));
+  HRSS_generate_key(&pub, &priv, key_entropy);
+
+  uint8_t ciphertext[HRSS_CIPHERTEXT_BYTES];
+  if (!TimeFunction(&results, [&pub, &ciphertext]() -> bool {
+    uint8_t entropy[HRSS_ENCAP_BYTES];
+    uint8_t shared_key[HRSS_KEY_BYTES];
+    RAND_bytes(entropy, sizeof(entropy));
+    HRSS_encap(ciphertext, shared_key, &pub, entropy);
+    return true;
+  })) {
+    fprintf(stderr, "Failed to time HRSS_encap.\n");
+    return false;
+  }
+
+  results.Print("HRSS encap");
+
+  if (!TimeFunction(&results, [&priv, &ciphertext]() -> bool {
+    uint8_t shared_key[HRSS_KEY_BYTES];
+    HRSS_decap(shared_key, &priv, ciphertext, sizeof(ciphertext));
+    return true;
+  })) {
+    fprintf(stderr, "Failed to time HRSS_encap.\n");
+    return false;
+  }
+
+  results.Print("HRSS decap");
+
+  return true;
+}
+
 static const struct argument kArguments[] = {
     {
-     "-filter", kOptionalArgument,
-     "A filter on the speed tests to run",
+        "-filter",
+        kOptionalArgument,
+        "A filter on the speed tests to run",
     },
     {
-     "-timeout", kOptionalArgument,
-     "The number of seconds to run each test for (default is 1)",
+        "-timeout",
+        kOptionalArgument,
+        "The number of seconds to run each test for (default is 1)",
     },
     {
-     "", kOptionalArgument, "",
+        "-chunks",
+        kOptionalArgument,
+        "A comma-separated list of input sizes to run tests at (default is "
+        "16,256,1350,8192,16384)",
+    },
+    {
+        "-json",
+        kBooleanArgument,
+        "If this flag is set, speed will print the output of each benchmark in "
+        "JSON format as follows: \"{\"description\": "
+        "\"descriptionOfOperation\", \"numCalls\": 1234, "
+        "\"timeInMicroseconds\": 1234567, \"bytesPerCall\": 1234}\". When "
+        "there is no information about the bytes per call for an  operation, "
+        "the JSON field for bytesPerCall will be omitted.",
+    },
+    {
+        "",
+        kOptionalArgument,
+        "",
     },
 };
 
@@ -770,8 +988,38 @@ bool Speed(const std::vector<std::string> &args) {
     selected = args_map["-filter"];
   }
 
+  if (args_map.count("-json") != 0) {
+    g_print_json = true;
+  }
+
   if (args_map.count("-timeout") != 0) {
     g_timeout_seconds = atoi(args_map["-timeout"].c_str());
+  }
+
+  if (args_map.count("-chunks") != 0) {
+    g_chunk_lengths.clear();
+    const char *start = args_map["-chunks"].data();
+    const char *end = start + args_map["-chunks"].size();
+    while (start != end) {
+      errno = 0;
+      char *ptr;
+      unsigned long long val = strtoull(start, &ptr, 10);
+      if (ptr == start /* no numeric characters found */ ||
+          errno == ERANGE /* overflow */ ||
+          static_cast<size_t>(val) != val) {
+        fprintf(stderr, "Error parsing -chunks argument\n");
+        return false;
+      }
+      g_chunk_lengths.push_back(static_cast<size_t>(val));
+      start = ptr;
+      if (start != end) {
+        if (*start != ',') {
+          fprintf(stderr, "Error parsing -chunks argument\n");
+          return false;
+        }
+        start++;
+      }
+    }
   }
 
   // kTLSADLen is the number of bytes of additional data that TLS passes to
@@ -783,6 +1031,9 @@ bool Speed(const std::vector<std::string> &args) {
   // knowledge in them and construct a couple of the AD bytes internally.
   static const size_t kLegacyADLen = kTLSADLen - 2;
 
+  if (g_print_json) {
+    puts("[");
+  }
   if (!SpeedRSA(selected) ||
       !SpeedAEAD(EVP_aead_aes_128_gcm(), "AES-128-GCM", kTLSADLen, selected) ||
       !SpeedAEAD(EVP_aead_aes_256_gcm(), "AES-256-GCM", kTLSADLen, selected) ||
@@ -808,6 +1059,8 @@ bool Speed(const std::vector<std::string> &args) {
                      selected) ||
       !SpeedAEAD(EVP_aead_aes_128_ccm_bluetooth(), "AES-128-CCM-Bluetooth",
                  kTLSADLen, selected) ||
+      !SpeedAESBlock("AES-128", 128, selected) ||
+      !SpeedAESBlock("AES-256", 256, selected) ||
       !SpeedHash(EVP_sha1(), "SHA-1", selected) ||
       !SpeedHash(EVP_sha256(), "SHA-256", selected) ||
       !SpeedHash(EVP_sha512(), "SHA-512", selected) ||
@@ -817,8 +1070,12 @@ bool Speed(const std::vector<std::string> &args) {
       !Speed25519(selected) ||
       !SpeedSPAKE2(selected) ||
       !SpeedScrypt(selected) ||
-      !SpeedRSAKeyGen(selected)) {
+      !SpeedRSAKeyGen(selected) ||
+      !SpeedHRSS(selected)) {
     return false;
+  }
+  if (g_print_json) {
+    puts("\n]");
   }
 
   return true;

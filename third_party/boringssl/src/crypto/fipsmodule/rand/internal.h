@@ -16,6 +16,7 @@
 #define OPENSSL_HEADER_CRYPTO_RAND_INTERNAL_H
 
 #include <openssl/aes.h>
+#include <openssl/cpu.h>
 
 #include "../../internal.h"
 #include "../modes/internal.h"
@@ -25,6 +26,12 @@ extern "C" {
 #endif
 
 
+#if !defined(OPENSSL_WINDOWS) && !defined(OPENSSL_FUCHSIA) && \
+    !defined(STARBOARD) && \
+    !defined(BORINGSSL_UNSAFE_DETERMINISTIC_MODE) && !defined(OPENSSL_TRUSTY)
+#define OPENSSL_URANDOM
+#endif
+
 // RAND_bytes_with_additional_data samples from the RNG after mixing 32 bytes
 // from |user_additional_data| in.
 void RAND_bytes_with_additional_data(uint8_t *out, size_t out_len,
@@ -33,6 +40,19 @@ void RAND_bytes_with_additional_data(uint8_t *out, size_t out_len,
 // CRYPTO_sysrand fills |len| bytes at |buf| with entropy from the operating
 // system.
 void CRYPTO_sysrand(uint8_t *buf, size_t len);
+
+#if defined(OPENSSL_URANDOM) || defined(BORINGSSL_UNSAFE_DETERMINISTIC_MODE)
+// CRYPTO_sysrand_for_seed fills |len| bytes at |buf| with entropy from the
+// operating system. It may draw from the |GRND_RANDOM| pool on Android,
+// depending on the vendor's configuration.
+void CRYPTO_sysrand_for_seed(uint8_t *buf, size_t len);
+
+// CRYPTO_sysrand_if_available fills |len| bytes at |buf| with entropy from the
+// operating system, if the entropy pool is initialized. If it is uninitialized,
+// it will not block and will instead fill |buf| with all zeros or early
+// /dev/urandom output.
+void CRYPTO_sysrand_if_available(uint8_t *buf, size_t len);
+#endif
 
 // rand_fork_unsafe_buffering_enabled returns whether fork-unsafe buffering has
 // been enabled via |RAND_enable_fork_unsafe_buffering|.
@@ -83,6 +103,22 @@ OPENSSL_EXPORT int CTR_DRBG_generate(CTR_DRBG_STATE *drbg, uint8_t *out,
 
 // CTR_DRBG_clear zeroises the state of |drbg|.
 OPENSSL_EXPORT void CTR_DRBG_clear(CTR_DRBG_STATE *drbg);
+
+
+#if defined(OPENSSL_X86_64) && !defined(OPENSSL_NO_ASM)
+OPENSSL_INLINE int have_rdrand(void) {
+  return (OPENSSL_ia32cap_get()[1] & (1u << 30)) != 0;
+}
+
+// CRYPTO_rdrand writes eight bytes of random data from the hardware RNG to
+// |out|. It returns one on success or zero on hardware failure.
+int CRYPTO_rdrand(uint8_t out[8]);
+
+// CRYPTO_rdrand_multiple8_buf fills |len| bytes at |buf| with random data from
+// the hardware RNG. The |len| argument must be a multiple of eight. It returns
+// one on success and zero on hardware failure.
+int CRYPTO_rdrand_multiple8_buf(uint8_t *buf, size_t len);
+#endif  // OPENSSL_X86_64 && !OPENSSL_NO_ASM
 
 
 #if defined(__cplusplus)

@@ -79,7 +79,7 @@
 #define OPENSSL_DSA_MAX_MODULUS_BITS 10000
 
 // Primality test according to FIPS PUB 186[-1], Appendix 2.1: 50 rounds of
-// Rabin-Miller
+// Miller-Rabin.
 #define DSS_prime_checks 50
 
 static int dsa_sign_setup(const DSA *dsa, BN_CTX *ctx_in, BIGNUM **out_kinv,
@@ -256,7 +256,7 @@ int DSA_generate_parameters_ex(DSA *dsa, unsigned bits, const uint8_t *seed_in,
     // Find q.
     for (;;) {
       // step 1
-      if (!BN_GENCB_call(cb, 0, m++)) {
+      if (!BN_GENCB_call(cb, BN_GENCB_GENERATED, m++)) {
         goto err;
       }
 
@@ -319,7 +319,7 @@ int DSA_generate_parameters_ex(DSA *dsa, unsigned bits, const uint8_t *seed_in,
     n = (bits - 1) / 160;
 
     for (;;) {
-      if ((counter != 0) && !BN_GENCB_call(cb, 0, counter)) {
+      if ((counter != 0) && !BN_GENCB_call(cb, BN_GENCB_GENERATED, counter)) {
         goto err;
       }
 
@@ -558,29 +558,34 @@ static int mod_mul_consttime(BIGNUM *r, const BIGNUM *a, const BIGNUM *b,
 }
 
 DSA_SIG *DSA_do_sign(const uint8_t *digest, size_t digest_len, const DSA *dsa) {
-  BIGNUM *kinv = NULL, *r = NULL, *s = NULL;
-  BIGNUM m;
-  BIGNUM xr;
-  BN_CTX *ctx = NULL;
-  int reason = ERR_R_BN_LIB;
-  DSA_SIG *ret = NULL;
-
-  BN_init(&m);
-  BN_init(&xr);
-
   if (!dsa->p || !dsa->q || !dsa->g) {
-    reason = DSA_R_MISSING_PARAMETERS;
-    goto err;
+    OPENSSL_PUT_ERROR(DSA, DSA_R_MISSING_PARAMETERS);
+    return NULL;
+  }
+
+  // Reject invalid parameters. In particular, the algorithm will infinite loop
+  // if |g| is zero.
+  if (BN_is_zero(dsa->p) || BN_is_zero(dsa->q) || BN_is_zero(dsa->g)) {
+    OPENSSL_PUT_ERROR(DSA, DSA_R_INVALID_PARAMETERS);
+    return NULL;
   }
 
   // We only support DSA keys that are a multiple of 8 bits. (This is a weaker
   // check than the one in |DSA_do_check_signature|, which only allows 160-,
   // 224-, and 256-bit keys.
   if (BN_num_bits(dsa->q) % 8 != 0) {
-    reason = DSA_R_BAD_Q_VALUE;
-    goto err;
+    OPENSSL_PUT_ERROR(DSA, DSA_R_BAD_Q_VALUE);
+    return NULL;
   }
 
+  BIGNUM *kinv = NULL, *r = NULL, *s = NULL;
+  BIGNUM m;
+  BIGNUM xr;
+  BN_CTX *ctx = NULL;
+  DSA_SIG *ret = NULL;
+
+  BN_init(&m);
+  BN_init(&xr);
   s = BN_new();
   if (s == NULL) {
     goto err;
@@ -640,7 +645,7 @@ redo:
 
 err:
   if (ret == NULL) {
-    OPENSSL_PUT_ERROR(DSA, reason);
+    OPENSSL_PUT_ERROR(DSA, ERR_R_BN_LIB);
     BN_free(r);
     BN_free(s);
   }
@@ -860,29 +865,18 @@ int DSA_size(const DSA *dsa) {
   return ret;
 }
 
-static int dsa_sign_setup(const DSA *dsa, BN_CTX *ctx_in, BIGNUM **out_kinv,
+static int dsa_sign_setup(const DSA *dsa, BN_CTX *ctx, BIGNUM **out_kinv,
                           BIGNUM **out_r) {
-  BN_CTX *ctx;
-  BIGNUM k, *kinv = NULL, *r = NULL;
-  int ret = 0;
-
   if (!dsa->p || !dsa->q || !dsa->g) {
     OPENSSL_PUT_ERROR(DSA, DSA_R_MISSING_PARAMETERS);
     return 0;
   }
 
+  int ret = 0;
+  BIGNUM k;
   BN_init(&k);
-
-  ctx = ctx_in;
-  if (ctx == NULL) {
-    ctx = BN_CTX_new();
-    if (ctx == NULL) {
-      goto err;
-    }
-  }
-
-  r = BN_new();
-  kinv = BN_new();
+  BIGNUM *r = BN_new();
+  BIGNUM *kinv = BN_new();
   if (r == NULL || kinv == NULL ||
       // Get random k
       !BN_rand_range_ex(&k, 1, dsa->q) ||
@@ -906,28 +900,23 @@ static int dsa_sign_setup(const DSA *dsa, BN_CTX *ctx_in, BIGNUM **out_kinv,
       // Compute part of 's = inv(k) (m + xr) mod q' using Fermat's Little
       // Theorem.
       !bn_mod_inverse_prime(kinv, &k, dsa->q, ctx, dsa->method_mont_q)) {
+    OPENSSL_PUT_ERROR(DSA, ERR_R_BN_LIB);
     goto err;
   }
 
   BN_clear_free(*out_kinv);
   *out_kinv = kinv;
   kinv = NULL;
+
   BN_clear_free(*out_r);
   *out_r = r;
+  r = NULL;
+
   ret = 1;
 
 err:
-  if (!ret) {
-    OPENSSL_PUT_ERROR(DSA, ERR_R_BN_LIB);
-    if (r != NULL) {
-      BN_clear_free(r);
-    }
-  }
-
-  if (ctx_in == NULL) {
-    BN_CTX_free(ctx);
-  }
   BN_clear_free(&k);
+  BN_clear_free(r);
   BN_clear_free(kinv);
   return ret;
 }
