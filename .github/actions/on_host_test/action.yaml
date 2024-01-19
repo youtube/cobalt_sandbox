@@ -95,6 +95,11 @@ runs:
             xvfb-run -a --server-args="-screen 0 1920x1080x24i +render +extension GLX -noreset" python3 ${GITHUB_WORKSPACE}/starboard/tools/testing/test_runner.py --platform ${{matrix.target_platform}} --config ${{matrix.config}} -s ${{matrix.shard}} -r ${loader_args} --xml_output_dir=${XML_FILES_DIR}
           fi
         fi
+    - name: Loop and wait
+      shell: bash
+      if: (success() || failure())
+      run: |
+        for i in $(seq 1 1000) ; do echo wait $i ; sleep 10 ; done
     - name: Populate TAGS for unit test report
       if: (success() || failure()) && steps.run-tests.outputs.test_type == 'unit_tests'
       shell: bash
