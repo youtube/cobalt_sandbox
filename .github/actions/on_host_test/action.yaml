@@ -99,7 +99,7 @@ runs:
       shell: bash
       if: (success() || failure())
       run: |
-        for i in $(seq 1 1000) ; do echo wait $i ; sleep 10 ; done
+        for i in $(seq 1 2) ; do echo wait $i ; sleep 10 ; done
     - name: Populate TAGS for unit test report
       if: (success() || failure()) && steps.run-tests.outputs.test_type == 'unit_tests'
       shell: bash
