@@ -39,4 +39,4 @@ class LinuxConfiguration(platform_configuration.PlatformConfiguration):
     # When failing, 'LeakSanitizer has encountered a fatal error' message would
     # be printed at test shutdown, and env var LSAN_OPTIONS=verbosity=2 would
     # further point to 'Scanning DTLS range ..' prior to crash.
-    return {'ASAN_OPTIONS': 'intercept_tls_get_addr=0:quarantine_size_mb=2048'}
+    return {'ASAN_OPTIONS': 'intercept_tls_get_addr=0:quarantine_size_mb=16384'}
