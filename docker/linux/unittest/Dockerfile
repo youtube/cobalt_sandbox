@@ -16,6 +16,8 @@ FROM cobalt-base
 
 ARG HOME=/root
 
+RUN echo deb http://deb.debian.org/debian-debug bullseye-debug main >> /etc/apt/sources.list
+
 RUN apt update -qqy \
     && apt install -qqy --no-install-recommends \
         libasound2 \
@@ -33,6 +35,9 @@ RUN apt update -qqy \
         unzip \
         xauth \
         xvfb \
+        debian-goodies \
+        libgl1-mesa-dri-dbgsym \
+        libglapi-mesa-dbgsym \
     && /opt/clean-after-apt.sh
 
 COPY ./unittest/requirements.txt /opt/requirements.txt
