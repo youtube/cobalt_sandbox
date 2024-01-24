@@ -11,7 +11,9 @@
       "name":"xb1",
       "platform":"xb1",
       "target_platform":"xb1",
-      "extra_gn_arguments":"is_clang=false"
+      "extra_gn_arguments": "is_clang=false",
+      "target_cpu": "target_cpu=\\\"x64\\\"",
+      "target_os": "target_os=\\\"winuwp\\\""
     }
   ]
 }
