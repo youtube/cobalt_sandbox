@@ -103,7 +103,7 @@ services:
       context: ./docker/windows/xb1
       dockerfile: ./Dockerfile
       args:
-        - FROM_IMAGE=cobalt-build-win32-base
+        - FROM_IMAGE=cobalt-build-win-base
     depends_on:
       - cobalt-build-win32-base
     image: cobalt-build-xb1
