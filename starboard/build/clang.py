@@ -18,4 +18,4 @@ from starboard.tools.build import ClangSpecification
 
 def GetClangSpecification():
   """Gets the ClangSpecification instance for this project."""
-  return ClangSpecification('16-init-17653-g39da55e8-2', '16.0.0')
+  return ClangSpecification('16-init-9369-g87a20868-1', '16.0.0')
