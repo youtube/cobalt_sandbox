@@ -105,7 +105,7 @@ services:
       args:
         - FROM_IMAGE=cobalt-build-win-base
     depends_on:
-      - cobalt-build-win32-base
+      - cobalt-build-win-base
     image: cobalt-build-xb1
 
   # -----------------------------------------
