@@ -38,6 +38,11 @@ RUN apt update -qqy \
         debian-goodies \
         libgl1-mesa-dri-dbgsym \
         libglapi-mesa-dbgsym \
+        libavcodec58-dbgsym \
+        libavformat58-dbgsym \
+        libgles2-dbgsym \
+        libegl1-dbgsym \
+        libasound2-dbgsym \
     && /opt/clean-after-apt.sh
 
 COPY ./unittest/requirements.txt /opt/requirements.txt
