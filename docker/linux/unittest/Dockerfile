@@ -43,6 +43,8 @@ RUN apt update -qqy \
         libgles2-dbgsym \
         libegl1-dbgsym \
         libasound2-dbgsym \
+        libglx-mesa0-dbgsym \
+        libglx0-dbgsym \
     && /opt/clean-after-apt.sh
 
 COPY ./unittest/requirements.txt /opt/requirements.txt
