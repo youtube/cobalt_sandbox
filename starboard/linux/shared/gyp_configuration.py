@@ -41,4 +41,4 @@ class LinuxConfiguration(platform_configuration.PlatformConfiguration):
     # further point to 'Scanning DTLS range ..' prior to crash.
     # quarantine_size is temporarily set to a huge value to prevent recycling
     # from happening, as it crashes on Debian11+Mesa. TODO: b/321746394
-    return {'ASAN_OPTIONS': 'intercept_tls_get_addr=0:quarantine_size_mb=65536'}
+    return {'ASAN_OPTIONS': 'intercept_tls_get_addr=0:quarantine_size_mb=1'}
