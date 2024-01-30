@@ -112,7 +112,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <openssl/cpu.h>
 #include <openssl/err.h>
 #include <openssl/mem.h>
 
@@ -723,7 +722,7 @@ void bn_mod_exp_mont_small(BN_ULONG *r, const BN_ULONG *a, size_t num,
                            const BN_ULONG *p, size_t num_p,
                            const BN_MONT_CTX *mont) {
   if (num != (size_t)mont->N.width || num > BN_SMALL_MAX_WORDS) {
-    OPENSSL_port_abort();
+    abort();
   }
   assert(BN_is_odd(&mont->N));
 
@@ -812,7 +811,7 @@ void bn_mod_exp_mont_small(BN_ULONG *r, const BN_ULONG *a, size_t num,
 void bn_mod_inverse0_prime_mont_small(BN_ULONG *r, const BN_ULONG *a,
                                       size_t num, const BN_MONT_CTX *mont) {
   if (num != (size_t)mont->N.width || num > BN_SMALL_MAX_WORDS) {
-    OPENSSL_port_abort();
+    abort();
   }
 
   // Per Fermat's Little Theorem, a^-1 = a^(p-2) (mod p) for p prime.

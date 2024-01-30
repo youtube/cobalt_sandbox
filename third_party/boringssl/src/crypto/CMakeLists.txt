@@ -2,7 +2,7 @@ include_directories(../include)
 
 if(NOT OPENSSL_NO_ASM)
   if(UNIX)
-    if(${ARCH} STREQUAL "aarch64")
+    if(ARCH STREQUAL "aarch64")
       # The "armx" Perl scripts look for "64" in the style argument
       # in order to decide whether to generate 32- or 64-bit asm.
       if(APPLE)
@@ -10,16 +10,16 @@ if(NOT OPENSSL_NO_ASM)
       else()
         set(PERLASM_STYLE linux64)
       endif()
-    elseif(${ARCH} STREQUAL "arm")
+    elseif(ARCH STREQUAL "arm")
       if(APPLE)
         set(PERLASM_STYLE ios32)
       else()
         set(PERLASM_STYLE linux32)
       endif()
-    elseif(${ARCH} STREQUAL "ppc64le")
+    elseif(ARCH STREQUAL "ppc64le")
       set(PERLASM_STYLE linux64le)
     else()
-      if(${ARCH} STREQUAL "x86")
+      if(ARCH STREQUAL "x86")
         set(PERLASM_FLAGS "-fPIC -DOPENSSL_IA32_SSE2")
       endif()
       if(APPLE)
@@ -47,23 +47,29 @@ if(NOT OPENSSL_NO_ASM)
       endforeach()
     endif()
   else()
-    if(${ARCH} STREQUAL "x86_64")
-      set(PERLASM_STYLE nasm)
+    if(ARCH STREQUAL "aarch64")
+      set(PERLASM_STYLE win64)
+      set(ASM_EXT S)
+      enable_language(ASM)
     else()
-      set(PERLASM_STYLE win32n)
-      set(PERLASM_FLAGS "-DOPENSSL_IA32_SSE2")
-    endif()
-    set(CMAKE_ASM_NASM_FLAGS "${CMAKE_ASM_NASM_FLAGS} -gcv8")
+      if(ARCH STREQUAL "x86_64")
+        set(PERLASM_STYLE nasm)
+      else()
+        set(PERLASM_STYLE win32n)
+        set(PERLASM_FLAGS "-DOPENSSL_IA32_SSE2")
+      endif()
+      set(CMAKE_ASM_NASM_FLAGS "${CMAKE_ASM_NASM_FLAGS} -gcv8")
 
-    # On Windows, we use the NASM output, specifically built with Yasm.
-    set(ASM_EXT asm)
-    enable_language(ASM_NASM)
+      # On Windows, we use the NASM output.
+      set(ASM_EXT asm)
+      enable_language(ASM_NASM)
+    endif()
   endif()
 endif()
 
 function(perlasm dest src)
   get_filename_component(dir ${dest} DIRECTORY)
-  if ("${dir}" STREQUAL "")
+  if(dir STREQUAL "")
     set(dir ".")
   endif()
 
@@ -98,7 +104,7 @@ if(FIPS_DELOCATE OR FIPS_SHARED)
   )
 endif()
 
-if(${ARCH} STREQUAL "arm")
+if(ARCH STREQUAL "arm")
   set(
     CRYPTO_ARCH_SOURCES
 
@@ -109,7 +115,7 @@ if(${ARCH} STREQUAL "arm")
   )
 endif()
 
-if(${ARCH} STREQUAL "aarch64")
+if(ARCH STREQUAL "aarch64")
   set(
     CRYPTO_ARCH_SOURCES
 
@@ -118,7 +124,7 @@ if(${ARCH} STREQUAL "aarch64")
   )
 endif()
 
-if(${ARCH} STREQUAL "ppc64le")
+if(ARCH STREQUAL "ppc64le")
   set(
     CRYPTO_ARCH_SOURCES
 
@@ -126,7 +132,7 @@ if(${ARCH} STREQUAL "ppc64le")
   )
 endif()
 
-if(${ARCH} STREQUAL "x86")
+if(ARCH STREQUAL "x86")
   set(
     CRYPTO_ARCH_SOURCES
 
@@ -135,7 +141,7 @@ if(${ARCH} STREQUAL "x86")
   )
 endif()
 
-if(${ARCH} STREQUAL "x86_64")
+if(ARCH STREQUAL "x86_64")
   set(
     CRYPTO_ARCH_SOURCES
 
@@ -197,7 +203,6 @@ add_library(
   asn1/a_bool.c
   asn1/a_d2i_fp.c
   asn1/a_dup.c
-  asn1/a_enum.c
   asn1/a_gentm.c
   asn1/a_i2d_fp.c
   asn1/a_int.c
@@ -205,6 +210,7 @@ add_library(
   asn1/a_object.c
   asn1/a_octet.c
   asn1/a_print.c
+  asn1/a_strex.c
   asn1/a_strnid.c
   asn1/a_time.c
   asn1/a_type.c
@@ -213,7 +219,6 @@ add_library(
   asn1/asn1_lib.c
   asn1/asn1_par.c
   asn1/asn_pack.c
-  asn1/f_enum.c
   asn1/f_int.c
   asn1/f_string.c
   asn1/tasn_dec.c
@@ -234,6 +239,7 @@ add_library(
   bio/printf.c
   bio/socket.c
   bio/socket_helper.c
+  blake2/blake2.c
   bn_extra/bn_asn1.c
   bn_extra/convert.c
   buf/buf.c
@@ -249,6 +255,7 @@ add_library(
   cipher_extra/e_aesctrhmac.c
   cipher_extra/e_aesgcmsiv.c
   cipher_extra/e_chacha20poly1305.c
+  cipher_extra/e_des.c
   cipher_extra/e_null.c
   cipher_extra/e_rc2.c
   cipher_extra/e_rc4.c
@@ -256,19 +263,20 @@ add_library(
   cipher_extra/tls_cbc.c
   cmac/cmac.c
   conf/conf.c
-  cpu-aarch64-fuchsia.c
-  cpu-aarch64-linux.c
-  cpu-arm-linux.c
-  cpu-arm.c
-  cpu-intel.c
-  cpu-ppc64le.c
+  cpu_aarch64_apple.c
+  cpu_aarch64_fuchsia.c
+  cpu_aarch64_linux.c
+  cpu_aarch64_win.c
+  cpu_arm_linux.c
+  cpu_arm.c
+  cpu_intel.c
+  cpu_ppc64le.c
   crypto.c
   curve25519/curve25519.c
   curve25519/spake25519.c
-  dh/dh.c
-  dh/params.c
-  dh/check.c
-  dh/dh_asn1.c
+  des/des.c
+  dh_extra/params.c
+  dh_extra/dh_asn1.c
   digest_extra/digest_extra.c
   dsa/dsa.c
   dsa/dsa_asn1.c
@@ -325,6 +333,7 @@ add_library(
   rand_extra/deterministic.c
   rand_extra/forkunsafe.c
   rand_extra/fuchsia.c
+  rand_extra/passive.c
   rand_extra/rand_extra.c
   rand_extra/windows.c
   rc4/rc4.c
@@ -340,15 +349,16 @@ add_library(
   thread_win.c
   trust_token/pmbtoken.c
   trust_token/trust_token.c
+  trust_token/voprf.c
   x509/a_digest.c
   x509/a_sign.c
-  x509/a_strex.c
   x509/a_verify.c
   x509/algorithm.c
   x509/asn1_gen.c
   x509/by_dir.c
   x509/by_file.c
   x509/i2d_pr.c
+  x509/name_print.c
   x509/rsa_pss.c
   x509/t_crl.c
   x509/t_req.c
@@ -362,7 +372,6 @@ add_library(
   x509/x509_ext.c
   x509/x509_lu.c
   x509/x509_obj.c
-  x509/x509_r2x.c
   x509/x509_req.c
   x509/x509_set.c
   x509/x509_trs.c
@@ -428,17 +437,13 @@ add_library(
 )
 
 if(FIPS_SHARED)
-  set(EXTRA_INJECT_HASH_ARGS)
-  if(ANDROID)
-    set(EXTRA_INJECT_HASH_ARGS "-sha256")
-  endif()
   # Rewrite libcrypto.so to inject the correct module hash value. This assumes
   # UNIX-style library naming, but we only support FIPS mode on Linux anyway.
   add_custom_command(
     TARGET crypto POST_BUILD
     COMMAND ${GO_EXECUTABLE} run
     ${CMAKE_CURRENT_SOURCE_DIR}/../util/fipstools/inject_hash/inject_hash.go
-    -o libcrypto.so -in-object libcrypto.so ${EXTRA_INJECT_HASH_ARGS}
+    -o libcrypto.so -in-object libcrypto.so
     # The DEPENDS argument to a POST_BUILD rule appears to be ignored. Thus
     # go_executable isn't used (as it doesn't get built), but we list this
     # dependency anyway in case it starts working in some CMake version.
@@ -485,22 +490,24 @@ add_executable(
   abi_self_test.cc
   asn1/asn1_test.cc
   base64/base64_test.cc
-  buf/buf_test.cc
   bio/bio_test.cc
+  blake2/blake2_test.cc
+  buf/buf_test.cc
   bytestring/bytestring_test.cc
   chacha/chacha_test.cc
   cipher_extra/aead_test.cc
   cipher_extra/cipher_test.cc
   cmac/cmac_test.cc
   compiler_test.cc
+  conf/conf_test.cc
   constant_time_test.cc
-  cpu-arm-linux_test.cc
+  cpu_arm_linux_test.cc
   crypto_test.cc
   curve25519/ed25519_test.cc
   curve25519/spake25519_test.cc
   curve25519/x25519_test.cc
   ecdh_extra/ecdh_test.cc
-  dh/dh_test.cc
+  dh_extra/dh_test.cc
   digest_extra/digest_test.cc
   dsa/dsa_test.cc
   err/err_test.cc
@@ -543,7 +550,6 @@ add_executable(
   x509/x509_test.cc
   x509/x509_time_test.cc
   x509v3/tab_test.cc
-  x509v3/v3name_test.cc
 
   $<TARGET_OBJECTS:crypto_test_data>
   $<TARGET_OBJECTS:boringssl_gtest_main>

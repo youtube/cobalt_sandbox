@@ -111,7 +111,8 @@ WebMediaPlayerImpl::WebMediaPlayerImpl(
     bool allow_resume_after_suspend, bool allow_batched_sample_write,
     bool force_punch_out_by_default,
 #if SB_API_VERSION >= 15
-    int64_t audio_write_duration_local, int64_t audio_write_duration_remote,
+    base::TimeDelta audio_write_duration_local,
+    base::TimeDelta audio_write_duration_remote,
 #endif  // SB_API_VERSION >= 15
     ::media::MediaLog* const media_log)
     : pipeline_thread_("media_pipeline"),
@@ -843,7 +844,7 @@ void WebMediaPlayerImpl::StartPipeline(::media::Demuxer* demuxer) {
       BIND_TO_RENDER_LOOP(&WebMediaPlayerImpl::OnDurationChanged),
       BIND_TO_RENDER_LOOP(&WebMediaPlayerImpl::OnOutputModeChanged),
       BIND_TO_RENDER_LOOP(&WebMediaPlayerImpl::OnContentSizeChanged),
-      GetClient()->MaxVideoCapabilities());
+      GetClient()->MaxVideoCapabilities(), GetClient()->MaxVideoInputSize());
 }
 
 void WebMediaPlayerImpl::SetNetworkState(WebMediaPlayer::NetworkState state) {

@@ -797,6 +797,12 @@ int EC_POINT_get_affine_coordinates_GFp(const EC_GROUP *group,
   return 1;
 }
 
+int EC_POINT_get_affine_coordinates(const EC_GROUP *group,
+                                    const EC_POINT *point, BIGNUM *x, BIGNUM *y,
+                                    BN_CTX *ctx) {
+  return EC_POINT_get_affine_coordinates_GFp(group, point, x, y, ctx);
+}
+
 void ec_affine_to_jacobian(const EC_GROUP *group, EC_RAW_POINT *out,
                            const EC_AFFINE *p) {
   out->X = p->X;
@@ -879,6 +885,12 @@ int EC_POINT_set_affine_coordinates_GFp(const EC_GROUP *group, EC_POINT *point,
   return 1;
 }
 
+int EC_POINT_set_affine_coordinates(const EC_GROUP *group, EC_POINT *point,
+                                    const BIGNUM *x, const BIGNUM *y,
+                                    BN_CTX *ctx) {
+  return EC_POINT_set_affine_coordinates_GFp(group, point, x, y, ctx);
+}
+
 int EC_POINT_add(const EC_GROUP *group, EC_POINT *r, const EC_POINT *a,
                  const EC_POINT *b, BN_CTX *ctx) {
   if (EC_GROUP_cmp(group, r->group, NULL) != 0 ||
@@ -931,8 +943,9 @@ static int arbitrary_bignum_to_scalar(const EC_GROUP *group, EC_SCALAR *out,
   return ok;
 }
 
-int EC_POINT_mul(const EC_GROUP *group, EC_POINT *r, const BIGNUM *g_scalar,
-                 const EC_POINT *p, const BIGNUM *p_scalar, BN_CTX *ctx) {
+int ec_point_mul_no_self_test(const EC_GROUP *group, EC_POINT *r,
+                              const BIGNUM *g_scalar, const EC_POINT *p,
+                              const BIGNUM *p_scalar, BN_CTX *ctx) {
   // Previously, this function set |r| to the point at infinity if there was
   // nothing to multiply. But, nobody should be calling this function with
   // nothing to multiply in the first place.
@@ -996,6 +1009,13 @@ int EC_POINT_mul(const EC_GROUP *group, EC_POINT *r, const BIGNUM *g_scalar,
 err:
   BN_CTX_free(new_ctx);
   return ret;
+}
+
+int EC_POINT_mul(const EC_GROUP *group, EC_POINT *r, const BIGNUM *g_scalar,
+                 const EC_POINT *p, const BIGNUM *p_scalar, BN_CTX *ctx) {
+  boringssl_ensure_ecc_self_test();
+
+  return ec_point_mul_no_self_test(group, r, g_scalar, p, p_scalar, ctx);
 }
 
 int ec_point_mul_scalar_public(const EC_GROUP *group, EC_RAW_POINT *r,
@@ -1220,6 +1240,10 @@ void ec_set_to_safe_point(const EC_GROUP *group, EC_RAW_POINT *out) {
 
 void EC_GROUP_set_asn1_flag(EC_GROUP *group, int flag) {}
 
+int EC_GROUP_get_asn1_flag(const EC_GROUP *group) {
+  return OPENSSL_EC_NAMED_CURVE;
+}
+
 const EC_METHOD *EC_GROUP_method_of(const EC_GROUP *group) {
   // This function exists purely to give callers a way to call
   // |EC_METHOD_get_field_type|. cryptography.io crashes if |EC_GROUP_method_of|
@@ -1234,7 +1258,7 @@ int EC_METHOD_get_field_type(const EC_METHOD *meth) {
 void EC_GROUP_set_point_conversion_form(EC_GROUP *group,
                                         point_conversion_form_t form) {
   if (form != POINT_CONVERSION_UNCOMPRESSED) {
-    OPENSSL_port_abort();
+    abort();
   }
 }
 
