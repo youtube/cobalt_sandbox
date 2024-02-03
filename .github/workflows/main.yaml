@@ -328,7 +328,7 @@ jobs:
     needs: [initialize, docker-unittest-image, build]
     permissions: {}
     if: needs.initialize.outputs.on_host_test == 'true'
-    runs-on: [self-hosted, linux-runner]
+    runs-on: [linux-test-hosted]
     name: ${{matrix.name}}_${{matrix.shard}}_test
     strategy:
       fail-fast: false
