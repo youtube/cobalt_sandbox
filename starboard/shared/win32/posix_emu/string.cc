@@ -1,4 +1,4 @@
-// Copyright 2015 The Cobalt Authors. All Rights Reserved.
+// Copyright 2024 The Cobalt Authors. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,20 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <pthread.h>
+#include <string.h>
 
-#include "starboard/configuration.h"
-#include "testing/gtest/include/gtest/gtest.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-namespace starboard {
-namespace nplb {
-namespace {
-
-TEST(PosixMutexDestroyTest, SunnyDayAutoInit) {
-  pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-  EXPECT_EQ(pthread_mutex_destroy(&mutex), 0);
+int strcasecmp(const char* s1, const char* s2) {
+  return _stricmp(s1, s2);
 }
 
-}  // namespace
-}  // namespace nplb
-}  // namespace starboard
+int strncasecmp(const char* s1, const char* s2, size_t n) {
+  return _strnicmp(s1, s2, n);
+}
+
+#ifdef __cplusplus
+}
+#endif
