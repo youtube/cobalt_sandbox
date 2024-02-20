@@ -12,16 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <string.h>
+#ifndef STARBOARD_SHARED_WIN32_POSIX_EMU_INCLUDE_FCNTL_H_
+#define STARBOARD_SHARED_WIN32_POSIX_EMU_INCLUDE_FCNTL_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <../ucrt/fcntl.h>  // The Visual Studio version of this same file
+#include <io.h>             // Needed for `open`, which is in fcntl.h on POSIX
 
-char* strdup(const char* s1) {
-  return _strdup(s1);
-}
+#undef close  // in unistd.h on POSIX, and handles both files and sockets
 
-#ifdef __cplusplus
-}
-#endif
+#endif  // STARBOARD_SHARED_WIN32_POSIX_EMU_INCLUDE_FCNTL_H_

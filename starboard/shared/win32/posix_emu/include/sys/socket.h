@@ -18,9 +18,6 @@
 #include <winsock2.h>
 #undef NO_ERROR  // http://b/302733082#comment15
 
-#include "starboard/common/log.h"
-#include "starboard/types.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
