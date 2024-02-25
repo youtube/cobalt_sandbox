@@ -153,20 +153,20 @@
 
     // This controls the availability of floating-point std::to_chars functions.
     // These overloads were added later than the integer overloads.
-// #   define _LIBCPP_AVAILABILITY_HAS_NO_TO_CHARS_FLOATING_POINT
+#   define _LIBCPP_AVAILABILITY_HAS_NO_TO_CHARS_FLOATING_POINT 0
 #   define _LIBCPP_AVAILABILITY_TO_CHARS_FLOATING_POINT
 
     // This controls the availability of the C++20 synchronization library,
     // which requires shared library support for various operations
     // (see libcxx/src/atomic.cpp). This includes <barier>, <latch>,
     // <semaphore>, and notification functions on std::atomic.
-// #   define _LIBCPP_AVAILABILITY_HAS_NO_SYNC
+#   define _LIBCPP_AVAILABILITY_HAS_NO_SYNC 0
 #   define _LIBCPP_AVAILABILITY_SYNC
 
     // This controls whether the library claims to provide a default verbose
     // termination function, and consequently whether the headers will try
     // to use it when the mechanism isn't overriden at compile-time.
-// #   define _LIBCPP_AVAILABILITY_HAS_NO_VERBOSE_ABORT
+#   define _LIBCPP_AVAILABILITY_HAS_NO_VERBOSE_ABORT 0
 #   define _LIBCPP_AVAILABILITY_VERBOSE_ABORT
 
 #elif defined(__APPLE__)
