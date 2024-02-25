@@ -11,9 +11,24 @@
 
 _LIBCPP_BEGIN_NAMESPACE_STD
 
+// The definition for std::__bit_log2 is in 
+// llvm-project/libcxx/include/__bit/bit_log2.h and is gaurded by _LIBCPP_STD_VER >= 20
+// Since we are building with C++17 we are adding _LIBCPP_STD_VER >= 20
+
+
+
 template <class Comp, class RandomAccessIterator>
 void __sort(RandomAccessIterator first, RandomAccessIterator last, Comp comp) {
+
+#if defined USE_COBALT_CUSTOMIZATIONS  
+#if _LIBCPP_STD_VER >= 20
   auto depth_limit = 2 * std::__bit_log2(static_cast<size_t>(last - first));
+#else
+  // horrible fix, never submit this
+  auto depth_limit = 2 * std::log2(static_cast<size_t>(last - first));
+
+# endif // _LIBCPP_STD_VER >= 20
+# endif // USE_COBALT_CUSTOMIZATION
 
   // Only use bitset partitioning for arithmetic types.  We should also check
   // that the default comparator is in use so that we are sure that there are no
@@ -43,5 +58,7 @@ template void __sort<__less<float>&, float*>(float*, float*, __less<float>&);
 template void __sort<__less<double>&, double*>(double*, double*, __less<double>&);
 template void __sort<__less<long double>&, long double*>(long double*, long double*, __less<long double>&);
 // clang-format on
+
+
 
 _LIBCPP_END_NAMESPACE_STD
