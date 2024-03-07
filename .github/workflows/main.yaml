@@ -29,6 +29,15 @@ on:
         required: false
         type: boolean
         default: false
+      keep_artifacts:
+        description: 'Which artifacts to keep for releases'
+        required: false
+        type: string
+        default: ''
+    outputs:
+      first_output:
+        description: "My random output"
+        value: ${{ jobs.build.outputs.output1 }}
 
 # Global env vars.
 env:
@@ -219,13 +228,15 @@ jobs:
       matrix:
         platform: ${{ fromJson(needs.initialize.outputs.platforms) }}
         include: ${{ fromJson(needs.initialize.outputs.includes) }}
-        config: [devel, debug, qa, gold]
+        config: [qa, gold]
     container: ${{ needs.docker-build-image.outputs.docker_tag }}
     env:
       # We want temp folder to be on tmpfs which makes workloads faster.
       # However, dind container ends up having / folder mounted on overlay
       # filesystem, whereas /__w which contains Cobalt source code is on tmpfs.
       TMPDIR: /__w/_temp
+    outputs:
+      output1: ${{ steps.output_step_1.outputs.firstword }}
     steps:
       - name: Checkout
         uses: kaidokert/checkout@v3.5.999
@@ -238,6 +249,23 @@ jobs:
         uses: ./.github/actions/gn
       - name: Build Cobalt
         uses: ./.github/actions/build
+      - id: output_step_1
+        name: Set output
+        run: |
+          echo "The artifacts we need to keep:" ${{ inputs.keep_artifacts }}
+          echo "Full spec" out/${{ matrix.platform}}-${{ matrix.config }}/${{ inputs.keep_artifacts }}
+          find . -name "*.apk"
+          ls -la out/${{ matrix.platform}}_${{ matrix.config }}/${{ inputs.keep_artifacts }}
+          echo "firstword=hello"  >> $GITHUB_OUTPUT
+      - name: 'Upload Artifact'
+        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4
+        if: inputs.keep_artifacts
+        with:
+          name: ${{ matrix.platform }}-${{ matrix.config }}
+          path: out/${{ matrix.platform }}_${{ matrix.config }}/${{ inputs.keep_artifacts }}
+          retention-days: 7
+          compression-level: 0 # We expect kept artifacts to be already compressed
+          if-no-files-found: error
       - name: Run API Leak Detector
         uses: ./.github/actions/api_leak_detector
         if: inputs.run_api_leak_detector
