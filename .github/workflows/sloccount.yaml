@@ -1,5 +1,8 @@
 name: Count Lines of Code
 
+on:
+  pull_request:
+
 jobs:
   cloc:
     runs-on: ubuntu-latest
