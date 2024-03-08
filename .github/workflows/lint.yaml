@@ -67,7 +67,7 @@ jobs:
           flags: 'gm'
           error: 'PR title or description should include at least one bug ID.'
   sloc-count:
-    name: Check Lines of code
+    name: Check Lines of code.
     runs-on: ubuntu-latest
     steps:
       - name: Count Lines of Code (cloc)
