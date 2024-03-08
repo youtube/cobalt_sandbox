@@ -66,11 +66,3 @@ jobs:
           pattern: '(b\/\d+|^(Bug|Fixed|Issue): \d+$)'
           flags: 'gm'
           error: 'PR title or description should include at least one bug ID.'
-  sloc-count:
-    name: Check Lines of code.
-    runs-on: ubuntu-latest
-    steps:
-      - name: Count Lines of Code (cloc)
-        uses: djdefi/cloc-action@6
-              
-
