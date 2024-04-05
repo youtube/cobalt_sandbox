@@ -1,0 +1,24 @@
+name: release
+
+on:
+  pull_request:
+  release:
+    types: [prereleased, released, published]
+
+jobs:
+  starboard-source:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: kaidokert/checkout@v3.5.999
+      - name: Generate Starboard tarball
+        run: |
+          git archive --prefix=starboard-16.3/ -o starboard-16.3.tar.gz HEAD starboard
+      - name: 'Upload Android APKs'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Starboard tarball
+          path: starboard-16.3.tar.gz
+          retention-days: 90
+          compression-level: 0 # We expect kept artifacts to be already compressed
+          if-no-files-found: error
