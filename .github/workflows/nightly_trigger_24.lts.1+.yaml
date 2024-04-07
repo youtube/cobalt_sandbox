@@ -7,6 +7,27 @@ on:
   workflow_dispatch:
 
 jobs:
+  trigger_25:
+    permissions:
+      actions: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: kaidokert/checkout@v3.5.999
+        with:
+          fetch-depth: 1
+          ref: 25.lts.1+
+          persist-credentials: false
+      - name: Trigger Nightly
+        run: |
+          set -x
+          gh workflow run android_25.lts.1+ --ref 25.lts.1+ -f nightly=true
+          gh workflow run evergreen_25.lts.1+ --ref 25.lts.1+ -f nightly=true
+          gh workflow run linux_25.lts.1+ --ref 25.lts.1+ -f nightly=true
+          gh workflow run raspi-2_25.lts.1+ --ref 25.lts.1+ -f nightly=true
+          gh workflow run win32_25.lts.1+ --ref 25.lts.1+ -f nightly=true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   trigger_24:
     permissions:
       actions: write
