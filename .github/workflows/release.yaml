@@ -11,6 +11,10 @@ jobs:
     steps:
       - name: Checkout
         uses: kaidokert/checkout@v3.5.999
+      - name: Get Starboard major version
+        run: egrep sb_api_version starboard/build/config/base_configuration.gni | sed "s/.*= //"
+      - name: Get Starboard minor version
+        run: git rev-list --since=2024-03-01 --count --first-parent HEAD -- starboard
       - name: Generate Starboard tarball
         run: |
           git archive --prefix=starboard-16.3/ -o starboard-16.3.tar.gz HEAD starboard
