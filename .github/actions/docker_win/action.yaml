@@ -12,7 +12,7 @@ runs:
       shell: bash
     - name: Get docker file changes
       id: changed-files
-      uses: tj-actions/changed-files@2d756ea4c53f7f6b397767d8723b3a10a9f35bf2 # v44
+      uses: kaidokert/changed-files@c684f86a9764f2533437c51cf25ff325d6986755 # extra logging
       with:
         files_ignore: third_party/**
         files: |
