@@ -15,6 +15,8 @@
 ARG FROM_IMAGE
 FROM ${FROM_IMAGE:-cobalt-base}
 
+RUN echo more cache busting
+
 ARG HOME=/root
 
 # === Install common build tools, required by all platforms
