@@ -16,6 +16,8 @@ ARG BASE_OS
 ARG BASE_OS_TAG
 FROM ${BASE_OS:-gcr.io/cloud-marketplace-containers/google/debian11}:${BASE_OS_TAG:-latest}
 
+RUN echo cache busting all docker tags
+
 COPY base/clean-after-apt.sh /opt/clean-after-apt.sh
 
 ENV PYTHONUNBUFFERED 1
