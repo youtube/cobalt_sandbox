@@ -100,5 +100,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          args: |
-            .
+          releaseId: 151047658
+          args: 'Android APKs'
