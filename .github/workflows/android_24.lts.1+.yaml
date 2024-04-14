@@ -87,10 +87,6 @@ jobs:
         with:
           name: android-x86-qa
           path: x86-qa
-      - name: Doublecheck 1
-        run: ls -la
-      - name: Find 1
-        run: find . -iname "*.apk"
       - name: 'Upload Android APKs'
         uses: actions/upload-artifact@v4
         with:
@@ -99,18 +95,12 @@ jobs:
           retention-days: 90
           compression-level: 0 # We expect kept artifacts to be already compressed
           if-no-files-found: error
-      - name: Doublecheck 2
-        run: ls -la
-      - name: Find 2
-        run: find . -iname "*.apk"
       - name: Make a release zip
         run: zip -0 -r "Android APKs.zip" . -i '*.apk'
-      - name: Doublecheck 3
-        run: ls -la
       - name: Upload the APKs to a release
-        uses: svenstaro/upload-release-action@v2
+        if: ${{ github.event_name == 'release' }}
+        uses: svenstaro/upload-release-action@04733e069f2d7f7f0b4aebc4fbdbce8613b03ccd # v2.9.0
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          tag: 24_test_release_5
           file: "Android APKs.zip"
           overwrite: true
