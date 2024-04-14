@@ -87,6 +87,10 @@ jobs:
         with:
           name: android-x86-qa
           path: x86-qa
+      - name: Doublecheck 1
+        run: ls -la
+      - name: Find 1
+        run: find . -iname "*.apk"
       - name: 'Upload Android APKs'
         uses: actions/upload-artifact@v4
         with:
@@ -95,6 +99,10 @@ jobs:
           retention-days: 90
           compression-level: 0 # We expect kept artifacts to be already compressed
           if-no-files-found: error
+      - name: Doublecheck 2
+        run: ls -la
+      - name: Find 2
+        run: find . -iname "*.apk"
       - name: Upload the APKs to a release
         uses: svenstaro/upload-release-action@v2
         with:
