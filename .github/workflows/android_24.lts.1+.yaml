@@ -103,11 +103,14 @@ jobs:
         run: ls -la
       - name: Find 2
         run: find . -iname "*.apk"
+      - name: Make a release zip
+        run: zip -0 -r "Android APKs.zip" . -i '*.apk'
+      - name: Doublecheck 3
+        run: ls -la
       - name: Upload the APKs to a release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: 24_test_release_5
-          file_glob: true
-          file: '*.apk'
+          file: "Android APKs.zip"
           overwrite: true
