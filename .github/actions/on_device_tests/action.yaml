@@ -41,7 +41,7 @@ runs:
       shell: bash
     - name: Run ${{ env.SHARD_NAME }} Tests on ${{ matrix.platform }} Platform
       env:
-        GCS_PATH: gs://${{ env.PROJECT_NAME }}-test-artifacts/${{ github.workflow }}/${{ env.GITHUB_RUN_NUMBER }}/${{ matrix.platform }}_${{ matrix.config }}
+        GCS_PATH: gs://${{ env.PROJECT_NAME }}-test-artifacts/${{ github.workflow }}/${{ github.run_number }}/${{ matrix.platform }}_${{ matrix.config }}
         GCS_RESULTS_PATH: gs://cobalt-unittest-storage/results
         GITHUB_SHA: ${{ github.sha }}
         GITHUB_TOKEN: ${{ github.token }}
@@ -57,6 +57,7 @@ runs:
         GITHUB_COMMIT_AUTHOR_EMAIL: ${{ github.event.commits[0].author.email }}
         GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
         GITHUB_RUN_ID: ${{ github.run_id }}
+        GITHUB_RUN_NUMBER: ${{ github.run_number }}
         GITHUB_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         GITHUB_WORKFLOW: ${{ github.workflow }}
       run: |
