@@ -239,75 +239,6 @@ jobs:
           # Use fetch depth of 0 to get full history for a valid build id.
           fetch-depth: 0
           persist-credentials: false
-      - name: Cache Gradle
-        uses: actions/cache@v3
-        if: startsWith( matrix.target_platform , 'android')
-        with:
-          key: gradle-cache-${{ hashFiles('starboard/android/apk/**/*gradle*') }}
-          path: |
-            /root/.gradle/caches
-            /root/.gradle/wrapper
-      - name: GN
-        uses: ./.github/actions/gn
-      - name: Build Cobalt
-        uses: ./.github/actions/build
-      - name: 'Upload Artifact'
-        uses: actions/upload-artifact@v4
-        if: inputs.keep_artifacts
-        with:
-          name: ${{ matrix.platform }}-${{ matrix.config }}
-          path: out/${{ matrix.platform }}_${{ matrix.config }}/${{ inputs.keep_artifacts }}
-          retention-days: 7
-          compression-level: 0 # We expect kept artifacts to be already compressed
-          if-no-files-found: error
-      - name: Run API Leak Detector
-        uses: ./.github/actions/api_leak_detector
-        if: inputs.run_api_leak_detector
-        with:
-          relative_manifest_path: ${{ inputs.leak_manifest_filename }}
-      - name: Upload On Host Test Artifacts
-        if: ${{ matrix.config == 'devel' && needs.initialize.outputs.on_host_test == 'true' }}
-        uses: ./.github/actions/upload_test_artifacts
-        with:
-          type: onhost
-          os: linux
-      # For some reason passing needs.initialize.outputs.evergreen_loader as parameter to build
-      # action didn't work, so instead we set an env var.
-      - name: Set Evergreen loader config
-        if: ${{ needs.initialize.outputs.evergreen_loader != 'null' }}
-        shell: bash
-        run: |
-           set -u
-           COBALT_EVERGREEN_LOADER="${{needs.initialize.outputs.evergreen_loader}}"
-           echo "COBALT_EVERGREEN_LOADER=${COBALT_EVERGREEN_LOADER}" >> $GITHUB_ENV
-      # Build Evergreen loader for on-host tests if necessary.
-      - name: Evergreen loader GN
-        if: ${{ needs.initialize.outputs.evergreen_loader != 'null' && ( matrix.config == 'devel' || matrix.config == 'qa' ) }}
-        uses: ./.github/actions/gn
-      - name: Build Evergreen loader
-        if: ${{ needs.initialize.outputs.evergreen_loader != 'null' && ( matrix.config == 'devel' || matrix.config == 'qa' ) }}
-        uses: ./.github/actions/build
-      - name: Upload Nightly Artifacts
-        if: ${{ ( inputs.nightly == 'true' || github.event_name == 'schedule' ) && matrix.config != 'debug' }}
-        uses: ./.github/actions/upload_nightly_artifacts
-      - name: Upload Evergreen loader On Host Test Artifacts
-        if: ${{ needs.initialize.outputs.evergreen_loader != 'null' && matrix.config == 'devel' && needs.initialize.outputs.on_host_test == 'true'}}
-        uses: ./.github/actions/upload_test_artifacts
-        with:
-          type: onhost
-          os: linux
-      - name: Upload On Device Test Artifacts
-        if: |
-          matrix.config == 'devel' &&
-          fromJSON(needs.initialize.outputs.on_device_test).enabled == true &&
-          (
-            github.event_name != 'pull_request' ||
-            contains(github.event.pull_request.labels.*.name, 'on_device')
-          )
-        uses: ./.github/actions/upload_test_artifacts
-        with:
-          type: ondevice
-          os: linux
 
   # Runs on-device integration and unit tests.
   on-device-test:
@@ -315,12 +246,7 @@ jobs:
     # Run ODT when on_device label is applied on PR.
     # Also, run ODT on push and schedule if not explicitly disabled via repo vars.
     if: |
-      fromJSON(needs.initialize.outputs.on_device_test).enabled == true && ((
-        github.event_name == 'pull_request' &&
-        contains(github.event.pull_request.labels.*.name, 'on_device') ) || ((
-            inputs.nightly == 'true' || github.event_name == 'schedule') &&
-            vars.RUN_ODT_TESTS_ON_NIGHTLY != 'False') ||
-          ( github.event_name == 'push' && vars.RUN_ODT_TESTS_ON_POSTSUBMIT != 'False' ) )
+      fromJSON(needs.initialize.outputs.on_device_test).enabled == true
     runs-on: [self-hosted, odt-runner]
     name: ${{ matrix.name }}_on_device_${{ matrix.shard }}
     permissions: {}
