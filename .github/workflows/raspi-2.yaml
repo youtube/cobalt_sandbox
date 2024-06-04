@@ -30,6 +30,7 @@ jobs:
     with:
       platform: raspi-2
       nightly: ${{ github.event.inputs.nightly }}
+    secrets: inherit
   raspi-2-skia:
     uses: ./.github/workflows/main.yaml
     permissions:
@@ -38,3 +39,4 @@ jobs:
     with:
       platform: raspi-2-skia
       nightly: ${{ github.event.inputs.nightly }}
+    secrets: inherit
