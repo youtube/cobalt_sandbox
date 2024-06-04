@@ -30,3 +30,4 @@ jobs:
     with:
       platform: win32
       nightly: ${{ github.event.inputs.nightly }}
+    secrets: inherit

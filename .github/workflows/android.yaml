@@ -33,6 +33,7 @@ jobs:
       platform: android-arm64
       nightly: ${{ github.event.inputs.nightly }}
       keep_artifacts: cobalt.apk
+    secrets: inherit
   android-x86:
     uses: ./.github/workflows/main.yaml
     permissions:
@@ -42,6 +43,7 @@ jobs:
       platform: android-x86
       nightly: ${{ github.event.inputs.nightly }}
       keep_artifacts: cobalt.apk
+    secrets: inherit
   android-arm:
     uses: ./.github/workflows/main.yaml
     permissions:
@@ -51,6 +53,7 @@ jobs:
       platform: android-arm
       nightly: ${{ github.event.inputs.nightly }}
       keep_artifacts: cobalt.apk
+    secrets: inherit
 
   upload-release-artifacts:
     runs-on: ubuntu-latest

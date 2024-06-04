@@ -30,6 +30,7 @@ jobs:
     with:
       platform: linux
       nightly: ${{ github.event.inputs.nightly }}
+    secrets: inherit
   linux-clang-3-9:
     uses: ./.github/workflows/main.yaml
     permissions:
@@ -39,6 +40,7 @@ jobs:
       platform: linux-clang-3-9
       nightly: ${{ github.event.inputs.nightly }}
       modular: true
+    secrets: inherit
   linux-gcc-6-3:
     uses: ./.github/workflows/main.yaml
     permissions:
@@ -48,6 +50,7 @@ jobs:
       platform: linux-gcc-6-3
       nightly: ${{ github.event.inputs.nightly }}
       modular: true
+    secrets: inherit
   # TODO(b/285632780): Enable blackbox tests for modular linux workflows.
   linux-modular:
     uses: ./.github/workflows/main.yaml
@@ -58,3 +61,4 @@ jobs:
       platform: linux-modular
       nightly: ${{ github.event.inputs.nightly }}
       modular: true
+    secrets: inherit
