@@ -62,47 +62,57 @@ runs:
         GITHUB_WORKFLOW: ${{ github.workflow }}
       run: |
         set -uxe
-        python3 -u tools/on_device_tests_gateway_client.py \
-          --token ${GITHUB_TOKEN} \
-          --change_id ${GITHUB_PR_NUMBER:-postsubmit} \
-          trigger \
-          --test_type ${{ env.TEST_TYPE }} \
-          --platform ${{ matrix.target_platform }} \
-          --config ${{ matrix.config }} \
-          --tag cobalt_github_${GITHUB_EVENT_NAME} \
-          --builder_name github_${{ matrix.platform }}_tests \
-          --build_number ${GITHUB_RUN_NUMBER} \
-          --builder_url ${GITHUB_RUN_URL} \
-          ${LOADER_PLATFORM:+"--loader_config" "$LOADER_CONFIG"} \
-          ${LOADER_PLATFORM:+"--loader_platform" "$LOADER_PLATFORM"} \
-          ${DIMENSION:+"--dimension" "$DIMENSION"} \
-          ${USE_SHARDING:+"--unittest_shard_index" "${{ matrix.shard }}"} \
-          ${ON_DEVICE_TEST_ATTEMPTS:+"--test_attempts" "$ON_DEVICE_TEST_ATTEMPTS"} \
-          --archive_path "${GCS_PATH}/artifacts.tar" \
-          --gcs_result_path "${GCS_RESULTS_PATH}/${GITHUB_RUN_ID}/" \
-          --label github \
-          --label ${GITHUB_EVENT_NAME} \
-          --label ${GITHUB_WORKFLOW} \
-          --label actor-${GITHUB_ACTOR} \
-          --label actor_id-${GITHUB_ACTOR_ID} \
-          --label triggering_actor-${GITHUB_TRIGGERING_ACTOR} \
-          --label sha-${GITHUB_SHA} \
-          --label repository-${GITHUB_REPO} \
-          --label author-${GITHUB_PR_HEAD_USER_LOGIN:-$GITHUB_COMMIT_AUTHOR_USERNAME} \
-          --label author_id-${GITHUB_PR_HEAD_USER_ID:-$GITHUB_COMMIT_AUTHOR_EMAIL}
+        # python3 -u tools/on_device_tests_gateway_client.py \
+        #   --token ${GITHUB_TOKEN} \
+        #   --change_id ${GITHUB_PR_NUMBER:-postsubmit} \
+        #   trigger \
+        #   --test_type ${{ env.TEST_TYPE }} \
+        #   --platform ${{ matrix.target_platform }} \
+        #   --config ${{ matrix.config }} \
+        #   --tag cobalt_github_${GITHUB_EVENT_NAME} \
+        #   --builder_name github_${{ matrix.platform }}_tests \
+        #   --build_number ${GITHUB_RUN_NUMBER} \
+        #   --builder_url ${GITHUB_RUN_URL} \
+        #   ${LOADER_PLATFORM:+"--loader_config" "$LOADER_CONFIG"} \
+        #   ${LOADER_PLATFORM:+"--loader_platform" "$LOADER_PLATFORM"} \
+        #   ${DIMENSION:+"--dimension" "$DIMENSION"} \
+        #   ${USE_SHARDING:+"--unittest_shard_index" "${{ matrix.shard }}"} \
+        #   ${ON_DEVICE_TEST_ATTEMPTS:+"--test_attempts" "$ON_DEVICE_TEST_ATTEMPTS"} \
+        #   --archive_path "${GCS_PATH}/artifacts.tar" \
+        #   --gcs_result_path "${GCS_RESULTS_PATH}/${GITHUB_RUN_ID}/" \
+        #   --label github \
+        #   --label ${GITHUB_EVENT_NAME} \
+        #   --label ${GITHUB_WORKFLOW} \
+        #   --label actor-${GITHUB_ACTOR} \
+        #   --label actor_id-${GITHUB_ACTOR_ID} \
+        #   --label triggering_actor-${GITHUB_TRIGGERING_ACTOR} \
+        #   --label sha-${GITHUB_SHA} \
+        #   --label repository-${GITHUB_REPO} \
+        #   --label author-${GITHUB_PR_HEAD_USER_LOGIN:-$GITHUB_COMMIT_AUTHOR_USERNAME} \
+        #   --label author_id-${GITHUB_PR_HEAD_USER_ID:-$GITHUB_COMMIT_AUTHOR_EMAIL}
+
+        echo "hej"
       shell: bash
     - name: Download ${{ matrix.platform }} Test Results
       if: env.TEST_TYPE == 'unit_test'
       env:
         COBALT_XMLS_FILENAME: cobalt_xmls.zip
         RESULTS_PATH: results
-        UNIT_TEST_RESULTS: unit-test-results
       run: |
         set -eux
-        mkdir results
-        gsutil -d cp -r "${GCS_PATH}/results/${GITHUB_RUN_ID}" ${RESULTS_PATH}
-        mkdir -p ${UNIT_TEST_RESULTS}/${{ matrix.platform }}/${{ matrix.shard }}/
-        unzip ${RESULTS_PATH}/${COBALT_XMLS_FILENAME} -d ${UNIT_TEST_RESULTS}/${{ matrix.platform }}/${{ matrix.shard }}/
+        mkdir ${RESULTS_PATH}
+        # gsutil -d cp -r "${GCS_PATH}/results/${GITHUB_RUN_ID}" ${RESULTS_PATH}
+        gsutil -d cp -r gs://cobalt-unittest-storage/results_tmp/123123123 ${RESULTS_PATH}
+        mkdir -p ${UNIT_TEST_RESULTS}
+        unzip ${RESULTS_PATH}/${COBALT_XMLS_FILENAME} -d ${UNIT_TEST_RESULTS}/
+      shell: bash
+    - name: Device logs
+      env:
+        RESULTS_PATH: results
+        ERROR_LOG_FILE: webDriverTestLog.ERROR
+      run: |
+        set -eux
+        cat ${RESULTS_PATH}/${ERROR_LOG_FILE}
       shell: bash
     - name: Archive Unit Test Logs
       uses: actions/upload-artifact@v3
@@ -112,9 +122,34 @@ runs:
         path: |
           ${RESULTS_PATH}/
           !${RESULTS_PATH}/*.zip
-    - name: Archive Unit Test Results
-      uses: actions/upload-artifact@v3
-      if: env.TEST_TYPE == 'unit_test'
-      with:
-        name: unit-test-results
-        path: ${UNIT_TEST_RESULTS}/
+      - name: Get Datadog CLI
+        shell: bash
+        env:
+          DD_VERSION: 'v2.18.0'
+          DD_SHA256SUM: 'adbe9b3a41faaf0b1d9702ba256cf8fa9e474c0cc8216f25e5b489c53d6f0a70  datadog-ci'
+        run: |
+          set -e
+          download_url="https://github.com/DataDog/datadog-ci/releases/download/${DD_VERSION}/datadog-ci_linux-x64"
+          curl -L --fail $download_url --output datadog-ci
+          echo ${DD_SHA256SUM} | sha256sum --check
+          chmod +x datadog-ci
+      - name: Upload to Datadog
+        shell: bash
+        env:
+          DATADOG_API_KEY: ${{ secrets.DD_API_KEY }}
+          DATADOG_SITE: us5.datadoghq.com
+          # DD_ENV: ci
+          # DD_SERVICE: ${{ github.event.repository.name }}
+          # # Need to populate git info via env vars as we don't have the repo to look at.
+          # DD_GIT_REPOSITORY_URL: ${{ github.event.repository.git_url }}
+          # DD_GIT_COMMIT_SHA: ${{ github.event.workflow_run.head_sha }}
+          # DD_GIT_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          # DD_GIT_COMMIT_MESSAGE: ${{ github.event.workflow_run.head_commit.message }}
+          # DD_GIT_COMMIT_AUTHOR_NAME: ${{ github.event.workflow_run.head_commit.author.name }}
+          # DD_GIT_COMMIT_AUTHOR_EMAIL: ${{ github.event.workflow_run.head_commit.author.email }}
+          # DD_GIT_COMMIT_AUTHOR_DATE: ${{ github.event.workflow_run.head_commit.timestamp }}
+          # DD_GIT_COMMIT_COMMITTER_NAME: ${{ github.event.workflow_run.head_commit.committer.name }}
+          # DD_GIT_COMMIT_COMMITTER_EMAIL: ${{ github.event.workflow_run.head_commit.committer.email }}
+          # DD_GIT_COMMIT_COMMITTER_DATE:  ${{ github.event.workflow_run.head_commit.timestamp }}
+        run: |
+          ./datadog-ci junit upload unit-test-results/*.xml

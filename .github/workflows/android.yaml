@@ -3,7 +3,7 @@ name: android
 on:
   release:
     types: [prereleased, released, published]
-  pull_request:
+  pull_request_target:
     types: [opened, reopened, synchronize, labeled]
     branches:
       - main
