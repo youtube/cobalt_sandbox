@@ -26,6 +26,7 @@ if (!SbImageIsDecodeSupported(mime_type, format)) {
 
 SbDecodeTarget result_target = SbImageDecode(provider, data, data_size,
                                              mime_type, format);
+
 ```
 
 ## Functions
@@ -75,3 +76,4 @@ indefinitely.
 ```
 bool SbImageIsDecodeSupported(const char *mime_type, SbDecodeTargetFormat format)
 ```
+
