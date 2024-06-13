@@ -30,8 +30,9 @@ and SbMemoryDeallocate rather than SbMemoryAllocateUnchecked and SbMemoryFree.
 
 ### SbMemoryMapFlags
 
-The bitwise OR of these flags should be passed to SbMemoryMap to indicate how
-the mapped memory can be used.
+TODO: Remove the definition once the memory_mapped_file.h extension is
+deprecated. The bitwise OR of these flags should be passed to SbMemoryMap to
+indicate how the mapped memory can be used.
 
 #### Values
 
@@ -343,3 +344,4 @@ SbMemoryMap(). For example, if one call to `SbMemoryMap(0x1000)` returns
 ```
 bool SbMemoryUnmap(void *virtual_address, int64_t size_bytes)
 ```
+
