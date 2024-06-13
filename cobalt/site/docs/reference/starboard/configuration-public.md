@@ -3,6 +3,13 @@ Book: /youtube/cobalt/_book.yaml
 
 # Starboard Configuration Reference Guide
 
+## Media Configuration
+
+| Properties |
+| :--- |
+| **`SB_HAS_QUIRK_SUPPORT_INT16_AUDIO_SAMPLES`**<br><br>The implementation is allowed to support kSbMediaAudioSampleTypeInt16 only when this macro is defined.<br><br>By default, this property is undefined. |
+
+
 ## Network Configuration
 
 | Properties |
@@ -21,3 +28,5 @@ Book: /youtube/cobalt/_book.yaml
 | **`SB_IS_WCHAR_T_UTF32`**<br><br>Type detection for wchar_t.<br><br>The default value in the Stub implementation is `1` |
 | **`SB_IS_WCHAR_T_UTF16`**<br><br>The default value in the Stub implementation is `1` |
 | **`SB_IS_WCHAR_T_UNSIGNED`**<br><br>Chrome only defines this for ARMEL. Chrome has an exclusion for iOS here, we should too when we support iOS.<br><br>The default value in the Stub implementation is `1` |
+
+
