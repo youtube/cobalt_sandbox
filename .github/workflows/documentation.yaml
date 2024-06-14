@@ -14,6 +14,7 @@ permissions: {}
 
 jobs:
   developer-docs:
+    if: github.actor != 'cobalt-github-releaser-bot'
     name: Generate Docs
     runs-on: ubuntu-latest
     timeout-minutes: 15
