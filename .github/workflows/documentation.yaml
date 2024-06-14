@@ -1,11 +1,10 @@
 name: Cobalt Documentation
 
 on:
-  pull_request:
-  push:
-    branches:
-      - main
-      - 25.lts.1+
+  pull_request_target:
+    types:
+      - closed
+  workflow_dispatch:
 
 concurrency:
   group: '${{ github.workflow }}-${{ github.event_name }} @ ${{ github.event.pull_request.number || github.sha }}'
@@ -19,6 +18,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
+      - name: DEBUG
+        run: echo ${{ github }}
+        shell: bash
       - name: Checkout
         uses: kaidokert/checkout@v3.5.999
         with:
@@ -31,43 +33,52 @@ jobs:
       - name: Docker Run
         run: docker run --mount type=bind,source=$(pwd),target=/code docsite
         shell: bash
-      - name: Stage files for pre-commit
-        run: git add -A
+      - name: Stage docs for pre-commit
+        run: git add -A cobalt/site/docs
         shell: bash
-
-      # TODO: REMOVE
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.8'
-      - name: Install Pip Packages
-        shell: bash
-        run: pip install --require-hashes --no-deps -r ${GITHUB_WORKSPACE}/precommit_hooks/requirements.txt
-
-
-
       - name: Run pre-commit
         uses: ./.github/actions/pre_commit
         with:
           base_ref: ${{ github.event.pull_request.base.sha || github.event.before }}
-
-      - name: Git diff (DEBUG)
+      - name: Set env variables (PR)
+        if: github.event_name == 'pull_request'
         run: |
-          git reset
-          git diff
-        shell: bash
+          branch="doc-${{ github.event.pull_request.number }}"
+          echo "BRANCH=${branch}" >> ${GITHUB_ENV}
 
+          reviewers="${{ github.event.pull_request.user.login }}"
+          echo "REVIEWERS=${reviewers}" >> ${GITHUB_ENV}
+
+          title="Documentation changes for #${{ github.event.pull_request.number }}: ${{ github.event.pull_request.title }}"
+          echo "TITLE=${title}" >> ${GITHUB_ENV}
+
+          body=$(cat <<-EOF
+          Refer to the original PR: https://github.com/${{ github.repository }}/pull/${{ github.event.pull_request.number }}
+
+          ${{ github.event.pull_request.body }}
+          EOF
+          )
+          echo "BODY=${body}" >> ${GITHUB_ENV}
+      - name: Set env variables (postsubmit)
+        if: github.event_name == 'pull_request'
+        run: |
+          branch="doc-${{ github.run_id }}"
+          echo "BRANCH=${branch}" >> ${GITHUB_ENV}
+
+          reviewers="${{ github.actor }}"
+          echo "REVIEWERS=${reviewers}" >> ${GITHUB_ENV}
+
+          title="Documentation changes for ${{ github.base_ref }}"
+          echo "TITLE=${title}" >> ${GITHUB_ENV}
+
+          echo "BODY=" >> ${GITHUB_ENV}
       - name: Create Pull Request
-        id: create-pr
-        continue-on-error: true
         uses: peter-evans/create-pull-request@2b011faafdcbc9ceb11414d64d0573f37c774b04 # v4.2.3
         with:
           token: ${{ secrets.CHERRY_PICK_TOKEN }}
           base: ${{ github.base_ref }}
-          branch: doc-${{ github.event.pull_request.number }}
+          branch: ${{ env.BRANCH }}
+          reviewers: ${{ env.REVIEWERS }}
           committer: GitHub Release Automation <github@google.com>
-          title: "Documentation change for #${{ github.event.pull_request.number }}: ${{ github.event.pull_request.title }}"
-          body: |
-            Refer to the original PR: https://github.com/${{ github.repository }}/pull/${{ github.event.pull_request.number }}
-
-            ${{ github.event.pull_request.body }}
+          title: ${{ env.TITLE }}
+          body: ${{ env.BODY }}
