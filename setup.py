@@ -40,8 +40,12 @@ class CustomBuild(build_py):
     run_command('starboard/tools/download_clang.sh')
 
     print('Generating build files with GN...')
-    run_command(
-        ['python', 'cobalt/build/gn.py', '-p', 'linux-x64x11', '-C', 'devel'])
+    run_command([
+        'gn', 'gen', 'out/linux-x64x11_devel',
+        ('--args=target_platform="linux-x64x11"'
+         'build_type="devel"'
+         'enable_cc_wrapper=false')
+    ])
 
     print('Building project with Ninja...')
     run_command(['ninja', '-C', 'out/linux-x64x11_devel'])
