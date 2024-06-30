@@ -3,6 +3,7 @@ from setuptools import setup
 from setuptools.command.build_py import build_py
 import subprocess
 import sys
+import os
 
 
 def run_command(command, cwd=None):
@@ -31,6 +32,9 @@ class CustomBuild(build_py):
 
   def run(self):
     super().run()
+
+    top_level_dir = os.path.abspath(os.path.dirname(__file__))
+    os.environ['PYTHONPATH'] = top_level_dir
 
     # Running GN to generate build files
     print('Generating build files with GN...')
