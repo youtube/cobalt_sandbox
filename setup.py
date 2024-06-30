@@ -3,6 +3,7 @@ from setuptools import setup
 from setuptools.command.build_py import build_py
 import subprocess
 import sys
+import os
 
 
 def run_command(command, cwd=None):
@@ -32,12 +33,16 @@ class CustomBuild(build_py):
   def run(self):
     super().run()
 
-    # Running GN to generate build files
+    top_level_dir = os.path.abspath(os.path.dirname(__file__))
+    os.environ['PYTHONPATH'] = top_level_dir
+
+    print('Downloading the Chromium Clang toolchain.. ')
+    run_command('starboard/tools/download_clang.sh')
+
     print('Generating build files with GN...')
     run_command(
         ['python', 'cobalt/build/gn.py', '-p', 'linux-x64x11', '-C', 'devel'])
 
-    # Running Ninja to build the project
     print('Building project with Ninja...')
     run_command(['ninja', '-C', 'out/linux-x64x11_devel'])
 
