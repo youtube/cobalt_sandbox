@@ -14,5 +14,5 @@ class CustomBuild(build_py):
 setup(
     name='Cobalt',
     version='25.0',
-    packages=['cobalt-runtime'],
+    packages=['cobalt'],
     cmdclass={'build_py': CustomBuild})
