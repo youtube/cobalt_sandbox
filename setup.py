@@ -49,7 +49,7 @@ class CustomBuild(build_py):
 
     print('Building project with Ninja...')
     # Building a small binary that doesn't time out on public runners.
-    run_command(['ninja', '-C', 'out/linux-x64x11-egl_devel','starboard_glclear_example'])
+    run_command(['ninja', '-C', 'out/linux-x64x11-egl_devel','nplb'])
 
 
 setup(
