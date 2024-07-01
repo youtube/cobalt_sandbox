@@ -325,7 +325,7 @@ def _CreateLinuxTarCmd(source_path, intermediate_tar_path, patterns,
 
 def _CreateUntarCommand(intermediate_tar_path):
   if _IsWindows():
-    return f'"{_7Z_PATH}" x -bsp1 {intermediate_tar_path}'
+    return f'"{_7Z_PATH}" x -bsp1 -aoa {intermediate_tar_path}'
   else:
     return f'tar -xf {intermediate_tar_path}'
 
@@ -344,7 +344,7 @@ def _CreateZipCommand(intermediate_tar_path, dest_path, is_parallel=False):
 def _CreateUnzipCommand(source_path, intermediate_tar_path, is_parallel=False):
   if _IsWindows():
     tar_parent = os.path.dirname(intermediate_tar_path)
-    return f'"{_7Z_PATH}" x -bsp1 {source_path} -o{tar_parent}'
+    return f'"{_7Z_PATH}" x -bsp1 -aoa {source_path} -o{tar_parent}'
   else:
     zip_program = (
         _LINUX_PARALLEL_ZIP_PROGRAM

@@ -209,11 +209,6 @@ jobs:
       MODULAR_BUILD: ${{ inputs.modular && 1 || 0 }}
     timeout-minutes: 90
     steps:
-      - name: Checkout
-        uses: kaidokert/checkout@v3.5.999
-        with:
-          fetch-depth: 1
-          persist-credentials: false
       - name: Run Tests
         uses: ./.github/actions/on_host_test
         with:
