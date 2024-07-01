@@ -48,7 +48,8 @@ class CustomBuild(build_py):
     ])
 
     print('Building project with Ninja...')
-    run_command(['ninja', '-C', 'out/linux-x64x11_devel'])
+    # Building a small binary that doesn't time out on public runners.
+    run_command(['ninja', '-C', 'out/linux-x64x11_devel','watchdog_test'])
 
 
 setup(
