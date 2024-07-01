@@ -42,14 +42,14 @@ class CustomBuild(build_py):
     print('Generating build files with GN...')
     run_command([
         'gn', 'gen', 'out/linux-x64x11_devel',
-        ('--args=target_platform="linux-x64x11"'
+        ('--args=target_platform="linux-x64x11-egl"'
          'build_type="devel"'
          'enable_cc_wrapper=false')
     ])
 
     print('Building project with Ninja...')
     # Building a small binary that doesn't time out on public runners.
-    run_command(['ninja', '-C', 'out/linux-x64x11_devel','watchdog_test'])
+    run_command(['ninja', '-C', 'out/llinux-x64x11-egl_devel','starboard_glclear_example'])
 
 
 setup(
