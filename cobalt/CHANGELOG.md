@@ -1,6 +1,9 @@
 # Cobalt Version Changelog
 
 This document records all notable changes made to Cobalt since the last release.
+## Version 24
+
+- ** Test 
 
 ## Version 25
 ### New Features / Support
