@@ -1,0 +1,29 @@
+name: linux
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, labeled]
+    branches:
+      - main
+      - experimental/*
+  push:
+    branches:
+      - main
+      - experimental/*
+  workflow_dispatch:
+    inputs:
+      nightly:
+        description: 'Nightly workflow.'
+        required: true
+        type: boolean
+        default: false
+
+jobs:
+  linux-x64:
+    uses: ./.github/workflows/main.yaml
+    permissions:
+      packages: write
+      pull-requests: write
+    with:
+      platform: linux
+      nightly: ${{ github.event.inputs.nightly }}
