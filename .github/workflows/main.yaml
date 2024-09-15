@@ -1,0 +1,151 @@
+# Reusable Cobalt CI workflow.
+
+name: main
+
+on:
+  workflow_call:
+    inputs:
+      platform:
+        description: 'Cobalt platform.'
+        required: true
+        type: string
+      nightly:
+        description: 'Nightly workflow.'
+        required: true
+        type: string
+        default: 'false'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ inputs.platform }} @ ${{ github.event.label.name || github.event.pull_request.number || github.sha }} @ ${{ github.event.label.name && github.event.pull_request.number || github.event.action }}
+  cancel-in-progress: true
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # Retrieves configuration from json file.
+  initialize:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_PR_REPO_URL: ${{ github.event.pull_request.base.repo.url }}
+      GITHUB_EVENT_NUMBER: ${{ github.event.number }}
+    if: |
+      github.event.action != 'labeled' ||
+      github.event.pull_request.merged == false &&
+      (
+        github.event.action == 'labeled' &&
+        github.event.label.name == 'runtest'
+      )
+    timeout-minutes: 10
+    steps:
+      - name: Checkout files
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Remove runtest if exists
+        if: github.event_name == 'pull_request'
+        continue-on-error: true  # Ignore this step if we cannot remove the label.
+        run: |
+          set +e
+          curl \
+            -X DELETE \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            ${GITHUB_PR_REPO_URL}/issues/${GITHUB_EVENT_NUMBER}/labels/runtest
+        shell: bash
+      - id: set-platforms
+        shell: bash
+        run: |
+          platforms=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -c '.platforms')
+          echo "platforms=${platforms}" >> $GITHUB_ENV
+      - id: set-targets
+        shell: bash
+        run: |
+          targets=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -c '.targets  | join(" ")')
+          echo "targets=${targets}" >> $GITHUB_ENV
+      - id: set-includes
+        shell: bash
+        run: |
+          includes=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -c '.includes')
+          echo "includes=${includes}" >> $GITHUB_ENV
+      - id: set-docker-service
+        shell: bash
+        run: |
+          docker_service=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -r '.docker_service')
+          echo "docker_service=${docker_service}" >> $GITHUB_ENV
+    outputs:
+      platforms: ${{ env.platforms }}
+      targets: ${{ env.targets }}
+      includes: ${{ env.includes }}
+      docker_service: ${{ env.docker_service }}
+
+  # Builds, tags, and pushes Cobalt docker build images to ghr.
+  docker-build-image:
+    needs: [initialize]
+    runs-on: [self-hosted, chrobalt-linux-runner]
+    steps:
+    - name: Checkout files
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 1
+    # Handle GitHub registry used for everything other than pull requests off forked repos.
+    - name: Login to GitHub Docker Registry
+      if: ${{ (github.event_name != 'pull_request') || (github.event.pull_request.head.repo.full_name == github.repository) }}
+      uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a # v2.1.0
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Build docker image
+      id: build-docker-image
+      uses: ./.github/actions/docker
+      with:
+        docker_service: ${{ needs.initialize.outputs.docker_service }}
+    - name: Set Docker Tag Output
+      id: set-docker-tag-output
+      shell: bash
+      run: |
+        set -u
+        echo $DOCKER_TAG
+        echo "docker_tag=$DOCKER_TAG" | head -n 1  >> $GITHUB_ENV
+    outputs:
+      docker_tag: ${{ env.docker_tag }}
+
+  # Runs builds.
+  build:
+    needs: [initialize, docker-build-image]
+    permissions: {}
+    runs-on: [self-hosted, chrobalt-linux-runner]
+    name: ${{ matrix.name }}_${{ matrix.config }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: ${{ fromJson(needs.initialize.outputs.platforms) }}
+        include: ${{ fromJson(needs.initialize.outputs.includes) }}
+        config: [devel, debug, qa, gold]
+    container: ${{ needs.docker-build-image.outputs.docker_tag }}
+    env:
+      DEPOT_TOOLS_UPDATE: 0
+      DEPOT_TOOLS_REPORT_BUILD: 0
+      DEPOT_TOOLS_COLLECT_METRICS: 0
+      DEPOT_TOOLS_METRICS: 0
+      SCCACHE: 1
+      SCCACHE_GCS_BUCKET: cobalt-actions-sccache-linux
+      SCCACHE_GCS_SERVICE_ACCOUNT: runner@cobalt-actions-devel.iam.gserviceaccount.com
+      SCCACHE_GCS_RW_MODE: READ_WRITE
+      SCCACHE_IDLE_TIMEOUT: 0 # prevent sccache server from shutting down after long idle.
+      # We want temp folder to be on tmpfs which makes workloads faster.
+      # However, dind container ends up having / folder mounted on overlay
+      # filesystem, whereas /__w which contains Cobalt source code is on tmpfs.
+      TMPDIR: /__w/_temp
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: src
+      - name: Build Chrobalt
+        uses: ./src/.github/actions/build
+        with:
+          targets: ${{ needs.initialize.outputs.targets }}
+  
