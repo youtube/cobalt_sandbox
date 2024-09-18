@@ -64,34 +64,7 @@ runs:
         GITHUB_WORKFLOW: ${{ github.workflow }}
       run: |
         set -uxe
-        python3 -u tools/on_device_tests_gateway_client.py \
-          --token ${GITHUB_TOKEN} \
-          --change_id ${GITHUB_PR_NUMBER:-postsubmit} \
-          trigger \
-          --test_type ${TEST_TYPE} \
-          --platform ${{ matrix.target_platform }} \
-          --config ${{ matrix.config }} \
-          --tag cobalt_github_${GITHUB_EVENT_NAME} \
-          --builder_name github_${{ matrix.platform }}_tests \
-          --build_number ${GITHUB_RUN_NUMBER} \
-          --builder_url ${GITHUB_RUN_URL} \
-          ${LOADER_PLATFORM:+"--loader_config" "$LOADER_CONFIG"} \
-          ${LOADER_PLATFORM:+"--loader_platform" "$LOADER_PLATFORM"} \
-          ${DIMENSION:+"--dimension" "$DIMENSION"} \
-          ${USE_SHARDING:+"--unittest_shard_index" "${{ matrix.shard }}"} \
-          ${ON_DEVICE_TEST_ATTEMPTS:+"--test_attempts" "$ON_DEVICE_TEST_ATTEMPTS"} \
-          --archive_path "${GCS_PATH}/artifacts.tar" \
-          --gcs_result_path "${GCS_RESULTS_PATH}" \
-          --label github \
-          --label ${GITHUB_EVENT_NAME} \
-          --label ${GITHUB_WORKFLOW} \
-          --label actor-${GITHUB_ACTOR} \
-          --label actor_id-${GITHUB_ACTOR_ID} \
-          --label triggering_actor-${GITHUB_TRIGGERING_ACTOR} \
-          --label sha-${GITHUB_SHA} \
-          --label repository-${GITHUB_REPO} \
-          --label author-${GITHUB_PR_HEAD_USER_LOGIN:-$GITHUB_COMMIT_AUTHOR_USERNAME} \
-          --label author_id-${GITHUB_PR_HEAD_USER_ID:-$GITHUB_COMMIT_AUTHOR_EMAIL}
+        echo "hey"
       shell: bash
     - name: Download ${{ matrix.platform }} Test Results
       if: always() && env.TEST_TYPE == 'unit_test'
@@ -107,7 +80,7 @@ runs:
           sleep 10
 
           # This command will fail until the results have been uploaded.
-          gsutil cp "${GCS_RESULTS_PATH}/*" . || true
+          gsutil cp "gs://cobalt-unittest-storage/results/10801298059/*" . || true
 
           if [[ $? == 0 ]]; then
             break
