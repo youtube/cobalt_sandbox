@@ -22,6 +22,10 @@ namespace client_porting {
 namespace eztime {
 namespace {
 
+TEST(EzTimeTFromSbTime, WillFailSorry) {
+  EXPECT_EQ(1, 0);
+}
+
 TEST(EzTimeTFromSbTime, IsTransitive) {
   int64_t sb_time = EzTimeTToSbTime(kTestTimePositive);
   EzTimeT ez_time = EzTimeTFromSbTime(sb_time);
