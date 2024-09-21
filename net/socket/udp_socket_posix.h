@@ -33,8 +33,6 @@
 
 namespace net {
 
-#if SB_API_VERSION >= 16
-
 class IPAddress;
 class NetLog;
 struct NetLogSource;
@@ -287,7 +285,7 @@ class NET_EXPORT UDPSocketPosix {
     SOCKET_OPTION_MULTICAST_LOOP = 1 << 0
   };
 
-  class ReadWatcher : public base::MessagePumpForIO::Watcher {
+  class ReadWatcher : public base::MessagePumpForIO::FdWatcher {
    public:
     explicit ReadWatcher(UDPSocketPosix* socket) : socket_(socket) {}
 
@@ -304,7 +302,7 @@ class NET_EXPORT UDPSocketPosix {
     const raw_ptr<UDPSocketPosix> socket_;
   };
 
-  class WriteWatcher : public base::MessagePumpForIO::Watcher {
+  class WriteWatcher : public base::MessagePumpForIO::FdWatcher {
    public:
     explicit WriteWatcher(UDPSocketPosix* socket) : socket_(socket) {}
 
@@ -412,8 +410,8 @@ class NET_EXPORT UDPSocketPosix {
   mutable std::unique_ptr<IPEndPoint> remote_address_;
 
   // The socket's posix wrappers
-  base::MessagePumpForIO::SocketWatcher read_socket_watcher_;
-  base::MessagePumpForIO::SocketWatcher write_socket_watcher_;
+  base::MessagePumpForIO::FdWatchController read_socket_watcher_;
+  base::MessagePumpForIO::FdWatchController write_socket_watcher_;
 
   // The corresponding watchers for reads and writes.
   ReadWatcher read_watcher_;
@@ -466,8 +464,6 @@ class NET_EXPORT UDPSocketPosix {
 
   THREAD_CHECKER(thread_checker_);
 };
-
-#endif  // SB_API_VERSION >= 16
 
 }  // namespace net
 
