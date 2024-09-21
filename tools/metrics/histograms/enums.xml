@@ -5671,8 +5671,6 @@ others/histograms.xml -->
   <int value="18" label="kCodecDTS"/>
   <int value="19" label="kCodecDTSXP2"/>
   <int value="20" label="kCodecDTSE"/>
-  <int value="21" label="kCodecAC4"/>
-  <int value="22" label="kCodecIAMF"/>
 </enum>
 
 <enum name="AudioCodecProfile">
