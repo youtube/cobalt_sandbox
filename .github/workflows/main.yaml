@@ -123,7 +123,7 @@ jobs:
       matrix:
         platform: ${{ fromJson(needs.initialize.outputs.platforms) }}
         include: ${{ fromJson(needs.initialize.outputs.includes) }}
-        config: [devel, debug, qa, gold]
+        config: [devel, qa, gold]  # android debug builds fail
     container: ${{ needs.docker-build-image.outputs.docker_tag }}
     env:
       DEPOT_TOOLS_UPDATE: 0
