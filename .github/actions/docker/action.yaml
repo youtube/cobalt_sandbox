@@ -61,6 +61,7 @@ runs:
       shell: bash
     - name: Docker Tag
       run: |
+        docker images
         docker tag ghcr.io/${{ github.repository }}/${{ inputs.docker_service }}:latest ${DOCKER_TAG}
         docker tag ghcr.io/${{ github.repository }}/${{ inputs.docker_service }}:latest ${DOCKER_FLOATING_TAG}
       shell: bash
