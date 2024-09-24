@@ -852,12 +852,15 @@ int UDPSocketPosix::SetMulticastOptions() {
     if (rv < 0)
       return MapSystemError(errno);
   }
+#if defined(STARBOARD)
 #if defined(IP_DEFAULT_MULTICAST_TTL)
   if (multicast_time_to_live_ != IP_DEFAULT_MULTICAST_TTL) {
 #elif defined(IP_MULTICAST_TTL)
   if (multicast_time_to_live_ != IP_MULTICAST_TTL) {
 #endif
+#else
   if (multicast_time_to_live_ != IP_DEFAULT_MULTICAST_TTL) {
+#endif  // defined(STARBOARD)
     int rv;
     if (addr_family_ == AF_INET) {
       u_char ttl = multicast_time_to_live_;
