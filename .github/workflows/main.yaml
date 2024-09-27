@@ -132,7 +132,7 @@ jobs:
       DEPOT_TOOLS_METRICS: 0
       SCCACHE: 1
       SCCACHE_GCS_BUCKET: cobalt-actions-sccache-linux
-      SCCACHE_GCS_SERVICE_ACCOUNT: runner@cobalt-actions-devel.iam.gserviceaccount.com
+      SCCACHE_GCS_SERVICE_ACCOUNT: ${{ vars.SCCACHE_GCS_SERVICE_ACCOUNT }}
       SCCACHE_GCS_RW_MODE: READ_WRITE
       SCCACHE_IDLE_TIMEOUT: 0 # prevent sccache server from shutting down after long idle.
       # We want temp folder to be on tmpfs which makes workloads faster.
