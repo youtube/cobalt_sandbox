@@ -22,7 +22,9 @@
 #include "net/base/mime_util.h"
 #include "net/base/platform_mime_util.h"
 #include "net/http/http_util.h"
+#if defined(STARBOARD)
 #include "starboard/common/string.h"
+#endif
 
 using std::string;
 

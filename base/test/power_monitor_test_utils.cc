@@ -57,7 +57,6 @@ TestBatteryLevelProvider::CreateBatteryState(int battery_count,
       .charge_unit = base::BatteryLevelProvider::BatteryLevelUnit::kRelative,
       .capture_time = base::TimeTicks::Now(),
   };
-}
 #endif
 }
 

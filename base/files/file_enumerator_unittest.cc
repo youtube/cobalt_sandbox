@@ -537,36 +537,20 @@ TEST(FileEnumerator, GetInfoRecursive) {
   while (!file_enumerator.Next().empty()) {
     auto info = file_enumerator.GetInfo();
     bool found = false;
-    if (info.IsDirectory()) {
-#if defined(STARBOARD)
-#ifdef _WIN32
-// Reable this test when support directory open in base::File for Windows.
-#else
-      for (TestDirectory& dir : directories) {
-        if (info.GetName() == dir.name) {
-          CheckDirectoryAgainstInfo(info, dir);
-          found = true;
-          break;
-        }
-      }
-#endif
-#endif
-    } else {
-      for (TestFile& file : files) {
-        if (info.GetName() == file.path.BaseName()) {
-          CheckFileAgainstInfo(info, file);
-          found = true;
-          break;
-        }
+    for (TestFile& file : files) {
+      if (info.GetName() == file.path.BaseName()) {
+        CheckFileAgainstInfo(info, file);
+        found = true;
+        break;
       }
     }
-#if defined(STARBOARD)
-#ifdef _WIN32
-// Reable this test when support directory open in base::File for Windows.
-#else
+
     EXPECT_TRUE(found) << "Got unexpected result " << info.GetName().value();
-#endif
-#endif
+  }
+
+  for (const TestFile& file : files) {
+    EXPECT_TRUE(file.found)
+        << "File " << file.path.value() << " was not returned";
   }
 
   #if defined(STARBOARD)

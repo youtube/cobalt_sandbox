@@ -2777,6 +2777,8 @@ component("i18n") {
     "i18n/streaming_utf8_validator.h",
     "i18n/string_compare.cc",
     "i18n/string_compare.h",
+    "i18n/string_search.cc",
+    "i18n/string_search.h",
     "i18n/time_formatting.cc",
     "i18n/time_formatting.h",
     "i18n/timezone.cc",
@@ -2796,7 +2798,7 @@ component("i18n") {
     "//base/third_party/dynamic_annotations",
     "//build:chromecast_buildflags",
     "//build:chromeos_buildflags",
-    "//starboard/client_porting/icu_init",
+    # "//starboard/client_porting/icu_init",
   ]
 
   if (is_starboard) {
@@ -3024,7 +3026,8 @@ source_set("base_stack_sampling_profiler_test_util") {
   }
 }
 
-copy("base_unittests_bundle_data") {
+if (is_apple) {
+bundle_data("base_unittests_bundle_data") {
     testonly = true
   if (is_starboard) {
     install_content = true
@@ -3060,6 +3063,7 @@ copy("base_unittests_bundle_data") {
     outputs = [ "{{bundle_resources_dir}}/" +
                 "{{source_root_relative_dir}}/{{source_file_part}}" ]
   }
+}
 }
 
 if (is_apple && !is_starboard) {

@@ -217,7 +217,7 @@ BASE_EXPORT bool DirectoryExists(const FilePath& path);
 BASE_EXPORT bool ContentsEqual(const FilePath& filename1,
                                const FilePath& filename2);
 
-#if defined(COBALT_PENDING_CLEAN_UP)
+#if defined(COBALT_PENDING_CLEAN_UP) || 1
 // Returns true if the contents of the two text files given are equal, false
 // otherwise.  This routine treats "\r\n" and "\n" as equivalent.
 BASE_EXPORT bool TextContentsEqual(const FilePath& filename1,
@@ -511,7 +511,7 @@ BASE_EXPORT bool TouchFile(const FilePath& path,
 // configured to not be propagated to child processes.
 BASE_EXPORT FILE* OpenFile(const FilePath& filename, const char* mode);
 
-#if !defined(COBALT_PENDING_CLEAN_UP)
+#if !defined(COBALT_PENDING_CLEAN_UP) || 1
 // Closes file opened by OpenFile. Returns true on success.
 BASE_EXPORT bool CloseFile(FILE* file);
 #endif
@@ -708,7 +708,7 @@ BASE_EXPORT bool CopyAndDeleteDirectory(const FilePath& from_path,
                                         const FilePath& to_path);
 #endif  // BUILDFLAG(IS_WIN)
 
-#if defined(COBALT_PENDING_CLEAN_UP)
+#if defined(COBALT_PENDING_CLEAN_UP) && 0
 #elif BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_ANDROID)
 // CopyFileContentsWithSendfile will use the sendfile(2) syscall to perform a
 // file copy without moving the data between kernel and userspace. This is much

@@ -530,7 +530,7 @@ int SocketPosix::DoRead(IOBuffer* buf, int buf_len) {
 #if defined(STARBOARD)
   int rv = HANDLE_EINTR(recv(socket_fd_, buf->data(), buf_len, 0));
 #else
-  int rv = HANDLE_EINTR(read(socket_fd_, buf->data(), buf_len, 0));
+  int rv = HANDLE_EINTR(read(socket_fd_, buf->data(), buf_len));
 #endif
   return rv >= 0 ? rv : MapSystemError(errno);
 }

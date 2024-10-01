@@ -38,7 +38,9 @@
 #include "base/time/time_override.h"
 #include "build/build_config.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
+#if defined(STARBOARD)
 #include "starboard/configuration_constants.h"
+#endif
 
 #if BUILDFLAG(IS_WIN)
 #include "base/win/scoped_com_initializer.h"

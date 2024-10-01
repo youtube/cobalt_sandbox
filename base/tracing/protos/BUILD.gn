@@ -9,7 +9,7 @@ import("//tools/grit/grit_rule.gni")
 }
 import("sources.gni")
 
-proto_library_pf("chrome_track_event") {
+proto_library("chrome_track_event") {
   proto_in_dir = "//"
   proto_out_dir = "base/tracing/protos"
   import_dirs = [ "//third_party/perfetto/" ]

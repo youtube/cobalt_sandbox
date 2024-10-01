@@ -249,12 +249,14 @@ class NET_EXPORT HttpCache : public HttpTransactionFactory {
   SetHttpNetworkTransactionFactoryForTesting(
       std::unique_ptr<HttpTransactionFactory> new_network_layer);
 
+#if defined(STARBOARD)
   bool can_disable_by_mime_type() const {
     return can_disable_by_mime_type_;
   }
   void set_can_disable_by_mime_type(bool enable) {
     can_disable_by_mime_type_ = enable;
   }
+#endif
 
   // Get the URL from the entry's cache key.
   static std::string GetResourceURLFromHttpCacheKey(const std::string& key);
