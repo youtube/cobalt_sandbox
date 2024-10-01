@@ -2727,3 +2727,10 @@ config("cet_shadow_stack") {
     ldflags = [ "/CETCOMPAT" ]
   }
 }
+
+config("default_defines") {
+  defines = []
+  if (cobalt_pending_clean_up) {
+    defines += [ "COBALT_PENDING_CLEAN_UP" ]
+  }
+}

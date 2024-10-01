@@ -388,4 +388,8 @@ uint8_t Backend::GetEntryInMemoryData(const std::string& key) {
 
 void Backend::SetEntryInMemoryData(const std::string& key, uint8_t data) {}
 
+void FlushCacheThreadAsynchronouslyForTesting(base::OnceClosure callback) {
+  (void)callback;
+}
+
 }  // namespace disk_cache

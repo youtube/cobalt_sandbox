@@ -220,7 +220,7 @@ bool ContentsEqual(const FilePath& filename1, const FilePath& filename2) {
   // We open the file in binary format even if they are text files because
   // we are just comparing that bytes are exactly same in both files and not
   // doing anything smart with text formatting.
-#ifdef COBALT_PENDING_CLEAN_UP
+#if defined(COBALT_PENDING_CLEAN_UP) && 0
   // std::ifstream doesn't work on all our platforms.
   base::File file1(filename1, base::File::FLAG_OPEN | base::File::FLAG_READ);
   base::File file2(filename2, base::File::FLAG_OPEN | base::File::FLAG_READ);
@@ -274,7 +274,7 @@ bool ContentsEqual(const FilePath& filename1, const FilePath& filename2) {
 #endif
 }
 
-#if !defined(COBALT_PENDING_CLEAN_UP)
+#if !defined(COBALT_PENDING_CLEAN_UP) || 1
 bool TextContentsEqual(const FilePath& filename1, const FilePath& filename2) {
 #if BUILDFLAG(IS_WIN)
   std::ifstream file1(filename1.value().c_str(), std::ios::in);
@@ -391,7 +391,7 @@ bool ReadFileToStringWithMaxSize(const FilePath& path,
     contents->clear();
   if (path.ReferencesParent())
     return false;
-#if defined(COBALT_PENDING_CLEAN_UP)
+#if defined(COBALT_PENDING_CLEAN_UP) && 0
   base::File file(path, base::File::FLAG_OPEN | base::File::FLAG_READ);
   if (!file.IsValid()) {
     return false;
@@ -490,7 +490,7 @@ bool TouchFile(const FilePath& path,
   return file.SetTimes(last_accessed, last_modified);
 }
 
-#if !defined(COBALT_PENDING_CLEAN_UP)
+#if !defined(COBALT_PENDING_CLEAN_UP) || 1
 bool CloseFile(FILE* file) {
   if (file == nullptr)
     return true;

@@ -14,7 +14,9 @@
 #include "base/threading/platform_thread.h"
 #include "base/time/time.h"
 #include "build/build_config.h"
+#if defined(STARBOARD)
 #include "starboard/configuration_constants.h"
+#endif  // defined(STARBOARD)
 
 namespace base {
 

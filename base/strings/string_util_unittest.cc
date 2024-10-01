@@ -17,8 +17,10 @@
 #include "base/strings/string_piece.h"
 #include "base/strings/utf_string_conversions.h"
 #include "build/build_config.h"
+#if defined(STARBOARD)
 #include "starboard/common/string.h"
 #include "starboard/types.h"
+#endif  // defined(STARBOARD)
 #include "testing/gmock/include/gmock/gmock.h"
 #include "testing/gtest/include/gtest/gtest.h"
 

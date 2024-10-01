@@ -350,7 +350,7 @@ TEST_F(StackTraceTest, MAYBE_TraceStackFramePointers) {
 // uninitialized value.
 // TODO(crbug.com/1132511): Enable this test on Fuchsia.
 #if defined(MEMORY_SANITIZER) || BUILDFLAG(IS_FUCHSIA) || \
-    defined(STARBOARD) && defined(ADDRESS_SANITIZER) || SB_IS(EVERGREEN)
+    defined(STARBOARD) && defined(ADDRESS_SANITIZER)
 #define MAYBE_TraceStackFramePointersFromBuffer \
   DISABLED_TraceStackFramePointersFromBuffer
 #else

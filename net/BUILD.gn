@@ -1082,6 +1082,7 @@ component("net") {
       sources -= [ "disk_cache/disk_cache.cc" ]
     }
   }
+  sources -= ["disk_cache/disk_cache.cc"]
 
   if ((is_posix || is_fuchsia) && !is_starboard) {
     sources += [ "base/net_errors_posix.cc" ]
@@ -1255,7 +1256,7 @@ component("net") {
     ]
   }
 
-  if (false) {
+  if (is_linux) {
     sources += [
       "base/address_map_cache_linux.cc",
       "base/address_map_cache_linux.h",
@@ -2487,7 +2488,7 @@ source_set("simple_quic_tools") {
   public_deps = [ "//net/third_party/quiche:quiche_tool_support" ]
 }
 
-if (!is_ios && false) {
+if (!is_ios && !is_starboard) {
   executable("quic_client") {
     testonly = true
     sources = [ "tools/quic/quic_simple_client_bin.cc" ]
@@ -3319,7 +3320,7 @@ test("net_unittests") {
     }
   }
 
-  if (cobalt_pending_clean_up) {
+  if (cobalt_pending_clean_up && false) {
     sources -= [
       # Re-enable once we're on c++20
       "base/backoff_entry_serializer_unittest.cc",

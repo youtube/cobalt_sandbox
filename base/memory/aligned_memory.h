@@ -11,7 +11,9 @@
 #include <ostream>
 
 #include "base/base_export.h"
+#if defined(STARBOARD)
 #include "base/basictypes.h"
+#endif  // defined(STARBOARD)
 #include "base/bits.h"
 #include "base/check.h"
 #include "build/build_config.h"

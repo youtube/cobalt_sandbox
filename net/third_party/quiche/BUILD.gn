@@ -1285,7 +1285,7 @@ static_library("quiche_tool_support") {
 }
 
 # QUICHE-provided CLI tools that don't use epoll.
-if (!is_ios && false) {
+if (!is_ios && !is_starboard) {
   # The two libraries below, quic_client_core and quic_server_core, define
   # mutually exclusive command-line flags, and thus any target depending
   # directly on both will fail to build.  Only executable targets should depend

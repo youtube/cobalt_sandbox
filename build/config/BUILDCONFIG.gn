@@ -122,7 +122,13 @@ if (current_os == "") {
 # - Don't call exec_script inside declare_args. This will execute the script
 #   even if the value is overridden, which is wasteful. See first bullet.
 
+import("//build/config/sb.gni")
+
 declare_args() {
+  use_cobalt_customizations = false
+  is_starboard = false
+  cobalt_pending_clean_up = true
+
   # Set to enable the official build level of optimization. This has nothing
   # to do with branding, but enables an additional level of optimization above
   # release (!is_debug). This might be better expressed as a tri-state
@@ -352,6 +358,7 @@ default_compiler_configs = [
   "//build/config/compiler/pgo:default_pgo_flags",
   "//build/config/coverage:default_coverage",
   "//build/config/sanitizers:default_sanitizer_flags",
+  "//build/config/compiler:default_defines",
 ]
 
 if (is_win) {

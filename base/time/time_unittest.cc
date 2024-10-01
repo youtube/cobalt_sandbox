@@ -1487,10 +1487,12 @@ ThreadTicks ThreadTicksOverride::now_ticks_;
 #define MAYBE_NowOverride NowOverride
 #endif
 TEST(ThreadTicks, MAYBE_NowOverride) {
+#if defined(STARBOARD)
   if (starboard::CurrentMonotonicThreadTime() == 0) {
     LOG(INFO) << "Time thread now not supported. Test skipped.";
     return;
   }
+#endif  // defined(STARBOARD)
 
   ThreadTicksOverride::now_ticks_ = ThreadTicks::Min();
 
