@@ -2312,7 +2312,7 @@ component("base") {
     frameworks += [ "UIKit.framework" ]
   }
 
-  if (use_blink || true) {
+  if (use_blink || use_cobalt_customizations) {
     sources += [
       "files/file_path_watcher.cc",
       "files/file_path_watcher.h",
@@ -2798,7 +2798,6 @@ component("i18n") {
     "//base/third_party/dynamic_annotations",
     "//build:chromecast_buildflags",
     "//build:chromeos_buildflags",
-    # "//starboard/client_porting/icu_init",
   ]
 
   if (is_starboard) {
@@ -3027,11 +3026,11 @@ source_set("base_stack_sampling_profiler_test_util") {
 }
 
 if (is_apple) {
-bundle_data("base_unittests_bundle_data") {
+  bundle_data("base_unittests_bundle_data") {
     testonly = true
-  if (is_starboard) {
-    install_content = true
-  }
+    if (is_starboard) {
+      install_content = true
+    }
     sources = [
       "//tools/metrics/histograms/enums.xml",
       "test/data/file_util/binary_file.bin",
@@ -3057,13 +3056,13 @@ bundle_data("base_unittests_bundle_data") {
       "test/data/serializer_test.json",
       "test/data/serializer_test_nowhitespace.json",
     ]
-  if (is_starboard) {
-    outputs = [ "$sb_static_contents_output_data_dir/test/base/{{source_target_relative}}" ]
-  } else {
+    if (is_starboard) {
+      outputs = [ "$sb_static_contents_output_data_dir/test/base/{{source_target_relative}}" ]
+    } else {
     outputs = [ "{{bundle_resources_dir}}/" +
                 "{{source_root_relative_dir}}/{{source_file_part}}" ]
+    }
   }
-}
 }
 
 if (is_apple && !is_starboard) {
@@ -3658,6 +3657,10 @@ test("base_unittests") {
   ]
 
   data_deps = [
+    "//base/test:immediate_crash_test_helper",
+    "//base/test:test_child_process",
+    "//base/test:test_shared_library",
+    "//testing/buildbot/filters:base_unittests_filters",
   ]
 
   if (is_android && enable_chrome_android_internal) {

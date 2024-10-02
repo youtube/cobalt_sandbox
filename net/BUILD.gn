@@ -1583,7 +1583,7 @@ component("net") {
     ]
   }
 
-  if (enable_websockets || true) {
+  if (enable_websockets || is_starboard) {
     sources += [
       "websockets/websocket_basic_handshake_stream.cc",
       "websockets/websocket_basic_handshake_stream.h",
@@ -3223,7 +3223,7 @@ test("net_unittests") {
   }
 
   # Unit tests that are not supported by the current ICU alternatives on iOS.
-  if ((is_ios && use_platform_icu_alternatives) || true) {
+  if ((is_ios && use_platform_icu_alternatives) || is_starboard) {
     sources -= [
       "base/filename_util_unittest.cc",
       "base/url_util_unittest.cc",
@@ -3321,7 +3321,7 @@ test("net_unittests") {
     }
   }
 
-  if (cobalt_pending_clean_up && false) {
+  if (cobalt_pending_clean_up && false) {  # TODO(andrewsavage)
     sources -= [
       # Re-enable once we're on c++20
       "base/backoff_entry_serializer_unittest.cc",
