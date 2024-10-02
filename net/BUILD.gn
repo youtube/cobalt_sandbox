@@ -41,7 +41,7 @@ posix_bypass_mmap = (is_android && current_cpu != "x86") || is_fuchsia
 enable_built_in_dns = use_blink
 
 # Unix sockets are not supported on iOS.
-enable_unix_sockets = is_posix && !is_ios && false
+enable_unix_sockets = is_posix && !is_ios
 
 # x86/x64 cast_shell builds run on regular trybots and can use python runtime
 # and remote test server. ARM cast_shell builds don't have python runtime.
@@ -56,7 +56,7 @@ enable_python_utils =
 # Platforms that cannot use python_utils (like Android but see full
 # list above) will instead use a remote server.
 use_remote_test_server =
-    !enable_python_utils && (enable_websockets || (is_cronet_build && !is_ios)) && false
+    !enable_python_utils && (enable_websockets || (is_cronet_build && !is_ios))
 
 # Whether //net should use an external GSSAPI library for implementing HTTP
 # Negotiate authentication. All platforms for which use_kerberos is true should
@@ -1429,7 +1429,7 @@ component("net") {
   }
 
   # Use getifaddrs() on POSIX platforms, except Linux.
-  if (is_posix && !is_linux && !is_chromeos && false) {
+  if (is_posix && !is_linux && !is_chromeos) {
     sources += [
       "base/network_interfaces_getifaddrs.cc",
       "base/network_interfaces_getifaddrs.h",

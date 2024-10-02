@@ -25,6 +25,8 @@
 #include "net/disk_cache/simple/simple_file_enumerator.h"
 #include "net/disk_cache/simple/simple_util.h"
 
+#include "build/build_config.h"
+
 // Completing partial implementation of disk_cache.h, in place of
 // disk_cache.cc.
 namespace disk_cache {
@@ -321,18 +323,18 @@ BackendResult CreateCacheBackend(net::CacheType type,
   return CreateCacheBackend(type, backend_type, std::move(file_operations), path, max_bytes, reset_handling, net_log, base::OnceClosure(), std::move(callback));
 }
 
-#if defined(OS_ANDROID)
-NET_EXPORT net::Error CreateCacheBackend(
+#if BUILDFLAG(IS_ANDROID)
+NET_EXPORT BackendResult CreateCacheBackend(
     net::CacheType type,
     net::BackendType backend_type,
+    scoped_refptr<BackendFileOperationsFactory> file_operations,
     const base::FilePath& path,
     int64_t max_bytes,
-    bool force,
+    ResetHandling reset_handling,
     net::NetLog* net_log,
-    std::unique_ptr<Backend>* backend,
-    net::CompletionOnceCallback callback,
+    BackendResultCallback callback,
     base::android::ApplicationStatusListener* app_status_listener) {
-  return net::ERR_FAILED;
+  return BackendResult::MakeError(net::ERR_FAILED);
 }
 #endif
 
