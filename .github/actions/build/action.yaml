@@ -44,7 +44,7 @@ runs:
         run: |
           set -x
           cd src
-          ninja -C out/${{ matrix.platform }}_${{ matrix.config }} $(echo "${TARGETS}" | tr -d '"')
+          ninja -j 62 -C out/${{ matrix.platform }}_${{ matrix.config }} $(echo "${TARGETS}" | tr -d '"')
         shell: bash
       - name: sccache check
         run: sccache -s
