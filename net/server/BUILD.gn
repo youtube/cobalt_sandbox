@@ -43,7 +43,7 @@ static_library("http_server") {
     ]
   }
 
-  if (enable_websockets || true) {
+  if (enable_websockets || is_starboard) {
     sources = [
       "http_connection.cc",
       "http_connection.h",
