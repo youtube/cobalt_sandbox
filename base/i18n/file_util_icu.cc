@@ -7,12 +7,14 @@
 #include "base/i18n/file_util_icu.h"
 
 #include <stdint.h>
+#include <unicode/utf8.h>
 
 #include "base/check.h"
 #include "base/files/file_path.h"
 #include "base/i18n/icu_string_conversions.h"
 #include "base/i18n/string_compare.h"
 #include "base/memory/singleton.h"
+#include "base/notreached.h"
 #include "base/numerics/safe_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/strings/sys_string_conversions.h"
@@ -170,7 +172,7 @@ UChar32 GetNextCodePoint(const FilePath::StringType* const file_name,
   // Windows uses UTF-16 encoding for filenames.
   U16_NEXT(file_name->data(), cursor, static_cast<int>(file_name->length()),
            code_point);
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA) || defined(STARBOARD)
   // Mac and Chrome OS use UTF-8 encoding for filenames.
   // Linux doesn't actually define file system encoding. Try to parse as
   // UTF-8.

@@ -184,6 +184,8 @@ TEST(FileEnumerator, SingleFileInFolderForDirSearch) {
   }
 }
 
+// Starboard does not support patterns.
+#if !defined(STARBOARD)
 TEST(FileEnumerator, SingleFileInFolderWithFiltering) {
   ScopedTempDir temp_dir;
   ASSERT_TRUE(temp_dir.CreateUniqueTempDir());
@@ -202,7 +204,10 @@ TEST(FileEnumerator, SingleFileInFolderWithFiltering) {
     EXPECT_THAT(files, IsEmpty());
   }
 }
+#endif  // !defined(STARBOARD)
 
+// Starboard does not support patterns.
+#if !defined(STARBOARD)
 TEST(FileEnumerator, TwoFilesInFolder) {
   ScopedTempDir temp_dir;
   ASSERT_TRUE(temp_dir.CreateUniqueTempDir());
@@ -231,6 +236,7 @@ TEST(FileEnumerator, TwoFilesInFolder) {
     EXPECT_THAT(files, UnorderedElementsAre(foo_txt, bar_txt));
   }
 }
+#endif  // !defined(STARBOARD)
 
 TEST(FileEnumerator, SingleFolderInFolderForFileSearch) {
   ScopedTempDir temp_dir;
@@ -264,6 +270,8 @@ TEST(FileEnumerator, SingleFolderInFolderForDirSearch) {
   }
 }
 
+// Starboard does not support patterns.
+#if !defined(STARBOARD)
 TEST(FileEnumerator, TwoFoldersInFolder) {
   ScopedTempDir temp_dir;
   ASSERT_TRUE(temp_dir.CreateUniqueTempDir());
@@ -285,6 +293,7 @@ TEST(FileEnumerator, TwoFoldersInFolder) {
     EXPECT_THAT(files, ElementsAre(subdir_foo));
   }
 }
+#endif  // !defined(STARBOARD)
 
 TEST(FileEnumerator, FolderAndFileInFolder) {
   ScopedTempDir temp_dir;
@@ -354,6 +363,8 @@ TEST(FileEnumerator, FileInSubfolder) {
   }
 }
 
+// Starboard does not support patterns.
+#if !defined(STARBOARD)
 TEST(FileEnumerator, FilesInSubfoldersWithFiltering) {
   ScopedTempDir temp_dir;
   ASSERT_TRUE(temp_dir.CreateUniqueTempDir());
@@ -391,6 +402,7 @@ TEST(FileEnumerator, FilesInSubfoldersWithFiltering) {
                         FileEnumerator::FolderSearchPolicy::ALL);
   EXPECT_THAT(files, UnorderedElementsAre(subdir_foo, foo_foo, bar_foo));
 }
+#endif  // !defined(STARBOARD)
 
 TEST(FileEnumerator, InvalidDirectory) {
   ScopedTempDir temp_dir;
@@ -415,7 +427,7 @@ TEST(FileEnumerator, InvalidDirectory) {
 #endif
 }
 
-#if BUILDFLAG(IS_POSIX)
+#if BUILDFLAG(IS_POSIX) && !defined(STARBOARD)
 TEST(FileEnumerator, SymLinkLoops) {
   ScopedTempDir temp_dir;
   ASSERT_TRUE(temp_dir.CreateUniqueTempDir());
@@ -508,7 +520,15 @@ TEST(FileEnumerator, GetInfoRecursive) {
   // all the files.
   for (TestDirectory& dir : directories) {
     const FilePath dir_path = temp_dir.GetPath().Append(dir.name);
+#if defined(STARBOARD)
+#ifdef _WIN32
+// TODO: Reable this test when support directory open in base::File for Windows.
+// Below tests would fail because we are now using _open from <io.h> instead of 
+// CreateFile from <fileapi.h>.
+#else
     ASSERT_TRUE(GetFileInfo(dir_path, dir.info));
+#endif
+#endif
   }
 
   FileEnumerator file_enumerator(
@@ -557,6 +577,10 @@ TEST(FileEnumerator, GetInfoRecursive) {
 // a bug in Windows, not us -- you can see it with the "dir" command (notice
 // that the time of . and .. always match). Skip this test.
 // https://crbug.com/1119546
+#elif defined(STARBOARD)
+#ifdef _WIN32
+// Reable this test when support directory open in base::File for Windows.
+#endif
 #else
 // Tests that FileEnumerator::GetInfo() returns the correct info for the ..
 // directory.

@@ -10,6 +10,10 @@
 #include "base/files/file.h"
 #include "base/logging.h"
 #include "net/base/net_export.h"
+#if defined(STARBOARD)
+#include "starboard/socket.h"
+#include "starboard/system.h"
+#endif
 
 namespace net {
 
@@ -54,6 +58,13 @@ NET_EXPORT bool IsRequestBlockedError(int error);
 
 // Map system error code to Error.
 NET_EXPORT Error MapSystemError(logging::SystemErrorCode os_error);
+
+#if defined(STARBOARD)
+// Gets the last system error as a net error.
+static inline Error MapLastSystemError() {
+  return MapSystemError(SbSystemGetLastError());
+}
+#endif
 
 // A convenient function to translate file error to net error code.
 NET_EXPORT Error FileErrorToNetError(base::File::Error file_error);

@@ -4,7 +4,9 @@
 
 import("//third_party/perfetto/gn/proto_library.gni")
 import("//third_party/protobuf/proto_library.gni")
+if (!use_cobalt_customizations) {
 import("//tools/grit/grit_rule.gni")
+}
 import("sources.gni")
 
 proto_library("chrome_track_event") {
@@ -25,6 +27,7 @@ protozero_library("chrome_track_event_zero") {
   omit_protozero_dep = true
 }
 
+if (!use_cobalt_customizations) {
 grit("chrome_track_event_resources") {
   source = "resources.grd"
   outputs = [
@@ -32,4 +35,5 @@ grit("chrome_track_event_resources") {
     "tracing_proto_resources.pak",
   ]
   deps = [ ":chrome_track_event" ]
+}
 }

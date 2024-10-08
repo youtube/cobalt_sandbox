@@ -254,6 +254,10 @@ int TCPSocketPosix::Accept(std::unique_ptr<TCPSocketPosix>* tcp_socket,
   DCHECK(socket_);
   DCHECK(!accept_socket_);
 
+  if ((!socket_)) {
+    return MapSystemError(errno);
+  }
+
   net_log_.BeginEvent(NetLogEventType::TCP_ACCEPT);
 
   int rv = socket_->Accept(

@@ -11,7 +11,7 @@
 
 #if BUILDFLAG(IS_WIN)
 #include "net/socket/tcp_socket_win.h"
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#else
 #include "net/socket/tcp_socket_posix.h"
 #endif
 
@@ -25,7 +25,7 @@ namespace net {
 // before you know whether it is a client or server socket).
 #if BUILDFLAG(IS_WIN)
 typedef TCPSocketWin TCPSocket;
-#elif BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+#else
 typedef TCPSocketPosix TCPSocket;
 #endif
 
