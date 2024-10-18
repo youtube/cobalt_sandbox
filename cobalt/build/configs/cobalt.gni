@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-group("gn_all") {
-  # TODO(b/371589344): Fix android build configs.
-  deps = [ "//starboard($starboard_toolchain)" ]
-}
+# Get the path to the starboard implementation and include its GN
+# configuration.
+
+is_cobalt = true
