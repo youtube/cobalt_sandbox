@@ -25,9 +25,6 @@ runs:
           echo "target_os=['android']" >> .gclient
           gclient validate
         shell: bash
-      - name: CIPD auth
-        run: cipd auth-login -service-account-json :gce
-        shell: bash
       - name: gclient sync
         run: gclient sync -v --shallow --no-history -r ${{ github.sha }}
         shell: bash
