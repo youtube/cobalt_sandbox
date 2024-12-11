@@ -17,7 +17,6 @@
 
 #include "base/memory/raw_ptr.h"
 #include "base/task/sequenced_task_runner.h"
-#include "base/time/time.h"
 #include "media/base/media_log.h"
 #include "media/base/renderer_factory.h"
 
@@ -26,10 +25,7 @@ namespace media {
 // Creates Renderers using Starboard.
 class MEDIA_EXPORT StarboardRendererFactory final : public RendererFactory {
  public:
-  explicit StarboardRendererFactory(
-      MediaLog* media_log,
-      base::TimeDelta audio_write_duration_local,
-      base::TimeDelta audio_write_duration_remote);
+  explicit StarboardRendererFactory(MediaLog* media_log);
 
   StarboardRendererFactory(const StarboardRendererFactory&) = delete;
   StarboardRendererFactory& operator=(const StarboardRendererFactory&) = delete;
@@ -47,8 +43,6 @@ class MEDIA_EXPORT StarboardRendererFactory final : public RendererFactory {
 
  private:
   raw_ptr<MediaLog> media_log_;
-  const base::TimeDelta audio_write_duration_local_;
-  const base::TimeDelta audio_write_duration_remote_;
 };
 
 }  // namespace media

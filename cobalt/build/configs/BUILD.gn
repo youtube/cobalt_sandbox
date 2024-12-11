@@ -22,6 +22,11 @@ config("cobalt_config") {
   if (current_toolchain == starboard_toolchain) {
     configs += [ "//${starboard_path}/platform_configuration" ]
   }
+
+  defines = [
+    "ENABLE_BUILDFLAG_IS_COBALT",
+    "OS_STARBOARD",
+  ]
 }
 
 config("default_includes") {
