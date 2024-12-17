@@ -55,7 +55,7 @@ $ParanoidMode CheckPresence
     try:
       output = subprocess.check_output(
           ' '.join(['cipd', 'ensure', '-log-level=' + log_level,
-                    '-root', directory, '-ensure-file', '-']),
+                    '-root', directory, '-ensure-file', '-', '-service-account-json', ':gce']),
           shell=True, input=ensure_file, stderr=subprocess.STDOUT,
           universal_newlines=True)
       logging.info(output)
