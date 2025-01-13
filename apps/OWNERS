@@ -1,0 +1,6 @@
+set noparent
+
+# Temporary owners until reorg is finished
+brettw@chromium.org
+tbarzic@chromium.org
+skuhne@chromium.org
