@@ -121,7 +121,9 @@
 #include "third_party/blink/renderer/modules/webgl/webgl_uniform_location.h"
 #include "third_party/blink/renderer/modules/webgl/webgl_vertex_array_object.h"
 #include "third_party/blink/renderer/modules/webgl/webgl_vertex_array_object_oes.h"
+#if !BUILDFLAG(DISABLE_XR)
 #include "third_party/blink/renderer/modules/xr/xr_system.h"
+#endif
 #include "third_party/blink/renderer/platform/bindings/exception_state.h"
 #include "third_party/blink/renderer/platform/bindings/script_state.h"
 #include "third_party/blink/renderer/platform/bindings/v8_binding_macros.h"
@@ -903,6 +905,7 @@ bool WebGLRenderingContextBase::DidGpuRestart(
                        kNotCompatibleAfterRestart;
 }
 
+#if !BUILDFLAG(DISABLE_XR)
 XRSystem* WebGLRenderingContextBase::GetXrSystemFromHost(
     CanvasRenderingContextHost* host) {
   XRSystem* xr = nullptr;
@@ -922,22 +925,29 @@ XRSystem* WebGLRenderingContextBase::GetXrSystemFromHost(
 
   return xr;
 }
+#endif
 
 bool WebGLRenderingContextBase::MakeXrCompatibleSync(
     CanvasRenderingContextHost* host) {
   device::mojom::blink::XrCompatibleResult xr_compatible_result =
       device::mojom::blink::XrCompatibleResult::kNoDeviceAvailable;
 
+#if !BUILDFLAG(DISABLE_XR)
   if constexpr (BUILDFLAG(ENABLE_VR)) {
     if (XRSystem* xr = GetXrSystemFromHost(host)) {
       xr->MakeXrCompatibleSync(&xr_compatible_result);
     }
   }
+#endif
 
   return IsXrCompatibleFromResult(xr_compatible_result);
 }
 
 void WebGLRenderingContextBase::MakeXrCompatibleAsync() {
+#if BUILDFLAG(DISABLE_XR)
+  xr_compatible_ = false;
+  CompleteXrCompatiblePromiseIfPending(DOMExceptionCode::kAbortError);
+#else
   if (XRSystem* xr = GetXrSystemFromHost(Host())) {
     // The promise will be completed on the callback.
     xr->MakeXrCompatibleAsync(
@@ -947,6 +957,7 @@ void WebGLRenderingContextBase::MakeXrCompatibleAsync() {
     xr_compatible_ = false;
     CompleteXrCompatiblePromiseIfPending(DOMExceptionCode::kAbortError);
   }
+#endif
 }
 
 void WebGLRenderingContextBase::OnMakeXrCompatibleFinished(
