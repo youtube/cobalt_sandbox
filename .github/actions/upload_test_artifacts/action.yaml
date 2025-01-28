@@ -33,7 +33,7 @@ runs:
       shell: bash
     - name: Upload On-Host Test Artifacts Archive
       if: inputs.upload_on_host_test_artifacts == 'true'
-      uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
+      uses: actions/upload-artifact@v4
       with:
         name: ${{ inputs.test_artifacts_key }}
         path: artifacts/*
