@@ -19,7 +19,8 @@ on:
         required: false
 
 concurrency:
-  group: ${{ github.workflow }}-${{ inputs.platform }} @ ${{ github.head_ref || github.sha }}
+  # Cancel existing jobs on the same workflow, platform, and PR (or sha if merged).
+  group: ${{ github.workflow }}-${{ inputs.platform }} @ ${{ github.event.number || github.sha }}
   cancel-in-progress: true
 
 jobs:
@@ -32,6 +33,7 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GITHUB_PR_REPO_URL: ${{ github.event.pull_request.base.repo.url }}
       GITHUB_EVENT_NUMBER: ${{ github.event.number }}
+    # Don't run jobs on 'runtest' or 'on_device' label event if the change is merged.
     if: |
       github.event.action != 'labeled' || github.event.pull_request.merged == false &&
       (github.event.label.name == 'runtest' || github.event.label.name == 'on_device')
