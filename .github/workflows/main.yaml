@@ -19,11 +19,24 @@ on:
         required: false
 
 concurrency:
-  # Cancel existing jobs on the same workflow, platform, and PR (or sha if merged).
-  group: ${{ github.workflow }}-${{ inputs.platform }} @ ${{ github.event.number || github.sha }}
+  # Cancel existing jobs on the same workflow, platform, PR number (or sha if merged). If it's a label event and the label added is not on_device or runtest, also append the label name to avoid cancelling jobs.
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ inputs.platform }} @ ${{ github.event.label.name || github.event.pull_request.number || github.sha }} @ ${{ github.event.label.name && github.event.pull_request.number || github.event.action }}
   cancel-in-progress: true
 
 jobs:
+  workflow-debug:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Print github context
+        shell: bash
+        run: |
+          echo '${{ toJSON(github) }}'
+      - name: Print concurrency group
+        shell: bash
+        run: |
+          echo 'old: ##${{ github.workflow }}-${{ github.event_name }}-${{ inputs.platform }} @ ${{ github.event.label.name || github.event.pull_request.number || github.sha }} @ ${{ github.event.label.name && github.event.pull_request.number || github.event.action }}##'
+          echo 'new: ##${{ github.workflow }}-${{ inputs.platform }} @ ${{ github.event.number || github.sha }} ${{ github.event.action == 'labeled' && !contains(fromJSON('["on_device", "runtest"]'), github.event.label.name) && github.event.label.name || ''}}##'
   # Retrieves configuration from json file.
   initialize:
     runs-on: ubuntu-latest
@@ -33,7 +46,7 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GITHUB_PR_REPO_URL: ${{ github.event.pull_request.base.repo.url }}
       GITHUB_EVENT_NUMBER: ${{ github.event.number }}
-    # Don't run jobs on 'runtest' or 'on_device' label event if the change is merged.
+    # Don't run jobs on 'runtest' or 'on_device' label event if the PR is merged.
     if: |
       github.event.action != 'labeled' || github.event.pull_request.merged == false &&
       (github.event.label.name == 'runtest' || github.event.label.name == 'on_device')
