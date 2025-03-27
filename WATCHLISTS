@@ -8,6 +8,7 @@
 # IMPORTANT: The regular expression filepath is tested against each path using
 # re.search, so it is not usually necessary to add .* at the end of the pattern.
 
+
 {
   'WATCHLIST_DEFINITIONS': {
     'about_flags': {
