@@ -56,3 +56,27 @@ DIR_METADATA   text eol=lf
 
 # Skip Tricium by default on files in third_party.
 third_party/** -tricium
+
+# Ignore list for diffs
+.github/** linguist-generated=true
+cobalt/** linguist-generated=true
+media/starboard/** linguist-generated=true
+starboard/** linguist-generated=true
+third_party/blink/renderer/modules/cobalt/** linguist-generated=true
+third_party/blink/web_tests/wpt_internal/cobalt/** linguist-generated=true
+third_party/boringssl/src/** linguist-generated=true
+third_party/ffmpeg_includes/** linguist-generated=true
+third_party/googletest/src/** linguist-generated=true
+third_party/llvm-project/** linguist-generated=true
+third_party/lz4_lib/** linguist-generated=true
+third_party/musl/** linguist-generated=true
+third_party/pulseaudio_includes/** linguist-generated=true
+third_party/android_deps/libs/com_google_android_gms_play_services_ads_identifier/** linguist-generated=true
+third_party/de265_includes/** linguist-generated=true
+third_party/libfdkaac/** linguist-generated=true
+third_party/openh264/** linguist-generated=true
+ui/ozone/platform/starboard/** linguist-generated=true
+third_party/rust/** linguist-generated=true
+tools/win/ChromeDebug/** linguist-generated=true
+tools/stats_viewer/** linguist-generated=true
+third_party/google_input_tools/** linguist-generated=true
