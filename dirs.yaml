@@ -1,0 +1,46 @@
+# Code that Cobalt team owns
+ours:
+  - .github
+  - cobalt
+  - media/starboard
+  - starboard
+  - third_party/blink/renderer/modules/cobalt
+  - third_party/blink/web_tests/wpt_internal/cobalt
+  - ui/ozone/platform/starboard
+
+# Chrome maintains this dir in DEPS, we copied this into our repo and modified
+# Diffs are not automatically counted
+our_owned_dep:
+  - third_party/boringssl/src
+  - third_party/googletest/src
+
+# Deps that Chromium doesn't have, but we do - mostly due to Starboard or 
+# Android build differences
+our_added_dep:
+  - third_party/android_deps/libs/com_google_android_gms_play_services_ads_identifier
+  - third_party/de265_includes
+  - third_party/ffmpeg_includes
+  - third_party/libfdkaac
+  - third_party/llvm-project
+  - third_party/lz4_lib
+  - third_party/musl
+  - third_party/openh264/include
+  - third_party/pulseaudio_includes
+
+# Dependencies and dirs we deleted - not currently used by Chrobalt
+# and deleted mostly for security vulnerabilities
+our_deleted_dep:
+  - third_party/google_input_tools
+  - third_party/rust/atty
+  - third_party/rust/camino
+  - third_party/rust/cargo_metadata
+  - third_party/rust/cargo_platform
+  - third_party/rust/fastrand
+  - third_party/rust/hashbrown
+  - third_party/rust/indexmap
+  - third_party/rust/once_cell
+  - third_party/rust/remove_dir_all
+  - third_party/rust/tempfile
+  - third_party/rust/toml
+  - tools/stats_viewer
+  - tools/win/ChromeDebug
