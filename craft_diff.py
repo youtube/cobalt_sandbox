@@ -21,7 +21,7 @@ class Crafter(object):
         else:
             subprocess.run(full_cmd, cwd=self.git_dir)
         
-    def create_our_diff_branch(self, deletedirs):
+    def create_our_diff_branch(self, deletedirs, push):
         # Force delete whatever was there first
         self.run_git_cmd(["branch","-D", self.our_branch_edit])
         # Create it from ours
@@ -29,9 +29,10 @@ class Crafter(object):
         for dir in deletedirs:
             self.run_git_cmd(["rm","-rf",dir])
         self.run_git_cmd(["commit","-m","delete dirs","--no-verify"])
-        self.run_git_cmd(["push","sandbox","-f"])
+        if push:
+            self.run_git_cmd(["push","sandbox","-f"])
 
-    def create_upstream_diff_branch(self, deletedirs):
+    def create_upstream_diff_branch(self, deletedirs, push):
         # Force delete whatever was there first
         self.run_git_cmd(["branch","-D", self.upstream_branch_edit])
         # Create it from upstream
@@ -39,7 +40,8 @@ class Crafter(object):
         for dir in deletedirs:
             self.run_git_cmd(["rm","-rf",dir])
         self.run_git_cmd(["commit","-m","delete dirs", "--no-verify"])
-        self.run_git_cmd(["push","sandbox","-f"])
+        if push:
+            self.run_git_cmd(["push","sandbox","-f"])
 
 def main():
     logging.basicConfig(stream=sys.stdout,level=logging.DEBUG)
@@ -50,6 +52,7 @@ def main():
     argparser.add_argument("--git_dir",default="src")
     argparser.add_argument("--our_branch_edit", default="diff_edit")
     argparser.add_argument("--upstream_branch_edit", default="chromium_m114_diff")
+    argparser.add_argument("--push", action="store_true", default=False)
     args = argparser.parse_args()
 
     spec_path = args.spec
@@ -63,9 +66,11 @@ def main():
         print(f"Successfully loaded {spec_path}")
         print("{!r}".format(data))
         dirs_to_delete_in_ours = data['ours'] + \
-                                    data['our_owned_dep'] + \
-                            data['our_added_dep']
-        dirs_to_delete_in_upstream = data['our_deleted_dep']
+                            data['our_files'] + \
+                            data['our_owned_dep'] + \
+                            data['our_added_dep'] + \
+                            data['updated']
+        dirs_to_delete_in_upstream = data['our_deleted_dep'] + data['updated']
         
         crafter = Crafter(args.git_dir, 
                         args.our_branch, 
@@ -73,8 +78,8 @@ def main():
                         args.upstream_branch, 
                         args.upstream_branch_edit
                         )
-        crafter.create_our_diff_branch(dirs_to_delete_in_ours)
-        crafter.create_upstream_diff_branch(dirs_to_delete_in_upstream)
+        crafter.create_our_diff_branch(dirs_to_delete_in_ours, args.push)
+        crafter.create_upstream_diff_branch(dirs_to_delete_in_upstream, args.push)
 
     except yaml.YAMLError as e:
         print(f"Error: Invalid YAML format in '{spec_path}': {e}")
