@@ -1,4 +1,0 @@
-import("//cobalt/build/configs/linux_common.gn")
-
-# Required for graphics tests.
-angle_use_x11 = !is_official_build
