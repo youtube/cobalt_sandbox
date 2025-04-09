@@ -145,6 +145,7 @@ def _process_test_requests(args):
     ]
     if args.test_attempts:
       tests_args.append(f'test_attempts={args.test_attempts}')
+      tests_args.append('retry_level=FAIL')
 
     if args.dimensions:
       dimensions = json.loads(args.dimensions)
@@ -270,7 +271,7 @@ def main() -> int:
   trigger_parser.add_argument(
       '--test_attempts',
       type=str,
-      default='1',
+      default='3',
       help='The maximum number of times a test can retry.',
   )
   trigger_args.add_argument(
