@@ -53,6 +53,11 @@ if (is_android) {
   import("//third_party/icu/config.gni")
 }
 
+if (is_cobalt) {
+  import("//third_party/angle/gni/angle.gni")
+}
+import("//cobalt/build/configs/hacks.gni")
+
 declare_args() {
   # Indicates whether keystone registration framework should be enabled (see
   # action("keystone_registration_framework") below).  There are some tests
@@ -1735,11 +1740,15 @@ if (is_linux || is_chromeos) {
       if (is_linux) {
         deps += [ ":swiftshader_vk_symbols" ]
       }
+
+      # TODO: b/406550834 - Cobalt: Upstream adding angle_shared_libvulkan
+      if (!is_cobalt || angle_shared_libvulkan) {
       if (!is_chromeos) {
         deps += [ ":angle_libvulkan_symbols" ]
       }
       if (build_with_internal_optimization_guide) {
         deps += [ ":optimization_guide_symbols" ]
+      }
       }
     }
     extract_symbols("chrome_symbols") {
@@ -1754,6 +1763,10 @@ if (is_linux || is_chromeos) {
 
       deps = [ ":chrome" ]
     }
+    if (enable_cobalt_hermetic_hacks) {
+      # TODO: b/406511608 - Once we build crashpad hermetically, re-enable this.
+      group("chrome_crashpad_symbols") {}
+    } else {
     extract_symbols("chrome_crashpad_symbols") {
       binary = "$root_out_dir/chrome_crashpad_handler"
 
@@ -1765,6 +1778,7 @@ if (is_linux || is_chromeos) {
       }
 
       deps = [ "//components/crash/core/app:chrome_crashpad_handler" ]
+    }
     }
     extract_symbols("swiftshader_vk_symbols") {
       binary = "$root_out_dir/libvk_swiftshader.so"
@@ -1802,6 +1816,9 @@ if (is_linux || is_chromeos) {
 
       deps = [ "//third_party/angle:libGLESv2" ]
     }
+
+    # TODO: b/406550834 - Cobalt: Upstream adding angle_shared_libvulkan
+    if (!is_cobalt || angle_shared_libvulkan) {
     if (!is_chromeos) {
       extract_symbols("angle_libvulkan_symbols") {
         binary = "$root_out_dir/libvulkan.so.1"
@@ -1814,6 +1831,7 @@ if (is_linux || is_chromeos) {
         }
 
         deps = [ "//third_party/vulkan-deps/vulkan-loader/src:libvulkan" ]
+      }
       }
     }
     if (build_with_internal_optimization_guide) {
