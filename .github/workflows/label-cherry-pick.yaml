@@ -89,6 +89,8 @@ jobs:
           if [ ${RES} -ne 0 ]; then
             # If the cherry pick failed due to a merge conflict we can
             # add the conflicting file and create the commit anyway.
+            # Also add a marker file to signal builds that the merge failed.
+            touch CHERRY_PICK_MERGE_CONFLICT
             git add .
             git cherry-pick --continue
           fi

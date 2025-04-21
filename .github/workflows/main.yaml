@@ -40,6 +40,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Check for cherry-pick merge conflict
+        run: |
+          if [[ -f CHERRY_PICK_MERGE_CONFLICT ]]; then
+            echo "::error::Cherry pick was not be merged cleanly. Aborting build."
+            exit 1
+          fi
       - name: Remove runtest if exists
         if: github.event_name == 'pull_request'
         continue-on-error: true  # Ignore this step if we cannot remove the label.
