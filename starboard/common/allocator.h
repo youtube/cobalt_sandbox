@@ -38,6 +38,15 @@ class Allocator {
 
   virtual ~Allocator() {}
 
+  // TODO: b/369245553 - Cobalt: Consider controlling this via a command line
+  // parameter.
+  static constexpr int ExtraLogLevel() {
+    // 0 => keep allocator related logging to minimum.
+    // 1 => enable extra logging for statistics in this class and its users.
+    // 2 => enable per allocation logging (extremely chatty).
+    return 0;
+  }
+
   // Allocates a range of memory of the given size, without any alignment
   // constraints.
   // Will return NULL if the allocation fails.
@@ -79,7 +88,14 @@ class Allocator {
   virtual size_t GetAllocated() const = 0;
 
   // Print information for all allocations.
-  virtual void PrintAllocations() const = 0;
+  //
+  // When `align_allocated_size` is set to true, the allocated size of
+  // individual allocations will be aligned up to the next power of 2 to group
+  // more allocations of similar sizes into the same line.
+  // `max_allocations_to_print` limits the max lines of allocations to print
+  // inside PrintAllocations().
+  virtual void PrintAllocations(bool align_allocated_size,
+                                int max_allocations_to_print) const = 0;
 };
 
 }  // namespace common

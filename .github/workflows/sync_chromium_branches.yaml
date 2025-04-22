@@ -1,0 +1,34 @@
+name: Sync Chromium branches
+on:
+  workflow_dispatch:
+  # Runs everyday.
+  schedule:
+    - cron:  '0 0 * * *'
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write-all
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: [
+          {milestone: m114, branch_num: 5735}, 
+          {milestone: m120, branch_num: 6099}, 
+          {milestone: m126, branch_num: 6478},
+        ]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chromium/${{ matrix.branch.milestone }}
+      - name: Pull ${{ matrix.branch.milestone }} from upstream 
+        run: |
+          # Add Chromium remote and pull the upstream branch.
+          git remote add upstream https://chromium.googlesource.com/chromium/src
+          git fetch upstream refs/branch-heads/${{ matrix.branch.branch_num }}:refs/remotes/branch/${{ matrix.branch.branch_num }}
+          git diff chromium/${{ matrix.branch.branch_num }} branch/${{ matrix.branch.branch_num }} --binary > chromium_diff.patch
+          git apply --index chromium_diff.patch
+
+          # Reset local branch to upstream and push.
+          git commit -m "Rebase refresh on ${{ steps.date.outputs.date }} for ${{ matrix.branch.milestone }}."
+          git push --force origin chromium/${{ matrix.branch.milestone }}

@@ -112,24 +112,18 @@ jobs:
             ${{ github.event.pull_request.body }}
 
       - name: Comment on failure
+        if: steps.create-pr.outputs.pull-request-number == ''
         uses: actions/github-script@v6
         with:
           github-token: ${{ secrets.CHERRY_PICK_TOKEN }}
           script: |
-            if ('${{ steps.create-pr.outputs.pull-request-number }}' == '') {
-              // Comment on the originating PR if creating a cherry pick PR failed.
-              github.rest.issues.createComment({
-                issue_number: context.payload.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: '> [!IMPORTANT]\n> Creating the cherry pick PR failed! Check the log at ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} for details.'
-              });
-            } else if ('${{ steps.cherry-pick.outcome }}' == 'failure') {
-              // Comment on the new PR if the cherry pick failed.
-              github.rest.issues.createComment({
-                issue_number: '${{ steps.create-pr.outputs.pull-request-number }}',
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: '> [!IMPORTANT]\n> There were merge conflicts while cherry picking! Check out [${{ env.CHERRY_PICK_BRANCH }}](${{ github.repository }}/tree/${{ env.CHERRY_PICK_BRANCH }}) and fix the conflicts before proceeding. Check the log at ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} for details.'
-              });
-            }
+            // Comment on the originating PR if creating a cherry pick PR failed.
+            github.rest.issues.createComment({
+              issue_number: context.payload.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '> [!IMPORTANT]\n> Creating the cherry pick PR failed! Check the log at ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} for details.'
+            });
+      - name: Post review
+        if: steps.cherry-pick.outcome == 'failure' && steps.create-pr.outputs.pull-request-number != ''
+        run: gh pr review 123 -r -b "> [!IMPORTANT]\n> There were merge conflicts while cherry picking! Check out [${{ env.CHERRY_PICK_BRANCH }}](${{ github.repository }}/tree/${{ env.CHERRY_PICK_BRANCH }}) and fix the conflicts before proceeding. Check the log at ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} for details."
