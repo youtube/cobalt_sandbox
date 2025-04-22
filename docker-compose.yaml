@@ -4,8 +4,8 @@ services:
     build:
       context: cobalt/docker/linux
       cache_from:
-        - ghcr.io/youtube/cobalt/linux:latest
-    image: ghcr.io/youtube/cobalt/linux:latest
+        - ghcr.io/youtube/cobalt_sandbox/linux:latest
+    image: ghcr.io/youtube/cobalt_sandbox/linux:latest
     platform: linux/amd64
     environment:
       - DEPOT_TOOLS_UPDATE=0
@@ -13,11 +13,11 @@ services:
     build:
       context: cobalt/docker/unittest
       cache_from:
-        - ghcr.io/youtube/cobalt/unittest:latest
-    image: ghcr.io/youtube/cobalt/unittest:latest
+        - ghcr.io/youtube/cobalt_sandbox/unittest:latest
+    image: ghcr.io/youtube/cobalt_sandbox/unittest:latest
   webtest:
     build:
       context: cobalt/docker/webtest
       cache_from:
-        - ghcr.io/youtube/cobalt/webtest:latest
-    image: ghcr.io/youtube/cobalt/webtest:latest
+        - ghcr.io/youtube/cobalt_sandbox/webtest:latest
+    image: ghcr.io/youtube/cobalt_sandbox/webtest:latest
