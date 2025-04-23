@@ -36,3 +36,5 @@ jobs:
           # Reset local branch to upstream and push.
           git commit -m "Rebase refresh on ${{ steps.date.outputs.date }} for ${{ matrix.branch.milestone }}."
           git push --force origin chromium/${{ matrix.branch.milestone }}
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
