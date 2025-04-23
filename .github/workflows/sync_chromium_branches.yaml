@@ -23,9 +23,13 @@ jobs:
       - name: Pull ${{ matrix.branch.milestone }} from upstream 
         run: |
           # Add Chromium remote and pull the upstream branch.
+          echo "git remote add upstream https://chromium.googlesource.com/chromium/src"
           git remote add upstream https://chromium.googlesource.com/chromium/src
+          echo "git fetch upstream refs/branch-heads/${{ matrix.branch.branch_num }}:refs/remotes/branch/${{ matrix.branch.branch_num }}"
           git fetch upstream refs/branch-heads/${{ matrix.branch.branch_num }}:refs/remotes/branch/${{ matrix.branch.branch_num }}
+          echo "git diff chromium/${{ matrix.branch.branch_num }} branch/${{ matrix.branch.branch_num }} --binary > chromium_diff.patch"
           git diff chromium/${{ matrix.branch.branch_num }} branch/${{ matrix.branch.branch_num }} --binary > chromium_diff.patch
+          echo "git apply --index chromium_diff.patch"
           git apply --index chromium_diff.patch
 
           # Reset local branch to upstream and push.
