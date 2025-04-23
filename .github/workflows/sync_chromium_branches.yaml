@@ -28,7 +28,7 @@ jobs:
           echo "git fetch upstream refs/branch-heads/${{ matrix.branch.branch_num }}:refs/remotes/branch/${{ matrix.branch.branch_num }}"
           git fetch upstream refs/branch-heads/${{ matrix.branch.branch_num }}:refs/remotes/branch/${{ matrix.branch.branch_num }}
           echo "git diff chromium/${{ matrix.branch.branch_num }} branch/${{ matrix.branch.branch_num }} --binary > chromium_diff.patch"
-          git diff chromium/${{ matrix.branch.branch_num }} branch/${{ matrix.branch.branch_num }} --binary > chromium_diff.patch
+          git diff chromium/${{ matrix.branch.milestone }} branch/${{ matrix.branch.branch_num }} --binary > chromium_diff.patch
           echo "git apply --index chromium_diff.patch"
           git apply --index chromium_diff.patch
 
