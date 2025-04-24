@@ -38,8 +38,8 @@ jobs:
           # Add Chromium remote and pull the upstream branch.
           echo "git remote add upstream https://chromium.googlesource.com/chromium/src"
           git remote add upstream https://chromium.googlesource.com/chromium/src
-          echo "git fetch upstream refs/branch-heads/${{ matrix.branch.branch_num }}:refs/remotes/branch/${{ matrix.branch.branch_num }}"
-          git fetch upstream refs/branch-heads/${{ matrix.branch.branch_num }}:refs/remotes/branch/${{ matrix.branch.branch_num }}
+          echo "git fetch --depth=1 upstream refs/branch-heads/${{ matrix.branch.branch_num }}:refs/remotes/branch/${{ matrix.branch.branch_num }}"
+          git fetch --depth=1 upstream refs/branch-heads/${{ matrix.branch.branch_num }}:refs/remotes/branch/${{ matrix.branch.branch_num }}
           echo "git diff HEAD branch/${{ matrix.branch.branch_num }} --binary > chromium_diff.patch"
           git diff HEAD branch/${{ matrix.branch.branch_num }} --binary > chromium_diff.patch
           echo "checking for diffs"
