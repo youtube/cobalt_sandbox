@@ -28,6 +28,8 @@ jobs:
           git config --global user.email "github@google.com"
       - name: Free space on Runner
         run: |
+          df -h
+          ls -la /opt/hostedtoolcache/
           sudo rm -rf /opt/hostedtoolcache/
       - name: Pull ${{ matrix.branch.milestone }} from upstream and apply diffs
         id: diff_step
