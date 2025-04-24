@@ -15,8 +15,8 @@
 #include "starboard/common/reuse_allocator_base.h"
 
 #include <algorithm>
+#include <limits>
 
-#include "starboard/common/log.h"
 #include "starboard/common/pointer_arithmetic.h"
 #include "starboard/types.h"
 
@@ -28,18 +28,35 @@ namespace {
 // Minimum block size to avoid extremely small blocks inside the block list and
 // to ensure that a zero sized allocation will return a non-zero sized block.
 const size_t kMinBlockSizeBytes = 16;
-// The max lines of allocation to print inside PrintAllocations().  Set to 0 to
-// print all allocations.
-const int kMaxAllocationLinesToPrint = 0;
+
+int ceil_power_2(int i) {
+  SB_DCHECK(i >= 0);
+
+  for (int power = 0; power < sizeof(i) * 8 - 1; ++power) {
+    if ((1 << power) >= i) {
+      return 1 << power;
+    }
+  }
+
+  SB_NOTREACHED();
+}
 
 }  // namespace
 
 bool ReuseAllocatorBase::MemoryBlock::Merge(const MemoryBlock& other) {
+  SB_DCHECK(fallback_allocation_index_ >= 0);
+  SB_DCHECK(other.fallback_allocation_index_ >= 0);
+
   if (AsInteger(address_) + size_ == AsInteger(other.address_)) {
+    SB_DCHECK(fallback_allocation_index_ <= other.fallback_allocation_index_);
+
     size_ += other.size_;
     return true;
   }
   if (AsInteger(other.address_) + other.size_ == AsInteger(address_)) {
+    SB_DCHECK(fallback_allocation_index_ >= other.fallback_allocation_index_);
+
+    fallback_allocation_index_ = other.fallback_allocation_index_;
     address_ = other.address_;
     size_ += other.size_;
     return true;
@@ -49,6 +66,8 @@ bool ReuseAllocatorBase::MemoryBlock::Merge(const MemoryBlock& other) {
 
 bool ReuseAllocatorBase::MemoryBlock::CanFulfill(size_t request_size,
                                                  size_t alignment) const {
+  SB_DCHECK(fallback_allocation_index_ >= 0);
+
   const size_t extra_bytes_for_alignment =
       AlignUp(AsInteger(address_), alignment) - AsInteger(address_);
   const size_t aligned_size = request_size + extra_bytes_for_alignment;
@@ -60,14 +79,17 @@ void ReuseAllocatorBase::MemoryBlock::Allocate(size_t request_size,
                                                bool allocate_from_front,
                                                MemoryBlock* allocated,
                                                MemoryBlock* free) const {
+  SB_DCHECK(fallback_allocation_index_ >= 0);
   SB_DCHECK(allocated);
   SB_DCHECK(free);
   SB_DCHECK(CanFulfill(request_size, alignment));
 
   // First we assume that the block is just enough to fulfill the allocation and
   // leaves no free block.
+  allocated->fallback_allocation_index_ = fallback_allocation_index_;
   allocated->address_ = address_;
   allocated->size_ = size_;
+  free->fallback_allocation_index_ = fallback_allocation_index_;
   free->address_ = NULL;
   free->size_ = 0;
 
@@ -153,61 +175,70 @@ void ReuseAllocatorBase::Free(void* memory) {
   SB_DCHECK(result);
 }
 
-void ReuseAllocatorBase::PrintAllocations() const {
-  typedef std::map<size_t, size_t> SizesHistogram;
+void ReuseAllocatorBase::PrintAllocations(bool align_allocated_size,
+                                          int max_allocations_to_print) const {
+  typedef std::map<size_t, size_t, std::greater<size_t>> SizesHistogram;
   SizesHistogram sizes_histogram;
 
-  for (auto iter = allocated_blocks_.begin(); iter != allocated_blocks_.end();
-       ++iter) {
-    size_t block_size = iter->second.size();
-    if (sizes_histogram.find(block_size) == sizes_histogram.end()) {
-      sizes_histogram[block_size] = 0;
-    }
-    sizes_histogram[block_size] = sizes_histogram[block_size] + 1;
+  max_allocations_to_print = std::max(max_allocations_to_print, 1);
+
+  // Logging the allocated blocks
+  for (auto&& block : allocated_blocks_) {
+    size_t block_size = align_allocated_size ? ceil_power_2(block.second.size())
+                                             : block.second.size();
+    ++sizes_histogram[block_size];
   }
 
-  SB_LOG(INFO) << "Total allocation: " << total_allocated_ << " bytes in "
-               << allocated_blocks_.size() << " blocks";
+  int64_t allocated_percentage =
+      capacity_ == 0 ? 0
+                     : static_cast<int64_t>(total_allocated_) * 100 / capacity_;
+  SB_LOG(INFO) << "Allocated " << total_allocated_ << " bytes ("
+               << allocated_percentage << "%) from a pool of capacity "
+               << capacity_ << " bytes.  There are "
+               << capacity_ - total_allocated_ << " free bytes.";
+  SB_LOG(INFO) << "Total allocated block: " << allocated_blocks_.size();
 
   int lines = 0;
   size_t accumulated_blocks = 0;
-  for (SizesHistogram::const_iterator iter = sizes_histogram.begin();
-       iter != sizes_histogram.end(); ++iter) {
-    if (lines == kMaxAllocationLinesToPrint - 1 &&
-        sizes_histogram.size() > kMaxAllocationLinesToPrint) {
-      SB_LOG(INFO) << "\t" << iter->first << ".."
+
+  for (auto&& iter : sizes_histogram) {
+    if (lines == max_allocations_to_print - 1 &&
+        sizes_histogram.size() > max_allocations_to_print) {
+      SB_LOG(INFO) << "\t" << iter.first << ".."
                    << sizes_histogram.rbegin()->first << " : "
                    << allocated_blocks_.size() - accumulated_blocks;
       break;
     }
-    SB_LOG(INFO) << "\t" << iter->first << " : " << iter->second;
+
+    SB_LOG(INFO) << "\t" << iter.first << " : " << iter.second;
     ++lines;
-    accumulated_blocks += iter->second;
+    accumulated_blocks += iter.second;
   }
 
-  SB_LOG(INFO) << "Total free blocks: " << free_blocks_.size();
+  // Logging the free blocks
   sizes_histogram.clear();
-  for (auto iter = free_blocks_.begin(); iter != free_blocks_.end(); ++iter) {
-    if (sizes_histogram.find(iter->size()) == sizes_histogram.end()) {
-      sizes_histogram[iter->size()] = 0;
-    }
-    sizes_histogram[iter->size()] = sizes_histogram[iter->size()] + 1;
+
+  SB_LOG(INFO) << "Total free blocks: " << free_blocks_.size();
+
+  for (auto&& block : free_blocks_) {
+    ++sizes_histogram[block.size()];
   }
 
   lines = 0;
   accumulated_blocks = 0;
-  for (SizesHistogram::const_iterator iter = sizes_histogram.begin();
-       iter != sizes_histogram.end(); ++iter) {
-    if (lines == kMaxAllocationLinesToPrint - 1 &&
-        sizes_histogram.size() > kMaxAllocationLinesToPrint) {
-      SB_LOG(INFO) << "\t" << iter->first << ".."
+
+  for (auto&& iter : sizes_histogram) {
+    if (lines == max_allocations_to_print - 1 &&
+        sizes_histogram.size() > max_allocations_to_print) {
+      SB_LOG(INFO) << "\t" << iter.first << ".."
                    << sizes_histogram.rbegin()->first << " : "
-                   << allocated_blocks_.size() - accumulated_blocks;
+                   << free_blocks_.size() - accumulated_blocks;
       break;
     }
-    SB_LOG(INFO) << "\t" << iter->first << " : " << iter->second;
+
+    SB_LOG(INFO) << "\t" << iter.first << " : " << iter.second;
     ++lines;
-    accumulated_blocks += iter->second;
+    accumulated_blocks += iter.second;
   }
 }
 
@@ -248,6 +279,11 @@ ReuseAllocatorBase::ReuseAllocatorBase(Allocator* fallback_allocator,
 }
 
 ReuseAllocatorBase::~ReuseAllocatorBase() {
+  if (ExtraLogLevel() >= 1) {
+    SB_LOG(INFO) << "Destroying reuse allocator ...";
+    PrintAllocations(true, 16);
+  }
+
   // Assert that everything was freed.
   // Note that in some unit tests this may
   // not be the case.
@@ -264,6 +300,20 @@ ReuseAllocatorBase::~ReuseAllocatorBase() {
 ReuseAllocatorBase::FreeBlockSet::iterator ReuseAllocatorBase::ExpandToFit(
     size_t size,
     size_t alignment) {
+  if (ExtraLogLevel() >= 1) {
+    int capacity = GetCapacity();
+    int allocated = GetAllocated();
+    int64_t free_percentage =
+        capacity == 0
+            ? 0
+            : static_cast<int64_t>(capacity - allocated) * 100 / capacity;
+
+    SB_LOG(INFO) << "Try to expand for an allocation of " << size
+                 << " bytes when capacity is " << capacity << " and "
+                 << capacity - allocated << " bytes free (" << free_percentage
+                 << "%).";
+  }
+
   void* ptr = NULL;
   size_t size_to_try = 0;
   // We try to allocate in unit of |allocation_increment_| to minimize
@@ -286,9 +336,30 @@ ReuseAllocatorBase::FreeBlockSet::iterator ReuseAllocatorBase::ExpandToFit(
   if (ptr != NULL) {
     fallback_allocations_.push_back(ptr);
     capacity_ += size_to_try;
-    return AddFreeBlock(MemoryBlock(ptr, size_to_try));
+    auto free_block_iter = AddFreeBlock(MemoryBlock(
+        static_cast<int>(fallback_allocations_.size() - 1), ptr, size_to_try));
+
+    if (ExtraLogLevel() >= 1) {
+      int capacity = GetCapacity();
+      int allocated = GetAllocated();
+      int64_t free_percentage =
+          capacity == 0
+              ? 0
+              : static_cast<int64_t>(capacity - allocated) * 100 / capacity;
+
+      SB_LOG(INFO) << "Allocated " << size_to_try
+                   << " bytes from fallback allocator (" << ptr
+                   << "), capacity expanded to " << capacity << " with "
+                   << capacity - allocated << " bytes free (" << free_percentage
+                   << "%)";
+      PrintAllocations(true, 16);
+    }
+
+    return free_block_iter;
   }
+
   if (free_blocks_.empty()) {
+    SB_LOG_IF(INFO, ExtraLogLevel() >= 1) << "Failed to expand.";
     return free_blocks_.end();
   }
 
@@ -325,6 +396,7 @@ ReuseAllocatorBase::FreeBlockSet::iterator ReuseAllocatorBase::ExpandToFit(
   // |free_address + free_size|  |aligned_address|
   size_t size_to_allocate = aligned_address + size - free_address - free_size;
   if (max_capacity_ && capacity_ + size_to_allocate > max_capacity_) {
+    SB_LOG_IF(INFO, ExtraLogLevel() >= 1) << "Failed to expand.";
     return free_blocks_.end();
   }
   SB_DCHECK(size_to_allocate > 0);
@@ -335,10 +407,34 @@ ReuseAllocatorBase::FreeBlockSet::iterator ReuseAllocatorBase::ExpandToFit(
 
   fallback_allocations_.push_back(ptr);
   capacity_ += size_to_allocate;
-  AddFreeBlock(MemoryBlock(ptr, size_to_allocate));
+  AddFreeBlock(MemoryBlock(static_cast<int>(fallback_allocations_.size() - 1),
+                           ptr, size_to_allocate));
   FreeBlockSet::iterator iter = free_blocks_.end();
   --iter;
-  return iter->CanFulfill(size, alignment) ? iter : free_blocks_.end();
+
+  if (ExtraLogLevel() >= 1) {
+    int capacity = GetCapacity();
+    int allocated = GetAllocated();
+    int64_t free_percentage =
+        capacity == 0
+            ? 0
+            : static_cast<int64_t>(capacity - allocated) * 100 / capacity;
+
+    SB_LOG(INFO) << "Allocated " << size_to_allocate
+                 << " bytes from fallback allocator (" << ptr
+                 << "), capacity expanded to " << capacity << " with "
+                 << capacity - allocated << " bytes free (" << free_percentage
+                 << "%)";
+    PrintAllocations(true, 16);
+  }
+
+  if (iter->CanFulfill(size, alignment)) {
+    return iter;
+  } else {
+    SB_LOG_IF(INFO, ExtraLogLevel() >= 1)
+        << "Failed to allocate after expanding.";
+    return free_blocks_.end();
+  }
 }
 
 void ReuseAllocatorBase::AddAllocatedBlock(void* address,

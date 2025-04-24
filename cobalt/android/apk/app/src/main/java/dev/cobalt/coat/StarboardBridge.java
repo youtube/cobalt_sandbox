@@ -31,7 +31,6 @@ import android.util.Size;
 import android.util.SizeF;
 import android.view.Display;
 import android.view.InputDevice;
-import android.view.accessibility.AccessibilityManager;
 import android.view.accessibility.CaptioningManager;
 import androidx.annotation.Nullable;
 import dev.cobalt.media.AudioOutputManager;
@@ -513,26 +512,6 @@ public class StarboardBridge {
     return audioManager.isMicrophoneMute();
   }
 
-  // TODO: (cobalt b/372559388) remove or migrate JNI?
-  // Used in starboard/android/shared/accessibility_get_display_settings.cc
-  /**
-   * @return true if the user has enabled accessibility high contrast text in the operating system.
-   */
-  @SuppressWarnings("unused")
-  @UsedByNative
-  boolean isAccessibilityHighContrastTextEnabled() {
-    AccessibilityManager am =
-        (AccessibilityManager) appContext.getSystemService(Context.ACCESSIBILITY_SERVICE);
-
-    try {
-      Method m = AccessibilityManager.class.getDeclaredMethod("isHighTextContrastEnabled");
-
-      return m.invoke(am) == Boolean.TRUE;
-    } catch (ReflectiveOperationException ex) {
-      return false;
-    }
-  }
-
   /** Returns string for kSbSystemPropertyUserAgentAuxField */
   @SuppressWarnings("unused")
   @CalledByNative
@@ -654,7 +633,9 @@ public class StarboardBridge {
     return cobaltServiceFactories.get(serviceName) != null;
   }
 
-  public CobaltService openCobaltService(long nativeService, String serviceName) {
+  // Explicitly pass activity as parameter.
+  // Avoid using activityHolder.get(), because onActivityStop() can set it to null.
+  public CobaltService openCobaltService(Activity activity, long nativeService, String serviceName) {
     if (cobaltServices.get(serviceName) != null) {
       // Attempting to re-open an already open service fails.
       Log.e(TAG, String.format("Cannot open already open service %s", serviceName));
@@ -670,7 +651,6 @@ public class StarboardBridge {
       service.receiveStarboardBridge(this);
       cobaltServices.put(serviceName, service);
 
-      Activity activity = activityHolder.get();
       if (activity instanceof CobaltActivity) {
         service.setCobaltActivity((CobaltActivity) activity);
       }

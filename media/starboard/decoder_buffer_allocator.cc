@@ -15,12 +15,13 @@
 #include "media/starboard/decoder_buffer_allocator.h"
 
 #include <algorithm>
-#include <vector>
 
 #include "base/logging.h"
 #include "media/base/video_codecs.h"
+#include "media/starboard/decoder_buffer_allocator_strategy.h"
 #include "media/starboard/starboard_utils.h"
 #include "starboard/common/allocator.h"
+#include "starboard/common/log.h"
 #include "starboard/configuration.h"
 #include "starboard/media.h"
 
@@ -28,38 +29,55 @@ namespace media {
 
 namespace {
 
-const bool kEnableAllocationLog = false;
-
 // Used to determine if the memory allocated is large. The underlying logic can
 // be different.
 const size_t kSmallAllocationThreshold = 512;
 
 }  // namespace
 
-DecoderBufferAllocator::DecoderBufferAllocator()
-    : is_memory_pool_allocated_on_demand_(
-          SbMediaIsBufferPoolAllocateOnDemand()),
-      initial_capacity_(SbMediaGetInitialBufferCapacity()),
-      allocation_unit_(SbMediaGetBufferAllocationUnit()) {
+DecoderBufferAllocator::DecoderBufferAllocator(Type type /*= Type::kGlobal*/)
+    : DecoderBufferAllocator(type,
+                             SbMediaIsBufferPoolAllocateOnDemand(),
+                             SbMediaGetInitialBufferCapacity(),
+                             SbMediaGetBufferAllocationUnit()) {}
+
+DecoderBufferAllocator::DecoderBufferAllocator(
+    Type type,
+    bool is_memory_pool_allocated_on_demand,
+    int initial_capacity,
+    int allocation_unit)
+    : type_(type),
+      is_memory_pool_allocated_on_demand_(is_memory_pool_allocated_on_demand),
+      initial_capacity_(initial_capacity),
+      allocation_unit_(allocation_unit) {
+  DCHECK_GE(initial_capacity_, 0);
+  DCHECK_GE(allocation_unit_, 0);
+
   if (is_memory_pool_allocated_on_demand_) {
-    DLOG(INFO) << "Allocated media buffer pool on demand.";
-    Allocator::Set(this);
+    LOG(INFO) << "Allocated media buffer pool on demand.";
+    if (type_ == Type::kGlobal) {
+      Allocator::Set(this);
+    }
     return;
   }
 
   base::AutoLock scoped_lock(mutex_);
-  EnsureReuseAllocatorIsCreated();
-  Allocator::Set(this);
+  EnsureStrategyIsCreated();
+  if (type_ == Type::kGlobal) {
+    Allocator::Set(this);
+  }
 }
 
 DecoderBufferAllocator::~DecoderBufferAllocator() {
-  Allocator::Set(nullptr);
+  if (type_ == Type::kGlobal) {
+    Allocator::Set(nullptr);
+  }
 
   base::AutoLock scoped_lock(mutex_);
 
-  if (reuse_allocator_) {
-    DCHECK_EQ(reuse_allocator_->GetAllocated(), 0);
-    reuse_allocator_.reset();
+  if (strategy_) {
+    DCHECK_EQ(strategy_->GetAllocated(), 0);
+    strategy_.reset();
   }
 }
 
@@ -70,10 +88,10 @@ void DecoderBufferAllocator::Suspend() {
 
   base::AutoLock scoped_lock(mutex_);
 
-  if (reuse_allocator_ && reuse_allocator_->GetAllocated() == 0) {
-    DLOG(INFO) << "Freed " << reuse_allocator_->GetCapacity()
-               << " bytes of media buffer pool `on suspend`.";
-    reuse_allocator_.reset();
+  if (strategy_ && strategy_->GetAllocated() == 0) {
+    LOG(INFO) << "Freed " << strategy_->GetCapacity()
+              << " bytes of media buffer pool `on suspend`.";
+    strategy_.reset();
   }
 }
 
@@ -83,19 +101,28 @@ void DecoderBufferAllocator::Resume() {
   }
 
   base::AutoLock scoped_lock(mutex_);
-  EnsureReuseAllocatorIsCreated();
+  EnsureStrategyIsCreated();
 }
 
-void* DecoderBufferAllocator::Allocate(size_t size, size_t alignment) {
+void* DecoderBufferAllocator::Allocate(DemuxerStream::Type type,
+                                       size_t size,
+                                       size_t alignment) {
   base::AutoLock scoped_lock(mutex_);
 
-  EnsureReuseAllocatorIsCreated();
+  EnsureStrategyIsCreated();
 
-  void* p = reuse_allocator_->Allocate(size, alignment);
+  void* p = strategy_->Allocate(type, size, alignment);
   CHECK(p);
 
-  LOG_IF(INFO, kEnableAllocationLog)
-      << "Media Allocation Log " << p << " " << size << " " << alignment << " ";
+#if !defined(COBALT_BUILD_TYPE_GOLD)
+  if (starboard::common::Allocator::ExtraLogLevel() >= 2) {
+    ++pending_allocation_operations_count_;
+    pending_allocation_operations_ << " a " << p << " " << type << " " << size
+                                   << " " << alignment;
+    TryFlushAllocationLog_Locked();
+  }
+#endif  // !defined(COBALT_BUILD_TYPE_GOLD)
+
   return p;
 }
 
@@ -107,17 +134,24 @@ void DecoderBufferAllocator::Free(void* p, size_t size) {
 
   base::AutoLock scoped_lock(mutex_);
 
-  DCHECK(reuse_allocator_);
+  DCHECK(strategy_);
 
-  LOG_IF(INFO, kEnableAllocationLog) << "Media Allocation Log " << p;
+  // TODO: b/369245553 - Cobalt: Refactor to pass a valid stream type.
+  strategy_->Free(DemuxerStream::UNKNOWN, p);
 
-  reuse_allocator_->Free(p);
-  if (is_memory_pool_allocated_on_demand_) {
-    if (reuse_allocator_->GetAllocated() == 0) {
-      DLOG(INFO) << "Freed " << reuse_allocator_->GetCapacity()
-                 << " bytes of media buffer pool `on demand`.";
-      reuse_allocator_.reset();
-    }
+#if !defined(COBALT_BUILD_TYPE_GOLD)
+  if (starboard::common::Allocator::ExtraLogLevel() >= 2) {
+    ++pending_allocation_operations_count_;
+    pending_allocation_operations_ << " f " << p;
+    TryFlushAllocationLog_Locked();
+  }
+#endif  // !defined(COBALT_BUILD_TYPE_GOLD)
+
+  if (is_memory_pool_allocated_on_demand_ && strategy_->GetAllocated() == 0) {
+    LOG(INFO) << "Freed " << strategy_->GetCapacity()
+              << " bytes of media buffer pool `on demand`.";
+    // `strategy_->PrintAllocations()` will be called inside the dtor.
+    strategy_.reset();
   }
 }
 
@@ -160,35 +194,57 @@ int DecoderBufferAllocator::GetVideoBufferBudget(VideoCodec codec,
 
 size_t DecoderBufferAllocator::GetAllocatedMemory() const {
   base::AutoLock scoped_lock(mutex_);
-  return reuse_allocator_ ? reuse_allocator_->GetAllocated() : 0;
+  return strategy_ ? strategy_->GetAllocated() : 0;
 }
 
 size_t DecoderBufferAllocator::GetCurrentMemoryCapacity() const {
   base::AutoLock scoped_lock(mutex_);
-  return reuse_allocator_ ? reuse_allocator_->GetCapacity() : 0;
+  return strategy_ ? strategy_->GetCapacity() : 0;
 }
 
 size_t DecoderBufferAllocator::GetMaximumMemoryCapacity() const {
-  base::AutoLock scoped_lock(mutex_);
-
-  if (reuse_allocator_) {
-    return std::max<size_t>(reuse_allocator_->max_capacity(),
-                            max_buffer_capacity_);
-  }
-  return max_buffer_capacity_;
+  // Always returns 0, as we no longer cap the capacity since Cobalt 25.
+  //
+  // base::AutoLock scoped_lock(mutex_);
+  return 0;
 }
 
-void DecoderBufferAllocator::EnsureReuseAllocatorIsCreated() {
+void DecoderBufferAllocator::EnsureStrategyIsCreated() {
   mutex_.AssertAcquired();
-  if (reuse_allocator_) {
+  if (strategy_) {
     return;
   }
 
-  reuse_allocator_.reset(new BidirectionalFitReuseAllocator(
-      &fallback_allocator_, initial_capacity_, kSmallAllocationThreshold,
-      allocation_unit_, 0));
-  DLOG(INFO) << "Allocated " << initial_capacity_
-             << " bytes for media buffer pool.";
+  strategy_.reset(new BidirectionalFitDecoderBufferAllocatorStrategy(
+      initial_capacity_, allocation_unit_));
+  LOG(INFO) << "Allocated " << initial_capacity_
+            << " bytes for media buffer pool.";
 }
+
+#if !defined(COBALT_BUILD_TYPE_GOLD)
+void DecoderBufferAllocator::TryFlushAllocationLog_Locked() {
+  const int kMaxOperationsPerLog = 80;
+
+  mutex_.AssertAcquired();
+
+  // The allocation operations may generate a few hundred log lines per second
+  // and lead to missing entries on some platforms.  Grouping them helps avoid
+  // missing entries, and the log index will be verified in the processing
+  // script.
+  if ((allocation_operation_index_ + pending_allocation_operations_count_) %
+              kMaxOperationsPerLog ==
+          0 ||
+      strategy_->GetAllocated() == 0) {
+    SB_LOG(INFO) << " Media Allocation Log: " << allocation_operation_index_
+                 << pending_allocation_operations_.str();
+
+    allocation_operation_index_ += pending_allocation_operations_count_;
+    pending_allocation_operations_count_ = 0;
+    // Reset the pending log
+    pending_allocation_operations_.str("");
+    pending_allocation_operations_.clear();
+  }
+}
+#endif  // !defined(COBALT_BUILD_TYPE_GOLD)
 
 }  // namespace media
