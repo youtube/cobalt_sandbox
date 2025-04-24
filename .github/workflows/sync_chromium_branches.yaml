@@ -6,7 +6,7 @@ on:
     - cron:  '0 0 * * *'
 jobs:
   sync:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, chrobalt-linux-runner]
     permissions: write-all
     strategy:
       fail-fast: false
@@ -26,11 +26,12 @@ jobs:
         run: |
           git config --global user.name "GitHub Release Automation"
           git config --global user.email "github@google.com"
-      - name: Free space on Runner
-        run: |
-          df -h
-          ls -la /opt/hostedtoolcache/
-          sudo rm -rf /opt/hostedtoolcache/
+      # - name: Free space on Runner
+      #   run: |
+      #     df -h
+      #     ls -la /opt/hostedtoolcache/
+      #     sudo rm -rf /opt/hostedtoolcache/
+      #     df -h
       - name: Pull ${{ matrix.branch.milestone }} from upstream and apply diffs
         id: diff_step
         run: |
