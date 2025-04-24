@@ -26,6 +26,9 @@ jobs:
         run: |
           git config --global user.name "GitHub Release Automation"
           git config --global user.email "github@google.com"
+      - name: Free space on Runner
+        run: |
+          sudo rm -rf /opt/hostedtoolcache/
       - name: Pull ${{ matrix.branch.milestone }} from upstream and apply diffs
         id: diff_step
         run: |
