@@ -1,0 +1,95 @@
+{
+    "diff_label_prefix": "diff-",
+    "stable_branches": [
+        {
+            "milestone": "m114",
+            "branch_num": 5735
+        },
+        {
+            "milestone": "m120",
+            "branch_num": 6099
+        },
+        {
+            "milestone": "m126",
+            "branch_num": 6478
+        }
+    ],
+    "code_ownership": {
+        "ours": [
+            ".github/",
+            "cobalt/",
+            "media/starboard/",
+            "media/mojo/clients/starboard/",
+            "media/mojo/services/starboard/",
+            "media/base/starboard/",
+            "starboard/",
+            "third_party/blink/renderer/modules/cobalt/",
+            "third_party/blink/renderer/core/cobalt/",
+            "third_party/blink/web_tests/wpt_internal/cobalt/",
+            "components/viz/service/display/starboard/",
+            "ui/ozone/platform/starboard/",
+            ".pre-commit-config.yaml",
+            ".pylintrc",
+            "docker-compose.yaml"
+        ],
+        "our_files": [
+            "base/base_paths_starboard.cc",
+            "base/base_paths_starboard.h",
+            "base/message_loop/message_pump_ui_starboard.cc",
+            "base/message_loop/message_pump_ui_starboard.h",
+            "base/system/sys_info_starboard_unittest.cc",
+            "base/system/sys_info_starboard.cc",
+            "base/system/sys_info_starboard.h",
+            "base/test/test_support_starboard.cc",
+            "base/test/test_support_starboard.h",
+            "base/time/time_now_starboard.cc",
+            "base/time/time_starboard.cc",
+            "net/base/network_change_notifier_starboard.h",
+            "net/base/network_interfaces_starboard.cc",
+            "net/base/platform_mime_util_starboard.cc",
+            "media/formats/mp4/ac3_unittest.cc",
+            "media/formats/mp4/eac3_unittest.cc",
+            "third_party/blink/renderer/core/frame/csp/local_ip.cc",
+            "third_party/blink/renderer/core/frame/csp/local_ip.h",
+            "third_party/blink/renderer/platform/media/web_content_decryption_module_impl_unittest.cc",
+            "third_party/blink/web_tests/external/wpt/media-source/SourceBuffer-writeHead.html",
+            "third_party/blink/web_tests/media/encrypted-media/encrypted-media-getmetrics.html"
+        ],
+        "our_owned_dep": [
+            "third_party/boringssl/src",
+            "third_party/googletest/src"
+        ],
+        "our_added_dep": [
+            "third_party/android_deps/libs/com_google_android_gms_play_services_ads_identifier",
+            "third_party/de265_includes",
+            "third_party/ffmpeg_includes",
+            "third_party/libfdkaac",
+            "third_party/llvm-project",
+            "third_party/lz4_lib",
+            "third_party/musl",
+            "third_party/openh264/include",
+            "third_party/pulseaudio_includes"
+        ],
+        "our_deleted_dep": [
+            "third_party/google_input_tools",
+            "third_party/rust/atty",
+            "third_party/rust/camino",
+            "third_party/rust/cargo_metadata",
+            "third_party/rust/cargo_platform",
+            "third_party/rust/fastrand",
+            "third_party/rust/hashbrown",
+            "third_party/rust/indexmap",
+            "third_party/rust/once_cell",
+            "third_party/rust/remove_dir_all",
+            "third_party/rust/tempfile",
+            "third_party/rust/toml",
+            "tools/stats_viewer",
+            "tools/win/ChromeDebug"
+        ],
+        "updated": [
+            "third_party/crashpad/crashpad/third_party/cpp-httplib",
+            "third_party/rust/rstest/v0_12/crate/docs/head",
+            "ui/file_manager/image_loader/piex/package-lock.json"
+        ]
+    }
+}
