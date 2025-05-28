@@ -4,6 +4,7 @@
     "android-arm"
   ],
   "test_on_device": true,
+  "test_e2e_device_type": "android",
   "test_root_target": "//cobalt/android:cobalt_apk",
   "test_attempts": "3",
   "test_dimensions": {
