@@ -150,8 +150,8 @@ jobs:
         shell: bash
         run: |
           set -x
-          test_e2e_device_type=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -rc '.test_e2e_device_type // empty')
-          echo "test_e2e_device_type=${test_e2e_device_type}" >> $GITHUB_OUTPUT
+          e2e_test_device_type=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -rc '.e2e_test_device_type // empty')
+          echo "e2e_test_device_type=${e2e_test_device_type}" >> $GITHUB_OUTPUT
       - name: Set E2E test targets
         id: set-e2e-test-targets
         shell: bash
@@ -159,6 +159,13 @@ jobs:
           set -x
           e2e_test_targets=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -cr '.e2e_test_targets // []')
           echo "e2e_test_targets=${e2e_test_targets}" >> $GITHUB_OUTPUT
+      - name: Set E2E test attempts
+        id: set-e2e-test-attempts
+        shell: bash
+        run: |
+          set -x
+          e2e_test_attempts=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -rc '.e2e_test_attempts // empty')
+          echo "e2e_test_attempts=${e2e_test_attempts}" >> $GITHUB_OUTPUT
       - name: Set test device dimensions
         id: set-test-dimensions
         shell: bash
@@ -197,8 +204,9 @@ jobs:
       test_e2e: ${{ steps.set-test-e2e.outputs.test_e2e }}
       web_tests: ${{ steps.set-web-tests.outputs.web_tests }}
       test_root_target: ${{ steps.set-test-root-target.outputs.test_root_target }}
-      test_e2e_device_type: ${{ steps.set-e2e-test-device-type.outputs.test_e2e_device_type }}
+      e2e_test_device_type: ${{ steps.set-e2e-test-device-type.outputs.e2e_test_device_type }}
       e2e_test_targets: ${{ steps.set-e2e-test-targets.outputs.e2e_test_targets }}
+      e2e_test_attempts: ${{ steps.set-e2e-test-attempts.outputs.e2e_test_attempts }}
       test_dimensions: ${{ steps.set-test-dimensions.outputs.test_dimensions }}
       test_attempts: ${{ steps.set-test-attempts.outputs.test_attempts }}
       num_gtest_shards: ${{ steps.set-gtest-shards.outputs.num_gtest_shards }}
@@ -386,7 +394,7 @@ jobs:
           test_results_key: ${{ env.TEST_RESULTS_KEY }}
           gcs_results_path: gs://cobalt-unittest-storage/results/${{ matrix.name }}/${{ github.run_id }}/${{ github.run_attempt }}
           test_dimensions: '${{ needs.initialize.outputs.test_dimensions }}'
-          test_e2e_device_type: '${{ needs.initialize.outputs.test_e2e_device_type}}'
+          e2e_test_device_type: '${{ needs.initialize.outputs.e2e_test_device_type}}'
     outputs:
       test_targets_json: ${{ steps.test-target-json.outputs.test_targets_json }}
 
@@ -409,11 +417,13 @@ jobs:
         platform: ${{ fromJson(needs.initialize.outputs.platforms) }}
         include: ${{ fromJson(needs.initialize.outputs.includes) }}
         config: [devel]
+    env:
+      TEST_ATTEMPTS: ${{ needs.initialize.outputs.e2e_test_attempts }}
     steps:
       - name: Run E2E Smoke Tests
         uses: ./.github/actions/e2e_tests
         with:
-          test_e2e_device_type: '${{ needs.initialize.outputs.test_e2e_device_type}}'
+          e2e_test_device_type: '${{ needs.initialize.outputs.e2e_test_device_type}}'
           e2e_test_targets: '${{ needs.initialize.outputs.e2e_test_targets }}'
           test_dimensions: '${{ needs.initialize.outputs.test_dimensions }}'
 
