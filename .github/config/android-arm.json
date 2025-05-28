@@ -5,8 +5,10 @@
   ],
   "test_on_device": true,
   "test_e2e_device_type": "android",
+  "test_e2e": true,
   "test_root_target": "//cobalt/android:cobalt_apk",
   "test_attempts": "3",
+  "e2e_test_attempts": "4",
   "test_dimensions": {
     "device_type": "arm_devices",
     "device_pool": "maneki"

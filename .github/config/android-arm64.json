@@ -4,8 +4,9 @@
     "android-arm64"
   ],
   "test_on_device": true,
-  "test_e2e_device_type": "android",
+  "e2e_test_device_type": "android",
   "test_e2e": true,
+  "e2e_test_attempts": "4",
   "test_root_target": "//cobalt/android:cobalt_apk",
   "test_dimensions": {
     "device_type": "nvidia_shield",
