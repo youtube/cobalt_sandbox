@@ -8,7 +8,7 @@ inputs:
     description: "E2E Test device type."
     required: true
   e2e_test_targets:
-    description: "E2E Test device type."
+    description: "E2E test targets."
     required: true
 
 runs:
