@@ -4,7 +4,7 @@
     "android-arm64"
   ],
   "test_on_device": true,
-  "e2e_test_device_type": "android",
+  "test_device_family": "android",
   "test_e2e": true,
   "e2e_test_attempts": "4",
   "test_root_target": "//cobalt/android:cobalt_apk",

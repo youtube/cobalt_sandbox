@@ -3,8 +3,8 @@ description: Runs e2e tests.
 inputs:
   test_dimensions:
     description: "Test dimensions JSON string."
-  e2e_test_device_type:
-    description: "E2E Test device type."
+  test_device_family:
+    description: "Test device family."
     required: true
   e2e_test_targets:
     description: "E2E test targets."
@@ -55,10 +55,10 @@ runs:
 
         python3 -u cobalt/tools/on_device_tests_gateway_client.py \
           --token ${GITHUB_TOKEN} \
-          --test_type "vega_test" \
-          --device_type '${{ inputs.e2e_test_device_type }}' \
-          --vega_targets "${e2e_targets_processed}" \
           trigger \
+          --test_type "e2e_test" \
+          --device_family '${{ inputs.test_device_family }}' \
+          --vega_targets "${e2e_targets_processed}" \
           --label chrobalt_vega_test \
           --label github_${GITHUB_PR_NUMBER:-postsubmit} \
           --label builder-${{ matrix.platform }} \
