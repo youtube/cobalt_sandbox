@@ -58,7 +58,7 @@ runs:
           trigger \
           --test_type "e2e_test" \
           --device_family '${{ inputs.test_device_family }}' \
-          --vega_targets "${e2e_targets_processed}" \
+          --e2e_targets "${e2e_targets_processe}" \
           --label chrobalt_vega_test \
           --label github_${GITHUB_PR_NUMBER:-postsubmit} \
           --label builder-${{ matrix.platform }} \
