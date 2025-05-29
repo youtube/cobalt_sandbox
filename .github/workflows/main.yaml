@@ -377,7 +377,6 @@ jobs:
         config: [devel]
     env:
       TEST_RESULTS_KEY: ${{ matrix.platform }}_${{ matrix.name }}_test_results
-      TEST_ATTEMPTS: ${{ needs.initialize.outputs.test_attempts }}
     steps:
       - name: Restore CI Essentials
         uses: actions/download-artifact@v4
@@ -395,6 +394,7 @@ jobs:
           gcs_results_path: gs://cobalt-unittest-storage/results/${{ matrix.name }}/${{ github.run_id }}/${{ github.run_attempt }}
           test_dimensions: '${{ needs.initialize.outputs.test_dimensions }}'
           test_device_family: '${{ needs.initialize.outputs.test_device_family}}'
+          test_attempts: '${{ needs.initialize.outputs.test_attempts }}'
     outputs:
       test_targets_json: ${{ steps.test-target-json.outputs.test_targets_json }}
 
@@ -417,14 +417,13 @@ jobs:
         platform: ${{ fromJson(needs.initialize.outputs.platforms) }}
         include: ${{ fromJson(needs.initialize.outputs.includes) }}
         config: [devel]
-    env:
-      TEST_ATTEMPTS: ${{ needs.initialize.outputs.e2e_test_attempts }}
     steps:
       - name: Run E2E Smoke Tests
         uses: ./.github/actions/e2e_tests
         with:
           test_device_family: '${{ needs.initialize.outputs.test_device_family}}'
           e2e_test_targets: '${{ needs.initialize.outputs.e2e_test_targets }}'
+          test_attempts: '${{ needs.initialize.outputs.e2e_test_attempts }}'
           test_dimensions: '${{ needs.initialize.outputs.test_dimensions }}'
 
   on-host-test:

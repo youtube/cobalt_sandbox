@@ -9,6 +9,12 @@ inputs:
   e2e_test_targets:
     description: "E2E test targets."
     required: true
+  artifact_name:
+    description: "The name of the artifact to be used for E2E tests (e.g., Cobalt.apk)."
+    default: "Cobalt.apk"
+  test_attempts:
+    description: "Number of attempts for the tests."
+    default: ""
 
 runs:
   using: "composite"
@@ -32,7 +38,7 @@ runs:
       shell: bash
     - name: Run Tests on ${{ matrix.platform }} Platform
       env:
-        GCS_ARTIFACTS_PATH: /bigstore/${{ env.PROJECT_NAME }}-test-artifacts/${{ github.workflow }}/${{ github.run_number }}/${{ matrix.platform }}/Cobalt.apk
+        GCS_ARTIFACTS_PATH: /bigstore/${{ env.PROJECT_NAME }}-test-artifacts/${{ github.workflow }}/${{ github.run_number }}/${{ matrix.platform }}/${{ inputs.artifact_name }}
         GITHUB_SHA: ${{ github.sha }}
         GITHUB_TOKEN: ${{ github.token }}
         GITHUB_EVENT_NAME: ${{ github.event_name }}
@@ -48,6 +54,7 @@ runs:
         GITHUB_RUN_NUMBER: ${{ github.run_number }}
         GITHUB_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         GITHUB_WORKFLOW: ${{ github.workflow }}
+        TEST_TYPE: e2e_test
       run: |
         set -x
         
@@ -56,10 +63,10 @@ runs:
         python3 -u cobalt/tools/on_device_tests_gateway_client.py \
           --token ${GITHUB_TOKEN} \
           trigger \
-          --test_type "e2e_test" \
+          --test_type ${TEST_TYPE} \
           --device_family '${{ inputs.test_device_family }}' \
           --targets "${e2e_targets_processed}" \
-          --label chrobalt_vega_test \
+          --label ${TEST_TYPE} \
           --label github_${GITHUB_PR_NUMBER:-postsubmit} \
           --label builder-${{ matrix.platform }} \
           --label builder_url-${GITHUB_RUN_URL} \
@@ -74,7 +81,7 @@ runs:
           --label author-${GITHUB_PR_HEAD_USER_LOGIN:-$GITHUB_COMMIT_AUTHOR_USERNAME} \
           --label author_id-${GITHUB_PR_HEAD_USER_ID:-$GITHUB_COMMIT_AUTHOR_EMAIL} \
           --dimensions '${{ inputs.test_dimensions }}' \
-          ${TEST_ATTEMPTS:+"--test_attempts" "$TEST_ATTEMPTS"} \
+          ${{ inputs.test_attempts:+"--test_attempts" "${{ inputs.test_attempts }}" }} \
           --cobalt_path "${GCS_ARTIFACTS_PATH}" || {
             echo "Finished running tests..."
             echo "The test session failed. See logs for details."
