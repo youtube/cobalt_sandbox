@@ -16,6 +16,9 @@ inputs:
   test_device_family:
     description: "Test device family."
     required: true
+  test_attempts:
+    description: "Number of attempts for the tests."
+    default: ""
 
 runs:
   using: "composite"
@@ -83,7 +86,7 @@ runs:
           --label author-${GITHUB_PR_HEAD_USER_LOGIN:-$GITHUB_COMMIT_AUTHOR_USERNAME} \
           --label author_id-${GITHUB_PR_HEAD_USER_ID:-$GITHUB_COMMIT_AUTHOR_EMAIL} \
           --dimensions '${{ inputs.test_dimensions }}' \
-          ${TEST_ATTEMPTS:+"--test_attempts" "$TEST_ATTEMPTS"} \
+          ${{ inputs.test_attempts:+"--test_attempts" "${{ inputs.test_attempts }}" }} \
           --gcs_archive_path "${GCS_ARTIFACTS_PATH}" \
           --gcs_result_path "${{ inputs.gcs_results_path }}" || {
             echo "Finished running tests..."
