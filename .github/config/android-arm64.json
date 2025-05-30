@@ -10,7 +10,8 @@
   "test_root_target": "//cobalt/android:cobalt_apk",
   "test_dimensions": {
     "device_type": "nvidia_shield",
-    "device_pool": "maneki"
+    "device_pool": "maneki",
+    "host_name" : "maneki-mhserver-05.cyd.mtv.slaas.corp"
   },
   "targets": [
     "content_shell",

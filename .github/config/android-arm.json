@@ -14,7 +14,8 @@
   ],
   "test_dimensions": {
     "device_type": "arm_devices",
-    "device_pool": "maneki"
+    "device_pool": "maneki",
+    "host_name" : "maneki-mhserver-03.cyd.mtv.slaas.corp"
   },
   "targets": [
     "content_shell",
