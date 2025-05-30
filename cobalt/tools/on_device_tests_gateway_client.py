@@ -52,6 +52,9 @@ _DEPS_ARCH_MAP = {
 
 # Any test run that fails due to infra error will be retried.
 _DEFAULT_RETRY_LEVEL = 'ERROR'
+# This is needed because driver expects cobalt.apk, but we publish
+# Cobalt.apk
+_E2E_DEFAULT_YT_BINARY_NAME = "Cobalt"
 
 
 class OnDeviceTestsGatewayClient:
@@ -241,7 +244,7 @@ def _process_test_requests(args: argparse.Namespace) -> List[Dict[str, Any]]:
           'device_type': device_type,
           'test_args': test_args,
           'files': [f'cobalt_path={args.cobalt_path}'],
-          'params': ['yt_binary_name=Cobalt'],
+          'params': [f'yt_binary_name={_E2E_DEFAULT_YT_BINARY_NAME}'],
           'test_target': gtest_target,
           'test_type': 'e2e_test',
       })
