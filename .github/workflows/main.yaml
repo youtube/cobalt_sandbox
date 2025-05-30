@@ -418,6 +418,8 @@ jobs:
         include: ${{ fromJson(needs.initialize.outputs.includes) }}
         config: [devel]
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
       - name: Run E2E Smoke Tests
         uses: ./.github/actions/e2e_tests
         with:
