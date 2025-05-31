@@ -205,6 +205,7 @@ def _process_test_requests(args: argparse.Namespace) -> List[Dict[str, Any]]:
       f'job_timeout_sec={args.job_timeout_sec}',
       f'test_timeout_sec={args.test_timeout_sec}',
       f'start_timeout_sec={args.start_timeout_sec}',
+      "run_as=isarkisov",
   ])
 
   if args.test_attempts:
