@@ -20,7 +20,7 @@ import json
 import logging
 import os
 import sys
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import grpc
 import on_device_tests_gateway_pb2
@@ -33,7 +33,7 @@ _ON_DEVICE_TESTS_GATEWAY_SERVICE_HOST = (
 )
 
 # When testing with local gateway, uncomment:
-#_ON_DEVICE_TESTS_GATEWAY_SERVICE_HOST = ('localhost')
+#_ON_DEVICE_TESTS_GATEWAY_SERVICE_HOST = 'localhost'
 
 _ON_DEVICE_TESTS_GATEWAY_SERVICE_PORT = '50052'
 
@@ -54,7 +54,7 @@ _DEPS_ARCH_MAP = {
 _DEFAULT_RETRY_LEVEL = 'ERROR'
 # This is needed because driver expects cobalt.apk, but we publish
 # Cobalt.apk
-_E2E_DEFAULT_YT_BINARY_NAME = "Cobalt"
+_E2E_DEFAULT_YT_BINARY_NAME = 'Cobalt'
 
 
 class OnDeviceTestsGatewayClient:
@@ -190,28 +190,27 @@ def _process_test_requests(args: argparse.Namespace) -> List[Dict[str, Any]]:
   Raises:
       RuntimeError: If dimensions are not specified.
   """
-  if not args.dimensions:
-    raise RuntimeError('Dimensions not specified: device_type, device_pool')
-
-  dimensions = json.loads(args.dimensions)
-  device_type = dimensions.pop('device_type')
-  device_pool = dimensions.pop('device_pool')
-
-  if not device_type or not device_pool:
-    raise RuntimeError('Dimensions not specified: device_type, device_pool')
-
-  test_args = [f'dimension_{key}={value}' for key, value in dimensions.items()]
-  test_args.extend([
+  test_args = [
       f'job_timeout_sec={args.job_timeout_sec}',
       f'test_timeout_sec={args.test_timeout_sec}',
       f'start_timeout_sec={args.start_timeout_sec}',
-  ])
+  ]
 
   if args.test_attempts:
     test_args.extend([
         f'test_attempts={args.test_attempts}',
         f'retry_level={_DEFAULT_RETRY_LEVEL}',
     ])
+
+  device_type = None
+  device_pool = None
+  if args.dimensions:
+    dimensions = json.loads(args.dimensions)
+    device_type = dimensions.pop('device_type')
+    device_pool = dimensions.pop('device_pool')
+    test_args.extend(
+        [f'dimension_{key}={value}' for key, value in dimensions.items()]
+    )
 
   test_requests = []
 
@@ -220,14 +219,20 @@ def _process_test_requests(args: argparse.Namespace) -> List[Dict[str, Any]]:
     dir_on_device = _DIR_ON_DEV_MAP.get(args.device_family, '')
 
     if args.test_type == 'unit_test':
+
+      if not device_type or not device_pool:
+        raise RuntimeError('Dimensions not specified: device_type, device_pool')
+
       gtest_filter = _get_gtest_filter(args.filter_json_dir, target_name)
       if gtest_filter == '-*':
         print(f'Skipping {target_name} due to test filter.')
         continue
+
       command_line_args = ' '.join([
           f'--gtest_output=xml:{dir_on_device}/{target_name}_testoutput.xml',
           f'--gtest_filter={gtest_filter}',
       ])
+
       test_requests.append({
           'device_type': device_type,
           'device_pool': device_pool,
@@ -240,8 +245,8 @@ def _process_test_requests(args: argparse.Namespace) -> List[Dict[str, Any]]:
       })
 
     elif args.test_type == 'e2e_test':
+
       test_requests.append({
-          'device_type': device_type,
           'test_args': test_args,
           'files': [f'cobalt_path={args.cobalt_path}'],
           'params': [f'yt_binary_name={_E2E_DEFAULT_YT_BINARY_NAME}'],
@@ -319,7 +324,6 @@ def main() -> int:
   trigger_args.add_argument(
       '--test_attempts',
       type=str,
-      default='3',
       help='The maximum number of times a test can retry.',
   )
   trigger_args.add_argument(
