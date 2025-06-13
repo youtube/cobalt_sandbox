@@ -65,7 +65,6 @@ runs:
           --token ${GITHUB_TOKEN} \
           trigger \
           --test_type ${TEST_TYPE} \
-          --device_family '${{ inputs.test_device_family }}' \
           --targets "${e2e_targets_processed}" \
           --label ${TEST_TYPE} \
           --label github_${GITHUB_PR_NUMBER:-postsubmit} \
