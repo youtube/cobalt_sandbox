@@ -3,8 +3,6 @@ description: Runs e2e tests.
 inputs:
   test_dimensions:
     description: "Test dimensions JSON string."
-  test_device_family:
-    description: "Test device family."
     required: true
   e2e_test_targets:
     description: "E2E test targets."
