@@ -20,7 +20,7 @@ import json
 import logging
 import os
 import sys
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, Tuple
 
 import grpc
 import on_device_tests_gateway_pb2
@@ -33,7 +33,7 @@ _ON_DEVICE_TESTS_GATEWAY_SERVICE_HOST = (
 )
 
 # When testing with local gateway, uncomment:
-#_ON_DEVICE_TESTS_GATEWAY_SERVICE_HOST = 'localhost'
+# _ON_DEVICE_TESTS_GATEWAY_SERVICE_HOST = 'localhost'
 
 _ON_DEVICE_TESTS_GATEWAY_SERVICE_PORT = '50052'
 
@@ -120,6 +120,43 @@ class OnDeviceTestsGatewayClient:
       print(response_line.response)
 
 
+def _get_test_args_and_dimensions(
+    args: argparse.Namespace,
+) -> Tuple[List[str], Optional[str], Optional[str]]:
+  """Prepares test_args, device_type and device_pool based on args."""
+
+  test_args = [
+      f'job_timeout_sec={args.job_timeout_sec}',
+      f'test_timeout_sec={args.test_timeout_sec}',
+      f'start_timeout_sec={args.start_timeout_sec}',
+  ]
+
+  if args.test_attempts:
+    test_args.extend([
+        f'test_attempts={args.test_attempts}',
+        f'retry_level={_DEFAULT_RETRY_LEVEL}',
+    ])
+
+  device_type = None
+  device_pool = None
+
+  if args.dimensions:
+    try:
+      dimensions = json.loads(args.dimensions)
+    except json.JSONDecodeError as e:
+      raise ValueError(f'--dimensions is not in JSON format: {e}') from e
+    if 'device_type' in dimensions:
+      device_type = dimensions.pop('device_type')
+    if 'device_pool' in dimensions:
+      device_pool = dimensions.pop('device_pool')
+
+    test_args.extend(
+        [f'dimension_{key}={value}' for key, value in dimensions.items()]
+    )
+
+  return test_args, device_type, device_pool
+
+
 def _get_gtest_filter(filter_json_dir: str, target_name: str) -> str:
   """Retrieves gtest filters for a given target.
 
@@ -179,83 +216,49 @@ def _unit_test_params(
 
 
 def _process_test_requests(args: argparse.Namespace) -> List[Dict[str, Any]]:
-  """Processes test requests based on the given arguments and test type.
-
-  Args:
-      args: The parsed command-line arguments.
-
-  Returns:
-      A list of test request dictionaries.
-
-  Raises:
-      RuntimeError: If dimensions are not specified.
-  """
-  test_args = [
-      f'job_timeout_sec={args.job_timeout_sec}',
-      f'test_timeout_sec={args.test_timeout_sec}',
-      f'start_timeout_sec={args.start_timeout_sec}',
-  ]
-
-  if args.test_attempts:
-    test_args.extend([
-        f'test_attempts={args.test_attempts}',
-        f'retry_level={_DEFAULT_RETRY_LEVEL}',
-    ])
-
-  device_type = None
-  device_pool = None
-  if args.dimensions:
-    dimensions = json.loads(args.dimensions)
-    device_type = dimensions.pop('device_type')
-    device_pool = dimensions.pop('device_pool')
-    test_args.extend(
-        [f'dimension_{key}={value}' for key, value in dimensions.items()]
-    )
-
+  """Builds the list of test requests based on the test type."""
+  test_args, device_type, device_pool = _get_test_args_and_dimensions(args)
   test_requests = []
 
-  for gtest_target in args.targets.split(','):
-    target_name = gtest_target.split(':')[-1]
-    dir_on_device = _DIR_ON_DEV_MAP.get(args.device_family, '')
+  for test_target in args.targets.split(','):
 
     if args.test_type == 'unit_test':
-
       if not device_type or not device_pool:
         raise RuntimeError('Dimensions not specified: device_type, device_pool')
 
+      target_name = test_target.split(':')[-1]
       gtest_filter = _get_gtest_filter(args.filter_json_dir, target_name)
       if gtest_filter == '-*':
         print(f'Skipping {target_name} due to test filter.')
         continue
 
+      dir_on_device = _DIR_ON_DEV_MAP.get(args.device_family, '')
       command_line_args = ' '.join([
           f'--gtest_output=xml:{dir_on_device}/{target_name}_testoutput.xml',
           f'--gtest_filter={gtest_filter}',
       ])
-
-      test_requests.append({
-          'device_type': device_type,
-          'device_pool': device_pool,
-          'test_cmd_args': [f'command_line_args={command_line_args}'],
-          'test_args': test_args,
-          'files': _unit_test_files(args, target_name),
-          'params': _unit_test_params(args, target_name, dir_on_device),
-          'test_target': gtest_target,
-          'test_type': 'unit_test',
-      })
+      test_cmd_args = [f'command_line_args={command_line_args}']
+      files = _unit_test_files(args, target_name)
+      params = _unit_test_params(args, target_name, dir_on_device)
 
     elif args.test_type == 'e2e_test':
-
-      test_requests.append({
-          'test_args': test_args,
-          'files': [f'cobalt_path={args.cobalt_path}'],
-          'params': [f'yt_binary_name={_E2E_DEFAULT_YT_BINARY_NAME}'],
-          'test_target': gtest_target,
-          'test_type': 'e2e_test',
-      })
+      test_cmd_args = None
+      files = [f'cobalt_path={args.cobalt_path}']
+      params = [f'yt_binary_name={_E2E_DEFAULT_YT_BINARY_NAME}']
 
     else:
       raise ValueError(f'Unsupported test type: {args.test_type}')
+
+    test_requests.append({
+          'device_type': device_type,
+          'device_pool': device_pool,
+          'test_cmd_args': test_cmd_args,
+          'test_args': test_args,
+          'files': files,
+          'params': params,
+          'test_target': test_target,
+          'test_type': args.test_type,
+      })
 
   return test_requests
 
@@ -297,16 +300,15 @@ def main() -> int:
   trigger_args.add_argument(
       '--test_type',
       type=str,
-      default='unit_test',
+      required=True,
       choices=['unit_test', 'e2e_test'],
-      help='Type of test to run (unit_test or e2e_test).',
+      help='Type of test to run.',
   )
   trigger_args.add_argument(
       '--device_family',
       type=str,
-      default='android',
       choices=['android', 'ssh'],
-      help='Family of device to run tests on (android or ssh).',
+      help='Family of device to run tests on.',
   )
   trigger_args.add_argument(
       '--targets',
@@ -374,7 +376,7 @@ def main() -> int:
   e2e_test_group.add_argument(
       '--cobalt_path',
       type=str,
-      help='Path to Cobalt apk use for E2E test.',
+      help='Path to Cobalt apk.',
   )
 
   # Watch command
@@ -391,6 +393,19 @@ def main() -> int:
   )
 
   args = parser.parse_args()
+  if args.test_type == 'e2e_test':
+    if not args.cobalt_path:
+      parser.error('--cobalt_path is required for e2e_test')
+  elif args.test_type == 'unit_test':
+    if not args.device_family:
+      parser.error('--device_family is required for unit_test')
+    if not args.gcs_archive_path:
+      parser.error('--gcs_archive_path is required for unit_test')
+    if not args.gcs_result_path:
+      parser.error('--gcs_result_path is required for unit_test')
+    if not args.filter_json_dir:
+      parser.error('--filter_json_dir is required for unit_test')
+
   test_requests = _process_test_requests(args)
   client = OnDeviceTestsGatewayClient()
 
@@ -400,7 +415,7 @@ def main() -> int:
     else:
       client.run_watch_command(args.token, args.session_id)
   except grpc.RpcError as e:
-    logging.exception('gRPC error occurred: %s', e)
+    logging.error('gRPC error occurred: %s', e)
     return 1
 
   return 0  # Indicate successful execution
