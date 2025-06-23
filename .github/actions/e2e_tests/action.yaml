@@ -57,13 +57,15 @@ runs:
       run: |
         set -x
         
-        e2e_targets_processed=$(echo '${{ inputs.e2e_test_targets }}' | jq -cr '. | join(",")')
+        # e2e_targets_processed=$(echo '${{ inputs.e2e_test_targets }}' | jq -cr '. | join(",")')
+        echo "TEST TARGETS:"
+        echo "${{ inputs.e2e_test_targets }}"
 
         python3 -u cobalt/tools/on_device_tests_gateway_client.py \
           --token ${GITHUB_TOKEN} \
           trigger \
           --test_type ${TEST_TYPE} \
-          --targets "${e2e_targets_processed}" \
+          --targets ' ${{inputs.e2e_test_targets}}' \
           --label ${TEST_TYPE} \
           --label github_${GITHUB_PR_NUMBER:-postsubmit} \
           --label builder-${{ matrix.platform }} \

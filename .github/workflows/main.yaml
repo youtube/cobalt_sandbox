@@ -159,6 +159,8 @@ jobs:
           set -x
           e2e_test_targets=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -cr '.e2e_test_targets // []')
           echo "e2e_test_targets=${e2e_test_targets}" >> $GITHUB_OUTPUT
+          echo "TEST TARGETS"
+          echo "$e2e_test_targets"
       - name: Set E2E test attempts
         id: set-e2e-test-attempts
         shell: bash
