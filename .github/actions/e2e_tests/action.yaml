@@ -56,10 +56,6 @@ runs:
         TEST_TYPE: e2e_test
       run: |
         set -x
-        
-        # e2e_targets_processed=$(echo '${{ inputs.e2e_test_targets }}' | jq -cr '. | join(",")')
-        echo "TEST TARGETS:"
-        echo "${{ inputs.e2e_test_targets }}"
 
         python3 -u cobalt/tools/on_device_tests_gateway_client.py \
           --token ${GITHUB_TOKEN} \
@@ -81,7 +77,6 @@ runs:
           --label author-${GITHUB_PR_HEAD_USER_LOGIN:-$GITHUB_COMMIT_AUTHOR_USERNAME} \
           --label author_id-${GITHUB_PR_HEAD_USER_ID:-$GITHUB_COMMIT_AUTHOR_EMAIL} \
           --dimensions '${{ inputs.test_dimensions }}' \
-          ${TEST_ATTEMPTS:+"--test_attempts" "$TEST_ATTEMPTS"} \
           --cobalt_path "${GCS_ARTIFACTS_PATH}" || {
             echo "Finished running tests..."
             echo "The test session failed. See logs for details."
