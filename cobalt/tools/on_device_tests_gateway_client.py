@@ -28,12 +28,12 @@ import on_device_tests_gateway_pb2_grpc
 
 _WORK_DIR = '/on_device_tests_gateway'
 
-_ON_DEVICE_TESTS_GATEWAY_SERVICE_HOST = (
-    'on-device-tests-gateway-service.on-device-tests.svc.cluster.local'
-)
+#_ON_DEVICE_TESTS_GATEWAY_SERVICE_HOST = (
+#    'on-device-tests-gateway-service.on-device-tests.svc.cluster.local'
+#)
 
 # When testing with local gateway, uncomment:
-# _ON_DEVICE_TESTS_GATEWAY_SERVICE_HOST = 'localhost'
+_ON_DEVICE_TESTS_GATEWAY_SERVICE_HOST = 'localhost'
 
 _ON_DEVICE_TESTS_GATEWAY_SERVICE_PORT = '50052'
 
@@ -145,10 +145,8 @@ def _get_test_args_and_dimensions(
       dimensions = json.loads(args.dimensions)
     except json.JSONDecodeError as e:
       raise ValueError(f'--dimensions is not in JSON format: {e}') from e
-    if 'device_type' in dimensions:
-      device_type = dimensions.pop('device_type')
-    if 'device_pool' in dimensions:
-      device_pool = dimensions.pop('device_pool')
+    device_type = dimensions.pop('device_type', None)
+    device_pool = dimensions.pop('device_pool', None)
 
     test_args.extend(
         [f'dimension_{key}={value}' for key, value in dimensions.items()]
@@ -220,18 +218,24 @@ def _process_test_requests(args: argparse.Namespace) -> List[Dict[str, Any]]:
   test_args, device_type, device_pool = _get_test_args_and_dimensions(args)
   test_requests = []
 
-  for test_target in args.targets.split(','):
+  try:
+    targets = json.loads(args.targets)
+  except json.JSONDecodeError as e:
+    raise ValueError(f'--targets is not in JSON format: {e}') from e
+
+  for target_data in targets:
 
     if args.test_type == 'unit_test':
       if not device_type or not device_pool:
         raise RuntimeError('Dimensions not specified: device_type, device_pool')
-
+      test_target = target_data
       target_name = test_target.split(':')[-1]
       gtest_filter = _get_gtest_filter(args.filter_json_dir, target_name)
       if gtest_filter == '-*':
         print(f'Skipping {target_name} due to test filter.')
         continue
-
+      if args.test_attempts:
+        test_args.extend([f'test_attempts={args.test_attempts}'])
       dir_on_device = _DIR_ON_DEV_MAP.get(args.device_family, '')
       command_line_args = ' '.join([
           f'--gtest_output=xml:{dir_on_device}/{target_name}_testoutput.xml',
@@ -242,7 +246,13 @@ def _process_test_requests(args: argparse.Namespace) -> List[Dict[str, Any]]:
       params = _unit_test_params(args, target_name, dir_on_device)
 
     elif args.test_type == 'e2e_test':
-      test_cmd_args = None
+      test_target = target_data['target']
+      retries = target_data.get('retries')
+      if retries:
+        test_args.extend([f'test_attempts={retries}'])
+      elif args.test_attempts:
+        test_args.extend([f'test_attempts={args.test_attempts}'])
+      test_cmd_args = []
       files = [f'cobalt_path={args.cobalt_path}']
       params = [f'yt_binary_name={_E2E_DEFAULT_YT_BINARY_NAME}']
 
@@ -250,15 +260,15 @@ def _process_test_requests(args: argparse.Namespace) -> List[Dict[str, Any]]:
       raise ValueError(f'Unsupported test type: {args.test_type}')
 
     test_requests.append({
-          'device_type': device_type,
-          'device_pool': device_pool,
-          'test_cmd_args': test_cmd_args,
-          'test_args': test_args,
-          'files': files,
-          'params': params,
-          'test_target': test_target,
-          'test_type': args.test_type,
-      })
+        'device_type': device_type,
+        'device_pool': device_pool,
+        'test_cmd_args': test_cmd_args,
+        'test_args': test_args,
+        'files': files,
+        'params': params,
+        'test_target': test_target,
+        'test_type': args.test_type,
+    })
 
   return test_requests
 
