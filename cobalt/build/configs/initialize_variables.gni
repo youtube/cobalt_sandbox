@@ -30,6 +30,8 @@ declare_args() {
   using_old_compiler = false
 
   build_with_separate_cobalt_toolchain = target_os != "android"
+
+  use_evergreen = false
 }
 
 assert(!(is_starboard && is_native_target_build),
@@ -55,12 +57,6 @@ is_gold = build_type == "gold"
 # is_debug = true for debug builds
 # assert(is_debug || is_devel || is_qa || is_gold)
 
-if (is_mac) {
-  declare_args() {
-    use_system_xcode = true
-  }
-}
-
 if (default_toolchain != "") {
   cobalt_toolchain = default_toolchain
 } else {
@@ -72,11 +68,13 @@ if (default_toolchain != "") {
 import("//starboard/build/platform_path.gni")
 declare_args() {
   starboard_toolchain = ""
+  native_target = ""
 }
 
 if (starboard_toolchain == "") {
   if (build_with_separate_cobalt_toolchain) {
     starboard_toolchain = "//$starboard_path/toolchain:starboard"
+    native_target = "//$starboard_path/toolchain:native_target"
   } else {
     starboard_toolchain = cobalt_toolchain
   }

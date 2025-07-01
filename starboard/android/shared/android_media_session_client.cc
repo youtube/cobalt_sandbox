@@ -22,9 +22,7 @@
 #include "starboard/android/shared/jni_utils.h"
 #include "starboard/common/log.h"
 
-namespace starboard {
-namespace android {
-namespace shared {
+namespace starboard::android::shared {
 namespace {
 
 using ::starboard::android::shared::JniEnvExt;
@@ -38,7 +36,6 @@ const jlong kPlaybackStateActionRewind = 1 << 3;
 const jlong kPlaybackStateActionSkipToPrevious = 1 << 4;
 const jlong kPlaybackStateActionSkipToNext = 1 << 5;
 const jlong kPlaybackStateActionFastForward = 1 << 6;
-const jlong kPlaybackStateActionSetRating = 1 << 7;  // not supported
 const jlong kPlaybackStateActionSeekTo = 1 << 8;
 
 // Converts a MediaSessionClient::AvailableActions bitset into
@@ -287,9 +284,7 @@ const void* GetMediaSessionApi() {
   return &kMediaSessionApi;
 }
 
-}  // namespace shared
-}  // namespace android
-}  // namespace starboard
+}  // namespace starboard::android::shared
 
 extern "C" SB_EXPORT_PLATFORM void
 Java_dev_cobalt_coat_CobaltMediaSession_nativeInvokeAction(JNIEnv* env,

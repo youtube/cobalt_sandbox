@@ -20,13 +20,9 @@
 #include "starboard/android/shared/video_window.h"
 #include "starboard/shared/gles/gl_call.h"
 
-namespace starboard {
-namespace android {
-namespace shared {
+namespace starboard::android::shared {
 extern std::atomic_bool g_block_swapbuffers;
-}  // namespace shared
-}  // namespace android
-}  // namespace starboard
+}  // namespace starboard::android::shared
 
 extern "C" {
 EGLBoolean __real_eglSwapBuffers(EGLDisplay dpy, EGLSurface surface);
@@ -35,7 +31,7 @@ EGLBoolean __real_eglSwapBuffers(EGLDisplay dpy, EGLSurface surface);
 SB_EXPORT_PLATFORM EGLBoolean __wrap_eglSwapBuffers(EGLDisplay dpy,
                                                     EGLSurface surface) {
   if (starboard::android::shared::g_block_swapbuffers.load()) {
-    return;
+    return EGL_FALSE;
   }
   // Kick off the GPU while waiting for new player bounds to take effect.
   GL_CALL(glFlush());

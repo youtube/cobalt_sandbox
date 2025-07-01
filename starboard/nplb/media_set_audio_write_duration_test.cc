@@ -16,8 +16,8 @@
 
 #include <unistd.h>
 #include <atomic>
+#include <optional>
 
-#include "starboard/common/optional.h"
 #include "starboard/common/spin_lock.h"
 #include "starboard/common/time.h"
 #include "starboard/configuration_constants.h"
@@ -62,7 +62,7 @@ class SbMediaSetAudioWriteDurationTest
   void TryToWritePendingSample() {
     {
       starboard::ScopedSpinLock lock(&pending_decoder_status_lock_);
-      if (!pending_decoder_status_.has_engaged()) {
+      if (!pending_decoder_status_.has_value()) {
         return;
       }
     }
@@ -81,11 +81,9 @@ class SbMediaSetAudioWriteDurationTest
     }
 
     SbPlayer player = pending_decoder_status_->player;
-    SbMediaType type = pending_decoder_status_->type;
-    int ticket = pending_decoder_status_->ticket;
     {
       starboard::ScopedSpinLock lock(&pending_decoder_status_lock_);
-      pending_decoder_status_ = nullopt;
+      pending_decoder_status_ = std::nullopt;
     }
 
     CallSbPlayerWriteSamples(player, kSbMediaTypeAudio, &dmp_reader_, index_,
@@ -103,7 +101,7 @@ class SbMediaSetAudioWriteDurationTest
                                  SbMediaType type,
                                  int ticket) {
     starboard::ScopedSpinLock lock(&pending_decoder_status_lock_);
-    SB_DCHECK(!pending_decoder_status_.has_engaged());
+    SB_DCHECK(!pending_decoder_status_.has_value());
     PendingDecoderStatus pending_decoder_status = {};
     pending_decoder_status.player = player;
     pending_decoder_status.type = type;
@@ -167,7 +165,7 @@ class SbMediaSetAudioWriteDurationTest
   // Guard access to |pending_decoder_status_|.
   mutable std::atomic_int pending_decoder_status_lock_{
       starboard::kSpinLockStateReleased};
-  optional<PendingDecoderStatus> pending_decoder_status_;
+  std::optional<PendingDecoderStatus> pending_decoder_status_;
 
  private:
   static void DecoderStatusFunc(SbPlayer player,
@@ -193,7 +191,7 @@ class SbMediaSetAudioWriteDurationTest
 
 TEST_P(SbMediaSetAudioWriteDurationTest, WriteLimitedInput) {
   ASSERT_NE(dmp_reader_.audio_codec(), kSbMediaAudioCodecNone);
-  ASSERT_GT(dmp_reader_.number_of_audio_buffers(), 0);
+  ASSERT_GT(dmp_reader_.number_of_audio_buffers(), 0u);
 
   SbPlayer player = CreatePlayer();
   WaitForPlayerState(kSbPlayerStateInitialized);
@@ -220,7 +218,7 @@ TEST_P(SbMediaSetAudioWriteDurationTest, WriteLimitedInput) {
 
 TEST_P(SbMediaSetAudioWriteDurationTest, WriteContinuedLimitedInput) {
   ASSERT_NE(dmp_reader_.audio_codec(), kSbMediaAudioCodecNone);
-  ASSERT_GT(dmp_reader_.number_of_audio_buffers(), 0);
+  ASSERT_GT(dmp_reader_.number_of_audio_buffers(), 0u);
 
   // This directly impacts the runtime of the test.
   total_duration_ = 15'000'000LL;  // 15 seconds
@@ -249,9 +247,9 @@ TEST_P(SbMediaSetAudioWriteDurationTest, WriteContinuedLimitedInput) {
   SbPlayerDestroy(player);
 }
 
-INSTANTIATE_TEST_CASE_P(SbMediaSetAudioWriteDurationTests,
-                        SbMediaSetAudioWriteDurationTest,
-                        ValuesIn(GetStereoAudioTestFiles()));
+INSTANTIATE_TEST_SUITE_P(SbMediaSetAudioWriteDurationTests,
+                         SbMediaSetAudioWriteDurationTest,
+                         ValuesIn(GetStereoAudioTestFiles()));
 }  // namespace
 }  // namespace nplb
 }  // namespace starboard

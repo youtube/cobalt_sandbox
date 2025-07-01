@@ -14,14 +14,24 @@
 
 #include "starboard/elf_loader/exported_symbols.h"
 
+#include "build/build_config.h"
+
 #include <dirent.h>
+
+// TODO: Cobalt b/421944504 - Cleanup once we are done with all the symbols.
+#if BUILDFLAG(ENABLE_COBALT_HERMETIC_HACKS)
+#include <dlfcn.h>
+#endif  // BUILDFLAG(ENABLE_COBALT_HERMETIC_HACKS)
+
 #include <errno.h>
 #include <fcntl.h>
 #include <ifaddrs.h>
 #include <malloc.h>
 #include <netdb.h>
 #include <sched.h>
+#include <signal.h>
 #include <stdlib.h>
+#include <sys/epoll.h>
 #include <sys/mman.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -43,8 +53,12 @@
 #include "starboard/shared/modular/starboard_layer_posix_directory_abi_wrappers.h"
 #include "starboard/shared/modular/starboard_layer_posix_errno_abi_wrappers.h"
 #include "starboard/shared/modular/starboard_layer_posix_mmap_abi_wrappers.h"
+#include "starboard/shared/modular/starboard_layer_posix_pipe2_abi_wrappers.h"
 #include "starboard/shared/modular/starboard_layer_posix_pthread_abi_wrappers.h"
+#include "starboard/shared/modular/starboard_layer_posix_semaphore_abi_wrappers.h"
+#include "starboard/shared/modular/starboard_layer_posix_signal_abi_wrappers.h"
 #include "starboard/shared/modular/starboard_layer_posix_socket_abi_wrappers.h"
+#include "starboard/shared/modular/starboard_layer_posix_socketpair_abi_wrappers.h"
 #include "starboard/shared/modular/starboard_layer_posix_stat_abi_wrappers.h"
 #include "starboard/shared/modular/starboard_layer_posix_time_abi_wrappers.h"
 #include "starboard/shared/modular/starboard_layer_posix_uio_abi_wrappers.h"
@@ -211,11 +225,15 @@ ExportedSymbols::ExportedSymbols() {
   REGISTER_SYMBOL(SbWindowSetDefaultOptions);
 
   // POSIX APIs
+  REGISTER_SYMBOL(aligned_alloc);
   REGISTER_SYMBOL(calloc);
   REGISTER_SYMBOL(close);
-  REGISTER_SYMBOL(closedir);
   REGISTER_SYMBOL(dup);
   REGISTER_SYMBOL(dup2);
+  REGISTER_SYMBOL(epoll_create);
+  REGISTER_SYMBOL(epoll_create1);
+  REGISTER_SYMBOL(epoll_ctl);
+  REGISTER_SYMBOL(epoll_wait);
   REGISTER_SYMBOL(fcntl);
   REGISTER_SYMBOL(free);
   REGISTER_SYMBOL(freeifaddrs);
@@ -223,6 +241,8 @@ ExportedSymbols::ExportedSymbols() {
   REGISTER_SYMBOL(getpeername);
   REGISTER_SYMBOL(getsockname);
   REGISTER_SYMBOL(getsockopt);
+  REGISTER_SYMBOL(isatty);
+  REGISTER_SYMBOL(kill);
   REGISTER_SYMBOL(listen);
   REGISTER_SYMBOL(madvise);
   REGISTER_SYMBOL(malloc);
@@ -235,10 +255,12 @@ ExportedSymbols::ExportedSymbols() {
   REGISTER_SYMBOL(msync);
   REGISTER_SYMBOL(munmap);
   REGISTER_SYMBOL(open);
-  REGISTER_SYMBOL(opendir);
+  REGISTER_SYMBOL(pause);
+  REGISTER_SYMBOL(pipe);
   REGISTER_SYMBOL(posix_memalign);
   REGISTER_SYMBOL(pread);
   REGISTER_SYMBOL(pwrite);
+  REGISTER_SYMBOL(raise);
   REGISTER_SYMBOL(rand);
   REGISTER_SYMBOL(rand_r);
   REGISTER_SYMBOL(read);
@@ -250,6 +272,7 @@ ExportedSymbols::ExportedSymbols() {
   REGISTER_SYMBOL(sched_yield);
   REGISTER_SYMBOL(send);
   REGISTER_SYMBOL(sendto);
+  REGISTER_SYMBOL(signal);
   REGISTER_SYMBOL(socket);
   REGISTER_SYMBOL(snprintf);
   REGISTER_SYMBOL(sprintf);
@@ -259,7 +282,11 @@ ExportedSymbols::ExportedSymbols() {
   REGISTER_SYMBOL(vfwprintf);
   REGISTER_SYMBOL(vsnprintf);
   REGISTER_SYMBOL(vsscanf);
+  REGISTER_SYMBOL(vswprintf);
   REGISTER_SYMBOL(write);
+
+  // Linux APIs
+  REGISTER_SYMBOL(recvmmsg);
 
   // Custom mapped POSIX APIs to compatibility wrappers.
   // These will rely on Starboard-side implementations that properly translate
@@ -270,6 +297,8 @@ ExportedSymbols::ExportedSymbols() {
   REGISTER_WRAPPER(accept);
   REGISTER_WRAPPER(bind);
   REGISTER_WRAPPER(clock_gettime);
+  REGISTER_WRAPPER(closedir);
+  REGISTER_WRAPPER(clock_nanosleep);
   REGISTER_WRAPPER(connect);
   if (errno_translation()) {
     REGISTER_WRAPPER(__errno_location);
@@ -284,6 +313,9 @@ ExportedSymbols::ExportedSymbols() {
   REGISTER_WRAPPER(gmtime_r);
   REGISTER_WRAPPER(lseek);
   REGISTER_WRAPPER(mmap);
+  REGISTER_WRAPPER(opendir);
+  REGISTER_WRAPPER(pipe2);
+  REGISTER_WRAPPER(pthread_attr_init);
   REGISTER_WRAPPER(pthread_attr_destroy);
   REGISTER_WRAPPER(pthread_attr_getdetachstate);
   REGISTER_WRAPPER(pthread_attr_getschedpolicy);
@@ -340,12 +372,20 @@ ExportedSymbols::ExportedSymbols() {
   REGISTER_WRAPPER(pthread_setname_np);
   REGISTER_WRAPPER(pthread_setschedparam);
   REGISTER_WRAPPER(pthread_setspecific);
+  REGISTER_WRAPPER(pthread_sigmask);
+  REGISTER_WRAPPER(readdir);
   REGISTER_WRAPPER(readdir_r);
   REGISTER_WRAPPER(setsockopt);
+  REGISTER_WRAPPER(sem_destroy);
+  REGISTER_WRAPPER(sem_init);
+  REGISTER_WRAPPER(sem_post);
+  REGISTER_WRAPPER(sem_timedwait);
+  REGISTER_WRAPPER(sem_wait);
   REGISTER_WRAPPER(shutdown);
+  REGISTER_WRAPPER(sigaction);
+  REGISTER_WRAPPER(socketpair);
   REGISTER_WRAPPER(stat);
-  REGISTER_WRAPPER(time);
-  REGISTER_SYMBOL(vswprintf);
+  REGISTER_WRAPPER(sysconf);
   REGISTER_WRAPPER(writev);
 
 }  // NOLINT
@@ -354,9 +394,19 @@ const void* ExportedSymbols::Lookup(const char* name) {
   const void* address = map_[name];
   // Any symbol that is not registered as part of the Starboard API in the
   // constructor of this class is a leak, and is an error.
-  if (!address) {
-    SB_LOG(ERROR) << "Failed to retrieve the address of '" << name << "'.";
+  if (address) {
+    return address;
   }
+
+  SB_LOG(ERROR) << "Failed to retrieve the address of '" << name << "'.";
+#if BUILDFLAG(ENABLE_COBALT_HERMETIC_HACKS)
+  // TODO: Cobalt b/421944504 - Cleanup once we are done with all the symbols or
+  // potentially keep it behind a flag to help with future maintenance.
+  address = dlsym(RTLD_DEFAULT, name);
+  if (address == nullptr) {
+    SB_LOG(ERROR) << "Fallback dlsym failed for '" << name << "'.";
+  }
+#endif  // BUILDFLAG(ENABLE_COBALT_HERMETIC_HACKS)
   return address;
 }
 

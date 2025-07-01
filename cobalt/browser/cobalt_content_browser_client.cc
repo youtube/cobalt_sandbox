@@ -26,13 +26,15 @@
 #include "base/path_service.h"
 #include "cobalt/browser/cobalt_browser_interface_binders.h"
 #include "cobalt/browser/cobalt_browser_main_parts.h"
-#include "cobalt/browser/cobalt_experiment_names.h"
-#include "cobalt/browser/cobalt_https_only_navigation_throttle.h"
+#include "cobalt/browser/cobalt_secure_navigation_throttle.h"
 #include "cobalt/browser/cobalt_web_contents_observer.h"
+#include "cobalt/browser/constants/cobalt_experiment_names.h"
 #include "cobalt/browser/global_features.h"
 #include "cobalt/browser/user_agent/user_agent_platform_info.h"
 #include "cobalt/media/service/mojom/video_geometry_setter.mojom.h"
 #include "cobalt/media/service/video_geometry_setter_service.h"
+#include "cobalt/shell/browser/shell.h"
+#include "cobalt/shell/browser/shell_paths.h"
 #include "components/metrics/metrics_state_manager.h"
 #include "components/metrics/test/test_enabled_state_provider.h"
 #include "components/metrics_services_manager/metrics_services_manager.h"
@@ -45,14 +47,16 @@
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/content_switch_dependent_feature_overrides.h"
 #include "content/public/common/user_agent.h"
-#include "content/shell/browser/shell.h"
-#include "content/shell/browser/shell_paths.h"
 #include "content/shell/common/shell_switches.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/mojom/network_context.mojom.h"
 #include "services/service_manager/public/cpp/binder_registry.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_registry.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
+
+#if BUILDFLAG(IS_ANDROID)
+#include "base/android/locale_utils.h"
+#endif  // BUILDFLAG(IS_ANDROID)
 
 namespace cobalt {
 
@@ -133,9 +137,10 @@ CobaltContentBrowserClient::CreateBrowserMainParts(
 std::vector<std::unique_ptr<content::NavigationThrottle>>
 CobaltContentBrowserClient::CreateThrottlesForNavigation(
     content::NavigationHandle* handle) {
+  DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
   std::vector<std::unique_ptr<content::NavigationThrottle>> throttles;
   throttles.push_back(
-      std::make_unique<content::CobaltHttpsOnlyNavigationThrottle>(handle));
+      std::make_unique<content::CobaltSecureNavigationThrottle>(handle));
   return throttles;
 }
 
@@ -151,7 +156,11 @@ CobaltContentBrowserClient::GetGeneratedCodeCacheSettings(
 
 std::string CobaltContentBrowserClient::GetApplicationLocale() {
   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
+#if BUILDFLAG(IS_ANDROID)
+  return base::android::GetDefaultLocaleString();
+#else
   return base::i18n::GetConfiguredLocale();
+#endif
 }
 
 std::string CobaltContentBrowserClient::GetUserAgent() {
@@ -434,6 +443,10 @@ void CobaltContentBrowserClient::CreateFeatureListAndFieldTrials() {
   SetUpCobaltFeaturesAndParams(feature_list.get());
 
   base::FeatureList::SetInstance(std::move(feature_list));
+  LOG(INFO) << "CobaltCommandLine "
+            << command_line.GetSwitchValueASCII(::switches::kEnableFeatures);
+  LOG(INFO) << "CobaltCommandLine "
+            << command_line.GetSwitchValueASCII(::switches::kDisableFeatures);
 }
 
 }  // namespace cobalt

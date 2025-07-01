@@ -272,6 +272,7 @@ if (sb_is_evergreen_compatible && current_toolchain == starboard_toolchain) {
       ":installation_store_proto",
       ":pending_restart",
       "//starboard:starboard_with_main",
+      "//starboard/common",
       "//testing/gmock",
       "//testing/gtest",
     ]
@@ -370,15 +371,6 @@ if (sb_is_evergreen_compatible && current_toolchain == starboard_toolchain) {
       "//starboard:starboard_with_main",
       "//testing/gmock",
       "//testing/gtest",
-    ]
-  }
-}
-
-if (current_toolchain == starboard_toolchain) {
-  group("loader_assets") {
-    deps = [
-      ":loader_app",
-      "//starboard/elf_loader:elf_loader_sandbox",
     ]
   }
 }

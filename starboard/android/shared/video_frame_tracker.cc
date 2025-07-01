@@ -18,14 +18,12 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
+#include <mutex>
 #include <vector>
 
 #include "starboard/common/log.h"
-#include "starboard/common/mutex.h"
 
-namespace starboard {
-namespace android {
-namespace shared {
+namespace starboard::android::shared {
 namespace {
 
 const int64_t kMaxAllowedSkew = 5'000;  // 5ms
@@ -84,7 +82,8 @@ void VideoFrameTracker::OnInputBuffer(int64_t timestamp) {
     return;
   }
 
-  if (frames_to_be_rendered_.size() > max_pending_frames_size_) {
+  if (frames_to_be_rendered_.size() >
+      static_cast<size_t>(max_pending_frames_size_)) {
     // OnFrameRendered() is only available after API level 23.  Cap the size
     // of |frames_to_be_rendered_| in case OnFrameRendered() is not available.
     frames_to_be_rendered_.pop_front();
@@ -108,7 +107,7 @@ void VideoFrameTracker::OnInputBuffer(int64_t timestamp) {
 }
 
 void VideoFrameTracker::OnFrameRendered(int64_t frame_timestamp) {
-  ScopedLock lock(rendered_frames_mutex_);
+  std::scoped_lock lock(rendered_frames_mutex_);
   rendered_frames_on_decoder_thread_.push_back(frame_timestamp);
 }
 
@@ -132,7 +131,7 @@ void VideoFrameTracker::UpdateDroppedFrames() {
   SB_DCHECK(thread_checker_.CalledOnValidThread());
 
   {
-    ScopedLock lock(rendered_frames_mutex_);
+    std::scoped_lock lock(rendered_frames_mutex_);
     rendered_frames_on_tracker_thread_.swap(rendered_frames_on_decoder_thread_);
   }
 
@@ -183,6 +182,4 @@ void VideoFrameTracker::UpdateDroppedFrames() {
   rendered_frames_on_tracker_thread_.clear();
 }
 
-}  // namespace shared
-}  // namespace android
-}  // namespace starboard
+}  // namespace starboard::android::shared

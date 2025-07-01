@@ -85,7 +85,7 @@ typedef union musl_pthread_once_t {
   void* ptr;
 } musl_pthread_once_t;
 
-#define MUSL_PTHREAD_RWLOCK_MAX_SIZE 56
+#define MUSL_PTHREAD_RWLOCK_MAX_SIZE 80
 typedef union musl_pthread_rwlock_t {
   uint8_t rwlock_buffer[MUSL_PTHREAD_RWLOCK_MAX_SIZE];
   void* ptr;
@@ -235,7 +235,6 @@ SB_EXPORT int __abi_wrap_pthread_rwlock_tryrdlock(
     musl_pthread_rwlock_t* rwlock);
 SB_EXPORT int __abi_wrap_pthread_rwlock_trywrlock(
     musl_pthread_rwlock_t* rwlock);
-SB_EXPORT int __abi_wrap_pthread_kill(musl_pthread_t thread, int sig);
 
 #ifdef __cplusplus
 }  // extern "C"

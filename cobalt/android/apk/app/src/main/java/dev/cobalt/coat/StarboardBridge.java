@@ -23,6 +23,7 @@ import android.app.Activity;
 import android.app.Service;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.content.res.AssetManager;
 import android.hardware.input.InputManager;
 import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
@@ -81,7 +82,14 @@ public class StarboardBridge {
       new Runnable() {
         @Override
         public void run() {
-          requestSuspend();
+          // When the platform locale setting is updated, the application needs
+          // to exit or the Accept-Language request header configuration needs
+          // to be updated. The Accept-Language header configuration is set on
+          // application start.
+          //
+          // To match cobalt 25, we're exiting the application.
+          // https://source.corp.google.com/piper///depot/google3/third_party/cobalt/app/android/coat/branch_25_lts/java/dev/cobalt/coat/StarboardBridge.java;l=96
+          afterStopped();
         }
       };
 
@@ -131,9 +139,15 @@ public class StarboardBridge {
     this.volumeStateReceiver = new VolumeStateReceiver(appContext);
     this.isAmatiDevice = appContext.getPackageManager().hasSystemFeature(AMATI_EXPERIENCE_FEATURE);
 
-    nativeApp = StarboardBridgeJni.get().startNativeStarboard();
+    nativeApp =
+        StarboardBridgeJni.get()
+            .startNativeStarboard(
+                getAssetsFromContext(),
+                getFilesAbsolutePath(),
+                getCacheAbsolutePath(),
+                getNativeLibraryDir());
 
-    StarboardBridgeJni.get().handleDeepLink(startDeepLink, /*applicationStarted=*/ false);
+    StarboardBridgeJni.get().handleDeepLink(startDeepLink, /* applicationStarted= */ false);
     StarboardBridgeJni.get().setAndroidBuildFingerprint(getBuildFingerprint());
     StarboardBridgeJni.get().setAndroidOSExperience(this.isAmatiDevice);
     StarboardBridgeJni.get().setAndroidPlayServicesVersion(getPlayServicesVersion());
@@ -149,7 +163,9 @@ public class StarboardBridge {
 
     long currentMonotonicTime();
 
-    long startNativeStarboard();
+    long startNativeStarboard(
+        AssetManager assetManager, String filesDir, String cacheDir, String nativeLibraryDir);
+
     // TODO(cobalt, b/372559388): move below native methods to the Natives interface.
     // boolean initJNI();
 
@@ -158,7 +174,9 @@ public class StarboardBridge {
     void handleDeepLink(String url, boolean applicationStarted);
 
     void setAndroidBuildFingerprint(String fingerprint);
+
     void setAndroidOSExperience(boolean isAmatiDevice);
+
     void setAndroidPlayServicesVersion(long version);
   }
 
@@ -234,7 +252,6 @@ public class StarboardBridge {
   }
 
   // Warning: "Stopped" refers to Starboard "Stopped" event, it's different from Android's "onStop".
-  @SuppressWarnings("unused")
   @CalledByNative
   protected void afterStopped() {
     applicationStopped = true;
@@ -251,20 +268,17 @@ public class StarboardBridge {
     }
   }
 
-  @SuppressWarnings("unused")
   @CalledByNative
   protected void applicationStarted() {
     applicationStarted = true;
   }
 
-  @SuppressWarnings("unused")
   @CalledByNative
   protected void applicationStopping() {
     applicationStarted = false;
     applicationStopped = true;
   }
 
-  @SuppressWarnings("unused")
   @CalledByNative
   public void requestSuspend() {
     Activity activity = activityHolder.get();
@@ -286,16 +300,6 @@ public class StarboardBridge {
 
   // private native boolean nativeOnSearchRequested();
 
-  @SuppressWarnings("unused")
-  @CalledByNative
-  public Context getApplicationContext() {
-    if (appContext == null) {
-      throw new IllegalArgumentException("appContext cannot be null");
-    }
-    return appContext;
-  }
-
-  @SuppressWarnings("unused")
   @CalledByNative
   void raisePlatformError(@PlatformError.ErrorType int errorType, long data) {
     PlatformError error = new PlatformError(activityHolder, errorType, data);
@@ -315,7 +319,6 @@ public class StarboardBridge {
     return activityHolder;
   }
 
-  @SuppressWarnings("unused")
   @CalledByNative
   protected String[] getArgs() {
     if (args == null) {
@@ -329,12 +332,18 @@ public class StarboardBridge {
     StarboardBridgeJni.get().handleDeepLink(url, applicationStarted);
   }
 
+  public AssetManager getAssetsFromContext() {
+    return appContext.getAssets();
+  }
+
+  public String getNativeLibraryDir() {
+    return appContext.getApplicationInfo().nativeLibraryDir;
+  }
+
   /**
    * Returns the absolute path to the directory where application specific files should be written.
    * May be overridden for use cases that need to segregate storage.
    */
-  @SuppressWarnings("unused")
-  @CalledByNative
   protected String getFilesAbsolutePath() {
     return appContext.getFilesDir().getAbsolutePath();
   }
@@ -343,15 +352,12 @@ public class StarboardBridge {
    * Returns the absolute path to the application specific cache directory on the filesystem. May be
    * overridden for use cases that need to segregate storage.
    */
-  @SuppressWarnings("unused")
-  @CalledByNative
   protected String getCacheAbsolutePath() {
     return appContext.getCacheDir().getAbsolutePath();
   }
 
   // TODO: (cobalt b/372559388) remove or migrate JNI?
   // Used in starboard/android/shared/speech_synthesis_speak.cc
-  @SuppressWarnings("unused")
   @CalledByNative
   CobaltTextToSpeechHelper getTextToSpeechHelper() {
     if (ttsHelper == null) {
@@ -382,7 +388,6 @@ public class StarboardBridge {
     return Locale.getDefault().toLanguageTag();
   }
 
-  @SuppressWarnings("unused")
   @CalledByNative
   String getTimeZoneId() {
     Locale locale = Locale.getDefault();
@@ -394,7 +399,6 @@ public class StarboardBridge {
     return timeZone.getID();
   }
 
-  @SuppressWarnings("unused")
   @CalledByNative
   SizeF getDisplayDpi() {
     return DisplayUtil.getDisplayDpi();
@@ -427,31 +431,6 @@ public class StarboardBridge {
     }
   }
 
-  @SuppressWarnings("unused")
-  @CalledByNative
-  Size getDeviceResolution() {
-    String displaySize =
-        android.os.Build.VERSION.SDK_INT < 28
-            ? getSystemProperty("sys.display-size")
-            : getSystemProperty("vendor.display-size");
-
-    if (displaySize == null) {
-      return getDisplaySize();
-    }
-
-    String[] sizes = displaySize.split("x");
-    if (sizes.length != 2) {
-      return getDisplaySize();
-    }
-
-    try {
-      return new Size(Integer.parseInt(sizes[0]), Integer.parseInt(sizes[1]));
-    } catch (NumberFormatException e) {
-      return getDisplaySize();
-    }
-  }
-
-  @SuppressWarnings("unused")
   @CalledByNative
   boolean isNetworkConnected() {
     if (networkStatus == null) {
@@ -460,15 +439,13 @@ public class StarboardBridge {
     return networkStatus.isConnected();
   }
 
-  // TODO: (cobalt b/372559388) remove or migrate JNI?
-  // Used in starboard/android/shared/microphone_impl.cc
   /**
    * Checks if there is no microphone connected to the system.
    *
    * @return true if no device is connected.
    */
   @SuppressWarnings("unused")
-  @UsedByNative
+  @CalledByNative
   public boolean isMicrophoneDisconnected() {
     // A check specifically for microphones is not available before API 28, so it is assumed that a
     // connected input audio device is a microphone.
@@ -491,22 +468,19 @@ public class StarboardBridge {
     return true;
   }
 
-  // TODO: (cobalt b/372559388) remove or migrate JNI?
-  // Used in starboard/android/shared/microphone_impl.cc
   /**
    * Checks if the microphone is muted.
    *
    * @return true if the microphone mute is on.
    */
   @SuppressWarnings("unused")
-  @UsedByNative
+  @CalledByNative
   public boolean isMicrophoneMute() {
     AudioManager audioManager = (AudioManager) appContext.getSystemService(AUDIO_SERVICE);
     return audioManager.isMicrophoneMute();
   }
 
   /** Returns string for kSbSystemPropertyUserAgentAuxField */
-  @SuppressWarnings("unused")
   @CalledByNative
   protected String getUserAgentAuxField() {
     StringBuilder sb = new StringBuilder();
@@ -536,7 +510,6 @@ public class StarboardBridge {
   // TODO: (cobalt b/372559388) remove or migrate JNI?
   // Used in starboard/android/shared/system_get_property.cc
   /** Returns string for kSbSystemPropertyAdvertisingId */
-  @SuppressWarnings("unused")
   @CalledByNative
   protected String getAdvertisingId() {
     return this.advertisingId.getId();
@@ -545,16 +518,12 @@ public class StarboardBridge {
   // TODO: (cobalt b/372559388) remove or migrate JNI?
   // Used in starboard/android/shared/system_get_property.cc
   /** Returns boolean for kSbSystemPropertyLimitAdTracking */
-  @SuppressWarnings("unused")
   @CalledByNative
   protected boolean getLimitAdTracking() {
     return this.advertisingId.isLimitAdTrackingEnabled();
   }
 
-  // TODO: (cobalt b/372559388) remove or migrate JNI?
-  // Used in starboard/android/shared/audio_track_bridge.cc
-  @SuppressWarnings("unused")
-  @UsedByNative
+  @CalledByNative
   AudioOutputManager getAudioOutputManager() {
     if (audioOutputManager == null) {
       throw new IllegalArgumentException("audioOutputManager cannot be null for native code");
@@ -564,7 +533,7 @@ public class StarboardBridge {
 
   /** Returns Java layer implementation for AudioPermissionRequester */
   @SuppressWarnings("unused")
-  @UsedByNative
+  @CalledByNative
   AudioPermissionRequester getAudioPermissionRequester() {
     return audioPermissionRequester;
   }
@@ -573,10 +542,8 @@ public class StarboardBridge {
     audioPermissionRequester.onRequestPermissionsResult(requestCode, permissions, grantResults);
   }
 
-  // TODO: (cobalt b/372559388) remove or migrate JNI?
-  // Used in starboard/android/shared/video_window.cc
   @SuppressWarnings("unused")
-  @UsedByNative
+  @CalledByNative
   public void resetVideoSurface() {
     Activity activity = activityHolder.get();
     if (activity instanceof CobaltActivity) {
@@ -584,10 +551,8 @@ public class StarboardBridge {
     }
   }
 
-  // TODO: (cobalt b/372559388) remove or migrate JNI?
-  // Used in starboard/android/shared/player_set_bounds.cc
   @SuppressWarnings("unused")
-  @UsedByNative
+  @CalledByNative
   public void setVideoSurfaceBounds(final int x, final int y, final int width, final int height) {
     Activity activity = activityHolder.get();
     if (activity instanceof CobaltActivity) {
@@ -598,7 +563,6 @@ public class StarboardBridge {
   // TODO: (cobalt b/372559388) remove or migrate JNI?
   // Used in starboard/android/shared/media_capabilities_cache.cc
   /** Return supported hdr types. */
-  @SuppressWarnings("unused")
   @CalledByNative
   public int[] getSupportedHdrTypes() {
     Display defaultDisplay = DisplayUtil.getDefaultDisplay();
@@ -628,7 +592,8 @@ public class StarboardBridge {
 
   // Explicitly pass activity as parameter.
   // Avoid using activityHolder.get(), because onActivityStop() can set it to null.
-  public CobaltService openCobaltService(Activity activity, long nativeService, String serviceName) {
+  public CobaltService openCobaltService(
+      Activity activity, long nativeService, String serviceName) {
     if (cobaltServices.get(serviceName) != null) {
       // Attempting to re-open an already open service fails.
       Log.e(TAG, String.format("Cannot open already open service %s", serviceName));
@@ -699,20 +664,17 @@ public class StarboardBridge {
   }
 
   // Returns the saved app start timestamp.
-  @SuppressWarnings("unused")
   @CalledByNative
   protected long getAppStartTimestamp() {
     return mAppStartTimestamp;
   }
 
   // Returns the saved app start timestamp.
-  @SuppressWarnings("unused")
   @CalledByNative
   protected long getAppStartDuration() {
     return mAppStartDuration;
   }
 
-  @SuppressWarnings("unused")
   @CalledByNative
   void reportFullyDrawn() {
     Activity activity = activityHolder.get();
@@ -733,7 +695,6 @@ public class StarboardBridge {
     CrashContext.INSTANCE.registerCrashContextUpdateHandler(handler);
   }
 
-  @SuppressWarnings("unused")
   @CalledByNative
   protected boolean getIsAmatiDevice() {
     return this.isAmatiDevice;

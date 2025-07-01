@@ -25,9 +25,7 @@
 #include "starboard/linux/shared/decode_target_internal.h"
 #include "starboard/shared/pthread/thread_create_priority.h"
 
-namespace starboard {
-namespace shared {
-namespace ffmpeg {
+namespace starboard::shared::ffmpeg {
 
 namespace {
 
@@ -209,7 +207,7 @@ void VideoDecoderImpl<FFMPEG>::Reset() {
     InitializeCodec();
   }
 
-  ScopedLock lock(decode_target_and_frames_mutex_);
+  std::lock_guard lock(decode_target_and_frames_mutex_);
   decltype(frames_) frames;
   frames_ = std::queue<scoped_refptr<CpuVideoFrame>>();
 }
@@ -371,7 +369,7 @@ bool VideoDecoderImpl<FFMPEG>::ProcessDecodedFrame(const AVFrame& av_frame) {
 
   bool result = true;
   if (output_mode_ == kSbPlayerOutputModeDecodeToTexture) {
-    ScopedLock lock(decode_target_and_frames_mutex_);
+    std::lock_guard lock(decode_target_and_frames_mutex_);
     frames_.push(frame);
   }
 
@@ -458,7 +456,7 @@ void VideoDecoderImpl<FFMPEG>::TeardownCodec() {
   ffmpeg_->FreeFrame(&av_frame_);
 
   if (output_mode_ == kSbPlayerOutputModeDecodeToTexture) {
-    ScopedLock lock(decode_target_and_frames_mutex_);
+    std::lock_guard lock(decode_target_and_frames_mutex_);
     if (SbDecodeTargetIsValid(decode_target_)) {
       DecodeTargetRelease(decode_target_graphics_context_provider_,
                           decode_target_);
@@ -473,7 +471,7 @@ SbDecodeTarget VideoDecoderImpl<FFMPEG>::GetCurrentDecodeTarget() {
 
   // We must take a lock here since this function can be called from a
   // separate thread.
-  ScopedLock lock(decode_target_and_frames_mutex_);
+  std::lock_guard lock(decode_target_and_frames_mutex_);
   while (frames_.size() > 1 && frames_.front()->HasOneRef()) {
     frames_.pop();
   }
@@ -610,6 +608,4 @@ int VideoDecoderImpl<FFMPEG>::AllocateBuffer(AVCodecContext* codec_context,
 }
 #endif  // LIBAVUTIL_VERSION_INT >= LIBAVUTIL_VERSION_52_8
 
-}  // namespace ffmpeg
-}  // namespace shared
-}  // namespace starboard
+}  // namespace starboard::shared::ffmpeg

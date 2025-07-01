@@ -26,10 +26,7 @@
 #include "starboard/common/player.h"
 #include "starboard/shared/pthread/thread_create_priority.h"
 
-namespace starboard {
-namespace shared {
-namespace starboard {
-namespace player {
+namespace starboard::shared::starboard::player {
 
 namespace {
 
@@ -54,7 +51,7 @@ const int kPlayerStackSize = 0;
 //       backlogs.
 const int64_t kWritePendingSampleDelayUsec = 8'000;  // 8ms
 
-DECLARE_INSTANCE_COUNTER(PlayerWorker);
+DECLARE_INSTANCE_COUNTER(PlayerWorker)
 
 struct ThreadParam {
   explicit ThreadParam(PlayerWorker* player_worker)
@@ -303,10 +300,11 @@ void PlayerWorker::DoWriteSamples(InputBuffers input_buffers) {
     UpdatePlayerError(kSbPlayerErrorDecode, result, "Failed to write sample.");
     return;
   }
-  if (samples_written == input_buffers.size()) {
+  if (static_cast<size_t>(samples_written) == input_buffers.size()) {
     UpdateDecoderState(media_type, kSbPlayerDecoderStateNeedsData);
   } else {
-    SB_DCHECK(samples_written >= 0 && samples_written <= input_buffers.size());
+    SB_DCHECK(samples_written >= 0 &&
+              static_cast<size_t>(samples_written) <= input_buffers.size());
 
     size_t num_of_pending_buffers = input_buffers.size() - samples_written;
     input_buffers.erase(input_buffers.begin(),
@@ -428,7 +426,4 @@ void PlayerWorker::UpdateDecoderState(SbMediaType type,
   decoder_status_func_(player_, context_, type, state, ticket_);
 }
 
-}  // namespace player
-}  // namespace starboard
-}  // namespace shared
-}  // namespace starboard
+}  // namespace starboard::shared::starboard::player

@@ -445,7 +445,7 @@ blink::WebMediaPlayer* MediaFactory::CreateMediaPlayer(
       std::make_unique<blink::RemotePlaybackClientWrapperImpl>(client),
 #if BUILDFLAG(USE_STARBOARD_MEDIA)
       &media_observer, client->GetElementId(), 
-      client->getMaxVideoCapabilities());
+      client->GetMaxVideoCapabilities());
 #else // BUILDFLAG(USE_STARBOARD_MEDIA)
       &media_observer, client->GetElementId());
 #endif // BUILDFLAG(USE_STARBOARD_MEDIA)
@@ -630,7 +630,8 @@ MediaFactory::CreateRendererFactorySelector(
 #if BUILDFLAG(USE_STARBOARD_MEDIA)
   media::RendererFactoryTraits renderer_factory_traits;
   GetContentClient()->renderer()->GetStarboardRendererFactoryTraits(&renderer_factory_traits);
-  renderer_factory_traits.max_video_capabilities = max_video_capabilities;
+  // TODO (b/375070492) - Implement decode-to-texture mode.
+  // renderer_factory_traits.max_video_capabilities = max_video_capabilities;
   is_base_renderer_factory_set = true;
   factory_selector->AddBaseFactory(RendererType::kStarboard,
     std::make_unique<media::StarboardRendererClientFactory>(media_log,
