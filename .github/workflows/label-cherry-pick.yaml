@@ -59,6 +59,7 @@ jobs:
       GITHUB_REF: ${{ github.ref }}
       MERGE_COMMIT_SHA: ${{ github.event.pull_request.merge_commit_sha }}
       CHERRY_PICK_BRANCH: cherry-pick-${{ matrix.target_branch }}-${{ github.event.pull_request.number }}
+      GIT_LOG_FILE: git.log
     steps:
       - name: Checkout repository
         uses: kaidokert/checkout@v3.5.999
@@ -83,7 +84,7 @@ jobs:
           set +e
           # Select the first parent as the mainline tree. This is necessary if
           # the commit has multiple parents as the cherry-pick will fail otherwise.
-          git cherry-pick -x --mainline=1 ${MERGE_COMMIT_SHA}
+          git cherry-pick -x --mainline=1 ${MERGE_COMMIT_SHA} | tee ${GIT_LOG_FILE}
           RES=$?
           set -e
           if [ ${RES} -ne 0 ]; then
@@ -128,10 +129,24 @@ jobs:
               });
             } else if ('${{ steps.cherry-pick.outcome }}' == 'failure') {
               // Comment on the new PR if the cherry pick failed.
+              MESSAGE=$(cat << 'EOM'
+              ![MERGE CONFLICT CAT](https://services.google.com/fh/files/misc/merge_conflict_cat.png)
+              > [!CAUTION]
+              > There were merge conflicts while cherry picking! Check out [${{ env.CHERRY_PICK_BRANCH }}](${{ github.repository }}/tree/${{ env.CHERRY_PICK_BRANCH }}) and fix the conflicts before proceeding.
+              > See ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} for details.
+
+              Git cherry-pick log:
+
+              ```
+              $(<"${GIT_LOG_FILE}")
+              ```
+              EOM
+              )
+
               github.rest.issues.createComment({
                 issue_number: '${{ steps.create-pr.outputs.pull-request-number }}',
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                body: '![MERGE CONFLICT CAT](https://services.google.com/fh/files/misc/merge_conflict_cat.png)\n> [!CAUTION]\n> There were merge conflicts while cherry picking! Check out [${{ env.CHERRY_PICK_BRANCH }}](${{ github.repository }}/tree/${{ env.CHERRY_PICK_BRANCH }}) and fix the conflicts before proceeding. Check the log at ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} for details.'
+                body: ${MESSAGE}
               });
             }
