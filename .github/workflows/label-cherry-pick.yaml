@@ -143,10 +143,12 @@ jobs:
               EOM
               )
 
-              github.rest.issues.createComment({
-                issue_number: '${{ steps.create-pr.outputs.pull-request-number }}',
+              github.rest.pulls.createReview({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
+                pull_number: '${{ steps.create-pr.outputs.pull-request-number }}',
+                event: 'REQUEST_CHANGES',
                 body: ${MESSAGE}
-              });
+              })
+
             }
