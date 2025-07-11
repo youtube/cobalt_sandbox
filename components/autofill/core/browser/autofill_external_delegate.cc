@@ -21,6 +21,8 @@
 #include "base/functional/callback_forward.h"
 #include "base/i18n/case_conversion.h"
 #include "base/metrics/histogram_functions.h"
+#include "base/metrics/user_metrics.h"
+#include "base/metrics/user_metrics_action.h"
 #include "base/notreached.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
@@ -559,6 +561,16 @@ void AutofillExternalDelegate::OnSuggestionsShown(
     }
   }
 
+  if (std::ranges::any_of(suggestions, [](const Suggestion& suggestion) {
+        const Suggestion::AutofillProfilePayload* profile_payload =
+            absl::get_if<Suggestion::AutofillProfilePayload>(
+                &suggestion.payload);
+        return profile_payload && !profile_payload->email_override.empty();
+      })) {
+    base::RecordAction(
+        base::UserMetricsAction("PlusAddresses.AddressFillSuggestionShown"));
+  }
+
   // If the popup was manually triggered on an unclassified field, the chances
   // are high that it has no regular suggestions, as it is the main usecase for
   // the manual fallback functionality. It is considered an acceptable
@@ -881,7 +893,7 @@ void AutofillExternalDelegate::DidAcceptSuggestion(
         delegate->OpenCompose(
             manager_->driver(), query_field_.renderer_form_id(),
             query_field_.global_id(),
-            autofill::AutofillComposeDelegate::UiEntryPoint::kAutofillPopup);
+            AutofillComposeDelegate::UiEntryPoint::kAutofillPopup);
       }
       break;
     case SuggestionType::kComposeDisable:
@@ -1185,7 +1197,7 @@ void AutofillExternalDelegate::OnCreditCardScanned(
     const CreditCard& card) {
   manager_->FillOrPreviewCreditCardForm(
       mojom::ActionPersistence::kFill, query_form_, query_field_.global_id(),
-      card, std::u16string(), {.trigger_source = trigger_source});
+      card, {.trigger_source = trigger_source});
 }
 
 void AutofillExternalDelegate::PreviewFieldByFieldFillingSuggestion(
@@ -1411,8 +1423,7 @@ void AutofillExternalDelegate::FillAutofillFormData(
               absl::get<Suggestion::Guid>(payload).value())) {
     is_preview ? manager_->FillOrPreviewCreditCardForm(
                      mojom::ActionPersistence::kPreview, query_form_,
-                     query_field_.global_id(), *credit_card, std::u16string(),
-                     trigger_details)
+                     query_field_.global_id(), *credit_card, trigger_details)
                : manager_->AuthenticateThenFillCreditCardForm(
                      query_form_, query_field_.global_id(),
                      type == SuggestionType::kVirtualCreditCardEntry

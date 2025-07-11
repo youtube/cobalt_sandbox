@@ -133,9 +133,15 @@ notes = "Only Cargo.toml changes in the 1.0.7 => 1.0.8 delta."
 
 [[audits.anstyle]]
 who = "Dustin J. Mitchell <djmitche@chromium.org>"
-criteria = ["safe-to-deploy", "does-not-implement-crypto"]
+criteria = ["safe-to-run", "does-not-implement-crypto"]
 delta = "1.0.8 -> 1.0.9"
 notes = "No changes"
+
+[[audits.anstyle]]
+who = "Lukasz Anforowicz <lukasza@chromium.org>"
+criteria = ["safe-to-run", "does-not-implement-crypto"]
+delta = "1.0.9 -> 1.0.10"
+notes = "Minor changes related to `write_str`."
 
 [[audits.anyhow]]
 who = "Lukasz Anforowicz <lukasza@chromium.org>"
@@ -201,6 +207,15 @@ who = "Liza Burakova <liza@chromium.org>"
 criteria = ["safe-to-run", "does-not-implement-crypto"]
 delta = "1.0.89 -> 1.0.91"
 notes = "Minimal changes"
+
+[[audits.anyhow]]
+who = "Lukasz Anforowicz <lukasza@chromium.org>"
+criteria = ["safe-to-run", "does-not-implement-crypto"]
+delta = "1.0.91 -> 1.0.93"
+notes = """
+`ensure!` macro tweaks to handle
+https://github.com/rust-lang/rfcs/blob/master/text/2582-raw-reference-mir-operator.md
+"""
 
 [[audits.autocfg]]
 who = "Lukasz Anforowicz <lukasza@chromium.org>"
@@ -1171,6 +1186,12 @@ criteria = ["safe-to-deploy", "does-not-implement-crypto", "ub-risk-1"]
 delta = "0.7.2 -> 0.7.3"
 notes = "Wrapping math for Fixed type, no new unsafe."
 
+[[audits.font-types]]
+who = "Dominik Röttsches <drott@chromium.org>"
+criteria = ["safe-to-deploy", "does-not-implement-crypto", "ub-risk-1"]
+delta = "0.7.3 -> 0.8.2"
+notes = "No new unsafe, more inlining, checked add. Minor spec compliance issues."
+
 [[audits.getrandom]]
 who = "danakj@chromium.org"
 criteria = ["safe-to-run", "does-not-implement-crypto"]
@@ -1509,6 +1530,11 @@ criteria = ["safe-to-run", "does-not-implement-crypto"]
 delta = "0.12.4 -> 0.12.6"
 notes = "No concerning changes for safe-to-run."
 
+[[audits.prost]]
+who = "Lukasz Anforowicz <lukasza@chromium.org>"
+criteria = ["safe-to-run", "does-not-implement-crypto"]
+delta = "0.12.6 -> 0.13.3"
+
 [[audits.prost-derive]]
 who = "agl@chromium.org"
 criteria = ["safe-to-run", "does-not-implement-crypto", "ub-risk-0"]
@@ -1524,6 +1550,11 @@ who = "Dustin J. Mitchell <djmitche@chromium.org>"
 criteria = ["safe-to-run", "does-not-implement-crypto"]
 delta = "0.12.5 -> 0.12.6"
 notes = "No changes here; presumably a bump of the `prost` crate."
+
+[[audits.prost-derive]]
+who = "Lukasz Anforowicz <lukasza@chromium.org>"
+criteria = ["safe-to-run", "does-not-implement-crypto"]
+delta = "0.12.6 -> 0.13.3"
 
 [[audits.qr_code]]
 who = "Lukasz Anforowicz <lukasza@chromium.org>"
@@ -1608,6 +1639,16 @@ Grepped for \"unsafe\", \"crypt\", \"cipher\", \"fs\", \"net\" - there were no h
 For overall `safe-to-deploy` and `does-not-implement-crypto` I am mostly
 relying on certification by the Chromium engineers who work on the library
 (mostly drott@chromium.org).
+"""
+
+[[audits.read-fonts]]
+who = "Dominik Röttsches <drott@chromium.org>"
+criteria = ["safe-to-deploy", "does-not-implement-crypto", "ub-risk-0"]
+version = "0.25.3"
+notes = """
+Fixes for hdmx processing (use explicit record size), overflow fixes for packed
+point numbers. Fixes for midpoint computation, and follow-up fix to reinstate
+FreeType equivalence. Feature gating experimential spec features.
 """
 
 [[audits.read-fonts]]
@@ -1745,6 +1786,12 @@ delta = "0.4.6 -> 0.4.7"
 who = "Lukasz Anforowicz <lukasza@chromium.org>"
 criteria = ["safe-to-run", "does-not-implement-crypto"]
 delta = "0.4.7 -> 0.4.8"
+
+[[audits.regex-automata]]
+who = "Lukasz Anforowicz <lukasza@chromium.org>"
+criteria = ["safe-to-run", "does-not-implement-crypto"]
+delta = "0.4.8 -> 0.4.9"
+notes = "New API: `BuildError.is_size_limit_exceeded`."
 
 [[audits.regex-syntax]]
 who = "danakj@chromium.org"
@@ -2297,6 +2344,12 @@ who = "Dominik Röttsches <drott@chromium.org>"
 criteria = ["safe-to-deploy", "does-not-implement-crypto", "ub-risk-0"]
 delta = "0.24.0 -> 0.24.1"
 notes = "COLRv1 bounds fix, fixes for underflows/overflows."
+
+[[audits.skrifa]]
+who = "Dominik Röttsches <drott@chromium.org>"
+criteria = ["safe-to-deploy", "does-not-implement-crypto", "ub-risk-0"]
+delta = "0.24.1 -> 0.26.3"
+notes = "Support for fonts that rely on hinting (like FreeType's \"tricky\" font detection). Overflow fixes, cycle detection in autohinting. cff overflow fixes."
 
 [[audits.small_ctor]]
 who = "danakj@chromium.org"

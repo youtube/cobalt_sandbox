@@ -15,6 +15,7 @@
 #include "base/metrics/histogram_macros.h"
 #include "base/trace_event/trace_event.h"
 #include "components/input/cursor_manager.h"
+#include "components/input/features.h"
 #include "components/input/touch_emulator.h"
 #include "components/viz/common/features.h"
 #include "components/viz/common/hit_test/hit_test_data_provider.h"
@@ -314,7 +315,7 @@ void RenderWidgetHostInputEventRouter::TouchscreenPinchState::DidStopPinch() {
       break;
     case PinchState::NONE:
     case PinchState::EXISTING_BUBBLING_TO_ROOT:
-      NOTREACHED_IN_MIGRATION();
+      NOTREACHED();
   }
 }
 
@@ -806,13 +807,10 @@ void RenderWidgetHostInputEventRouter::RouteGestureEvent(
 
   switch (event->SourceDevice()) {
     case blink::WebGestureDevice::kUninitialized:
-      NOTREACHED_IN_MIGRATION() << "Uninitialized device type is not allowed";
-      break;
+      NOTREACHED() << "Uninitialized device type is not allowed";
     case blink::WebGestureDevice::kSyntheticAutoscroll:
-      NOTREACHED_IN_MIGRATION()
-          << "Only target_viewport synthetic autoscrolls are "
-             "currently supported";
-      break;
+      NOTREACHED() << "Only target_viewport synthetic autoscrolls are "
+                      "currently supported";
     case blink::WebGestureDevice::kTouchpad:
       RouteTouchpadGestureEvent(root_view, event, latency);
       break;
@@ -820,11 +818,10 @@ void RenderWidgetHostInputEventRouter::RouteGestureEvent(
       RouteTouchscreenGestureEvent(root_view, event, latency);
       break;
     case blink::WebGestureDevice::kScrollbar:
-      NOTREACHED_IN_MIGRATION()
+      NOTREACHED()
           << "This gesture source is only ever generated inside the renderer "
              "and is designated for compositor threaded scrollbar scrolling. "
              "We should never see it in the browser.";
-      break;
   };
 }
 
@@ -848,7 +845,7 @@ unsigned CountChangedTouchPoints(const blink::WebTouchEvent& event) {
     default:
       // We'll only ever call this method for TouchStart, TouchEnd
       // and TounchCancel events, so mark the rest as not-reached.
-      NOTREACHED_IN_MIGRATION();
+      NOTREACHED();
   }
   for (unsigned i = 0; i < event.touches_length; ++i) {
     if (event.touches[i].state == required_state)
@@ -923,11 +920,8 @@ void RenderWidgetHostInputEventRouter::DispatchTouchEvent(
 
   // Debugging for crbug.com/814674.
   if (touch_target_ && !IsViewInMap(touch_target_)) {
-    NOTREACHED_IN_MIGRATION()
-        << "Touch events should not be routed to a destroyed target "
-           "View.";
-    touch_target_ = nullptr;
-    base::debug::DumpWithoutCrashing();
+    NOTREACHED()
+        << "Touch events should not be routed to a destroyed target View.";
   }
 
   if (touch_target_) {
@@ -1181,12 +1175,18 @@ blink::WebGestureEvent GestureEventInTarget(
 base::debug::CrashKeyString* RenderWidgetHostInputEventRouter::
     GetTouchscreenGestureEventHistoryCrashString() {
   static auto* crash_key = base::debug::AllocateCrashKeyString(
-      "touchscreen_gesture_event_history", base::debug::CrashKeySize::Size1024);
+      "Bug346629231-tscr_gesture_evt_history",
+      base::debug::CrashKeySize::Size1024);
   return crash_key;
 }
 
 // Logs debug data for https://crbug.com/346629231.
-void RenderWidgetHostInputEventRouter::LogTouchscreenEventHistoryForDebug() {
+void RenderWidgetHostInputEventRouter::LogTouchscreenEventHistoryForDebug(
+    void* target_view,
+    void* resending_view,
+    void* touchscreen_gesture_target,
+    void* touchpad_gesture_target,
+    void* touch_target) {
   // To avoid undue performance impact, only dump this data once for this tab.
   // Hitting this codepath is expected to be a rare event.
   static bool has_fired_once = false;
@@ -1197,6 +1197,27 @@ void RenderWidgetHostInputEventRouter::LogTouchscreenEventHistoryForDebug() {
   }
 
   has_fired_once = true;
+
+  // Add crashkeys for the various targets, so we can see what's going on.
+  std::string target_view_str = base::StringPrintf("%p", target_view);
+  SCOPED_CRASH_KEY_STRING256("Bug346629231", "target_view",
+                             target_view_str.c_str());
+  std::string resending_view_str = base::StringPrintf("%p", resending_view);
+  SCOPED_CRASH_KEY_STRING256("Bug346629231", "resending_view",
+                             resending_view_str.c_str());
+  std::string touchscreen_gesture_target_str =
+      base::StringPrintf("%p", touchscreen_gesture_target);
+  // "tchscreen" below isn't a misspelling, it was shortened to fit in the
+  // 39 char limit for a crashkey name.
+  SCOPED_CRASH_KEY_STRING256("Bug346629231", "tchscreen_gesture_target",
+                             touchscreen_gesture_target_str.c_str());
+  std::string touchpad_gesture_target_str =
+      base::StringPrintf("%p", touchpad_gesture_target);
+  SCOPED_CRASH_KEY_STRING256("Bug346629231", "touchpad_gesture_target",
+                             touchpad_gesture_target_str.c_str());
+  std::string touch_target_str = base::StringPrintf("%p", touch_target);
+  SCOPED_CRASH_KEY_STRING256("Bug346629231", "touch_target",
+                             touch_target_str.c_str());
 
   std::string gesture_event_history;
   // Populate sequence history.
@@ -1255,9 +1276,25 @@ bool RenderWidgetHostInputEventRouter::BubbleScrollEvent(
     // If target_view has unrelated gesture events in progress, do
     // not proceed. This could cause confusion between independent
     // scrolls.
-    if (target_view == touchscreen_gesture_target_.get() ||
-        target_view == touchpad_gesture_target_ ||
-        target_view == touch_target_) {
+    bool bubbling_collision_detected;
+    if (base::FeatureList::IsEnabled(
+            features::kIgnoreBubblingCollisionIfSourceDevicesMismatch)) {
+      // Only consider the bubbling to have collided if it hits the same target
+      // as the bubbling event's type.
+      bubbling_collision_detected =
+          (target_view == touchscreen_gesture_target_.get() &&
+           event.SourceDevice() == blink::WebGestureDevice::kTouchscreen) ||
+          (target_view == touchpad_gesture_target_ &&
+           event.SourceDevice() == blink::WebGestureDevice::kTouchpad) ||
+          (target_view == touch_target_ &&
+           event.SourceDevice() == blink::WebGestureDevice::kTouchscreen);
+    } else {
+      bubbling_collision_detected =
+          target_view == touchscreen_gesture_target_.get() ||
+          target_view == touchpad_gesture_target_ ||
+          target_view == touch_target_;
+    }
+    if (bubbling_collision_detected) {
       TRACE_EVENT_INSTANT("input", "EarlyOut-GestureInProgress", "target_view",
                           static_cast<void*>(target_view),
                           "touchscreen_gesture_target_",
@@ -1265,7 +1302,12 @@ bool RenderWidgetHostInputEventRouter::BubbleScrollEvent(
                           "touchpad_gesture_target_",
                           static_cast<void*>(touchpad_gesture_target_),
                           "touch_target_", static_cast<void*>(touch_target_));
-      LogTouchscreenEventHistoryForDebug();
+      if (base::FeatureList::IsEnabled(
+              features::kLogBubblingTouchscreenGesturesForDebug)) {
+        LogTouchscreenEventHistoryForDebug(
+            target_view, resending_view, touchscreen_gesture_target_.get(),
+            touchpad_gesture_target_, touch_target_);
+      }
       return false;
     }
 
@@ -1406,7 +1448,7 @@ void RenderWidgetHostInputEventRouter::SendGestureScrollEnd(
           ui::ScrollGranularity::kScrollByPrecisePixel;
       break;
     default:
-      NOTREACHED_IN_MIGRATION();
+      NOTREACHED();
   }
   view->ProcessGestureEvent(scroll_end, ui::LatencyInfo());
 }
@@ -1993,8 +2035,7 @@ RenderWidgetHostInputEventRouter::FindTargetSynchronously(
       return FindTouchpadGestureEventTarget(root_view, gesture_event);
     }
   }
-  NOTREACHED_IN_MIGRATION();
-  return RenderWidgetTargetResult();
+  NOTREACHED();
 }
 
 void RenderWidgetHostInputEventRouter::SetEventsBeingFlushed(
@@ -2075,7 +2116,7 @@ void RenderWidgetHostInputEventRouter::DispatchEventToTarget(
       return;
     }
   }
-  NOTREACHED_IN_MIGRATION();
+  NOTREACHED();
 }
 
 TouchEmulator* RenderWidgetHostInputEventRouter::GetTouchEmulator(

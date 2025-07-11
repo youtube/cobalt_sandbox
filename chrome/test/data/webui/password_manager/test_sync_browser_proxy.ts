@@ -4,7 +4,7 @@
 
 /** @fileoverview Test implementation of SyncBrowserProxy. */
 
-import type {AccountInfo, SyncBrowserProxy, SyncInfo} from 'chrome://password-manager/password_manager.js';
+import type {AccountInfo, BatchUploadPasswordsEntryPoint, SyncBrowserProxy, SyncInfo} from 'chrome://password-manager/password_manager.js';
 import {TrustedVaultBannerState} from 'chrome://password-manager/password_manager.js';
 import {TestBrowserProxy} from 'chrome://webui-test/test_browser_proxy.js';
 
@@ -16,12 +16,14 @@ export class TestSyncBrowserProxy extends TestBrowserProxy implements
   trustedVaultState: TrustedVaultBannerState;
   accountInfo: AccountInfo;
   syncInfo: SyncInfo;
+  localPasswordCount: number;
 
   constructor() {
     super([
       'getTrustedVaultBannerState',
       'getSyncInfo',
       'getAccountInfo',
+      'getLocalPasswordCount',
       'openBatchUpload',
     ]);
 
@@ -33,6 +35,7 @@ export class TestSyncBrowserProxy extends TestBrowserProxy implements
       isEligibleForAccountStorage: false,
       isSyncingPasswords: false,
     };
+    this.localPasswordCount = 0;
   }
 
   getTrustedVaultBannerState() {
@@ -50,7 +53,12 @@ export class TestSyncBrowserProxy extends TestBrowserProxy implements
     return Promise.resolve(this.accountInfo);
   }
 
-  openBatchUpload(): void {
-    this.methodCalled('openBatchUpload');
+  getLocalPasswordCount() {
+    this.methodCalled('getLocalPasswordCount');
+    return Promise.resolve(this.localPasswordCount);
+  }
+
+  openBatchUpload(entryPoint: BatchUploadPasswordsEntryPoint): void {
+    this.methodCalled('openBatchUpload', entryPoint);
   }
 }

@@ -192,21 +192,13 @@ void AIRewriterTest::RunSimpleRewriteTest(
   AITestUtils::MockModelStreamingResponder mock_responder;
 
   base::RunLoop run_loop;
-  EXPECT_CALL(mock_responder, OnResponse(_, _, _))
-      .WillOnce(
-          testing::Invoke([&](blink::mojom::ModelStreamingResponseStatus status,
-                              const std::optional<std::string>& text,
-                              std::optional<uint64_t> current_tokens) {
-            EXPECT_THAT(text, "Result text");
-            EXPECT_EQ(status,
-                      blink::mojom::ModelStreamingResponseStatus::kOngoing);
-          }))
-      .WillOnce(
-          testing::Invoke([&](blink::mojom::ModelStreamingResponseStatus status,
-                              const std::optional<std::string>& text,
-                              std::optional<uint64_t> current_tokens) {
-            EXPECT_EQ(status,
-                      blink::mojom::ModelStreamingResponseStatus::kComplete);
+  EXPECT_CALL(mock_responder, OnStreaming(_))
+      .WillOnce(testing::Invoke(
+          [&](const std::string& text) { EXPECT_THAT(text, "Result text"); }));
+
+  EXPECT_CALL(mock_responder, OnCompletion(_))
+      .WillOnce(testing::Invoke(
+          [&](blink::mojom::ModelExecutionContextInfoPtr context_info) {
             run_loop.Quit();
           }));
 
@@ -256,7 +248,7 @@ TEST_F(AIRewriterTest, CreateRewriterNoService) {
   run_loop.Run();
 }
 
-TEST_F(AIRewriterTest, CreateRewriterModelNotAvailable) {
+TEST_F(AIRewriterTest, CreateRewriterModelNotEligible) {
   SetupMockOptimizationGuideKeyedService();
   EXPECT_CALL(*mock_optimization_guide_keyed_service_, StartSession(_, _))
       .WillOnce(testing::Invoke(
@@ -270,7 +262,7 @@ TEST_F(AIRewriterTest, CreateRewriterModelNotAvailable) {
               optimization_guide::OnDeviceModelEligibilityReason*
                   on_device_model_eligibility_reason) {
             *on_device_model_eligibility_reason = optimization_guide::
-                OnDeviceModelEligibilityReason::kModelNotAvailable;
+                OnDeviceModelEligibilityReason::kModelNotEligible;
             return false;
           }));
 
@@ -607,11 +599,9 @@ TEST_F(AIRewriterTest, RewriteError) {
   AITestUtils::MockModelStreamingResponder mock_responder;
 
   base::RunLoop run_loop;
-  EXPECT_CALL(mock_responder, OnResponse(_, _, _))
+  EXPECT_CALL(mock_responder, OnError(_))
       .WillOnce(testing::Invoke([&](blink::mojom::ModelStreamingResponseStatus
-                                        status,
-                                    const std::optional<std::string>& text,
-                                    std::optional<uint64_t> current_tokens) {
+                                        status) {
         EXPECT_EQ(
             status,
             blink::mojom::ModelStreamingResponseStatus::kErrorPermissionDenied);
@@ -681,29 +671,15 @@ TEST_F(AIRewriterTest, RewriteMultipleResponse) {
   AITestUtils::MockModelStreamingResponder mock_responder;
 
   base::RunLoop run_loop;
-  EXPECT_CALL(mock_responder, OnResponse(_, _, _))
-      .WillOnce(
-          testing::Invoke([&](blink::mojom::ModelStreamingResponseStatus status,
-                              const std::optional<std::string>& text,
-                              std::optional<uint64_t> current_tokens) {
-            EXPECT_THAT(text, "Result ");
-            EXPECT_EQ(status,
-                      blink::mojom::ModelStreamingResponseStatus::kOngoing);
-          }))
-      .WillOnce(
-          testing::Invoke([&](blink::mojom::ModelStreamingResponseStatus status,
-                              const std::optional<std::string>& text,
-                              std::optional<uint64_t> current_tokens) {
-            EXPECT_THAT(text, "text");
-            EXPECT_EQ(status,
-                      blink::mojom::ModelStreamingResponseStatus::kOngoing);
-          }))
-      .WillOnce(
-          testing::Invoke([&](blink::mojom::ModelStreamingResponseStatus status,
-                              const std::optional<std::string>& text,
-                              std::optional<uint64_t> current_tokens) {
-            EXPECT_EQ(status,
-                      blink::mojom::ModelStreamingResponseStatus::kComplete);
+  EXPECT_CALL(mock_responder, OnStreaming(_))
+      .WillOnce(testing::Invoke(
+          [&](const std::string& text) { EXPECT_THAT(text, "Result "); }))
+      .WillOnce(testing::Invoke(
+          [&](const std::string& text) { EXPECT_THAT(text, "text"); }));
+
+  EXPECT_CALL(mock_responder, OnCompletion(_))
+      .WillOnce(testing::Invoke(
+          [&](blink::mojom::ModelExecutionContextInfoPtr context_info) {
             run_loop.Quit();
           }));
 
@@ -782,21 +758,14 @@ TEST_F(AIRewriterTest, MultipleRewrite) {
   {
     AITestUtils::MockModelStreamingResponder mock_responder;
     base::RunLoop run_loop;
-    EXPECT_CALL(mock_responder, OnResponse(_, _, _))
+    EXPECT_CALL(mock_responder, OnStreaming(_))
+        .WillOnce(testing::Invoke([&](const std::string& text) {
+          EXPECT_THAT(text, "Result text");
+        }));
+
+    EXPECT_CALL(mock_responder, OnCompletion(_))
         .WillOnce(testing::Invoke(
-            [&](blink::mojom::ModelStreamingResponseStatus status,
-                const std::optional<std::string>& text,
-                std::optional<uint64_t> current_tokens) {
-              EXPECT_THAT(text, "Result text");
-              EXPECT_EQ(status,
-                        blink::mojom::ModelStreamingResponseStatus::kOngoing);
-            }))
-        .WillOnce(testing::Invoke(
-            [&](blink::mojom::ModelStreamingResponseStatus status,
-                const std::optional<std::string>& text,
-                std::optional<uint64_t> current_tokens) {
-              EXPECT_EQ(status,
-                        blink::mojom::ModelStreamingResponseStatus::kComplete);
+            [&](blink::mojom::ModelExecutionContextInfoPtr context_info) {
               run_loop.Quit();
             }));
 
@@ -807,21 +776,14 @@ TEST_F(AIRewriterTest, MultipleRewrite) {
   {
     AITestUtils::MockModelStreamingResponder mock_responder;
     base::RunLoop run_loop;
-    EXPECT_CALL(mock_responder, OnResponse(_, _, _))
+    EXPECT_CALL(mock_responder, OnStreaming(_))
+        .WillOnce(testing::Invoke([&](const std::string& text) {
+          EXPECT_THAT(text, "Result text 2");
+        }));
+
+    EXPECT_CALL(mock_responder, OnCompletion(_))
         .WillOnce(testing::Invoke(
-            [&](blink::mojom::ModelStreamingResponseStatus status,
-                const std::optional<std::string>& text,
-                std::optional<uint64_t> current_tokens) {
-              EXPECT_THAT(text, "Result text 2");
-              EXPECT_EQ(status,
-                        blink::mojom::ModelStreamingResponseStatus::kOngoing);
-            }))
-        .WillOnce(testing::Invoke(
-            [&](blink::mojom::ModelStreamingResponseStatus status,
-                const std::optional<std::string>& text,
-                std::optional<uint64_t> current_tokens) {
-              EXPECT_EQ(status,
-                        blink::mojom::ModelStreamingResponseStatus::kComplete);
+            [&](blink::mojom::ModelExecutionContextInfoPtr context_info) {
               run_loop.Quit();
             }));
 
@@ -962,12 +924,10 @@ TEST_F(AIRewriterTest, RewriterDisconnected) {
 
   AITestUtils::MockModelStreamingResponder mock_responder;
   base::RunLoop run_loop_for_response;
-  EXPECT_CALL(mock_responder, OnResponse(_, _, _))
+
+  EXPECT_CALL(mock_responder, OnError(_))
       .WillOnce(testing::Invoke([&](blink::mojom::ModelStreamingResponseStatus
-                                        status,
-                                    const std::optional<std::string>& text,
-                                    std::optional<uint64_t> current_tokens) {
-        // The OnResponse must be called with kErrorSessionDestroyed.
+                                        status) {
         EXPECT_EQ(
             status,
             blink::mojom::ModelStreamingResponseStatus::kErrorSessionDestroyed);

@@ -131,6 +131,7 @@ class GPU_EXPORT ClientSharedImage
   GrSurfaceOrigin surface_origin() const { return metadata_.surface_origin; }
   SkAlphaType alpha_type() const { return metadata_.alpha_type; }
   SharedImageUsageSet usage() { return metadata_.usage; }
+  std::optional<gfx::BufferUsage> buffer_usage() { return buffer_usage_; }
 
   bool HasHolder() { return sii_holder_ != nullptr; }
 
@@ -205,11 +206,13 @@ class GPU_EXPORT ClientSharedImage
       const SharedImageMetadata& metadata,
       const SyncToken& sync_token,
       std::unique_ptr<gfx::GpuMemoryBuffer> gpu_memory_buffer,
+      gfx::BufferUsage buffer_usage,
       scoped_refptr<SharedImageInterfaceHolder> sii_holder) {
     auto client_si = base::MakeRefCounted<ClientSharedImage>(
         mailbox, metadata, sync_token, sii_holder,
         gpu_memory_buffer->GetType());
     client_si->gpu_memory_buffer_ = std::move(gpu_memory_buffer);
+    client_si->buffer_usage_ = buffer_usage;
     return client_si;
   }
 
@@ -332,6 +335,7 @@ class GPU_EXPORT ClientSharedImage
   // Helper to hold the instance of GpuMemoryBufferManager.
   std::unique_ptr<HelperGpuMemoryBufferManager> gpu_memory_buffer_manager_;
   std::unique_ptr<gfx::GpuMemoryBuffer> gpu_memory_buffer_;
+  std::optional<gfx::BufferUsage> buffer_usage_;
   scoped_refptr<SharedImageInterfaceHolder> sii_holder_;
 
   // The texture target returned by `GetTextureTarget()`.

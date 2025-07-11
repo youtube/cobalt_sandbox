@@ -53,6 +53,7 @@
 #include "components/optimization_guide/proto/substitution.pb.h"
 #include "components/optimization_guide/proto/text_safety_model_metadata.pb.h"
 #include "components/prefs/testing_pref_service.h"
+#include "services/on_device_model/public/cpp/service_client.h"
 #include "services/on_device_model/public/cpp/test_support/fake_service.h"
 #include "testing/gmock/include/gmock/gmock.h"
 #include "testing/gtest/include/gtest/gtest.h"
@@ -530,9 +531,8 @@ TEST_F(OnDeviceModelServiceControllerTest,
   // adaptations and the base model should be reset.
   task_environment_.FastForwardBy(features::GetOnDeviceModelIdleTimeout() +
                                   base::Seconds(1));
-  EXPECT_TRUE(GetModelAdaptationControllers().empty());
   task_environment_.RunUntilIdle();
-  EXPECT_FALSE(test_controller_->IsConnectedForTesting());
+  EXPECT_FALSE(fake_launcher_.is_service_running());
 }
 
 TEST_F(OnDeviceModelServiceControllerTest, ModelAdaptationAndBaseModelSuccess) {
@@ -594,20 +594,13 @@ TEST_F(OnDeviceModelServiceControllerTest, ModelAdaptationAndBaseModelSuccess) {
   session_compose.reset();
   session_test.reset();
 
-  // Fast forward by the amount of time that triggers an idle disconnect. The
-  // base model will still be connected since it needs to wait for 2 idle
-  // timeouts (one for the adaptation and one for it's own timeout).
-  task_environment_.FastForwardBy(features::GetOnDeviceModelIdleTimeout() +
+  // If we wait long enough, everything should idle out and the service should
+  // get terminated. This requires 2 idle timeout intervals (one for the
+  // adaptation and one for the base model).
+  task_environment_.FastForwardBy(2 * features::GetOnDeviceModelIdleTimeout() +
                                   base::Seconds(1));
-  EXPECT_TRUE(GetModelAdaptationControllers().empty());
   task_environment_.RunUntilIdle();
-  EXPECT_TRUE(test_controller_->IsConnectedForTesting());
-  EXPECT_EQ(1ull, fake_launcher_.on_device_model_receiver_count());
-
-  // Fast forward by another idle timeout. The base model remote will be reset.
-  task_environment_.FastForwardBy(features::GetOnDeviceModelIdleTimeout() +
-                                  base::Seconds(1));
-  EXPECT_FALSE(test_controller_->IsConnectedForTesting());
+  EXPECT_FALSE(fake_launcher_.is_service_running());
 }
 
 TEST_F(OnDeviceModelServiceControllerTest,
@@ -1783,7 +1776,8 @@ TEST_F(OnDeviceModelServiceControllerTest, CancelsExecuteOnExecute) {
 TEST_F(OnDeviceModelServiceControllerTest, WontStartSessionAfterGpuBlocked) {
   Initialize();
   // Start a session.
-  fake_settings_.set_load_model_result(LoadModelResult::kGpuBlocked);
+  fake_settings_.service_disconnect_reason =
+      on_device_model::ServiceDisconnectReason::kGpuBlocked;
   auto session = CreateSession();
   EXPECT_TRUE(session);
 
@@ -1805,7 +1799,8 @@ TEST_F(OnDeviceModelServiceControllerTest, WontStartSessionAfterGpuBlocked) {
 
 TEST_F(OnDeviceModelServiceControllerTest, DontRecreateSessionIfGpuBlocked) {
   Initialize();
-  fake_settings_.set_load_model_result(LoadModelResult::kGpuBlocked);
+  fake_settings_.service_disconnect_reason =
+      on_device_model::ServiceDisconnectReason::kGpuBlocked;
   auto session = CreateSession();
   ASSERT_TRUE(session);
 
@@ -2053,7 +2048,8 @@ TEST_F(OnDeviceModelServiceControllerTest, ExecuteDisconnectedSession) {
 
 TEST_F(OnDeviceModelServiceControllerTest, CallsRemoteExecute) {
   Initialize();
-  fake_settings_.set_load_model_result(LoadModelResult::kGpuBlocked);
+  fake_settings_.service_disconnect_reason =
+      on_device_model::ServiceDisconnectReason::kGpuBlocked;
   auto session = test_controller_->CreateSession(
       kFeature, CreateExecuteRemoteFn(), logger_.GetWeakPtr(), nullptr,
       /*config_params=*/std::nullopt);
@@ -2130,41 +2126,6 @@ TEST_F(OnDeviceModelServiceControllerTest, ExecuteInvalidConfig) {
   // We never actually executed the request on-device so it is expected to not
   // have created a log entry.
   EXPECT_FALSE(log_ai_data_request_passed_to_remote_);
-}
-
-TEST_F(OnDeviceModelServiceControllerTest, FallbackToServerAfterDelay) {
-  Initialize();
-  fake_settings_.set_execute_delay(
-      features::GetOnDeviceModelTimeForInitialResponse() * 2);
-
-  auto session = test_controller_->CreateSession(
-      kFeature, CreateExecuteRemoteFn(), logger_.GetWeakPtr(), nullptr,
-      /*config_params=*/std::nullopt);
-  ASSERT_TRUE(session);
-  session->ExecuteModel(PageUrlRequest("2z"), response_.GetStreamingCallback());
-  base::HistogramTester histogram_tester;
-  task_environment_.FastForwardBy(
-      features::GetOnDeviceModelTimeForInitialResponse() +
-      base::Milliseconds(1));
-  histogram_tester.ExpectUniqueSample(
-      "OptimizationGuide.ModelExecution.OnDeviceExecuteModelResult.Compose",
-      ExecuteModelResult::kTimedOut, 1);
-  EXPECT_TRUE(response_.streamed().empty());
-  EXPECT_FALSE(response_.value());
-  EXPECT_TRUE(remote_execute_called_);
-  ASSERT_TRUE(last_remote_message_);
-  auto& compose_request =
-      static_cast<const proto::ComposeRequest&>(*last_remote_message_);
-  ASSERT_TRUE(compose_request.has_page_metadata());
-  EXPECT_EQ("2z", compose_request.page_metadata().page_url());
-  ASSERT_TRUE(log_ai_data_request_passed_to_remote_);
-  EXPECT_EQ(log_ai_data_request_passed_to_remote_->compose()
-                .request()
-                .page_metadata()
-                .page_url(),
-            "2z");
-  EXPECT_FALSE(log_ai_data_request_passed_to_remote_->compose().has_response());
-  EXPECT_FALSE(response_.provided_by_on_device().has_value());
 }
 
 TEST_F(OnDeviceModelServiceControllerTest,
@@ -2261,89 +2222,6 @@ TEST_F(OnDeviceModelServiceControllerTest,
   EXPECT_EQ(OnDeviceModelPerformanceClass::kVeryHigh, result_future.Get());
   // Verify there wasn't something else keeping the controller alive.
   EXPECT_FALSE(weak_controller);
-}
-
-TEST_F(OnDeviceModelServiceControllerTest, UseServerWithRepeatedDelays) {
-  Initialize();
-  fake_settings_.set_execute_delay(
-      features::GetOnDeviceModelTimeForInitialResponse() * 2);
-
-  // Create a bunch of sessions that all timeout.
-  for (int i = 0; i < features::GetOnDeviceModelTimeoutCountBeforeDisable();
-       ++i) {
-    auto session = test_controller_->CreateSession(
-        kFeature, CreateExecuteRemoteFn(), logger_.GetWeakPtr(), nullptr,
-        /*config_params=*/std::nullopt);
-    ASSERT_TRUE(session);
-    session->ExecuteModel(PageUrlRequest("2z"),
-                          response_.GetStreamingCallback());
-    task_environment_.FastForwardBy(
-        features::GetOnDeviceModelTimeForInitialResponse() +
-        base::Milliseconds(1));
-    EXPECT_TRUE(response_.streamed().empty());
-    EXPECT_FALSE(response_.value());
-    EXPECT_TRUE(remote_execute_called_);
-    remote_execute_called_ = false;
-  }
-
-  // As we reached GetOnDeviceModelTimeoutCountBeforeDisable() timeouts, the
-  // next session should use the server.
-  ExpectFailedSession(OnDeviceModelEligibilityReason::kTooManyRecentTimeouts);
-}
-
-TEST_F(OnDeviceModelServiceControllerTest,
-       AllowsConnectingAfterTimeoutAfterBackoffPeriod) {
-  Initialize();
-  fake_settings_.set_execute_delay(
-      features::GetOnDeviceModelTimeForInitialResponse() * 2);
-
-  auto create_session_and_timeout = [&] {
-    auto session = test_controller_->CreateSession(
-        kFeature, CreateExecuteRemoteFn(), logger_.GetWeakPtr(), nullptr,
-        /*config_params=*/std::nullopt);
-    ASSERT_TRUE(session);
-    session->ExecuteModel(PageUrlRequest("2z"),
-                          response_.GetStreamingCallback());
-    task_environment_.FastForwardBy(
-        features::GetOnDeviceModelTimeForInitialResponse() +
-        base::Milliseconds(1));
-    EXPECT_TRUE(response_.streamed().empty());
-    EXPECT_FALSE(response_.value());
-    EXPECT_TRUE(remote_execute_called_);
-    remote_execute_called_ = false;
-  };
-
-  // Create a bunch of sessions that all timeout.
-  for (int i = 0; i < features::GetOnDeviceModelTimeoutCountBeforeDisable();
-       ++i) {
-    create_session_and_timeout();
-  }
-
-  // As we reached GetOnDeviceModelTimeoutCountBeforeDisable() timeouts, the
-  // next session will be blocked.
-  ExpectFailedSession(OnDeviceModelEligibilityReason::kTooManyRecentTimeouts);
-
-  // Fast forward by backoff time and starting a session should succeed.
-  task_environment_.FastForwardBy(
-      features::GetOnDeviceModelTimeoutBackoffBaseTime() +
-      base::Milliseconds(1));
-  create_session_and_timeout();
-  task_environment_.RunUntilIdle();
-
-  // Starting another session after another timeout should fail.
-  ExpectFailedSession(OnDeviceModelEligibilityReason::kTooManyRecentTimeouts);
-
-  // Fast forward base time should not work.
-  task_environment_.FastForwardBy(
-      features::GetOnDeviceModelTimeoutBackoffBaseTime() +
-      base::Milliseconds(1));
-  ExpectFailedSession(OnDeviceModelEligibilityReason::kTooManyRecentTimeouts);
-
-  // Fast forward again should allow retrying (now 2 * base time).
-  task_environment_.FastForwardBy(
-      features::GetOnDeviceModelTimeoutBackoffBaseTime() +
-      base::Milliseconds(1));
-  EXPECT_TRUE(CreateSession());
 }
 
 TEST_F(OnDeviceModelServiceControllerTest, RedactedField) {

@@ -16,7 +16,7 @@
 #include "base/memory/weak_ptr.h"
 #include "base/values.h"
 #include "chrome/browser/ui/browser.h"
-#include "chrome/browser/web_applications/navigation_capturing_navigation_handle_user_data.h"
+#include "chrome/browser/ui/web_applications/navigation_capturing_navigation_handle_user_data.h"
 #include "chrome/browser/web_applications/web_app_ui_manager.h"
 #include "components/services/app_service/public/cpp/app_launch_util.h"
 #include "components/webapps/common/web_app_id.h"
@@ -84,6 +84,7 @@ class AppNavigationResult {
   // `disposition`.
   static AppNavigationResult AuxiliaryContextInAppWindow(
       const webapps::AppId& source_browser_app_id,
+      std::optional<webapps::AppId> source_tab_app_id,
       WindowOpenDisposition disposition,
       Browser* app_browser,
       base::Value::Dict debug_data);
@@ -92,17 +93,21 @@ class AppNavigationResult {
   // application.
   static AppNavigationResult NoInitialActionRedirectionHandlingEligible(
       std::optional<webapps::AppId> source_browser_app_id,
+      std::optional<webapps::AppId> source_tab_app_id,
       WindowOpenDisposition disposition,
+      Browser* navigation_params_browser,
       base::Value::Dict debug_data);
 
   // Create AppNavigationResult for a navigation triggered by user modified link
   // clicks that creates a new app container.
   static AppNavigationResult ForcedNewAppContext(
       std::optional<webapps::AppId> source_browser_app_id,
+      std::optional<webapps::AppId> source_tab_app_id,
       const webapps::AppId capturing_app_id,
       blink::mojom::DisplayMode new_client_display_mode,
       Browser* host_browser,
       WindowOpenDisposition disposition,
+      Browser* navigation_params_browser,
       base::Value::Dict debug_data);
 
   // Create AppNavigationResult for a navigation that is captured by non user
@@ -110,10 +115,12 @@ class AppNavigationResult {
   // tab).
   static AppNavigationResult CapturedNewClient(
       std::optional<webapps::AppId> source_browser_app_id,
+      std::optional<webapps::AppId> source_tab_app_id,
       const webapps::AppId capturing_app_id,
       blink::mojom::DisplayMode new_client_display_mode,
       Browser* host_browser,
       WindowOpenDisposition disposition,
+      Browser* navigation_params_browser,
       base::Value::Dict debug_data);
 
   // Create AppNavigationResult for a navigation that is captured by non user
@@ -121,10 +128,12 @@ class AppNavigationResult {
   // tab).
   static AppNavigationResult CapturedNavigateExisting(
       std::optional<webapps::AppId> source_browser_app_id,
+      std::optional<webapps::AppId> source_tab_app_id,
       const webapps::AppId capturing_app_id,
       Browser* app_browser,
       int browser_tab,
       WindowOpenDisposition disposition,
+      Browser* navigation_params_browser,
       base::Value::Dict debug_data);
 
   AppNavigationResult(AppNavigationResult&&);
@@ -274,11 +283,11 @@ void LaunchWebApp(apps::AppLaunchParams params,
 //   display mode, then that is returned.
 // - If the display mode is for a standalone PWA:
 //   - Fall back to look for the first normal browser with a tab matching
-//     `app_id`.
+//     `app_id`, unless `ignore_browser_tabs_for_standalone_apps` is set.
 //   - Otherwise set `browser` to `nullptr`.
 // - If the display mode is `kBrowser`:
-//   - Fall back to returning the first normal browser window, and `nullopt` for
-//     the tab.
+//   - Fall back to returning `navigate_params_requested_browser` or the first
+//     normal browser window, and `nullopt` for the tab.
 //   - Otherwise set `browser` to `nullptr`.
 // - Set `browser` to `nullptr` for all other cases.
 struct ClientModeAndBrowser {
@@ -289,7 +298,10 @@ struct ClientModeAndBrowser {
 };
 ClientModeAndBrowser GetEffectiveClientModeAndBrowserForCapturing(
     Profile& profile,
-    const webapps::AppId& app_id);
+    const webapps::AppId& app_id,
+    const std::optional<webapps::AppId> source_tab_app_id_from_navigation,
+    bool ignore_browser_tabs_for_standalone_apps,
+    Browser* navigate_params_requested_browser);
 
 // Returns an AppNavigationResult with pertinent details on how to handle a
 // navigation if the web app system can do so. If not, the
@@ -315,6 +327,11 @@ void OnWebAppNavigationAfterWebContentsCreation(
     web_app::AppNavigationResult app_navigation_result,
     const NavigateParams& params,
     base::WeakPtr<content::NavigationHandle> navigation_handle);
+
+// Focus the app container depending on whether the `browser` is an app window
+// or if it is a normal tabbed browser. `browser` shouldn't be a nullptr, and
+// the `tab_index` should be a valid index for a tab inside `browser`.
+void FocusAppContainer(Browser* browser, int tab_index);
 
 }  // namespace web_app
 

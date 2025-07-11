@@ -40,7 +40,8 @@ class Responder final : public GarbageCollected<Responder>,
             AbortSignal* signal,
             ScriptPromiseResolver<IDLString>* resolver,
             AIMetrics::AISessionType session_type,
-            base::OnceCallback<void(std::optional<uint64_t>)> complete_callback)
+            base::OnceCallback<void(mojom::blink::ModelExecutionContextInfoPtr)>
+                complete_callback)
       : script_state_(script_state),
         resolver_(resolver),
         receiver_(this, ExecutionContext::From(script_state)),
@@ -76,37 +77,34 @@ class Responder final : public GarbageCollected<Responder>,
   }
 
   // `mojom::blink::ModelStreamingResponder` implementation.
-  void OnResponse(mojom::blink::ModelStreamingResponseStatus status,
-                  const String& text,
-                  std::optional<uint64_t> tokens) override {
-    base::UmaHistogramEnumeration(
-        AIMetrics::GetAISessionResponseStatusMetricName(session_type_), status);
+  void OnStreaming(const String& text) override {
+    RecordResponseStatusMetrics(
+        mojom::blink::ModelStreamingResponseStatus::kOngoing);
+    response_callback_count_++;
+    // Update the response with the latest value.
+    response_ = text;
+  }
+
+  void OnCompletion(
+      mojom::blink::ModelExecutionContextInfoPtr context_info) override {
+    RecordResponseStatusMetrics(
+        mojom::blink::ModelStreamingResponseStatus::kComplete);
     response_callback_count_++;
 
-    if (status != mojom::blink::ModelStreamingResponseStatus::kOngoing) {
-      // When the status is not kOngoing, the promise should either be resolved
-      // or rejected.
-      if (status == mojom::blink::ModelStreamingResponseStatus::kComplete) {
-        resolver_->Resolve(response_);
-        if (complete_callback_) {
-          std::move(complete_callback_).Run(tokens);
-        }
-      } else {
-        resolver_->Reject(
-            ConvertModelStreamingResponseErrorToDOMException(status));
-      }
-      // Record the per execution metrics and run the complete callback.
-      base::UmaHistogramCounts1M(
-          AIMetrics::GetAISessionResponseSizeMetricName(session_type_),
-          int(response_.CharactersSizeInBytes()));
-      base::UmaHistogramCounts1M(
-          AIMetrics::GetAISessionResponseCallbackCountMetricName(session_type_),
-          response_callback_count_);
-      Cleanup();
-      return;
+    resolver_->Resolve(response_);
+    if (context_info && complete_callback_) {
+      std::move(complete_callback_).Run(std::move(context_info));
     }
-    // When the status is kOngoing, update the response with the latest value.
-    response_ = text;
+    RecordResponseMetrics();
+    Cleanup();
+  }
+
+  void OnError(mojom::blink::ModelStreamingResponseStatus status) override {
+    RecordResponseStatusMetrics(status);
+    response_callback_count_++;
+    resolver_->Reject(ConvertModelStreamingResponseErrorToDOMException(status));
+    RecordResponseMetrics();
+    Cleanup();
   }
 
   // ContextLifecycleObserver implementation.
@@ -119,6 +117,21 @@ class Responder final : public GarbageCollected<Responder>,
     }
     resolver_->Reject(abort_signal_->reason(script_state_));
     Cleanup();
+  }
+
+  void RecordResponseStatusMetrics(
+      mojom::blink::ModelStreamingResponseStatus status) {
+    base::UmaHistogramEnumeration(
+        AIMetrics::GetAISessionResponseStatusMetricName(session_type_), status);
+  }
+
+  void RecordResponseMetrics() {
+    base::UmaHistogramCounts1M(
+        AIMetrics::GetAISessionResponseSizeMetricName(session_type_),
+        int(response_.CharactersSizeInBytes()));
+    base::UmaHistogramCounts1M(
+        AIMetrics::GetAISessionResponseCallbackCountMetricName(session_type_),
+        response_callback_count_);
   }
 
   void Cleanup() {
@@ -143,7 +156,8 @@ class Responder final : public GarbageCollected<Responder>,
   const AIMetrics::AISessionType session_type_;
   // The callback will be invoked once when the responder receive the first
   // `kComplete`.
-  base::OnceCallback<void(std::optional<uint64_t> current_tokens)>
+  base::OnceCallback<void(
+      mojom::blink::ModelExecutionContextInfoPtr context_info)>
       complete_callback_;
 };
 
@@ -158,7 +172,8 @@ class StreamingResponder final
       ScriptState* script_state,
       AbortSignal* signal,
       AIMetrics::AISessionType session_type,
-      base::OnceCallback<void(std::optional<uint64_t>)> complete_callback)
+      base::OnceCallback<void(mojom::blink::ModelExecutionContextInfoPtr)>
+          complete_callback)
       : UnderlyingSourceBase(script_state),
         script_state_(script_state),
         receiver_(this, ExecutionContext::From(script_state)),
@@ -210,41 +225,39 @@ class StreamingResponder final
   }
 
   // `blink::mojom::blink::ModelStreamingResponder` implementation.
-  void OnResponse(ModelStreamingResponseStatus status,
-                  const String& text,
-                  std::optional<uint64_t> tokens) override {
-    base::UmaHistogramEnumeration(
-        AIMetrics::GetAISessionResponseStatusMetricName(session_type_), status);
+  void OnStreaming(
 
+      const String& text) override {
+    RecordResponseStatusMetrics(
+        mojom::blink::ModelStreamingResponseStatus::kOngoing);
+    // Update the response info and enqueue the latest response.
     response_callback_count_++;
-
-    if (status != ModelStreamingResponseStatus::kOngoing) {
-      // When the status is not kOngoing, the controller of
-      // ReadableStream should be closed.
-      if (status == ModelStreamingResponseStatus::kComplete) {
-        Controller()->Close();
-        if (tokens.has_value() && complete_callback_) {
-          std::move(complete_callback_).Run(tokens.value());
-        }
-      } else {
-        Controller()->Error(
-            ConvertModelStreamingResponseErrorToDOMException(status));
-      }
-      // Record the per execution metrics and run the complete callback.
-      base::UmaHistogramCounts1M(
-          AIMetrics::GetAISessionResponseSizeMetricName(session_type_),
-          response_size_);
-      base::UmaHistogramCounts1M(
-          AIMetrics::GetAISessionResponseCallbackCountMetricName(session_type_),
-          response_callback_count_);
-      Cleanup();
-      return;
-    }
-    // When the status is kOngoing, update the response size and enqueue the
-    // latest response.
     response_size_ = int(text.CharactersSizeInBytes());
     v8::HandleScope handle_scope(script_state_->GetIsolate());
     Controller()->Enqueue(V8String(script_state_->GetIsolate(), text));
+  }
+
+  void OnCompletion(
+      mojom::blink::ModelExecutionContextInfoPtr context_info) override {
+    RecordResponseStatusMetrics(
+        mojom::blink::ModelStreamingResponseStatus::kComplete);
+    response_callback_count_++;
+    Controller()->Close();
+    if (context_info && complete_callback_) {
+      std::move(complete_callback_).Run(std::move(context_info));
+    }
+    RecordResponseMetrics();
+    Cleanup();
+    return;
+  }
+
+  void OnError(ModelStreamingResponseStatus status) override {
+    RecordResponseStatusMetrics(status);
+    response_callback_count_++;
+    Controller()->Error(
+        ConvertModelStreamingResponseErrorToDOMException(status));
+    RecordResponseMetrics();
+    Cleanup();
   }
 
  private:
@@ -255,6 +268,21 @@ class StreamingResponder final
         kExceptionMessageRequestAborted,
         DOMException::GetErrorName(DOMExceptionCode::kAbortError)));
     Cleanup();
+  }
+
+  void RecordResponseStatusMetrics(
+      mojom::blink::ModelStreamingResponseStatus status) {
+    base::UmaHistogramEnumeration(
+        AIMetrics::GetAISessionResponseStatusMetricName(session_type_), status);
+  }
+
+  void RecordResponseMetrics() {
+    base::UmaHistogramCounts1M(
+        AIMetrics::GetAISessionResponseSizeMetricName(session_type_),
+        response_size_);
+    base::UmaHistogramCounts1M(
+        AIMetrics::GetAISessionResponseCallbackCountMetricName(session_type_),
+        response_callback_count_);
   }
 
   void Cleanup() {
@@ -277,7 +305,7 @@ class StreamingResponder final
   const AIMetrics::AISessionType session_type_;
   // The callback will be invoked once when the responder receive the first
   // `kComplete`.
-  base::OnceCallback<void(std::optional<uint64_t> current_tokens)>
+  base::OnceCallback<void(mojom::blink::ModelExecutionContextInfoPtr)>
       complete_callback_;
 };
 
@@ -290,7 +318,7 @@ CreateModelExecutionResponder(
     ScriptPromiseResolver<IDLString>* resolver,
     scoped_refptr<base::SequencedTaskRunner> task_runner,
     AIMetrics::AISessionType session_type,
-    base::OnceCallback<void(std::optional<uint64_t> current_tokens)>
+    base::OnceCallback<void(mojom::blink::ModelExecutionContextInfoPtr)>
         complete_callback) {
   Responder* responder = MakeGarbageCollected<Responder>(
       script_state, signal, resolver, session_type,
@@ -305,7 +333,7 @@ CreateModelExecutionStreamingResponder(
     AbortSignal* signal,
     scoped_refptr<base::SequencedTaskRunner> task_runner,
     AIMetrics::AISessionType session_type,
-    base::OnceCallback<void(std::optional<uint64_t> current_tokens)>
+    base::OnceCallback<void(mojom::blink::ModelExecutionContextInfoPtr)>
         complete_callback) {
   StreamingResponder* streaming_responder =
       MakeGarbageCollected<StreamingResponder>(

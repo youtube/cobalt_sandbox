@@ -25,6 +25,14 @@ BASE_FEATURE(kGenericSensorExtraClasses,
 BASE_FEATURE(kSerialPortConnected,
              "SerialPortConnected",
              base::FEATURE_ENABLED_BY_DEFAULT);
+
+// This feature allows to dynamically introduce an additional list of devices
+// blocked by WebUSB via a Finch parameter. This parameter should be specified
+// in the Finch configuration to manage the list of blocked devices.
+BASE_FEATURE(kWebUsbBlocklist,
+             "WebUSBBlocklist",
+             base::FEATURE_ENABLED_BY_DEFAULT);
+
 #if BUILDFLAG(IS_WIN)
 // Enable integration with the Windows system-level location permission.
 BASE_FEATURE(kWinSystemLocationPermission,
@@ -58,6 +66,14 @@ BASE_FEATURE(kUsbDeviceLinuxOpenCrashKey,
              "UsbDeviceLinuxOpenCrashKey",
              base::FEATURE_ENABLED_BY_DEFAULT);
 #endif  // BUILDFLAG(IS_CHROMEOS)
+
+#if BUILDFLAG(IS_ANDROID)
+// Enables registering & unregistering of the Battery Status Manager broadcast
+// receiver to the background thread.
+BASE_FEATURE(kBatteryStatusManagerBroadcastReceiverInBackground,
+             "BatteryStatusManagerBroadcastReceiverInBackground",
+             base::FEATURE_DISABLED_BY_DEFAULT);
+#endif  // BUILDFLAG(IS_ANDROID)
 
 const base::FeatureParam<device::mojom::LocationProviderManagerMode>::Option
     location_provider_manager_mode_options[] = {

@@ -645,14 +645,11 @@ void WritableStream::FinishErroring(ScriptState* script_state,
     Member<ScriptPromiseResolver<IDLUndefined>> resolver_;
   };
 
-  StreamThenPromise(
-      script_state->GetContext(), promise,
-      MakeGarbageCollected<ScriptFunction>(
-          script_state, MakeGarbageCollected<ResolvePromiseFunction>(
-                            stream, abort_request->GetResolver())),
-      MakeGarbageCollected<ScriptFunction>(
-          script_state, MakeGarbageCollected<RejectPromiseFunction>(
-                            stream, abort_request->GetResolver())));
+  StreamThenPromise(script_state, promise,
+                    MakeGarbageCollected<ResolvePromiseFunction>(
+                        stream, abort_request->GetResolver()),
+                    MakeGarbageCollected<RejectPromiseFunction>(
+                        stream, abort_request->GetResolver()));
 }
 
 void WritableStream::FinishInFlightWrite(ScriptState* script_state,
@@ -890,7 +887,7 @@ v8::Local<v8::Value> WritableStream::CreateCannotActionOnStateStreamException(
       break;
 
     default:
-      NOTREACHED_IN_MIGRATION();
+      NOTREACHED();
   }
   return v8::Exception::TypeError(
       CreateCannotActionOnStateStreamMessage(isolate, action, state_name));

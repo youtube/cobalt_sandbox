@@ -176,7 +176,7 @@
     'chromeos_chrome_all_tast_tests': {
       'chrome_all_tast_tests': {
         'tast_expr': 'STUB_STRING_TO_RUN_TAST_TESTS',
-        'test_level_retries': 1,
+        'test_level_retries': 2,
         'timeout_sec': 14400,
         'shards': 15,
       },
@@ -752,7 +752,7 @@
         'test': 'headless_shell_wpt',
         'results_handler': 'layout tests',
         'swarming': {
-          'shards': 2,
+          'shards': 4,
         },
       },
     },
@@ -977,7 +977,7 @@
         'test': 'headless_shell_wpt',
         'results_handler': 'layout tests',
         'swarming': {
-          'shards': 2,
+          'shards': 4,
         },
       },
       'telemetry_gpu_unittests': {
@@ -2396,7 +2396,7 @@
         'test': 'headless_shell_wpt',
         'results_handler': 'layout tests',
         'swarming': {
-          'shards': 1,
+          'shards': 3,
         },
       },
       'webdriver_wpt_tests': {
@@ -2818,7 +2818,7 @@
       'gpu_webgl_conformance_vulkan_passthrough_telemetry_tests',
     ],
 
-    'gpu_nexus5x_telemetry_tests_v8': [
+    'gpu_telemetry_tests_v8': [
       'gpu_common_and_optional_telemetry_tests',
       'gpu_validating_telemetry_tests',
       'gpu_webgl_conformance_gles_passthrough_telemetry_tests',

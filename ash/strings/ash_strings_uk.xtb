@@ -131,7 +131,7 @@
 <translation id="1391102559483454063">Увімкнено</translation>
 <translation id="1394698770495054737">Максимальне розмиття</translation>
 <translation id="1395878931462960119">{DAYS,plural, =1{1 день тому}one{# день тому}few{# дні тому}many{# днів тому}other{# дня тому}}</translation>
-<translation id="1404963891829069586">Звуки для концентрації уваги</translation>
+<translation id="1404963891829069586">Звуки для зосередження</translation>
 <translation id="1407069428457324124">Темна тема</translation>
 <translation id="1410568680128842168"><ph name="DATE_CELL_TOOL_TIP" />. Використовуйте клавіші зі стрілками, щоб переходити між датами.</translation>
 <translation id="141170878022560212">Середня кнопка</translation>
@@ -484,7 +484,7 @@
 <translation id="2701576323154693023">Точку доступу ввімкнено (Wi-Fi не працює)</translation>
 <translation id="2704781753052663061">Підключитися до інших мереж Wi-Fi</translation>
 <translation id="2705001408393684014">Перемикач мікрофона. <ph name="STATE_TEXT" /></translation>
-<translation id="2706462751667573066">Вгору</translation>
+<translation id="2706462751667573066">Угору</translation>
 <translation id="2710984741481549981">Заблокувати вікна</translation>
 <translation id="2718395828230677721">Нічний екран</translation>
 <translation id="2726420622004325180">Щоб увімкнути функцію "Точка доступу", на телефоні має бути мобільний Інтернет</translation>
@@ -546,7 +546,7 @@
 <translation id="2935225303485967257">Керувати профілями</translation>
 <translation id="2941112035454246133">Низький</translation>
 <translation id="2942350706960889382">Закріплена лупа</translation>
-<translation id="2942516765047364088">Розташування полиці</translation>
+<translation id="2942516765047364088">Розташування панелі запуску</translation>
 <translation id="2946119680249604491">Додати з’єднання</translation>
 <translation id="2947835478872237115">Поточний рівень заряду акумулятора: <ph name="BATTERY_PERCENTAGE" />%, до повного заряду: <ph name="TIME" /></translation>
 <translation id="2949420361496057765">Натисніть <ph name="MODIFIER" />, а потім – посилання</translation>
@@ -630,7 +630,6 @@
 <translation id="3208321278970793882">Додаток</translation>
 <translation id="3213571860604332401">Зберегти посилання як закладку</translation>
 <translation id="3217205077783620295">Звук увімкнено. Його можна вимкнути за допомогою перемикача.</translation>
-<translation id="3218561536255328229">Щоб увімкнути сенсорну панель, натисніть клавішу Esc 5 разів</translation>
 <translation id="3226991577105957773">Ще <ph name="COUNT" /></translation>
 <translation id="3227137524299004712">Мікрофон</translation>
 <translation id="3233611303007751344">Режим енергозбереження вимкнено.</translation>
@@ -1141,7 +1140,7 @@
 <translation id="4889868803215848840">За бажання надайте відгук, щоб покращити підказки:</translation>
 <translation id="4890187583552566966">Ваш адміністратор вимкнув Google Асистент.</translation>
 <translation id="4890408602550914571">Переконайтеся, що ваш телефон поблизу, а Bluetooth увімкнено.</translation>
-<translation id="4892981359753171125">Визначення обличчя</translation>
+<translation id="4892981359753171125">Керування мімікою</translation>
 <translation id="4895488851634969361">Акумулятор заряджений.</translation>
 <translation id="4902797682482387055">Рекомендоване завдання для режиму зосередження</translation>
 <translation id="490375751687810070">Вертикально</translation>
@@ -1277,7 +1276,7 @@
 <translation id="5314489738835854379">Переходити назад між вікнами</translation>
 <translation id="5316716239522500219">Дбулювати зображення на моніторах</translation>
 <translation id="5317780077021120954">Зберегти</translation>
-<translation id="5319712128756744240">Підключити новий пристрій</translation>
+<translation id="5319712128756744240">Зв’язати новий пристрій</translation>
 <translation id="5322611492012084517">Не вдається знайти телефон</translation>
 <translation id="5323994101633366939">Сховати назву робочого столу</translation>
 <translation id="5327248766486351172">Ім’я</translation>
@@ -1305,6 +1304,7 @@
 <translation id="5393156353051693207">Натисніть і втримуйте будь-яке місце, щоб змінити порядок додатків</translation>
 <translation id="5395308026110844773"><ph name="DRAGGED_APP_NAME" /> перетягнено на додаток <ph name="IN_PLACE_APP" />. Відпустіть, щоб створити папку.</translation>
 <translation id="5397578532367286026">Менеджер (<ph name="MANAGER_EMAIL" />) може переглядати дії й історію цього користувача на chrome.com.</translation>
+<translation id="540338817371815859">Альбомна орієнтація</translation>
 <translation id="540713187982329711">Увімкнути або вимкнути точку доступу. Точку доступу ввімкнено. До неї не підключено жодного пристрою.</translation>
 <translation id="5409208741270395213">Позначити завдання як виконане</translation>
 <translation id="5413656666631274079">Сторінка налаштувань</translation>
@@ -1559,7 +1559,7 @@
 <translation id="621606890568890214">Розгорнути Google Клас</translation>
 <translation id="6216759484154215561">Відкрито посилання "Докладніше" у вебпереглядачі</translation>
 <translation id="6220928844947387476">Тепер ви можете робити запис з екрана й веб-камери одночасно</translation>
-<translation id="622484624075952240">Донизу</translation>
+<translation id="622484624075952240">Униз</translation>
 <translation id="6228457605945141550">Зменшити яскравість</translation>
 <translation id="623116199192908855">Транслюйте екран свого пристрою Chromebook</translation>
 <translation id="6231419273573514727">Ефективність периферійних пристроїв може бути обмежена</translation>
@@ -1767,6 +1767,7 @@
 <translation id="6921427376813842559">Оновіть пристрій</translation>
 <translation id="6929081673585394903">Показати елементи керування</translation>
 <translation id="6931576957638141829">Зберегти в</translation>
+<translation id="6935857786205183008">Портретна орієнтація</translation>
 <translation id="6942518653766415536">Меню форматів запису</translation>
 <translation id="6945221475159498467">Вибрати</translation>
 <translation id="6945922087561257829">Телефон підключено до мобільної мережі. Переконайтеся, що телефон та Chromebook підключено до однієї мережі Wi-Fi, і повторіть спробу. <ph name="LEARN_MORE" /></translation>
@@ -1808,7 +1809,7 @@
 <translation id="7068360136237591149">Відкрий файли</translation>
 <translation id="7076293881109082629">Вхід</translation>
 <translation id="7076878155205969899">Вимикає звук</translation>
-<translation id="7083848064787091821">Режим концентрації уваги</translation>
+<translation id="7083848064787091821">Зосередження</translation>
 <translation id="7084678090004350185">Увімкнути або вимкнути точку доступу. Точку доступу ввімкнено. Кількість підключених пристроїв: <ph name="DEVICECOUNT" />.</translation>
 <translation id="7086931198345821656">Для оновлення потрібно виконати Powerwash на пристрої <ph name="DEVICE_TYPE" />. Усі дані буде видалено. Докладніше про останнє оновлення <ph name="SYSTEM_APP_NAME" />.</translation>
 <translation id="7088960765736518739">Кнопковий доступ</translation>
@@ -1884,7 +1885,7 @@
 <translation id="7386767620098596324">Увімкнути або вимкнути з’єднання з мережею. <ph name="STATE_TEXT" />.</translation>
 <translation id="7392563512730092880">Це завжди можна зробити пізніше в Налаштуваннях.</translation>
 <translation id="7401222354741467707">Зробити знімок усього екрана або почати запис відео з нього</translation>
-<translation id="7401788553834047908">Не турбувати в режимі концентрації уваги</translation>
+<translation id="7401788553834047908">Не турбувати в режимі зосередження</translation>
 <translation id="7405710164030118432">Щоб розблокувати пристрій, введіть код доступу батьків із Family Link</translation>
 <translation id="7406608787870898861">Завершіть налаштування мобільної мережі</translation>
 <translation id="7406854842098869085">Утримуючи клавішу <ph name="MODIFIER_1" />, натискайте клавішу <ph name="KEY" />, доки не перейдете в потрібне вікно, а тоді відпустіть</translation>
@@ -2435,6 +2436,7 @@
 <translation id="98120814841227350">Перейти в кінець документа</translation>
 <translation id="987589956647469042">Мобільний Інтернет увімкнено</translation>
 <translation id="989374776391122812">Елементи керування камерою та аудіо</translation>
+<translation id="990263227494928142">Щоб увімкнути сенсорну панель, натисніть клавішу Shift 5 разів</translation>
 <translation id="990277280839877440">Вікно <ph name="WINDOW_TITILE" /> закрито.</translation>
 <translation id="993398562350683614">Огляд: крок <ph name="STEP" /> з <ph name="TOTAL_STEPS" />. Виконуйте різні завдання за допомогою додатків на <ph name="PRODUCT_NAME" />. Їх можна знайти на Панелі запуску. Щоб виділити кнопку Панелі запуску, натисніть Alt + Shift + L.</translation>
 <translation id="994354411665877646"><ph name="NETWORK_NAME" />, <ph name="SUBTEXT" /></translation>

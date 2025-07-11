@@ -111,18 +111,6 @@ DataSharingServiceImpl::DataSharingServiceImpl(
           std::move(change_processor), std::move(data_type_store_factory));
 
   OnSDKDelegateUpdated();
-
-  // Initialize ServiceStatus.
-  current_status_.collaboration_status = CollaborationStatus::kDisabled;
-  if (base::FeatureList::IsEnabled(features::kDataSharingFeature)) {
-    current_status_.collaboration_status =
-        CollaborationStatus::kEnabledCreateAndJoin;
-  }
-
-  // TODO(b/360184707): Add identity manager and sync service to observe state
-  // changes.
-  current_status_.signin_status = SigninStatus::kNotSignedIn;
-  current_status_.sync_status = SyncStatus::kNotSyncing;
 }
 
 DataSharingServiceImpl::~DataSharingServiceImpl() {
@@ -173,6 +161,17 @@ std::set<GroupData> DataSharingServiceImpl::ReadAllGroups() {
     return std::set<GroupData>();
   }
   return group_data_model_->GetAllGroups();
+}
+
+std::optional<GroupMemberPartialData>
+DataSharingServiceImpl::GetPossiblyRemovedGroupMember(
+    const GroupId& group_id,
+    const std::string& member_gaia_id) {
+  if (!group_data_model_) {
+    return std::nullopt;
+  }
+  return group_data_model_->GetPossiblyRemovedGroupMember(group_id,
+                                                          member_gaia_id);
 }
 
 void DataSharingServiceImpl::ReadAllGroups(
@@ -515,7 +514,7 @@ DataSharingServiceImpl::GetCollaborationGroupSyncBridgeForTesting() {
 
 bool DataSharingServiceImpl::ShouldInterceptNavigationForShareURL(
     const GURL& url) {
-  return ParseDataSharingURL(url).has_value();
+  return ParseDataSharingUrl(url).has_value();
 }
 
 void DataSharingServiceImpl::HandleShareURLNavigationIntercepted(
@@ -527,7 +526,7 @@ void DataSharingServiceImpl::HandleShareURLNavigationIntercepted(
   ui_delegate_->HandleShareURLIntercepted(url, std::move(context));
 }
 
-std::unique_ptr<GURL> DataSharingServiceImpl::GetDataSharingURL(
+std::unique_ptr<GURL> DataSharingServiceImpl::GetDataSharingUrl(
     const GroupData& group_data) {
   if (!group_data.group_token.IsValid()) {
     return nullptr;
@@ -542,12 +541,12 @@ std::unique_ptr<GURL> DataSharingServiceImpl::GetDataSharingURL(
   return std::make_unique<GURL>(url);
 }
 
-DataSharingService::ParseURLResult DataSharingServiceImpl::ParseDataSharingURL(
+DataSharingService::ParseUrlResult DataSharingServiceImpl::ParseDataSharingUrl(
     const GURL& url) {
   GURL data_sharing_url = GURL(data_sharing::features::kDataSharingURL.Get());
   if (url.host() != data_sharing_url.host() ||
       url.path() != data_sharing_url.path()) {
-    return base::unexpected(ParseURLStatus::kHostOrPathMismatchFailure);
+    return base::unexpected(ParseUrlStatus::kHostOrPathMismatchFailure);
   }
 
   std::string group_id;
@@ -556,10 +555,10 @@ DataSharingService::ParseURLResult DataSharingServiceImpl::ParseDataSharingURL(
   net::GetValueForKeyInQuery(url, kTokenBlobKey, &access_token);
 
   if (group_id.empty() || access_token.empty()) {
-    return base::unexpected(ParseURLStatus::kQueryMissingFailure);
+    return base::unexpected(ParseUrlStatus::kQueryMissingFailure);
   }
 
-  return GroupToken(GroupId(group_id), access_token);
+  return base::ok(GroupToken(GroupId(group_id), access_token));
 }
 
 void DataSharingServiceImpl::EnsureGroupVisibility(
@@ -589,13 +588,14 @@ void DataSharingServiceImpl::GetSharedEntitiesPreview(
     const GroupToken& group_token,
     base::OnceCallback<void(const SharedDataPreviewOrFailureOutcome&)>
         callback) {
-  preview_server_proxy_->GetSharedDataPreview(group_token, std::move(callback));
+  preview_server_proxy_->GetSharedDataPreview(
+      group_token, syncer::DataType::SHARED_TAB_GROUP_DATA,
+      std::move(callback));
 }
 
 void DataSharingServiceImpl::SetSDKDelegate(
     std::unique_ptr<DataSharingSDKDelegate> sdk_delegate) {
-  CHECK(sdk_delegate);
-  CHECK(!sdk_delegate_);
+  CHECK(!sdk_delegate || (sdk_delegate && !sdk_delegate_));
 
   sdk_delegate_ = std::move(sdk_delegate);
 
@@ -607,12 +607,8 @@ void DataSharingServiceImpl::SetUIDelegate(
   ui_delegate_ = std::move(ui_delegate);
 }
 
-DataSharingUIDelegate* DataSharingServiceImpl::GetUIDelegate() {
+DataSharingUIDelegate* DataSharingServiceImpl::GetUiDelegate() {
   return ui_delegate_.get();
-}
-
-ServiceStatus DataSharingServiceImpl::GetServiceStatus() {
-  return current_status_;
 }
 
 void DataSharingServiceImpl::OnAccessTokenAdded(

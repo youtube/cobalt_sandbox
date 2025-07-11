@@ -106,7 +106,8 @@ targets.legacy_basic_suite(
             # would be overridden by `tast_arrt_expr` defined in chromeos/BUILD.gn, so that we
             # put the stub string here.
             tast_expr = "STUB_STRING_TO_RUN_TAST_TESTS",
-            test_level_retries = 1,
+            # Temporary increases the maximum retries due to the unstable cloudbots (b/377616158)
+            test_level_retries = 2,
             # Timeout including DUT privisioning.
             timeout_sec = 14400,
             # Number of shards. Might be overriden for slower boards.
@@ -542,7 +543,7 @@ targets.legacy_basic_suite(
         ),
         "headless_shell_wpt_tests": targets.legacy_test_config(
             swarming = targets.swarming(
-                shards = 2,
+                shards = 4,
             ),
         ),
     },
@@ -667,7 +668,7 @@ targets.legacy_basic_suite(
         ),
         "headless_shell_wpt_tests": targets.legacy_test_config(
             swarming = targets.swarming(
-                shards = 2,
+                shards = 4,
             ),
         ),
         "content_shell_crash_test": targets.legacy_test_config(),
@@ -1704,7 +1705,7 @@ targets.legacy_basic_suite(
         ),
         "not_site_per_process_headless_shell_wpt_tests": targets.legacy_test_config(
             swarming = targets.swarming(
-                shards = 1,
+                shards = 3,
             ),
         ),
         "webdriver_wpt_tests": targets.legacy_test_config(

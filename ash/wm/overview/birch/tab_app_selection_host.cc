@@ -105,7 +105,10 @@ TabAppSelectionHost::TabAppSelectionHost(BirchChipButton* coral_chip)
                           coral_chip->GetWidget()->GetNativeWindow());
 }
 
-TabAppSelectionHost::~TabAppSelectionHost() = default;
+TabAppSelectionHost::~TabAppSelectionHost() {
+  base::UmaHistogramExactLinear("Ash.Birch.Coral.ClusterItemRemoved",
+                                number_of_removed_items_, /*exclusive_max=*/9);
+}
 
 void TabAppSelectionHost::ProcessKeyEvent(ui::KeyEvent* event) {
   if (event->type() != ui::EventType::kKeyPressed) {
@@ -119,11 +122,13 @@ void TabAppSelectionHost::ProcessKeyEvent(ui::KeyEvent* event) {
     Hide();
     return;
   }
+
   views::AsViewClass<TabAppSelectionView>(GetContentsView())
       ->ProcessKeyEvent(event);
 }
 
 void TabAppSelectionHost::OnItemRemoved() {
+  number_of_removed_items_++;
   owner_->ReloadIcon();
 }
 
@@ -166,6 +171,11 @@ void TabAppSelectionHost::SlideOut() {
                    gfx::Tween::EASE_IN_OUT_EMPHASIZED);
 }
 
+void TabAppSelectionHost::RemoveItem(std::string_view identifier) {
+  views::AsViewClass<TabAppSelectionView>(GetContentsView())
+      ->RemoveItemBySystem(identifier);
+}
+
 void TabAppSelectionHost::OnNativeWidgetVisibilityChanged(bool visible) {
   views::Widget::OnNativeWidgetVisibilityChanged(visible);
   views::AsViewClass<IconButton>(owner_->addon_view())
@@ -189,6 +199,9 @@ void TabAppSelectionHost::OnNativeWidgetVisibilityChanged(bool visible) {
           }
         },
         GetWeakPtr());
+
+    // Update the bounds before showing up.
+    SetBounds(GetDesiredBoundsInScreen());
 
     // Slide the widget out of the coral chip. We apply a clip as well since the
     // contents view is almost always taller than the coral chip.

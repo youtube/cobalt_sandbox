@@ -37,6 +37,10 @@ inline constexpr char kRequestIdParameterKey[] = "vsrid";
 
 // Query parameter for the mode.
 inline constexpr char kModeParameterKey[] = "udm";
+
+// Query parameter for the toolbelt mode.
+inline constexpr char kToolbeltModeParameterKey[] = "tbm";
+
 // Query parameter values for the mode.
 inline constexpr char kUnimodalModeParameterValue[] = "26";
 inline constexpr char kMultimodalModeParameterValue[] = "24";
@@ -78,7 +82,8 @@ inline constexpr char kSecActQueryParamKey[] = "sec_act";
 // The list of query parameters to ignore when comparing search URLs.
 inline constexpr std::string kIgnoredSearchUrlQueryParameters[] = {
     kViewportWidthQueryParamKey, kViewportHeightQueryParamKey,
-    kXSRFTokenQueryParamKey, kSecActQueryParamKey};
+    kXSRFTokenQueryParamKey,     kSecActQueryParamKey,
+    kModeParameterKey,           kToolbeltModeParameterKey};
 
 // Query parameter for dark mode.
 inline constexpr char kDarkModeParameterKey[] = "cs";
@@ -103,7 +108,7 @@ inline constexpr char kClientIdQueryParameter[] = "client";
 
 // Query parameter value for client ID sent to translate API for getting
 // supported translate languages.
-inline constexpr char kClientIdQueryParameterValue[] = "cr";
+inline constexpr char kClientIdQueryParameterValue[] = "lens-overlay";
 
 // Appends the url params from the map to the url.
 GURL AppendUrlParamsFromMap(

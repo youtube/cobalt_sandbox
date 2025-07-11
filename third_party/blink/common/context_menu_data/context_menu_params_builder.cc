@@ -19,7 +19,12 @@ namespace {
 blink::mojom::CustomContextMenuItemPtr MenuItemBuild(
     const blink::MenuItemInfo& item) {
   auto result = blink::mojom::CustomContextMenuItem::New();
-
+  if (item.accelerator.has_value()) {
+    auto accelerator = blink::mojom::Accelerator::New();
+    accelerator->key_code = item.accelerator->key_code;
+    accelerator->modifiers = item.accelerator->modifiers;
+    result->accelerator = std::move(accelerator);
+  }
   result->label = item.label;
   result->tool_tip = item.tool_tip;
   result->type =
@@ -30,6 +35,8 @@ blink::mojom::CustomContextMenuItemPtr MenuItemBuild(
   result->has_directional_override = item.has_text_direction_override;
   result->enabled = item.enabled;
   result->checked = item.checked;
+  result->force_show_accelerator_for_item =
+      item.force_show_accelerator_for_item;
   for (const auto& sub_menu_item : item.sub_menu_items)
     result->submenu.push_back(MenuItemBuild(sub_menu_item));
 

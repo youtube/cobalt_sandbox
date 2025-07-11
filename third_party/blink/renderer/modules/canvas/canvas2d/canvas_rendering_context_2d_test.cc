@@ -93,8 +93,8 @@
 #include "third_party/blink/renderer/modules/webcodecs/video_frame.h"
 #include "third_party/blink/renderer/platform/bindings/exception_state.h"
 #include "third_party/blink/renderer/platform/bindings/script_state.h"
-#include "third_party/blink/renderer/platform/graphics/canvas_2d_layer_bridge.h"
 #include "third_party/blink/renderer/platform/graphics/canvas_color_params.h"
+#include "third_party/blink/renderer/platform/graphics/canvas_hibernation_handler.h"
 #include "third_party/blink/renderer/platform/graphics/canvas_resource.h"
 #include "third_party/blink/renderer/platform/graphics/canvas_resource_provider.h"
 #include "third_party/blink/renderer/platform/graphics/color_correction_test_utils.h"
@@ -492,8 +492,7 @@ class FakeCanvasResourceProvider : public CanvasResourceProvider {
   scoped_refptr<CanvasResource> ProduceCanvasResource(FlushReason) override {
     return scoped_refptr<CanvasResource>(CanvasResourceSharedImage::Create(
         GetSkImageInfo(), SharedGpuContext::ContextProviderWrapper(),
-        CreateWeakPtr(), cc::PaintFlags::FilterQuality::kLow,
-        /*is_origin_top_left=*/true, IsAccelerated(),
+        CreateWeakPtr(), cc::PaintFlags::FilterQuality::kLow, IsAccelerated(),
         gpu::SHARED_IMAGE_USAGE_DISPLAY_READ |
             gpu::SHARED_IMAGE_USAGE_RASTER_WRITE));
   }
@@ -1480,21 +1479,6 @@ TEST_P(CanvasRenderingContext2DTest, ContextDisposedBeforeCanvas) {
   // Passes by not crashing later during teardown
 }
 
-TEST_P(CanvasRenderingContext2DTest,
-       NoResourceProviderAfterCanvas2DLayerBridgeCreation) {
-  // This test enforces that there is no eager creation of
-  // CanvasResourceProvider for html canvas with 2d context when its
-  // Canvas2DLayerBridge is initially set up. This enforcement might be changed
-  // in the future refactoring; but change is seriously warned against because
-  // certain code paths in canvas 2d (that depend on the existence of
-  // CanvasResourceProvider) will be changed too, causing bad regressions.
-  CreateContext(kNonOpaque);
-  CanvasElement().SetPreferred2DRasterMode(RasterModeHint::kPreferGPU);
-
-  EXPECT_TRUE(CanvasElement().GetOrCreateCanvas2DLayerBridge());
-  EXPECT_FALSE(CanvasElement().ResourceProvider());
-}
-
 static void TestDrawSingleHighBitDepthPNGOnCanvas(
     String filepath,
     CanvasRenderingContext2D* context,
@@ -2313,7 +2297,7 @@ TEST_P(CanvasRenderingContext2DTestAccelerated,
 
     histogram_tester.ExpectUniqueSample(
         "Blink.Canvas.HibernationEvents",
-        Canvas2DLayerBridge::HibernationEvent::kHibernationScheduled, 1);
+        CanvasHibernationHandler::HibernationEvent::kHibernationScheduled, 1);
     EXPECT_FALSE(handler.IsHibernating());
   }
 
@@ -2337,7 +2321,8 @@ TEST_P(CanvasRenderingContext2DTestAccelerated,
 
     histogram_tester.ExpectUniqueSample(
         "Blink.Canvas.HibernationEvents",
-        Canvas2DLayerBridge::HibernationEvent::kHibernationEndedNormally, 1);
+        CanvasHibernationHandler::HibernationEvent::kHibernationEndedNormally,
+        1);
     EXPECT_EQ(CanvasElement().GetRasterMode(), RasterMode::kGPU);
     EXPECT_FALSE(handler.IsHibernating());
     EXPECT_TRUE(CanvasElement().IsResourceValid());
@@ -2370,7 +2355,7 @@ TEST_P(CanvasRenderingContext2DTestAccelerated,
 
     histogram_tester.ExpectUniqueSample(
         "Blink.Canvas.HibernationEvents",
-        Canvas2DLayerBridge::HibernationEvent::kHibernationScheduled, 1);
+        CanvasHibernationHandler::HibernationEvent::kHibernationScheduled, 1);
     EXPECT_FALSE(handler.IsHibernating());
   }
 
@@ -2391,7 +2376,7 @@ TEST_P(CanvasRenderingContext2DTestAccelerated,
 
     histogram_tester.ExpectUniqueSample(
         "Blink.Canvas.HibernationEvents",
-        Canvas2DLayerBridge::HibernationEvent::kHibernationScheduled, 0);
+        CanvasHibernationHandler::HibernationEvent::kHibernationScheduled, 0);
     EXPECT_FALSE(handler.IsHibernating());
   }
 
@@ -2415,7 +2400,8 @@ TEST_P(CanvasRenderingContext2DTestAccelerated,
 
     histogram_tester.ExpectUniqueSample(
         "Blink.Canvas.HibernationEvents",
-        Canvas2DLayerBridge::HibernationEvent::kHibernationEndedNormally, 1);
+        CanvasHibernationHandler::HibernationEvent::kHibernationEndedNormally,
+        1);
     EXPECT_EQ(CanvasElement().GetRasterMode(), RasterMode::kGPU);
     EXPECT_FALSE(handler.IsHibernating());
     EXPECT_TRUE(CanvasElement().IsResourceValid());
@@ -2447,7 +2433,7 @@ TEST_P(CanvasRenderingContext2DTestAccelerated, TeardownEndsHibernation) {
 
     histogram_tester.ExpectUniqueSample(
         "Blink.Canvas.HibernationEvents",
-        Canvas2DLayerBridge::HibernationEvent::kHibernationScheduled, 1);
+        CanvasHibernationHandler::HibernationEvent::kHibernationScheduled, 1);
     EXPECT_FALSE(handler.IsHibernating());
   }
 
@@ -2468,7 +2454,8 @@ TEST_P(CanvasRenderingContext2DTestAccelerated, TeardownEndsHibernation) {
     TearDownHost();
     histogram_tester.ExpectUniqueSample(
         "Blink.Canvas.HibernationEvents",
-        Canvas2DLayerBridge::HibernationEvent::kHibernationEndedWithTeardown,
+        CanvasHibernationHandler::HibernationEvent::
+            kHibernationEndedWithTeardown,
         1);
   }
 }
@@ -2499,7 +2486,7 @@ TEST_P(CanvasRenderingContext2DTestAccelerated,
 
     histogram_tester.ExpectUniqueSample(
         "Blink.Canvas.HibernationEvents",
-        Canvas2DLayerBridge::HibernationEvent::kHibernationScheduled, 1);
+        CanvasHibernationHandler::HibernationEvent::kHibernationScheduled, 1);
     EXPECT_FALSE(handler.IsHibernating());
   }
 
@@ -2520,7 +2507,7 @@ TEST_P(CanvasRenderingContext2DTestAccelerated,
 
     histogram_tester.ExpectUniqueSample(
         "Blink.Canvas.HibernationEvents",
-        Canvas2DLayerBridge::HibernationEvent::
+        CanvasHibernationHandler::HibernationEvent::
             kHibernationAbortedDueToDestructionWhileHibernatePending,
         1);
   }
@@ -2552,7 +2539,7 @@ TEST_P(CanvasRenderingContext2DTestAccelerated,
 
     histogram_tester.ExpectUniqueSample(
         "Blink.Canvas.HibernationEvents",
-        Canvas2DLayerBridge::HibernationEvent::kHibernationScheduled, 1);
+        CanvasHibernationHandler::HibernationEvent::kHibernationScheduled, 1);
     EXPECT_FALSE(handler.IsHibernating());
   }
 
@@ -2575,7 +2562,7 @@ TEST_P(CanvasRenderingContext2DTestAccelerated,
 
     histogram_tester.ExpectUniqueSample(
         "Blink.Canvas.HibernationEvents",
-        Canvas2DLayerBridge::HibernationEvent::
+        CanvasHibernationHandler::HibernationEvent::
             kHibernationAbortedDueToVisibilityChange,
         1);
     EXPECT_EQ(CanvasElement().GetRasterMode(), RasterMode::kGPU);
@@ -2617,7 +2604,7 @@ TEST_P(CanvasRenderingContext2DTestAccelerated, ContextLossAbortsHibernation) {
 
     histogram_tester.ExpectUniqueSample(
         "Blink.Canvas.HibernationEvents",
-        Canvas2DLayerBridge::HibernationEvent::kHibernationScheduled, 1);
+        CanvasHibernationHandler::HibernationEvent::kHibernationScheduled, 1);
     EXPECT_FALSE(handler.IsHibernating());
   }
 
@@ -2635,7 +2622,7 @@ TEST_P(CanvasRenderingContext2DTestAccelerated, ContextLossAbortsHibernation) {
 
     histogram_tester.ExpectUniqueSample(
         "Blink.Canvas.HibernationEvents",
-        Canvas2DLayerBridge::HibernationEvent::
+        CanvasHibernationHandler::HibernationEvent::
             kHibernationAbortedDueGpuContextLoss,
         1);
     EXPECT_EQ(CanvasElement().GetRasterMode(), RasterMode::kCPU);
@@ -2782,7 +2769,7 @@ TEST_P(CanvasRenderingContext2DTestAccelerated,
 
     histogram_tester.ExpectUniqueSample(
         "Blink.Canvas.HibernationEvents",
-        Canvas2DLayerBridge::HibernationEvent::kHibernationScheduled, 1);
+        CanvasHibernationHandler::HibernationEvent::kHibernationScheduled, 1);
     EXPECT_FALSE(handler.IsHibernating());
   }
 

@@ -160,7 +160,15 @@ class AccountHoverButton : public HoverButton {
   void StateChanged(ButtonState old_state) override;
   void OnThemeChanged() override;
   void OnPressed(const ui::Event& event);
-  bool HasSpinner();
+  bool HasBeenClicked();
+
+  // Changes the opacity of elements in the button to appear disabled. Used when
+  // the button is disabled in the verifying sheet.
+  void SetDisabledOpacity();
+  bool HasDisabledOpacity();
+
+  // Should only be invoked when the button has a secondary view.
+  void ReplaceSecondaryViewWithSpinner();
 
  private:
   PressedCallback callback_;
@@ -171,6 +179,8 @@ class AccountHoverButton : public HoverButton {
   // to record a metric when the button is clicked.
   int button_position_;
   bool has_spinner_{false};
+  bool is_appear_disabled_{false};
+  bool has_been_clicked_{false};
 };
 
 class AccountHoverButtonSecondaryView : public views::View {
@@ -183,6 +193,10 @@ class AccountHoverButtonSecondaryView : public views::View {
   ~AccountHoverButtonSecondaryView() override = default;
 
   void ReplaceWithSpinner();
+  void SetDisabledOpacity();
+
+ private:
+  raw_ptr<views::ImageView> arrow_image_view_{nullptr};
 };
 
 // Base class for interacting with FedCM account selection dialog.
@@ -321,6 +335,12 @@ class AccountSelectionViewBase : public PictureInPictureOcclusionObserver {
   // Whether the dialog can fit in the web contents at its preferred size.
   // Virtual for testing purposes.
   virtual bool CanFitInWebContents();
+
+  // Temporary logic to disable interactions with the tab's WebContents for the
+  // modal dialog.
+  // TODO(https://crbug.com/377803489): Remove this.
+  virtual void DidShowWidget();
+  virtual void DidHideWidget();
 
   bool IsOccluded() const { return is_occluded_; }
 

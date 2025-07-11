@@ -282,11 +282,6 @@ BASE_FEATURE(kV8IntelJCCErratumMitigation,
 
 // JavaScript language features.
 
-// Enables the experiment with compile hints as magic comments.
-BASE_FEATURE(kJavaScriptCompileHintsMagic,
-             ("JavaScriptCompileHintsMagic"),
-             kFeatureDefaultStateControlledByV8);
-
 // Enables the iterator helpers proposal.
 BASE_FEATURE(kJavaScriptIteratorHelpers,
              ("kJavaScriptIteratorHelpers"),
@@ -356,21 +351,5 @@ BASE_FEATURE(kWebAssemblyTurboshaft,
 BASE_FEATURE(kWebAssemblyTurboshaftInstructionSelection,
              ("WebAssemblyTurboshaftInstructionSelection"),
              kFeatureDefaultStateControlledByV8);
-
-// Feature for more aggressive code caching (https://crbug.com/v8/14411,
-// https://crbug.com/40945417) and three parameters to control caching behavior.
-BASE_FEATURE(kWebAssemblyMoreAggressiveCodeCaching,
-             "WebAssemblyMoreAggressiveCodeCaching",
-             base::FEATURE_DISABLED_BY_DEFAULT);
-const base::FeatureParam<int> kWebAssemblyMoreAggressiveCodeCachingThreshold{
-    &kWebAssemblyMoreAggressiveCodeCaching, "WebAssemblyCodeCachingThreshold",
-    1'000};
-const base::FeatureParam<int> kWebAssemblyMoreAggressiveCodeCachingTimeoutMs{
-    &kWebAssemblyMoreAggressiveCodeCaching, "WebAssemblyCodeCachingTimeoutMs",
-    2000};
-const base::FeatureParam<int>
-    kWebAssemblyMoreAggressiveCodeCachingHardThreshold{
-        &kWebAssemblyMoreAggressiveCodeCaching,
-        "WebAssemblyCodeCachingHardThreshold", 1'000'000};
 
 }  // namespace features

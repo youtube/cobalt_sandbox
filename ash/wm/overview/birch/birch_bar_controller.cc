@@ -28,6 +28,7 @@
 #include "components/prefs/pref_service.h"
 #include "ui/base/mojom/menu_source_type.mojom-forward.h"
 #include "ui/views/controls/menu/menu_controller.h"
+#include "ui/views/view_utils.h"
 
 namespace ash {
 
@@ -265,6 +266,28 @@ void BirchBarController::OnCoralGroupUpdated(const base::Token& group_id) {
   }
 }
 
+void BirchBarController::OnCoralEntityRemoved(const base::Token& group_id,
+                                              std::string_view identifier) {
+  for (auto& bar_view : bar_views_) {
+    for (const auto& chip : bar_view->chips()) {
+      auto* coral_chip = views::AsViewClass<BirchChipButton>(chip);
+      if (!coral_chip) {
+        continue;
+      }
+      const auto* item = chip->GetItem();
+      if (item->GetType() == BirchItemType::kCoral &&
+          static_cast<const BirchCoralItem*>(item)->group_id() == group_id) {
+        if (auto* tab_app_selector_widget =
+                coral_chip->tab_app_selection_widget()) {
+          tab_app_selector_widget->RemoveItem(identifier);
+        } else {
+          coral_chip->ReloadIcon();
+        }
+      }
+    }
+  }
+}
+
 void BirchBarController::ExecuteMenuCommand(int command_id, bool from_chip) {
   using CommandId = BirchBarContextMenuModel::CommandId;
   switch (command_id) {
@@ -399,10 +422,8 @@ void BirchBarController::OnItemsFetchedFromModel() {
                     [](const std::unique_ptr<ash::BirchItem>& item) {
                       return item->GetType() == BirchItemType::kCoral;
                     });
-  base::UmaHistogramCustomCounts("Ash.Birch.Coral.ClusterCount",
-                                 num_coral_items,
-                                 /*min=*/0, /*exclusive_max=*/3,
-                                 /*buckets=*/3);
+  base::UmaHistogramExactLinear("Ash.Birch.Coral.ClusterCount", num_coral_items,
+                                /*exclusive_max=*/3);
 
   RecordTimeOfDayRankingHistogram(items);
 

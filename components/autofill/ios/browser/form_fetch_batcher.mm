@@ -45,27 +45,45 @@ FormFetchBatcher::FormFetchBatcher(id<AutofillDriverIOSBridge> bridge,
 
 FormFetchBatcher::~FormFetchBatcher() = default;
 
+void FormFetchBatcher::PushRequestAndRun(
+    FormFetchCompletion&& completion,
+    std::optional<std::u16string> form_name_filter) {
+  fetch_requests_.emplace_back(
+      base::BindOnce(&ApplyFormFilterIfNeeded, std::move(form_name_filter))
+          .Then(std::move(completion)));
+
+  // Cancel the current task by invalidating the weak pointer of the scheduled
+  // callback.
+  weak_factory_.InvalidateWeakPtrs();
+
+  batch_scheduled_ = true;
+
+  // Run the batch immediately.
+  Run();
+}
+
 void FormFetchBatcher::PushRequest(
     FormFetchCompletion&& completion,
     std::optional<std::u16string> form_name_filter) {
-  if (fetch_requests_.empty()) {
+  fetch_requests_.emplace_back(
+      base::BindOnce(&ApplyFormFilterIfNeeded, std::move(form_name_filter))
+          .Then(std::move(completion)));
+
+  if (!batch_scheduled_) {
+    batch_scheduled_ = true;
     base::SequencedTaskRunner::GetCurrentDefault()->PostDelayedTask(
         FROM_HERE,
         base::BindOnce(&FormFetchBatcher::Run, weak_factory_.GetWeakPtr()),
         batch_period_);
   }
-
-  fetch_requests_.emplace_back(
-      base::BindOnce(&ApplyFormFilterIfNeeded, std::move(form_name_filter))
-          .Then(std::move(completion)));
 }
 
 void FormFetchBatcher::Run() {
   // There should be at least one fetch request in the batch when running it.
   CHECK_GT(fetch_requests_.size(), 0u, base::NotFatalUntil::M133);
-
-  base::UmaHistogramCounts100("Autofill.iOS.FormExtraction.ForScan.BatchSize",
-                              fetch_requests_.size());
+  // Running the batch should only be done when there was an actual batch
+  // scheduled.
+  CHECK(batch_scheduled_);
 
   if (frame_) {
     auto completion =
@@ -85,15 +103,34 @@ void FormFetchBatcher::Complete(
     std::optional<std::vector<autofill::FormData>> forms) {
   // Complete() should only be done when there are queued requests.
   CHECK_GT(fetch_requests_.size(), 0u, base::NotFatalUntil::M133);
+  // Completing the batch should only be done when there was an actual batch
+  // scheduled.
+  CHECK(batch_scheduled_);
 
-  for (auto& completion : fetch_requests_) {
-    std::move(completion).Run(forms);
+  base::UmaHistogramCounts100("Autofill.iOS.FormExtraction.ForScan.BatchSize",
+                              fetch_requests_.size());
+
+  // The batch is being completed so a new batch can be scheduled starting from
+  // now which includes new requests pushed by the completion blocks that are
+  // about to be completed here.
+  batch_scheduled_ = false;
+
+  // Make a local copy of the queue of completion blocks so the vector cannot
+  // be resized if one of the callback pushes a new request in the
+  // `fetch_requests_` queue. Resizing the vector will invalidate the iteration
+  // loop. Any new requests that were pushed when emptying the loop will be
+  // pushed to the next scheduled batch. A new batch will be scheduled if
+  // needed.
+  std::vector<FormFetchCompletion> fetch_requests_copy =
+      std::move(fetch_requests_);
+  fetch_requests_ = std::vector<FormFetchCompletion>();
+
+  // Complete the original requests. New requests may be pushed to
+  // fetch_requests_ when completing the blocks here but this won't affect this
+  // loop.
+  for (auto& fetch_request : fetch_requests_copy) {
+    std::move(fetch_request).Run(forms);
   }
-  // Complete the current batch. The batch is completed after form extraction
-  // which should be reliable considering that there are mechanisms in place
-  // to complete the pending fetch requests if the targeted frame becomes
-  // unavailable.
-  fetch_requests_.clear();
 }
 
 }  // namespace autofill

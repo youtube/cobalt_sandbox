@@ -45,6 +45,7 @@ import org.chromium.base.test.BaseRobolectricTestRunner;
 import org.chromium.base.test.util.Batch;
 import org.chromium.base.test.util.Features.DisableFeatures;
 import org.chromium.base.test.util.Features.EnableFeatures;
+import org.chromium.base.test.util.HistogramWatcher;
 import org.chromium.base.test.util.JniMocker;
 import org.chromium.chrome.browser.ActivityTabProvider;
 import org.chromium.chrome.browser.back_press.BackPressManager;
@@ -321,6 +322,19 @@ public final class BaseCustomTabRootUiCoordinatorUnitTest {
     @Test
     @EnableFeatures({SigninFeatures.CCT_SIGN_IN_PROMPT})
     public void testCreateMismatchNotificationChecker() {
+        HistogramWatcher freCompletedRecentlyWatcher =
+                HistogramWatcher.newSingleRecordWatcher(
+                        "Signin.CctAccountMismatchNoticeSuppressed",
+                        MismatchNotificationController.SuppressedReason.FRE_COMPLETED_RECENTLY);
+        HistogramWatcher mismatchNoticeSuppressedWatcher =
+                HistogramWatcher.newBuilder()
+                        .expectIntRecords(
+                                "Signin.CctAccountMismatchNoticeSuppressed",
+                                MismatchNotificationController.SuppressedReason
+                                        .FRE_COMPLETED_RECENTLY,
+                                MismatchNotificationController.SuppressedReason
+                                        .CCT_IS_OFF_THE_RECORD)
+                        .build();
         FeatureList.setDisableNativeForTesting(true);
         TestValues testValues = new TestValues();
         testValues.addFeatureFlagOverride(SigninFeatures.CCT_SIGN_IN_PROMPT, true);
@@ -328,7 +342,9 @@ public final class BaseCustomTabRootUiCoordinatorUnitTest {
         CustomTabsConnection connection = Mockito.mock(CustomTabsConnection.class);
         CustomTabsConnection.setInstanceForTesting(connection);
         when(connection.isAppForAccountMismatchNotification(any())).thenReturn(true);
+        when(mProfileSupplier.hasValue()).thenReturn(true);
         when(mProfileSupplier.get()).thenReturn(mProfile);
+        when(mProfile.isOffTheRecord()).thenReturn(false);
 
         assertNotNull(
                 "Should create a checker",
@@ -346,11 +362,13 @@ public final class BaseCustomTabRootUiCoordinatorUnitTest {
                 "Should NOT create checker for no app ID",
                 mBaseCustomTabRootUiCoordinator.createMismatchNotificationChecker(null));
 
+        // FRE was recently completed
         SigninPreferencesManager.getInstance()
                 .setCctMismatchNoticeSuppressionPeriodStart(TimeUtils.currentTimeMillis());
         assertNull(
                 "Should NOT create checker when the FRE was recently completed",
                 mBaseCustomTabRootUiCoordinator.createMismatchNotificationChecker("app-id"));
+        freCompletedRecentlyWatcher.assertExpected();
 
         // Advance the clock so that the suppression period start is no longer recent.
         mFakeTimeTestRule.advanceMillis(DateUtils.WEEK_IN_MILLIS * 10);
@@ -363,8 +381,15 @@ public final class BaseCustomTabRootUiCoordinatorUnitTest {
                 SigninPreferencesManager.getInstance()
                         .getCctMismatchNoticeSuppressionPeriodStart());
 
+        // Off the record profile
+        when(mProfile.isOffTheRecord()).thenReturn(true);
+        assertNull(
+                "Should NOT create checker for an OTR session",
+                mBaseCustomTabRootUiCoordinator.createMismatchNotificationChecker("app-id"));
+        mismatchNoticeSuppressedWatcher.assertExpected();
+
         // No profile
-        when(mProfileSupplier.get()).thenReturn(null);
+        when(mProfileSupplier.hasValue()).thenReturn(false);
         assertNull(
                 "Should NOT create checker for no profile",
                 mBaseCustomTabRootUiCoordinator.createMismatchNotificationChecker("app-id"));

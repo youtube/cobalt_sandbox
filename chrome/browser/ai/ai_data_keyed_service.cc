@@ -72,8 +72,13 @@ void GetInnerTextForModelPrototyping(
     AiDataKeyedService::AiDataCallback continue_callback) {
   TRACE_EVENT0("browser", "GetInnerTextForModelPrototyping");
   DCHECK(web_contents);
-  DCHECK(web_contents->GetPrimaryMainFrame());
-
+  // If the tab has not actually navigated, then the remote interfaces will be
+  // null, just leave off inner text in this case.
+  if (!web_contents->GetPrimaryMainFrame() ||
+      !web_contents->GetPrimaryMainFrame()->GetRemoteInterfaces()) {
+    return std::move(continue_callback)
+        .Run(std::make_optional<AiDataKeyedService::BrowserData>());
+  }
   content_extraction::GetInnerText(
       *web_contents->GetPrimaryMainFrame(), dom_node_id,
       mojo::WrapCallbackWithDefaultInvokeIfNotRun(
@@ -159,6 +164,14 @@ void FillTabInfo(content::WebContents* web_contents,
                  std::string title,
                  std::string url) {
   TRACE_EVENT0("browser", "FillTabInfo");
+  DCHECK(web_contents);
+  // If the tab has not actually navigated, then the remote interfaces will be
+  // null, just leave off inner text in this case.
+  if (!web_contents->GetPrimaryMainFrame() ||
+      !web_contents->GetPrimaryMainFrame()->GetRemoteInterfaces()) {
+    return std::move(continue_callback)
+        .Run(std::make_optional<AiDataKeyedService::BrowserData>());
+  }
   content_extraction::GetInnerText(
       *web_contents->GetPrimaryMainFrame(), std::nullopt,
       mojo::WrapCallbackWithDefaultInvokeIfNotRun(
@@ -169,6 +182,7 @@ void FillTabInfo(content::WebContents* web_contents,
 
 // Create an AiData with the tab and tab group information.
 void GetTabDataForModelPrototyping(
+    int tabs_for_inner_text,
     content::WebContents* web_contents,
     base::ConcurrentCallbacks<AiDataKeyedService::AiData>& concurrent) {
   TRACE_EVENT0("browser", "GetTabDataForModelPrototyping");
@@ -183,14 +197,13 @@ void GetTabDataForModelPrototyping(
   // Fill the Tabs part of the proto.
   AiDataKeyedService::AiData data =
       std::make_optional<AiDataKeyedService::BrowserData>();
-  static constexpr int inner_text_limit = 5;
   auto* tab_strip_model = browser->GetTabStripModel();
   for (int index = 0; index < tab_strip_model->count(); index++) {
     content::WebContents* tab_web_contents =
         tab_strip_model->GetWebContentsAt(index);
     auto title = base::UTF16ToUTF8(tab_web_contents->GetTitle());
     auto url = tab_web_contents->GetLastCommittedURL().spec();
-    if (index >= inner_text_limit) {
+    if (index >= tabs_for_inner_text) {
       OnGetTabInnerText(index, std::move(title), std::move(url),
                         concurrent.CreateCallback(), nullptr);
     } else {
@@ -299,7 +312,8 @@ void GetSiteEngagementScoresForModelPrototyping(
 
 // Fills synchronous information and kicks off concurrent tasks to fill an
 // AiData.
-void GetModelPrototypingAiData(int dom_node_id,
+void GetModelPrototypingAiData(int tabs_for_inner_text,
+                               int dom_node_id,
                                content::WebContents* web_contents,
                                std::string user_input,
                                AiDataKeyedService::AiDataCallback callback) {
@@ -321,7 +335,7 @@ void GetModelPrototypingAiData(int dom_node_id,
   GetTabScreenshotForModelPrototyping(web_contents,
                                       concurrent.CreateCallback());
 #if !BUILDFLAG(IS_ANDROID)
-  GetTabDataForModelPrototyping(web_contents, concurrent);
+  GetTabDataForModelPrototyping(tabs_for_inner_text, web_contents, concurrent);
 #endif
   GetSiteEngagementScoresForModelPrototyping(web_contents->GetBrowserContext(),
                                              concurrent.CreateCallback());
@@ -337,8 +351,11 @@ BASE_FEATURE(kAllowlistedAiDataExtensions,
 
 const base::FeatureParam<std::string> kAllowlistedExtensions{
     &kAllowlistedAiDataExtensions, "allowlisted_extension_ids",
-    /*default_value=*/
-    "hpkopmikdojpadgmioifjjodbmnjjjca,nfdaijodggdcjengofmbibbkcnopmikg"};
+    /*default_value=*/""};
+
+const base::FeatureParam<std::string> kBlocklistedExtensions{
+    &kAllowlistedAiDataExtensions, "blocked_extension_ids",
+    /*default_value=*/""};
 
 }  // namespace
 
@@ -347,18 +364,52 @@ AiDataKeyedService::AiDataKeyedService(content::BrowserContext* browser_context)
 
 AiDataKeyedService::~AiDataKeyedService() = default;
 
+const base::Feature&
+AiDataKeyedService::GetAllowlistedAiDataExtensionsFeatureForTesting() {
+  return kAllowlistedAiDataExtensions;
+}
+
 void AiDataKeyedService::GetAiData(int dom_node_id,
                                    content::WebContents* web_contents,
                                    std::string user_input,
                                    AiDataCallback callback) {
   TRACE_EVENT0("browser", "AiDataKeyedService::GetAiData");
-  GetModelPrototypingAiData(dom_node_id, web_contents, user_input,
+  GetAiDataWithSpecifiers(10, dom_node_id, web_contents, user_input,
                             std::move(callback));
+}
+
+void AiDataKeyedService::GetAiDataWithSpecifiers(
+    int tabs_for_inner_text,
+    int dom_node_id,
+    content::WebContents* web_contents,
+    std::string user_input,
+    AiDataCallback callback) {
+  TRACE_EVENT0("browser", "AiDataKeyedService::GetAiDataWithSpecifiers");
+  GetModelPrototypingAiData(tabs_for_inner_text, dom_node_id, web_contents,
+                            user_input, std::move(callback));
 }
 
 std::vector<std::string> AiDataKeyedService::GetAllowlistedExtensions() {
   std::vector<std::string> allowlisted_extensions =
       base::SplitString(kAllowlistedExtensions.Get(), ",",
                         base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
+  static const std::vector<std::string> kHardcodedAllowlistedExtensions = {
+      // https://issues.chromium.org/373645534
+      "hpkopmikdojpadgmioifjjodbmnjjjca",
+      // https://issues.chromium.org/373462321
+      "nfdaijodggdcjengofmbibbkcnopmikg"};
+  allowlisted_extensions.insert(allowlisted_extensions.end(),
+                                kHardcodedAllowlistedExtensions.begin(),
+                                kHardcodedAllowlistedExtensions.end());
+  std::vector<std::string> blocklisted_extensions =
+      base::SplitString(kBlocklistedExtensions.Get(), ",",
+                        base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
+  auto it = std::remove_if(
+      allowlisted_extensions.begin(), allowlisted_extensions.end(),
+      [&](const std::string& extension_id) {
+        return base::Contains(blocklisted_extensions, extension_id);
+      });
+  allowlisted_extensions.erase(it, allowlisted_extensions.end());
+
   return allowlisted_extensions;
 }

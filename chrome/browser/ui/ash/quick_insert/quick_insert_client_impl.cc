@@ -308,7 +308,8 @@ void QuickInsertClientImpl::StartCrosSearch(
   switch (*category) {
     case ash::QuickInsertCategory::kEditorWrite:
     case ash::QuickInsertCategory::kEditorRewrite:
-    case ash::QuickInsertCategory::kLobster:
+    case ash::QuickInsertCategory::kLobsterWithNoSelectedText:
+    case ash::QuickInsertCategory::kLobsterWithSelectedText:
     case ash::QuickInsertCategory::kEmojisGifs:
     case ash::QuickInsertCategory::kEmojis:
     case ash::QuickInsertCategory::kClipboard:
@@ -389,8 +390,7 @@ QuickInsertClientImpl::CacheEditorContext() {
 
 QuickInsertClientImpl::ShowLobsterCallback
 QuickInsertClientImpl::CacheLobsterContext(bool support_image_insertion) {
-  if (!ash::features::IsLobsterEnabled() ||
-      !ash::LobsterController::IsEnabled()) {
+  if (!ash::features::IsLobsterEnabled()) {
     return base::NullCallback();
   }
 
@@ -585,7 +585,8 @@ QuickInsertClientImpl::CreateSearchProviderForCategory(
   switch (category) {
     case ash::QuickInsertCategory::kEditorWrite:
     case ash::QuickInsertCategory::kEditorRewrite:
-    case ash::QuickInsertCategory::kLobster:
+    case ash::QuickInsertCategory::kLobsterWithNoSelectedText:
+    case ash::QuickInsertCategory::kLobsterWithSelectedText:
     case ash::QuickInsertCategory::kEmojisGifs:
     case ash::QuickInsertCategory::kEmojis:
     case ash::QuickInsertCategory::kClipboard:

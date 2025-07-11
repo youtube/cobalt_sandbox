@@ -40,6 +40,7 @@ import static org.chromium.chrome.browser.facilitated_payments.FacilitatedPaymen
 import static org.chromium.chrome.browser.facilitated_payments.FacilitatedPaymentsPaymentMethodsProperties.SequenceScreen.FOP_SELECTOR;
 import static org.chromium.chrome.browser.facilitated_payments.FacilitatedPaymentsPaymentMethodsProperties.SequenceScreen.PROGRESS_SCREEN;
 import static org.chromium.chrome.browser.facilitated_payments.FacilitatedPaymentsPaymentMethodsProperties.SequenceScreen.UNINITIALIZED;
+import static org.chromium.chrome.browser.facilitated_payments.FacilitatedPaymentsPaymentMethodsProperties.UI_EVENT_LISTENER;
 import static org.chromium.chrome.browser.facilitated_payments.FacilitatedPaymentsPaymentMethodsProperties.VISIBLE_STATE;
 import static org.chromium.chrome.browser.facilitated_payments.FacilitatedPaymentsPaymentMethodsProperties.VisibleState.HIDDEN;
 import static org.chromium.chrome.browser.facilitated_payments.FacilitatedPaymentsPaymentMethodsProperties.VisibleState.SHOWN;
@@ -69,12 +70,14 @@ import org.chromium.components.autofill.payments.PaymentRail;
 import org.chromium.components.browser_ui.bottomsheet.BottomSheetContent;
 import org.chromium.components.browser_ui.bottomsheet.BottomSheetController;
 import org.chromium.components.browser_ui.bottomsheet.BottomSheetController.StateChangeReason;
+import org.chromium.components.facilitated_payments.core.ui_utils.UiEvent;
 import org.chromium.components.payments.InputProtector;
 import org.chromium.components.payments.test_support.FakeClock;
 import org.chromium.ui.modelutil.MVCListAdapter.ModelList;
 import org.chromium.ui.modelutil.PropertyKey;
 import org.chromium.ui.modelutil.PropertyModel;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -170,6 +173,7 @@ public class FacilitatedPaymentsPaymentMethodsControllerRobolectricTest {
         assertThat(mFacilitatedPaymentsPaymentMethodsModel.get(SCREEN), is(UNINITIALIZED));
         assertNull(mFacilitatedPaymentsPaymentMethodsModel.get(SCREEN_VIEW_MODEL));
         assertNotNull(mFacilitatedPaymentsPaymentMethodsModel.get(DISMISS_HANDLER));
+        assertNotNull(mFacilitatedPaymentsPaymentMethodsModel.get(UI_EVENT_LISTENER));
     }
 
     @Test
@@ -261,12 +265,63 @@ public class FacilitatedPaymentsPaymentMethodsControllerRobolectricTest {
     }
 
     @Test
+    public void testUiEventsAreForwardedToDelegate() {
+        for (int uiEvent :
+                Arrays.asList(
+                        UiEvent.NEW_SCREEN_SHOWN,
+                        UiEvent.SCREEN_CLOSED_NOT_BY_USER,
+                        UiEvent.SCREEN_CLOSED_BY_USER)) {
+            mFacilitatedPaymentsPaymentMethodsModel.get(UI_EVENT_LISTENER).onResult(uiEvent);
+
+            verify(mDelegateMock).onUiEvent(uiEvent);
+        }
+    }
+
+    @Test
     public void testOnDismissedIsCalled() {
         mFacilitatedPaymentsPaymentMethodsModel
                 .get(DISMISS_HANDLER)
                 .onResult(StateChangeReason.SWIPE);
 
         verify(mDelegateMock).onDismissed();
+    }
+
+    @Test
+    public void testShowFopSelector_SuccessfullyShown_UiEventRelayed() {
+        mCoordinator.showSheet(List.of(BANK_ACCOUNT_1));
+
+        verify(mDelegateMock).onUiEvent(UiEvent.NEW_SCREEN_SHOWN);
+    }
+
+    @Test
+    public void testShowFopSelector_FailedToShow_UiEventRelayed() {
+        Mockito.when(
+                        mBottomSheetController.requestShowContent(
+                                any(BottomSheetContent.class), anyBoolean()))
+                .thenReturn(false);
+
+        mCoordinator.showSheet(List.of(BANK_ACCOUNT_1));
+
+        verify(mDelegateMock).onUiEvent(UiEvent.SCREEN_CLOSED_NOT_BY_USER);
+    }
+
+    @Test
+    public void testShowErrorScreen_SuccessfullyShown_UiEventRelayed() {
+        mCoordinator.showErrorScreen();
+
+        verify(mDelegateMock).onUiEvent(UiEvent.NEW_SCREEN_SHOWN);
+    }
+
+    @Test
+    public void testShowErrorScreen_FailedToShow_UiEventRelayed() {
+        Mockito.when(
+                        mBottomSheetController.requestShowContent(
+                                any(BottomSheetContent.class), anyBoolean()))
+                .thenReturn(false);
+
+        mCoordinator.showErrorScreen();
+
+        verify(mDelegateMock).onUiEvent(UiEvent.SCREEN_CLOSED_NOT_BY_USER);
     }
 
     @Test
@@ -534,6 +589,10 @@ public class FacilitatedPaymentsPaymentMethodsControllerRobolectricTest {
                         .getAllProperties()
                         .size(),
                 0);
+
+        // Verify that the UI event is relayed to the delegate. New screen shown event should be
+        // triggered twice, once for each screen.
+        verify(mDelegateMock, times(2)).onUiEvent(UiEvent.NEW_SCREEN_SHOWN);
     }
 
     @Test
@@ -562,6 +621,10 @@ public class FacilitatedPaymentsPaymentMethodsControllerRobolectricTest {
                                 .getAllProperties();
         assertThat(propertyKeys, hasSize(1));
         assertThat(propertyKeys, contains(PRIMARY_BUTTON_CALLBACK));
+
+        // Verify that the UI event is relayed to the delegate. New screen shown event should be
+        // triggered twice, once for each screen.
+        verify(mDelegateMock, times(2)).onUiEvent(UiEvent.NEW_SCREEN_SHOWN);
     }
 
     @Test
@@ -580,7 +643,8 @@ public class FacilitatedPaymentsPaymentMethodsControllerRobolectricTest {
         assertThat(mFacilitatedPaymentsPaymentMethodsModel.get(SCREEN), is(UNINITIALIZED));
         assertThat(mFacilitatedPaymentsPaymentMethodsModel.get(VISIBLE_STATE), is(HIDDEN));
 
-        // Verify that the bottom sheet closing is triggered.
+        // Verify that the bottom sheet closing is triggered. The bottom sheet is initialized in the
+        // hidden state which triggers hideContent. The second call is from the dismissal.
         verify(mBottomSheetController, times(2)).hideContent(any(), eq(true));
     }
 

@@ -15,7 +15,6 @@
 #include "build/build_config.h"
 #include "components/data_sharing/public/data_sharing_ui_delegate.h"
 #include "components/data_sharing/public/group_data.h"
-#include "components/data_sharing/public/service_status.h"
 #include "components/data_sharing/public/share_url_interception_context.h"
 #include "components/keyed_service/core/keyed_service.h"
 #include "components/sync/model/data_type_sync_bridge.h"
@@ -50,7 +49,7 @@ class DataSharingService : public KeyedService, public base::SupportsUserData {
 
   // GENERATED_JAVA_ENUM_PACKAGE: (
   //   org.chromium.components.data_sharing)
-  enum class ParseURLStatus {
+  enum class ParseUrlStatus {
     kUnknown = 0,
     kSuccess = 1,
     kHostOrPathMismatchFailure = 2,
@@ -88,18 +87,6 @@ class DataSharingService : public KeyedService, public base::SupportsUserData {
     virtual void OnGroupMemberRemoved(const GroupId& group_id,
                                       const std::string& member_gaia_id,
                                       const base::Time& event_time) {}
-
-    // The update details of a service's collaboration status.
-    struct ServiceStatusUpdate {
-      ServiceStatus old_status;
-      ServiceStatus new_status;
-
-      // Add helper functions as needed here.
-    };
-
-    // The service status has been changed.
-    virtual void OnServiceStatusChanged(
-        const ServiceStatusUpdate& status_update) {}
   };
 
   using GroupDataOrFailureOutcome =
@@ -108,7 +95,7 @@ class DataSharingService : public KeyedService, public base::SupportsUserData {
       base::expected<std::set<GroupData>, PeopleGroupActionFailure>;
   using SharedDataPreviewOrFailureOutcome =
       base::expected<SharedDataPreview, PeopleGroupActionFailure>;
-  using ParseURLResult = base::expected<GroupToken, ParseURLStatus>;
+  using ParseUrlResult = base::expected<GroupToken, ParseUrlStatus>;
 
 #if BUILDFLAG(IS_ANDROID)
   // Returns a Java object of the type DataSharingService for the given
@@ -148,10 +135,18 @@ class DataSharingService : public KeyedService, public base::SupportsUserData {
   // group doesn't exist, it has not been fetched from the server yet, or the
   // model is not loaded yet.
   virtual std::optional<GroupData> ReadGroup(const GroupId& group_id) = 0;
+
   // Synchronously reads all groups from the local storage. Returns empty set
   // if the groups haven't been fetched from the server yet, or the model is not
   // loaded yet.
   virtual std::set<GroupData> ReadAllGroups() = 0;
+
+  // Synchronously reads partial group member data either from the group store
+  // or from the special database that stores partial data of removed members.
+  // Returns nullopt if no data is found.
+  virtual std::optional<GroupMemberPartialData> GetPossiblyRemovedGroupMember(
+      const GroupId& group_id,
+      const std::string& member_gaia_id) = 0;
 
   // Refreshes data if necessary. On success passes to the `callback` a set of
   // all groups known to the client (ordered by id).
@@ -212,17 +207,17 @@ class DataSharingService : public KeyedService, public base::SupportsUserData {
   // group is still active nor guarantee that the URL is not expired. The caller
   // needs to get the valid group info from the other APIs above. Make sure
   // EnsureGroupVisibility API is called before getting the URL for the group.
-  virtual std::unique_ptr<GURL> GetDataSharingURL(
+  virtual std::unique_ptr<GURL> GetDataSharingUrl(
       const GroupData& group_data) = 0;
 
   // Parse and validate a data sharing URL. This simply parses the url. The
   // returned group may not be valid, the caller needs to check ReadGroup or
   // other apis to validate the group.
-  virtual ParseURLResult ParseDataSharingURL(const GURL& url) = 0;
+  virtual ParseUrlResult ParseDataSharingUrl(const GURL& url) = 0;
 
   // This ensures that the group is open for new members to join. Only owner can
   // call this API. The owner must always call this API before
-  // GetDataSharingURL().
+  // GetDataSharingUrl().
   virtual void EnsureGroupVisibility(
       const GroupId& group_id,
       base::OnceCallback<void(const GroupDataOrFailureOutcome&)> callback) = 0;
@@ -243,11 +238,7 @@ class DataSharingService : public KeyedService, public base::SupportsUserData {
       std::unique_ptr<DataSharingUIDelegate> ui_delegate) = 0;
 
   // Get the current DataSharingUIDelegate instance.
-  virtual DataSharingUIDelegate* GetUIDelegate() = 0;
-
-  // DEPRECATED: Use CollaborationService::GetServiceStatus instead.
-  // Get the current ServiceStatus.
-  virtual ServiceStatus GetServiceStatus() = 0;
+  virtual DataSharingUIDelegate* GetUiDelegate() = 0;
 };
 
 }  // namespace data_sharing

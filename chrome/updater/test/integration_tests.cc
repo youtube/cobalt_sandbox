@@ -23,6 +23,7 @@
 #include "base/memory/scoped_refptr.h"
 #include "base/path_service.h"
 #include "base/run_loop.h"
+#include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/test/bind.h"
@@ -1556,6 +1557,34 @@ TEST_F(IntegrationTest, GetAppStates) {
   ASSERT_NO_FATAL_FAILURE(Uninstall());
 }
 
+TEST_F(IntegrationTest, GetAppStates_AppIdsAlwaysLowercase) {
+  ScopedServer test_server(test_commands_);
+  ASSERT_NO_FATAL_FAILURE(Install());
+
+  base::Value::Dict expected_app_states;
+  for (const std::string appid :
+       {"test1", "TEST2", "Test3", "TeSt4", "tEsT5"}) {
+    const base::Version v1("0.1");
+    ASSERT_NO_FATAL_FAILURE(InstallApp(appid));
+
+    ASSERT_NO_FATAL_FAILURE(ExpectAppVersion(appid, v1));
+
+    base::Value::Dict expected_app_state;
+    expected_app_state.Set("app_id", base::ToLowerASCII(appid));
+    expected_app_state.Set("version", v1.GetString());
+    expected_app_state.Set("ap", "");
+    expected_app_state.Set("brand_code", "");
+    expected_app_state.Set("brand_path", "");
+    expected_app_state.Set("ecp", "");
+    expected_app_state.Set("cohort", "");
+    expected_app_states.Set(appid, std::move(expected_app_state));
+  }
+
+  ASSERT_NO_FATAL_FAILURE(GetAppStates(expected_app_states));
+  ASSERT_NO_FATAL_FAILURE(ExpectUninstallPing(&test_server));
+  ASSERT_NO_FATAL_FAILURE(Uninstall());
+}
+
 TEST_F(IntegrationTest, UnregisterUninstalledApp) {
   ASSERT_NO_FATAL_FAILURE(Install());
   ASSERT_NO_FATAL_FAILURE(ExpectInstalled());
@@ -2026,17 +2055,9 @@ class IntegrationTestDeviceManagement
   }
 };
 
-// TODO(crbug.com/376745598): Figure out if the ASAN dylib can be made to work
-// with OTA installations of the companion app in tests.
-#if BUILDFLAG(IS_MAC) && defined(ADDRESS_SANITIZER)
-INSTANTIATE_TEST_SUITE_P(CecaExperimentFlag,
-                         IntegrationTestDeviceManagement,
-                         ::testing::Values(false));
-#else
 INSTANTIATE_TEST_SUITE_P(CecaExperimentFlag,
                          IntegrationTestDeviceManagement,
                          ::testing::Bool());
-#endif
 
 // Tests the setup and teardown of the fixture.
 TEST_P(IntegrationTestDeviceManagement, Nothing) {}
@@ -2413,11 +2434,6 @@ TEST_F(IntegrationTestDeviceManagementBase,
 
   ASSERT_NO_FATAL_FAILURE(InstallEnterpriseCompanionApp());
 
-  const base::FilePath companion_app_exe =
-      enterprise_companion::GetInstallDirectory()->AppendASCII(
-          kCompanionAppExecutableName);
-  ASSERT_TRUE(base::PathExists(companion_app_exe));
-
   // Uninstall ping for the app.
   ASSERT_NO_FATAL_FAILURE(ExpectUninstallPing(test_server_.get()));
   // Expect an update check and then the uninstall ping for the updater itself.
@@ -2426,7 +2442,7 @@ TEST_F(IntegrationTestDeviceManagementBase,
   ASSERT_NO_FATAL_FAILURE(UninstallApp(kApp1.appid));
   ASSERT_NO_FATAL_FAILURE(RunWake(0));
   ASSERT_TRUE(WaitForUpdaterExit());
-  ASSERT_TRUE(WaitFor([&] { return !base::PathExists(companion_app_exe); }));
+  ASSERT_NO_FATAL_FAILURE(ExpectEnterpriseCompanionAppNotInstalled());
   ASSERT_NO_FATAL_FAILURE(ExpectUninstallPing(test_server_.get()));
   ASSERT_NO_FATAL_FAILURE(Uninstall());
 }
@@ -5068,20 +5084,26 @@ TEST_P(IntegrationInstallerResultsTest, OnDemandTestCases) {
   ASSERT_NO_FATAL_FAILURE(Uninstall());
 }
 
-class IntegrationInstallerResultsTestNewInstalls : public IntegrationTestMsi {};
+class IntegrationInstallerResultsNewInstallsTest
+    : public ::testing::WithParamInterface<TestUpdaterVersion>,
+      public IntegrationTestMsi {};
 
-TEST_F(IntegrationInstallerResultsTestNewInstalls, OnDemandCancel) {
+INSTANTIATE_TEST_SUITE_P(IntegrationInstallerResultsNewInstallsTestCases,
+                         IntegrationInstallerResultsNewInstallsTest,
+                         ::testing::ValuesIn(GetRealUpdaterVersions()));
+
+TEST_P(IntegrationInstallerResultsNewInstallsTest, OnDemandCancel) {
   // Delay download a bit to allow cancellation.
   test_server_->set_download_delay(base::Seconds(5));
 
   const base::FilePath crx_relative_path = GetInstallerPath(kMsiCrx);
 
-  ASSERT_NO_FATAL_FAILURE(Install());
+  ASSERT_NO_FATAL_FAILURE(SetupRealUpdater(GetParam().updater_setup_path));
   ASSERT_NO_FATAL_FAILURE(InstallApp(kMsiAppId, base::Version({0, 0, 0, 0})));
 
   ASSERT_NO_FATAL_FAILURE(ExpectUpdateCheckSequence(
       test_server_.get(), kMsiAppId, UpdateService::Priority::kForeground,
-      base::Version({0, 0, 0, 0}), kMsiUpdatedVersion));
+      base::Version({0, 0, 0, 0}), kMsiUpdatedVersion, GetParam().version));
 
   ExpectAppsUpdateSequence(
       UpdaterScope::kSystem, test_server_.get(),
@@ -5097,13 +5119,17 @@ TEST_F(IntegrationInstallerResultsTestNewInstalls, OnDemandCancel) {
               /*always_serve_crx=*/true, UpdateService::ErrorCategory::kService,
               static_cast<int>(update_client::ServiceError::CANCELLED),
               /*EVENT_INSTALL_COMPLETE=*/2, {}),
-      });
+      },
+      GetParam().version);
   ASSERT_NO_FATAL_FAILURE(ExpectUninstallPing(test_server_.get()));
 
   ASSERT_NO_FATAL_FAILURE(ExpectLegacyUpdate3WebSucceeds(
       kMsiAppId, AppBundleWebCreateMode::kCreateApp, STATE_ERROR,
       static_cast<int>(update_client::ServiceError::CANCELLED),
       /*cancel_when_downloading=*/true));
+
+  // Cleanup by overinstalling the current version and uninstalling.
+  ASSERT_NO_FATAL_FAILURE(Install());
   ASSERT_NO_FATAL_FAILURE(Uninstall());
 }
 

@@ -22,11 +22,8 @@ HelpAppPageHandler::HelpAppPageHandler(
     base::raw_ref<PrefService> pref_service)
     : receiver_(this, std::move(receiver)),
       help_app_ui_(help_app_ui),
-      is_lss_enabled_(
-          base::FeatureList::IsEnabled(features::kEnableLocalSearchService)),
       is_launcher_search_enabled_(
-          base::FeatureList::IsEnabled(features::kHelpAppLauncherSearch) &&
-          base::FeatureList::IsEnabled(features::kEnableLocalSearchService)),
+          base::FeatureList::IsEnabled(features::kHelpAppLauncherSearch)),
       pref_service_(pref_service) {}
 
 HelpAppPageHandler::~HelpAppPageHandler() = default;
@@ -48,10 +45,6 @@ void HelpAppPageHandler::ShowParentalControls() {
 void HelpAppPageHandler::TriggerWelcomeTipCallToAction(
     help_app::mojom::ActionTypeId action_type_id) {
   help_app_ui_->delegate()->TriggerWelcomeTipCallToAction(action_type_id);
-}
-
-void HelpAppPageHandler::IsLssEnabled(IsLssEnabledCallback callback) {
-  std::move(callback).Run(is_lss_enabled_);
 }
 
 void HelpAppPageHandler::IsLauncherSearchEnabled(
@@ -86,19 +79,12 @@ void HelpAppPageHandler::OpenSettings(
 }
 
 void HelpAppPageHandler::SetHasCompletedNewDeviceChecklist() {
-  if (pref_service_->FindPreference(
-          help_app::prefs::kHelpAppHasCompletedNewDeviceChecklist)) {
-    pref_service_->SetBoolean(
-        help_app::prefs::kHelpAppHasCompletedNewDeviceChecklist, true);
-  }
+  pref_service_->SetBoolean(
+      help_app::prefs::kHelpAppHasCompletedNewDeviceChecklist, true);
 }
 
 void HelpAppPageHandler::SetHasVisitedHowToPage() {
-  if (pref_service_->FindPreference(
-          help_app::prefs::kHelpAppHasVisitedHowToPage)) {
-    pref_service_->SetBoolean(help_app::prefs::kHelpAppHasVisitedHowToPage,
-                              true);
-  }
+  pref_service_->SetBoolean(help_app::prefs::kHelpAppHasVisitedHowToPage, true);
 }
 
 }  // namespace ash

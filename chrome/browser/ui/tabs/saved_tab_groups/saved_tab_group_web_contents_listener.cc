@@ -9,10 +9,10 @@
 #include "chrome/browser/renderer_host/chrome_navigation_ui_data.h"
 #include "chrome/browser/tab_group_sync/tab_group_sync_tab_state.h"
 #include "chrome/browser/tab_group_sync/tab_group_sync_utils.h"
+#include "chrome/browser/ui/tabs/public/tab_interface.h"
 #include "chrome/browser/ui/tabs/saved_tab_groups/saved_tab_group_keyed_service.h"
 #include "chrome/browser/ui/tabs/saved_tab_groups/saved_tab_group_utils.h"
 #include "chrome/browser/ui/tabs/saved_tab_groups/tab_group_sync_service_proxy.h"
-#include "chrome/browser/ui/tabs/tab_model.h"
 #include "components/favicon/content/content_favicon_driver.h"
 #include "components/saved_tab_groups/internal/saved_tab_group_model.h"
 #include "components/saved_tab_groups/public/features.h"
@@ -79,12 +79,12 @@ void SavedTabGroupWebContentsListener::OnTabDiscarded(
 
 SavedTabGroupWebContentsListener::SavedTabGroupWebContentsListener(
     TabGroupSyncService* service,
-    tabs::TabModel* local_tab)
+    tabs::TabInterface* local_tab)
     : service_(service), local_tab_(local_tab) {
   tab_discard_subscription_ = local_tab->RegisterWillDiscardContents(
       base::BindRepeating(&SavedTabGroupWebContentsListener::OnTabDiscarded,
                           base::Unretained(this)));
-  Observe(local_tab->contents());
+  Observe(local_tab->GetContents());
 }
 
 SavedTabGroupWebContentsListener::~SavedTabGroupWebContentsListener() {
@@ -126,7 +126,7 @@ LocalTabID SavedTabGroupWebContentsListener::local_tab_id() const {
 }
 
 content::WebContents* SavedTabGroupWebContentsListener::contents() const {
-  return local_tab_->contents();
+  return local_tab_->GetContents();
 }
 
 void SavedTabGroupWebContentsListener::DidFinishNavigation(
@@ -168,12 +168,8 @@ void SavedTabGroupWebContentsListener::DidFinishNavigation(
         favicon::TabFaviconFromWebContents(contents()));
   }
 
-  SavedTabGroupTabBuilder tab_builder;
-  tab_builder.SetURL(contents()->GetURL());
-  tab_builder.SetTitle(contents()->GetTitle());
-
-  service_->UpdateTab(group->local_group_id().value(), local_tab_id(),
-                      std::move(tab_builder));
+  service_->NavigateTab(group->local_group_id().value(), local_tab_id(),
+                        contents()->GetURL(), contents()->GetTitle());
 }
 
 void SavedTabGroupWebContentsListener::DidGetUserInteraction(
@@ -190,8 +186,8 @@ void SavedTabGroupWebContentsListener::UpdateTabRedirectChain(
   std::optional<SavedTabGroup> group = saved_group();
   SavedTabGroupTabBuilder tab_builder;
   tab_builder.SetRedirectURLChain(navigation_handle->GetRedirectChain());
-  service_->UpdateTab(group->local_group_id().value(), local_tab_id(),
-                      tab_builder);
+  service_->UpdateTabProperties(group->local_group_id().value(), local_tab_id(),
+                                tab_builder);
 }
 
 const SavedTabGroup SavedTabGroupWebContentsListener::saved_group() {

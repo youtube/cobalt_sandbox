@@ -15,6 +15,7 @@
 #include "base/metrics/histogram_functions.h"
 #include "base/strings/strcat.h"
 #include "base/time/time.h"
+#include "base/timer/elapsed_timer.h"
 #include "components/services/storage/shared_storage/shared_storage_manager.h"
 #include "content/browser/attribution_reporting/attribution_manager.h"
 #include "content/browser/code_cache/generated_code_cache_context.h"
@@ -23,16 +24,15 @@
 #include "content/browser/fenced_frame/fenced_frame_reporter.h"
 #include "content/browser/interest_group/interest_group_manager_impl.h"
 #include "content/browser/private_aggregation/private_aggregation_caller_api.h"
-#include "content/browser/private_aggregation/private_aggregation_host.h"
 #include "content/browser/private_aggregation/private_aggregation_manager.h"
 #include "content/browser/renderer_host/page_impl.h"
 #include "content/browser/renderer_host/render_frame_host_impl.h"
 #include "content/browser/shared_storage/shared_storage_code_cache_host_proxy.h"
 #include "content/browser/shared_storage/shared_storage_document_service_impl.h"
 #include "content/browser/shared_storage/shared_storage_render_thread_worklet_driver.h"
+#include "content/browser/shared_storage/shared_storage_runtime_manager.h"
 #include "content/browser/shared_storage/shared_storage_url_loader_factory_proxy.h"
 #include "content/browser/shared_storage/shared_storage_worklet_driver.h"
-#include "content/browser/shared_storage/shared_storage_worklet_host_manager.h"
 #include "content/common/renderer.mojom.h"
 #include "content/public/browser/browser_context.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
@@ -51,7 +51,7 @@ namespace content {
 namespace {
 
 using AccessType =
-    SharedStorageWorkletHostManager::SharedStorageObserverInterface::AccessType;
+    SharedStorageRuntimeManager::SharedStorageObserverInterface::AccessType;
 
 constexpr base::TimeDelta kKeepAliveTimeout = base::Seconds(2);
 
@@ -274,8 +274,8 @@ SharedStorageWorkletHost::SharedStorageWorkletHost(
       storage_partition_(static_cast<StoragePartitionImpl*>(
           document_service.render_frame_host().GetStoragePartition())),
       shared_storage_manager_(storage_partition_->GetSharedStorageManager()),
-      shared_storage_worklet_host_manager_(
-          storage_partition_->GetSharedStorageWorkletHostManager()),
+      shared_storage_runtime_manager_(
+          storage_partition_->GetSharedStorageRuntimeManager()),
       browser_context_(
           document_service.render_frame_host().GetBrowserContext()),
       shared_storage_origin_(data_origin),
@@ -336,7 +336,7 @@ SharedStorageWorkletHost::SharedStorageWorkletHost(
               document_service_->render_frame_host())
               .ComputeSiteForCookies());
 
-  shared_storage_worklet_host_manager_->NotifySharedStorageAccessed(
+  shared_storage_runtime_manager_->NotifySharedStorageAccessed(
       AccessType::kDocumentAddModule, document_service_->main_frame_id(),
       shared_storage_origin_.Serialize(),
       SharedStorageEventParams::CreateForAddModule(script_source_url));
@@ -388,7 +388,7 @@ SharedStorageWorkletHost::~SharedStorageWorkletHost() {
                               /*index=*/0, /*use_page_budgets=*/false,
                               /*budget_remaining=*/0.0, budget_status));
 
-    shared_storage_worklet_host_manager_->NotifyConfigPopulated(config);
+    shared_storage_runtime_manager_->NotifyConfigPopulated(config);
 
     it = unresolved_urns_.erase(it);
   }
@@ -622,9 +622,9 @@ void SharedStorageWorkletHost::SelectURL(
       /*result_config=*/
       config.RedactFor(FencedFrameEntity::kEmbedder));
 
-  shared_storage_worklet_host_manager_->NotifyUrnUuidGenerated(urn_uuid);
+  shared_storage_runtime_manager_->NotifyUrnUuidGenerated(urn_uuid);
 
-  shared_storage_worklet_host_manager_->NotifySharedStorageAccessed(
+  shared_storage_runtime_manager_->NotifySharedStorageAccessed(
       AccessType::kDocumentSelectURL, document_service_->main_frame_id(),
       shared_storage_origin_.Serialize(),
       SharedStorageEventParams::CreateForSelectURL(name, serialized_data,
@@ -777,7 +777,7 @@ void SharedStorageWorkletHost::Run(
 
   std::move(callback).Run(/*success=*/true, /*error_message=*/{});
 
-  shared_storage_worklet_host_manager_->NotifySharedStorageAccessed(
+  shared_storage_runtime_manager_->NotifySharedStorageAccessed(
       AccessType::kDocumentRun, document_service_->main_frame_id(),
       shared_storage_origin_.Serialize(),
       SharedStorageEventParams::CreateForRun(name, serialized_data));
@@ -828,7 +828,7 @@ void SharedStorageWorkletHost::SharedStorageUpdate(
         method->get_set_method();
 
     if (document_service_) {
-      shared_storage_worklet_host_manager_->NotifySharedStorageAccessed(
+      shared_storage_runtime_manager_->NotifySharedStorageAccessed(
           AccessType::kWorkletSet, document_service_->main_frame_id(),
           shared_storage_origin_.Serialize(),
           SharedStorageEventParams::CreateForSet(
@@ -863,7 +863,7 @@ void SharedStorageWorkletHost::SharedStorageUpdate(
         method->get_append_method();
 
     if (document_service_) {
-      shared_storage_worklet_host_manager_->NotifySharedStorageAccessed(
+      shared_storage_runtime_manager_->NotifySharedStorageAccessed(
           AccessType::kWorkletAppend, document_service_->main_frame_id(),
           shared_storage_origin_.Serialize(),
           SharedStorageEventParams::CreateForAppend(
@@ -891,7 +891,7 @@ void SharedStorageWorkletHost::SharedStorageUpdate(
         method->get_delete_method();
 
     if (document_service_) {
-      shared_storage_worklet_host_manager_->NotifySharedStorageAccessed(
+      shared_storage_runtime_manager_->NotifySharedStorageAccessed(
           AccessType::kWorkletDelete, document_service_->main_frame_id(),
           shared_storage_origin_.Serialize(),
           SharedStorageEventParams::CreateForGetOrDelete(
@@ -916,7 +916,7 @@ void SharedStorageWorkletHost::SharedStorageUpdate(
     CHECK(method->is_clear_method());
 
     if (document_service_) {
-      shared_storage_worklet_host_manager_->NotifySharedStorageAccessed(
+      shared_storage_runtime_manager_->NotifySharedStorageAccessed(
           AccessType::kWorkletClear, document_service_->main_frame_id(),
           shared_storage_origin_.Serialize(),
           SharedStorageEventParams::CreateDefault());
@@ -953,7 +953,7 @@ void SharedStorageWorkletHost::SharedStorageGet(
   }
 
   if (document_service_) {
-    shared_storage_worklet_host_manager_->NotifySharedStorageAccessed(
+    shared_storage_runtime_manager_->NotifySharedStorageAccessed(
         AccessType::kWorkletGet, document_service_->main_frame_id(),
         shared_storage_origin_.Serialize(),
         SharedStorageEventParams::CreateForGetOrDelete(base::UTF16ToUTF8(key)));
@@ -1004,7 +1004,7 @@ void SharedStorageWorkletHost::SharedStorageKeys(
   }
 
   if (document_service_) {
-    shared_storage_worklet_host_manager_->NotifySharedStorageAccessed(
+    shared_storage_runtime_manager_->NotifySharedStorageAccessed(
         AccessType::kWorkletKeys, document_service_->main_frame_id(),
         shared_storage_origin_.Serialize(),
         SharedStorageEventParams::CreateDefault());
@@ -1030,7 +1030,7 @@ void SharedStorageWorkletHost::SharedStorageEntries(
   }
 
   if (document_service_) {
-    shared_storage_worklet_host_manager_->NotifySharedStorageAccessed(
+    shared_storage_runtime_manager_->NotifySharedStorageAccessed(
         AccessType::kWorkletEntries, document_service_->main_frame_id(),
         shared_storage_origin_.Serialize(),
         SharedStorageEventParams::CreateDefault());
@@ -1054,7 +1054,7 @@ void SharedStorageWorkletHost::SharedStorageLength(
   }
 
   if (document_service_) {
-    shared_storage_worklet_host_manager_->NotifySharedStorageAccessed(
+    shared_storage_runtime_manager_->NotifySharedStorageAccessed(
         AccessType::kWorkletLength, document_service_->main_frame_id(),
         shared_storage_origin_.Serialize(),
         SharedStorageEventParams::CreateDefault());
@@ -1096,7 +1096,7 @@ void SharedStorageWorkletHost::SharedStorageRemainingBudget(
   }
 
   if (document_service_) {
-    shared_storage_worklet_host_manager_->NotifySharedStorageAccessed(
+    shared_storage_runtime_manager_->NotifySharedStorageAccessed(
         AccessType::kWorkletRemainingBudget, document_service_->main_frame_id(),
         shared_storage_origin_.Serialize(),
         SharedStorageEventParams::CreateDefault());
@@ -1212,8 +1212,8 @@ void SharedStorageWorkletHost::RecordUseCounters(
 
 void SharedStorageWorkletHost::GetLockManager(
     mojo::PendingReceiver<blink::mojom::LockManager> receiver) {
-  shared_storage_worklet_host_manager_->BindLockManager(shared_storage_origin_,
-                                                        std::move(receiver));
+  shared_storage_runtime_manager_->BindLockManager(shared_storage_origin_,
+                                                   std::move(receiver));
 }
 
 void SharedStorageWorkletHost::ReportNoBinderForInterface(
@@ -1386,7 +1386,7 @@ void SharedStorageWorkletHost::OnRunURLSelectionOperationOnWorkletFinished(
             .OnSharedStorageURNMappingResultDetermined(
                 urn_uuid, std::move(mapping_result));
 
-    shared_storage_worklet_host_manager_->NotifyConfigPopulated(config);
+    shared_storage_runtime_manager_->NotifyConfigPopulated(config);
 
     // If the query is named and not previously cached, cache the query's
     // `index` for later and run any callbacks stored to make use of this
@@ -1436,10 +1436,10 @@ void SharedStorageWorkletHost::OnSelectURLSavedQueryFound(
 void SharedStorageWorkletHost::ExpireWorklet() {
   // `this` is not in keep-alive.
   DCHECK(document_service_);
-  DCHECK(shared_storage_worklet_host_manager_);
+  DCHECK(shared_storage_runtime_manager_);
 
   // This will remove this worklet host from the manager.
-  shared_storage_worklet_host_manager_->ExpireWorkletHostForDocumentService(
+  shared_storage_runtime_manager_->ExpireWorkletHostForDocumentService(
       document_service_.get(), this);
 
   // Do not add code after this. SharedStorageWorkletHost has been destroyed.
@@ -1584,13 +1584,14 @@ SharedStorageWorkletHost::MaybeConstructPrivateAggregationOperationDetails(
           mojo::PendingRemote<blink::mojom::PrivateAggregationHost>(),
           private_aggregation_config->filtering_id_max_bytes);
 
-  std::optional<base::TimeDelta> timeout =
-      (base::FeatureList::IsEnabled(blink::features::kSharedStorageAPIM118) &&
-       private_aggregation_config->context_id)
-          ? std::optional<base::TimeDelta>(base::Seconds(5))
-          : std::nullopt;
+  std::optional<base::TimeDelta> timeout;
+  if (base::FeatureList::IsEnabled(blink::features::kSharedStorageAPIM118) &&
+      PrivateAggregationManager::ShouldSendReportDeterministically(
+          private_aggregation_config->context_id,
+          private_aggregation_config->filtering_id_max_bytes)) {
+    timeout = base::Seconds(5);
+  }
 
-  // TODO(crbug.com/330744610): Allow filtering ID byte size to be set.
   bool success = private_aggregation_manager->BindNewReceiver(
       shared_storage_origin_, main_frame_origin_,
       PrivateAggregationCallerApi::kSharedStorage,

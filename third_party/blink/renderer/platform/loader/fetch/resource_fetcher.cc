@@ -182,8 +182,7 @@ ResourceLoadPriority TypeToPriority(ResourceType type) {
       return ResourceLoadPriority::kVeryLow;
   }
 
-  NOTREACHED_IN_MIGRATION();
-  return ResourceLoadPriority::kUnresolved;
+  NOTREACHED();
 }
 
 bool ShouldResourceBeAddedToMemoryCache(const FetchParameters& params,
@@ -354,6 +353,18 @@ void RecordDeferUnusedPreloadHistograms(const Resource* resource) {
         resource->GetType());
   }
 }
+
+int CompareResourcePriorities(const ResourcePriority& a,
+                              const ResourcePriority& b) {
+  if (a.visibility != b.visibility) {
+    return a.visibility == ResourcePriority::kVisible ? 1 : -1;
+  }
+  if (a.is_lcp_resource != b.is_lcp_resource) {
+    return a.is_lcp_resource ? 1 : -1;
+  }
+  return a.intra_priority_value - b.intra_priority_value;
+}
+
 }  // namespace
 
 // Used to ensure a ResourceRequest is correctly configured. Specifically
@@ -458,8 +469,7 @@ mojom::blink::RequestContextType ResourceFetcher::DetermineRequestContext(
     case ResourceType::kDictionary:
       return mojom::blink::RequestContextType::SUBRESOURCE;
   }
-  NOTREACHED_IN_MIGRATION();
-  return mojom::blink::RequestContextType::SUBRESOURCE;
+  NOTREACHED();
 }
 
 network::mojom::RequestDestination ResourceFetcher::DetermineRequestDestination(
@@ -491,8 +501,7 @@ network::mojom::RequestDestination ResourceFetcher::DetermineRequestDestination(
     case ResourceType::kDictionary:
       return network::mojom::RequestDestination::kEmpty;
   }
-  NOTREACHED_IN_MIGRATION();
-  return network::mojom::RequestDestination::kEmpty;
+  NOTREACHED();
 }
 
 void ResourceFetcher::AddPriorityObserverForTesting(
@@ -792,7 +801,8 @@ ResourceFetcher::ResourceFetcher(const ResourceFetcherInit& init)
       allow_stale_resources_(false),
       image_fetched_(false),
       transparent_image_optimization_enabled_(base::FeatureList::IsEnabled(
-          features::kSimplifyLoadingTransparentPlaceholderImage)) {
+          features::kSimplifyLoadingTransparentPlaceholderImage)),
+      speculative_decode_in_flight_(false) {
   InstanceCounters::IncrementCounter(InstanceCounters::kResourceFetcherCounter);
 
   // Determine the number of images that should get a boosted priority and the
@@ -1458,6 +1468,12 @@ Resource* ResourceFetcher::RequestResource(FetchParameters& params,
           resource->ShouldRevalidateStaleResponse(*use_counter_)) {
         ScheduleStaleRevalidate(resource);
       }
+      if (resource->GetType() == ResourceType::kImage &&
+          resource->GetContentStatus() == ResourceStatus::kCached &&
+          base::FeatureList::IsEnabled(features::kSpeculativeImageDecodes)) {
+        speculative_decode_candidate_images_.insert(resource);
+        MaybeStartSpeculativeImageDecode();
+      }
       break;
   }
   DCHECK(resource);
@@ -1854,8 +1870,7 @@ void ResourceFetcher::PrintPreloadMismatch(Resource* resource,
 
   switch (status) {
     case Resource::MatchStatus::kOk:
-      NOTREACHED_IN_MIGRATION();
-      break;
+      NOTREACHED();
     case Resource::MatchStatus::kUnknownFailure:
       builder.Append("due to an unknown reason.");
       break;
@@ -1980,7 +1995,7 @@ const char* ResourceFetcher::GetNameFor(RevalidationPolicy policy) {
     case RevalidationPolicy::kLoad:
       return "load";
   }
-  NOTREACHED_IN_MIGRATION();
+  NOTREACHED();
 }
 
 std::pair<ResourceFetcher::RevalidationPolicy, const char*>
@@ -2459,6 +2474,12 @@ void ResourceFetcher::HandleLoaderFinish(Resource* resource,
 
   if (type == kDidFinishLoading) {
     resource->Finish(response_end, freezable_task_runner_.get());
+    if (resource->GetType() == ResourceType::kImage &&
+        resource->GetContentStatus() == ResourceStatus::kCached &&
+        base::FeatureList::IsEnabled(features::kSpeculativeImageDecodes)) {
+      speculative_decode_candidate_images_.insert(resource);
+      MaybeStartSpeculativeImageDecode();
+    }
 
     // Since this resource came from the network stack we only schedule a stale
     // while revalidate request if the network asked us to. If we called
@@ -2715,7 +2736,7 @@ void ResourceFetcher::RemoveResourceLoader(ResourceLoader* loader) {
   } else if (non_blocking_loaders_.Contains(loader)) {
     non_blocking_loaders_.erase(loader);
   } else {
-    NOTREACHED_IN_MIGRATION();
+    NOTREACHED();
   }
 
   if (loaders_.empty() && non_blocking_loaders_.empty()) {
@@ -2741,9 +2762,19 @@ void ResourceFetcher::UpdateAllImageResourcePriorities() {
       "blink",
       "ResourceLoadPriorityOptimizer::updateAllImageResourcePriorities");
 
+  // Force all images to update their LastComputedPriority.
+  for (Resource* resource : speculative_decode_candidate_images_) {
+    resource->PriorityFromObservers();
+  }
+  speculative_decode_candidate_images_.erase_if(
+      [](const WeakMember<Resource>& resource) -> bool {
+        return resource->LastComputedPriority().visibility ==
+               ResourcePriority::kNotVisible;
+      });
+  MaybeStartSpeculativeImageDecode();
+
   HeapVector<Member<Resource>> to_be_removed;
   for (Resource* resource : not_loaded_image_resources_) {
-    DCHECK_EQ(resource->GetType(), ResourceType::kImage);
     if (resource->IsLoaded()) {
       to_be_removed.push_back(resource);
       continue;
@@ -3125,6 +3156,42 @@ void ResourceFetcher::MaybeSaveResourceToStrongReference(Resource* resource) {
   }
 }
 
+void ResourceFetcher::MaybeStartSpeculativeImageDecode() {
+  CHECK(base::FeatureList::IsEnabled(features::kSpeculativeImageDecodes) ||
+        !speculative_decode_in_flight_);
+  CHECK(base::FeatureList::IsEnabled(features::kSpeculativeImageDecodes) ||
+        speculative_decode_candidate_images_.empty());
+  if (speculative_decode_in_flight_) {
+    return;
+  }
+  // Find the highest priority image to decode.
+  Resource* image_to_decode = nullptr;
+  for (Resource* resource : speculative_decode_candidate_images_) {
+    const ResourcePriority& priority = resource->LastComputedPriority();
+    if (priority.visibility != ResourcePriority::kVisible) {
+      continue;
+    }
+    if (!image_to_decode ||
+        CompareResourcePriorities(
+            priority, image_to_decode->LastComputedPriority()) > 0) {
+      image_to_decode = resource;
+    }
+  }
+  if (image_to_decode) {
+    speculative_decode_candidate_images_.erase(image_to_decode);
+    Context().StartSpeculativeImageDecode(
+        image_to_decode,
+        WTF::BindOnce(&ResourceFetcher::SpeculativeImageDecodeFinished,
+                      WrapWeakPersistent(this)));
+    speculative_decode_in_flight_ = true;
+  }
+}
+
+void ResourceFetcher::SpeculativeImageDecodeFinished() {
+  speculative_decode_in_flight_ = false;
+  MaybeStartSpeculativeImageDecode();
+}
+
 void ResourceFetcher::OnMemoryPressure(
     base::MemoryPressureListener::MemoryPressureLevel level) {
   if (base::FeatureList::IsEnabled(
@@ -3258,6 +3325,7 @@ void ResourceFetcher::Trace(Visitor* visitor) const {
   visitor->Trace(cached_resources_map_);
   visitor->Trace(emulated_load_started_for_inspector_resources_map_);
   visitor->Trace(not_loaded_image_resources_);
+  visitor->Trace(speculative_decode_candidate_images_);
   visitor->Trace(preloads_);
   visitor->Trace(matched_preloads_);
   visitor->Trace(deferred_preloads_);

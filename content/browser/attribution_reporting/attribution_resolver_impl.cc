@@ -13,7 +13,6 @@
 #include "base/check.h"
 #include "base/check_op.h"
 #include "base/containers/contains.h"
-#include "base/feature_list.h"
 #include "base/functional/bind.h"
 #include "base/functional/overloaded.h"
 #include "base/metrics/histogram_functions.h"
@@ -28,7 +27,6 @@
 #include "components/attribution_reporting/aggregatable_values.h"
 #include "components/attribution_reporting/event_report_windows.h"
 #include "components/attribution_reporting/event_trigger_data.h"
-#include "components/attribution_reporting/features.h"
 #include "components/attribution_reporting/filters.h"
 #include "components/attribution_reporting/source_registration.h"
 #include "components/attribution_reporting/source_type.mojom.h"
@@ -85,21 +83,13 @@ enum class DestinationLimitResult {
 
 DestinationLimitResult GetDestinationLimitResult(
     const std::vector<StoredSource::Id>& sources_to_deactivate) {
-  const bool destination_limit_hit = !sources_to_deactivate.empty();
-
-  if (!base::FeatureList::IsEnabled(attribution_reporting::features::
-                                        kAttributionSourceDestinationLimit)) {
-    return destination_limit_hit ? DestinationLimitResult::kNotAllowed
-                                 : DestinationLimitResult::kAllowed;
-  }
-
   DestinationLimitResult result =
-      destination_limit_hit
-          ? (base::Contains(sources_to_deactivate,
+      sources_to_deactivate.empty()
+          ? DestinationLimitResult::kAllowed
+          : (base::Contains(sources_to_deactivate,
                             StoredSource::Id(RateLimitTable::kUnsetRecordId))
                  ? DestinationLimitResult::kNotAllowed
-                 : DestinationLimitResult::kAllowedLimitHit)
-          : DestinationLimitResult::kAllowed;
+                 : DestinationLimitResult::kAllowedLimitHit);
 
   base::UmaHistogramEnumeration("Conversions.SourceDestinationLimitResult",
                                 result);
@@ -322,14 +312,9 @@ StoreSourceResult AttributionResolverImpl::StoreSource(StorableSource source) {
       return make_result(StoreSourceResult::InternalError());
   }
 
-  RateLimitTable::DestinationRateLimitResult destination_rate_limit_result =
-      storage_.SourceAllowedForDestinationRateLimit(source, source_time);
-  base::UmaHistogramEnumeration("Conversions.DestinationRateLimitResult",
-                                destination_rate_limit_result);
-
   bool hit_global_destination_limit = false;
 
-  switch (destination_rate_limit_result) {
+  switch (storage_.SourceAllowedForDestinationRateLimit(source, source_time)) {
     case RateLimitTable::DestinationRateLimitResult::kAllowed:
       break;
     case RateLimitTable::DestinationRateLimitResult::kHitGlobalLimit:
@@ -345,8 +330,6 @@ StoreSourceResult AttributionResolverImpl::StoreSource(StorableSource source) {
       return make_result(StoreSourceResult::InternalError());
   }
 
-  if (base::FeatureList::IsEnabled(attribution_reporting::features::
-                                       kAttributionSourceDestinationLimit)) {
     switch (storage_.SourceAllowedForDestinationPerDayRateLimit(source,
                                                                 source_time)) {
       case RateLimitResult::kAllowed:
@@ -359,7 +342,6 @@ StoreSourceResult AttributionResolverImpl::StoreSource(StorableSource source) {
       case RateLimitResult::kError:
         return make_result(StoreSourceResult::InternalError());
     }
-  }
 
   base::expected<std::vector<StoredSource::Id>, RateLimitTable::Error>
       source_ids_to_deactivate =
@@ -747,10 +729,12 @@ CreateReportResult AttributionResolverImpl::MaybeCreateAndStoreReport(
   if (CreateReportResult::AggregatableSuccess* success =
           GetSuccessResult(*aggregatable_result)) {
     aggregatable_result = storage_.MaybeStoreAggregatableAttributionReportData(
-        source_to_attribute->source.source_id(),
+        source_to_attribute->source,
         source_to_attribute->source.remaining_aggregatable_attribution_budget(),
         source_to_attribute->num_aggregatable_attribution_reports,
-        aggregatable_dedup_key, std::move(*success));
+        aggregatable_dedup_key,
+        trigger_registration.aggregatable_named_budget_candidates,
+        std::move(*success));
   }
 
   if (IsInternalError(*event_level_result) ||
@@ -954,9 +938,8 @@ AttributionResolverImpl::MaybeCreateAggregatableAttributionReport(
     return CreateReportResult::NoHistograms();
   }
 
-  if (int64_t count = storage_.CountReportsWithDestinationSite(
-          net::SchemefulSite(attribution_info.context_origin),
-          AttributionReport::Type::kAggregatableAttribution);
+  if (int64_t count = storage_.CountAggregatableReportsWithDestinationSite(
+          net::SchemefulSite(attribution_info.context_origin));
       count < 0) {
     return CreateReportResult::InternalError();
   } else if (int max = delegate_->GetMaxReportsPerDestination(
@@ -1201,7 +1184,7 @@ AttributionResolverImpl::ProcessAggregatableDebugReport(
     std::optional<AttributionStorageSql::AggregatableDebugSourceData>
         source_data = storage_.GetAggregatableDebugSourceData(*source_id);
     if (!source_data.has_value() ||
-        !attribution_reporting::IsRemainingAggregatableBudgetInRange(
+        !attribution_reporting::IsAggregatableBudgetInRange(
             source_data->remaining_budget) ||
         source_data->num_reports < 0) {
       return make_result(ProcessAggregatableDebugReportStatus::kInternalError);
@@ -1226,7 +1209,7 @@ AttributionResolverImpl::ProcessAggregatableDebugReport(
   // maximum budget per source.
   int effective_remaining_budget =
       remaining_budget.value_or(attribution_reporting::kMaxAggregatableValue);
-  CHECK(attribution_reporting::IsRemainingAggregatableBudgetInRange(
+  CHECK(attribution_reporting::IsAggregatableBudgetInRange(
       effective_remaining_budget));
   if (report.BudgetRequired() > effective_remaining_budget) {
     return make_result(
@@ -1408,10 +1391,10 @@ AttributionResolverImpl::MaybeStoreEventLevelReport(
                     CreateReportResult::InternalError());
             }
 
-            if (int64_t count = storage_.CountReportsWithDestinationSite(
-                    net::SchemefulSite(
-                        report.attribution_info().context_origin),
-                    AttributionReport::Type::kEventLevel);
+            if (int64_t count =
+                    storage_.CountEventLevelReportsWithDestinationSite(
+                        net::SchemefulSite(
+                            report.attribution_info().context_origin));
                 count < 0) {
               return CreateReportResult::EventLevel(
                   CreateReportResult::InternalError());

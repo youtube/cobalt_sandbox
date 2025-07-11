@@ -15,12 +15,11 @@ constexpr char kEnterprisePlusAddressOAuthScopeName[] = "oauth-scope";
 constexpr char kEnterprisePlusAddressServerUrlName[] = "server-url";
 constexpr char kPlusAddressManagementUrlName[] = "manage-url";
 constexpr char kPlusAddressLearnMoreUrlName[] = "learn-more";
-constexpr char kPlusAddressErrorReportUrlName[] = "error-report-url";
 constexpr char kPlusAddressRequestTimeoutName[] = "request-timeout";
 
 }  // namespace
 
-// When enabled, HaTS survey is shown after the successful first time creation
+// When enabled, a HaTS survey is shown after the successful first time creation
 // flow.
 BASE_FEATURE(kPlusAddressAcceptedFirstTimeCreateSurvey,
              "PlusAddressAcceptedFirstTimeCreateSurvey",
@@ -33,6 +32,12 @@ BASE_FEATURE(kPlusAddressAndroidOpenGmsCoreManagementPage,
              "PlusAddressAndroidOpenGmsCoreManagementPage",
              base::FEATURE_DISABLED_BY_DEFAULT);
 #endif  // BUILDFLAG(IS_ANDROID)
+
+// When enabled, a HaTS survey is shown after the declined the first plus
+// address creation flow.
+BASE_FEATURE(kPlusAddressDeclinedFirstTimeCreateSurvey,
+             "PlusAddressDeclinedFirstTimeCreateSurvey",
+             base::FEATURE_DISABLED_BY_DEFAULT);
 
 // Controls the enabled/disabled state of the experimental feature.
 BASE_FEATURE(kPlusAddressesEnabled,
@@ -47,8 +52,6 @@ const base::FeatureParam<std::string> kPlusAddressManagementUrl{
     &kPlusAddressesEnabled, kPlusAddressManagementUrlName, ""};
 const base::FeatureParam<std::string> kPlusAddressLearnMoreUrl{
     &kPlusAddressesEnabled, kPlusAddressLearnMoreUrlName, ""};
-const base::FeatureParam<std::string> kPlusAddressErrorReportUrl{
-    &kPlusAddressesEnabled, kPlusAddressErrorReportUrlName, ""};
 const base::FeatureParam<base::TimeDelta> kPlusAddressRequestTimeout{
     &kPlusAddressesEnabled, kPlusAddressRequestTimeoutName, base::Seconds(5)};
 
@@ -79,20 +82,6 @@ BASE_FEATURE(kPlusAddressInlineCreation,
              "PlusAddressInlineCreation",
              base::FEATURE_DISABLED_BY_DEFAULT);
 #endif  // !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_IOS)
-
-#if BUILDFLAG(IS_IOS)
-// When enabled, plus address creation bottom sheet shows enhanced UI for
-// different error states as well as loading states on iOS.
-BASE_FEATURE(kPlusAddressIOSErrorAndLoadingStatesEnabled,
-             "PlusAddressIOSErrorAndLoadingStatesEnabled",
-             base::FEATURE_DISABLED_BY_DEFAULT);
-
-// When enabled, mobile manual fallbacks for addresses and passwords show plus
-// address filling information.
-BASE_FEATURE(kPlusAddressIOSManualFallbackEnabled,
-             "PlusAddressIOSManualFallbackEnabled",
-             base::FEATURE_DISABLED_BY_DEFAULT);
-#endif  // BUILDFLAG(IS_IOS)
 
 // When enabled, plus address creation is offered also on login forms if the
 // password field is not visible.
@@ -142,6 +131,12 @@ extern const base::FeatureParam<int> kPlusAddressPreallocationMinimumSize(
 // integrated into Password Manager's own logic.
 BASE_FEATURE(kPlusAddressRefinedPasswordFormClassification,
              "PlusAddressRefinedPasswordFormClassification",
+             base::FEATURE_DISABLED_BY_DEFAULT);
+
+// When enabled, a HaTS survey is shown after the user creates a 3rd+ plus
+// address.
+BASE_FEATURE(kPlusAddressUserCreatedMultiplePlusAddressesSurvey,
+             "PlusAddressUserCreatedMultiplePlusAddressesSurvey",
              base::FEATURE_DISABLED_BY_DEFAULT);
 
 // When enabled, the plus address creation dialogs or bottom sheets include

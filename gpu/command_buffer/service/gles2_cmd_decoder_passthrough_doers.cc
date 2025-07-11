@@ -3824,8 +3824,10 @@ error::Error GLES2DecoderPassthroughImpl::DoDeleteQueriesEXT(
       continue;
     }
 
-    if (base::Contains(active_queries_, query_info.type)) {
-      active_queries_.erase(query_info.type);
+    auto active_query_iter = active_queries_.find(query_info.type);
+    if (active_query_iter != active_queries_.end() &&
+        active_query_iter->second.service_id == query_service_id) {
+      active_queries_.erase(active_query_iter);
     }
 
     RemovePendingQuery(query_service_id);
@@ -4011,7 +4013,7 @@ error::Error GLES2DecoderPassthroughImpl::DoEndQueryEXT(GLenum target,
     }
   }
 
-  DCHECK(active_queries_.find(target) != active_queries_.end());
+  CHECK(base::Contains(active_queries_, target));
   ActiveQuery active_query = std::move(active_queries_[target]);
   active_queries_.erase(target);
 
@@ -5166,7 +5168,6 @@ error::Error GLES2DecoderPassthroughImpl::DoCopySharedImageINTERNAL(
     GLint y,
     GLsizei width,
     GLsizei height,
-    GLboolean unpack_flip_y,
     const volatile GLbyte* mailboxes) {
   if (!lazy_context_) {
     lazy_context_ = LazySharedContextState::Create(this);
@@ -5179,8 +5180,8 @@ error::Error GLES2DecoderPassthroughImpl::DoCopySharedImageINTERNAL(
                             lazy_context_->shared_context_state()->surface());
   CopySharedImageHelper helper(group_->shared_image_representation_factory(),
                                lazy_context_->shared_context_state());
-  auto result = helper.CopySharedImage(xoffset, yoffset, x, y, width, height,
-                                       unpack_flip_y, mailboxes);
+  auto result =
+      helper.CopySharedImage(xoffset, yoffset, x, y, width, height, mailboxes);
   if (!result.has_value()) {
     InsertError(result.error().gl_error, result.error().msg);
   }

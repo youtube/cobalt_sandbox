@@ -16,10 +16,13 @@ import android.view.View;
 
 import androidx.annotation.Nullable;
 
+import org.chromium.base.Callback;
 import org.chromium.base.MathUtils;
 import org.chromium.base.metrics.RecordUserAction;
+import org.chromium.base.supplier.ObservableSupplierImpl;
 import org.chromium.chrome.browser.layouts.animation.CompositorAnimationHandler;
 import org.chromium.chrome.browser.layouts.animation.CompositorAnimator;
+import org.chromium.chrome.browser.tab.Tab;
 import org.chromium.chrome.browser.tabmodel.TabGroupModelFilter;
 import org.chromium.chrome.browser.tabmodel.TabModel;
 import org.chromium.chrome.browser.tabmodel.TabModelUtils;
@@ -50,13 +53,16 @@ public class ReorderDelegate {
     // Tab Strip State.
     private AnimationHost mAnimationHost;
     private ScrollDelegate mScrollDelegate;
+    private ActionConfirmationDelegate mActionConfirmationDelegate;
+    private ObservableSupplierImpl<Integer> mGroupIdToHideSupplier;
     private View mContainerView;
 
     // Internal State.
     private boolean mInitialized;
 
     // Reorder State.
-    private boolean mInReorderMode;
+    private final ObservableSupplierImpl<Boolean> mInReorderModeSupplier =
+            new ObservableSupplierImpl<>(/* initialValue= */ false);
     private boolean mReorderingForTabDrop;
 
     /** The last x-position we processed for reorder. */
@@ -76,11 +82,11 @@ public class ReorderDelegate {
     // ============================================================================================
 
     boolean getInReorderMode() {
-        return mInReorderMode;
+        return Boolean.TRUE.equals(mInReorderModeSupplier.get());
     }
 
     void setInReorderMode(boolean inReorderMode) {
-        mInReorderMode = inReorderMode;
+        mInReorderModeSupplier.set(inReorderMode);
     }
 
     boolean getReorderingForTabDrop() {
@@ -120,17 +126,26 @@ public class ReorderDelegate {
      * Passes the dependencies needed in this delegate. Passed here as they aren't ready on
      * instantiation.
      *
-     * @param tabGroupModelFilter The {@link TabGroupModelFilter} linked to this delegate.
-     * @param scrollDelegate The {@link ScrollDelegate} linked to this delegate.
+     * @param animationHost The {@link AnimationHost} for triggering animations.
+     * @param tabGroupModelFilter The {@link TabGroupModelFilter} for accessing tab state.
+     * @param scrollDelegate The {@link ScrollDelegate} for updating scroll offset.
+     * @param actionConfirmationDelegate The {@link ActionConfirmationDelegate} for confirming group
+     *     actions, such as delete and ungroup.
+     * @param groupIdToHideSupplier The {@link ObservableSupplierImpl} for the group ID to hide.
+     * @param containerView The tab strip container {@link View}.
      */
     void initialize(
             AnimationHost animationHost,
             TabGroupModelFilter tabGroupModelFilter,
             ScrollDelegate scrollDelegate,
+            ActionConfirmationDelegate actionConfirmationDelegate,
+            ObservableSupplierImpl<Integer> groupIdToHideSupplier,
             View containerView) {
         mAnimationHost = animationHost;
         mTabGroupModelFilter = tabGroupModelFilter;
         mScrollDelegate = scrollDelegate;
+        mActionConfirmationDelegate = actionConfirmationDelegate;
+        mGroupIdToHideSupplier = groupIdToHideSupplier;
         mContainerView = containerView;
 
         mModel = mTabGroupModelFilter.getTabModel();
@@ -155,11 +170,11 @@ public class ReorderDelegate {
             float effectiveTabWidth,
             float x) {
         RecordUserAction.record("MobileToolbarStartReorderTab");
-        mInteractingTab = interactingTab;
+        setInteractingTab(interactingTab);
 
         // 1. Set reorder mode to true before selecting this tab to prevent unnecessary triggering
         // of #bringSelectedTabToVisibleArea for edge tabs when the tab strip is full.
-        mInReorderMode = true;
+        setInReorderMode(true);
 
         // 2. Select this tab so that it is always in the foreground.
         TabModelUtils.setIndex(
@@ -182,6 +197,69 @@ public class ReorderDelegate {
         mAnimationHost.requestUpdate();
     }
 
+    /**
+     * Stop reorder mode and clear any relevant state. Don't call if not in reorder mode.
+     *
+     * @param groupTitles The list of {@link StripLayoutGroupTitle}.
+     * @param stripTabs The list of {@link StripLayoutTab}.
+     */
+    void stopReorderMode(StripLayoutGroupTitle[] groupTitles, StripLayoutTab[] stripTabs) {
+        assert getInReorderMode()
+                : "Tried to stop reorder mode, without first starting reorder mode.";
+        ArrayList<Animator> animationList = null;
+        // TODO(crbug.com/372546700): Clean-up when mAnimationsDisabledForTesting is removed.
+        if (!mAnimationsDisabledForTesting) animationList = new ArrayList<>();
+
+        // 1. Reset the state variables.
+        mReorderScrollState = REORDER_SCROLL_NONE;
+        setInReorderMode(false);
+
+        // 2. Reset the interacting view (clear any offset and reattach the container).
+        mAnimationHost.finishAnimationsAndPushTabUpdates();
+        if (mInteractingTab != null) {
+            // TODO(crbug.com/372546700): mInteractingTab may be null if reordering for tab drop.
+            if (animationList != null) {
+                animationList.add(
+                        CompositorAnimator.ofFloatProperty(
+                                mAnimationHost.getAnimationHandler(),
+                                mInteractingTab,
+                                StripLayoutView.X_OFFSET,
+                                mInteractingTab.getOffsetX(),
+                                0f,
+                                ANIM_TAB_MOVE_MS));
+            } else {
+                mInteractingTab.setOffsetX(0f);
+            }
+
+            // Skip reattachment for tab drop to avoid exposing bottom indicator underneath the tab
+            // container.
+            if (!mReorderingForTabDrop || !mInteractingTab.getFolioAttached()) {
+                updateTabAttachState(mInteractingTab, true, animationList);
+            }
+        }
+
+        // 3. Clear any tab group margins.
+        resetTabGroupMargins(groupTitles, stripTabs, animationList);
+
+        // 4. Clear the interacting view.
+        setInteractingTab(null);
+
+        // 5. Reset the tab drop state. Must occur after the rest of the state is reset, since some
+        // logic depends on these values.
+        mReorderingForTabDrop = false;
+
+        // 6. Start animations.
+        mAnimationHost.startAnimations(animationList, /* listener= */ null);
+    }
+
+    void addInReorderModeObserver(Callback<Boolean> observer) {
+        mInReorderModeSupplier.addObserver(observer);
+    }
+
+    void removeInReorderModeObserver(Callback<Boolean> observer) {
+        mInReorderModeSupplier.removeObserver(observer);
+    }
+
     // ============================================================================================
     // Auto-scroll state
     // ============================================================================================
@@ -200,10 +278,6 @@ public class ReorderDelegate {
 
     boolean canReorderScrollRight() {
         return (mReorderScrollState & REORDER_SCROLL_RIGHT) != 0;
-    }
-
-    void clearReorderScrollState() {
-        mReorderScrollState = REORDER_SCROLL_NONE;
     }
 
     void allowReorderScrollLeft() {
@@ -301,6 +375,27 @@ public class ReorderDelegate {
         return true;
     }
 
+    private void resetTabGroupMargins(
+            StripLayoutGroupTitle[] groupTitles,
+            StripLayoutTab[] stripTabs,
+            @Nullable ArrayList<Animator> animationList) {
+        assert !getInReorderMode();
+
+        // TODO(crbug.com/372546700): Investigate only resetting first and last margin, as we now
+        //  don't use trailing margins to demarcate tab group bounds.
+        for (int i = 0; i < stripTabs.length; i++) {
+            final StripLayoutTab stripTab = stripTabs[i];
+            final Tab tab = mModel.getTabById(stripTab.getTabId());
+            if (tab == null) continue;
+            final StripLayoutGroupTitle groupTitle =
+                    StripLayoutUtils.findGroupTitle(groupTitles, tab.getRootId());
+
+            setTrailingMarginForTab(
+                    stripTab, groupTitle, /* shouldHaveTrailingMargin= */ false, animationList);
+        }
+        mScrollDelegate.setReorderStartMargin(/* newStartMargin= */ 0.f);
+    }
+
     // ============================================================================================
     // Tab reorder helpers
     // ============================================================================================
@@ -318,10 +413,54 @@ public class ReorderDelegate {
     }
 
     /**
+     * Attempts to move the interacting tab out of its group. May prompt the user with a
+     * confirmation dialog if the tab removal will result in a group deletion. Animates accordingly.
+     *
+     * @param groupTitles The list of {@link StripLayoutGroupTitle}.
+     * @param stripTabs The list of {@link StripLayoutTab}.
+     * @param towardEnd True if the interacting tab is being dragged toward the end of the strip.
+     */
+    void moveInteractingTabOutOfGroup(
+            StripLayoutGroupTitle[] groupTitles, StripLayoutTab[] stripTabs, boolean towardEnd) {
+        final int tabId = mInteractingTab.getTabId();
+        // TODO(crbug.com/377750438): Skip creating the ActionConfirmationDelegate for Incognito as
+        //  it won't be used here.
+        if (StripLayoutUtils.isLastTabInGroup(mTabGroupModelFilter, tabId)
+                && mGroupIdToHideSupplier.get() == Tab.INVALID_TAB_ID
+                && !mTabGroupModelFilter.isIncognitoBranded()) {
+            // When dragging the last tab out of group, the tab group delete dialog will show and we
+            // will hide the indicators for the interacting tab group until the user confirms the
+            // next action. e.g delete tab group when user confirms the delete, or restore
+            // indicators back on strip when user cancel the delete.
+            mActionConfirmationDelegate.handleDeleteGroupAction(
+                    StripLayoutUtils.getRootId(mModel, mInteractingTab),
+                    /* draggingLastTabOffStrip= */ false,
+                    /* tabClosing= */ false,
+                    () -> moveTabOutOfGroupInDirection(tabId, towardEnd));
+            // Exit reorder mode if the dialog will show. Tab drag and drop is cancelled elsewhere.
+            if (!mActionConfirmationDelegate.isTabRemoveDialogSkipped()) {
+                stopReorderMode(groupTitles, stripTabs);
+            }
+        } else {
+            moveTabOutOfGroupInDirection(tabId, towardEnd);
+        }
+
+        // Run indicator animations. Find the group title after handling the removal, since the
+        // group may have been deleted OR the rootID may have changed.
+        StripLayoutGroupTitle groupTitle =
+                StripLayoutUtils.findGroupTitle(
+                        groupTitles, StripLayoutUtils.getRootId(mModel, mInteractingTab));
+        if (groupTitle != null) {
+            animateGroupIndicatorForTabReorder(
+                    groupTitle, /* isMovingOutOfGroup= */ true, towardEnd);
+        }
+    }
+
+    /**
      * Wrapper for {@link TabGroupModelFilter#moveTabOutOfGroupInDirection} that also records the
      * tab-strip specific User Action.
      */
-    void moveTabOutOfGroupInDirection(int tabId, boolean towardEnd) {
+    private void moveTabOutOfGroupInDirection(int tabId, boolean towardEnd) {
         mTabGroupModelFilter.moveTabOutOfGroupInDirection(tabId, towardEnd);
         RecordUserAction.record("MobileToolbarReorderTab.TabRemovedFromGroup");
     }

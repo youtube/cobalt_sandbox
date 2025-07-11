@@ -154,6 +154,8 @@ const FeatureData kFeatures[] = {
     {FeatureType::kAutoclick, prefs::kAccessibilityAutoclickEnabled,
      &kSystemMenuAccessibilityAutoClickIcon,
      IDS_ASH_STATUS_TRAY_ACCESSIBILITY_AUTOCLICK},
+    {FeatureType::kBounceKeys, prefs::kAccessibilityBounceKeysEnabled, nullptr,
+     0, /*toggleable_in_quicksettings=*/false},
     {FeatureType::kCaretHighlight, prefs::kAccessibilityCaretHighlightEnabled,
      nullptr, IDS_ASH_STATUS_TRAY_ACCESSIBILITY_CARET_HIGHLIGHT},
     {FeatureType::kCursorHighlight, prefs::kAccessibilityCursorHighlightEnabled,
@@ -201,6 +203,8 @@ const FeatureData kFeatures[] = {
     {FeatureType::kSelectToSpeak, prefs::kAccessibilitySelectToSpeakEnabled,
      &kSystemMenuAccessibilitySelectToSpeakIcon,
      IDS_ASH_STATUS_TRAY_ACCESSIBILITY_SELECT_TO_SPEAK},
+    {FeatureType::kSlowKeys, prefs::kAccessibilitySlowKeysEnabled, nullptr, 0,
+     /*toggleable_in_quicksettings=*/false},
     {FeatureType::kStickyKeys, prefs::kAccessibilityStickyKeysEnabled, nullptr,
      IDS_ASH_STATUS_TRAY_ACCESSIBILITY_STICKY_KEYS,
      /*toggleable_in_quicksettings=*/true,
@@ -248,6 +252,8 @@ constexpr const char* const kA11yPrefsForRecommendedValueOnSignin[]{
 constexpr const char* const kCopiedOnSigninAccessibilityPrefs[]{
     prefs::kAccessibilityAutoclickDelayMs,
     prefs::kAccessibilityAutoclickEnabled,
+    prefs::kAccessibilityBounceKeysDelay,
+    prefs::kAccessibilityBounceKeysEnabled,
     prefs::kAccessibilityCaretHighlightEnabled,
     prefs::kAccessibilityChromeVoxAutoRead,
     prefs::kAccessibilityChromeVoxAnnounceDownloadNotifications,
@@ -306,6 +312,8 @@ constexpr const char* const kCopiedOnSigninAccessibilityPrefs[]{
     prefs::kAccessibilityScreenMagnifierMouseFollowingMode,
     prefs::kAccessibilityScreenMagnifierScale,
     prefs::kAccessibilitySelectToSpeakEnabled,
+    prefs::kAccessibilitySlowKeysDelay,
+    prefs::kAccessibilitySlowKeysEnabled,
     prefs::kAccessibilitySpokenFeedbackEnabled,
     prefs::kAccessibilityStickyKeysEnabled,
     prefs::kAccessibilityShortcutsEnabled,
@@ -1002,6 +1010,9 @@ void AccessibilityController::Feature::LogDurationMetric() {
     case FeatureType::kAutoclick:
       feature_duration_metric += "CrosAutoclick";
       break;
+    case FeatureType::kBounceKeys:
+      feature_duration_metric += "CrosBounceKeys";
+      break;
     case FeatureType::kCaretHighlight:
       feature_duration_metric += "CrosCaretHighlight";
       break;
@@ -1055,6 +1066,9 @@ void AccessibilityController::Feature::LogDurationMetric() {
       break;
     case FeatureType::kSelectToSpeak:
       feature_duration_metric += "CrosSelectToSpeak";
+      break;
+    case FeatureType::kSlowKeys:
+      feature_duration_metric += "CrosSlowKeys";
       break;
     case FeatureType::kSpokenFeedback:
       feature_duration_metric += "CrosSpokenFeedback";
@@ -1206,6 +1220,7 @@ void AccessibilityController::RegisterProfilePrefs(
   // These prefs control whether an accessibility feature is enabled. They are
   // not synced due to the impact they have on device interaction.
   registry->RegisterBooleanPref(prefs::kAccessibilityAutoclickEnabled, false);
+  registry->RegisterBooleanPref(prefs::kAccessibilityBounceKeysEnabled, false);
   registry->RegisterBooleanPref(prefs::kAccessibilityCursorColorEnabled, false);
   registry->RegisterBooleanPref(prefs::kAccessibilityCaretHighlightEnabled,
                                 false);
@@ -1223,12 +1238,13 @@ void AccessibilityController::RegisterProfilePrefs(
   registry->RegisterBooleanPref(prefs::kAccessibilityMouseKeysEnabled, false);
   registry->RegisterBooleanPref(prefs::kAccessibilityScreenMagnifierEnabled,
                                 false);
-  registry->RegisterBooleanPref(prefs::kAccessibilitySpokenFeedbackEnabled,
-                                false);
   registry->RegisterBooleanPref(prefs::kAccessibilitySelectToSpeakEnabled,
                                 false);
-  registry->RegisterBooleanPref(prefs::kAccessibilityStickyKeysEnabled, false);
   registry->RegisterBooleanPref(prefs::kAccessibilityShortcutsEnabled, true);
+  registry->RegisterBooleanPref(prefs::kAccessibilitySlowKeysEnabled, false);
+  registry->RegisterBooleanPref(prefs::kAccessibilitySpokenFeedbackEnabled,
+                                false);
+  registry->RegisterBooleanPref(prefs::kAccessibilityStickyKeysEnabled, false);
   registry->RegisterBooleanPref(prefs::kAccessibilitySwitchAccessEnabled,
                                 false);
   registry->RegisterBooleanPref(prefs::kAccessibilityVirtualKeyboardEnabled,
@@ -1393,6 +1409,13 @@ void AccessibilityController::RegisterProfilePrefs(
       static_cast<int>(kDefaultAutoclickMenuPosition),
       user_prefs::PrefRegistrySyncable::SYNCABLE_OS_PREF);
 
+  if (::features::IsAccessibilityFilterKeysEnabled()) {
+    registry->RegisterTimeDeltaPref(
+        prefs::kAccessibilityBounceKeysDelay,
+        kDefaultAccessibilityBounceKeysDelay,
+        user_prefs::PrefRegistrySyncable::SYNCABLE_OS_PREF);
+  }
+
   registry->RegisterIntegerPref(
       prefs::kAccessibilityCursorColor, 0,
       user_prefs::PrefRegistrySyncable::SYNCABLE_OS_PREF);
@@ -1414,6 +1437,11 @@ void AccessibilityController::RegisterProfilePrefs(
       user_prefs::PrefRegistrySyncable::SYNCABLE_OS_PREF);
   registry->RegisterDoublePref(prefs::kAccessibilityScreenMagnifierScale,
                                std::numeric_limits<double>::min());
+  if (::features::IsAccessibilityFilterKeysEnabled()) {
+    registry->RegisterTimeDeltaPref(
+        prefs::kAccessibilitySlowKeysDelay, kDefaultAccessibilitySlowKeysDelay,
+        user_prefs::PrefRegistrySyncable::SYNCABLE_OS_PREF);
+  }
   registry->RegisterDictionaryPref(
       prefs::kAccessibilitySwitchAccessSelectDeviceKeyCodes,
       user_prefs::PrefRegistrySyncable::SYNCABLE_OS_PREF);
@@ -1528,6 +1556,13 @@ void AccessibilityController::RegisterProfilePrefs(
         prefs::kAccessibilityFaceGazeVelocityThreshold,
         kDefaultFaceGazeVelocityThreshold,
         user_prefs::PrefRegistrySyncable::SYNCABLE_OS_PREF);
+    registry->RegisterBooleanPref(
+        prefs::kAccessibilityFaceGazePrecisionClick, false,
+        user_prefs::PrefRegistrySyncable::SYNCABLE_OS_PREF);
+    registry->RegisterIntegerPref(
+        prefs::kAccessibilityFaceGazePrecisionClickSpeedFactor,
+        kDefaultFaceGazePrecisionClickSpeedFactor,
+        user_prefs::PrefRegistrySyncable::SYNCABLE_OS_PREF);
   }
 
   if (::features::IsAccessibilityMagnifierFollowsChromeVoxEnabled()) {
@@ -1548,7 +1583,7 @@ void AccessibilityController::RegisterProfilePrefs(
   }
 
   registry->RegisterBooleanPref(prefs::kAccessibilityOverlayScrollbarEnabled,
-                                  false);
+                                false);
 }
 
 void AccessibilityController::Shutdown() {
@@ -1624,6 +1659,10 @@ AccessibilityController::always_show_scrollbar() const {
 
 AccessibilityController::Feature& AccessibilityController::autoclick() const {
   return GetFeature(FeatureType::kAutoclick);
+}
+
+AccessibilityController::Feature& AccessibilityController::bounce_keys() const {
+  return GetFeature(FeatureType::kBounceKeys);
 }
 
 AccessibilityController::Feature& AccessibilityController::caret_highlight()
@@ -1723,6 +1762,10 @@ AccessibilityController::Feature& AccessibilityController::spoken_feedback()
 AccessibilityController::Feature& AccessibilityController::select_to_speak()
     const {
   return GetFeature(FeatureType::kSelectToSpeak);
+}
+
+AccessibilityController::Feature& AccessibilityController::slow_keys() const {
+  return GetFeature(FeatureType::kSlowKeys);
 }
 
 AccessibilityController::Feature& AccessibilityController::sticky_keys() const {
@@ -2560,6 +2603,18 @@ void AccessibilityController::ObservePrefs(PrefService* prefs) {
       base::BindRepeating(
           &AccessibilityController::UpdateAutoclickMenuPositionFromPref,
           base::Unretained(this)));
+  if (::features::IsAccessibilityFilterKeysEnabled()) {
+    pref_change_registrar_->Add(
+        prefs::kAccessibilityBounceKeysDelay,
+        base::BindRepeating(
+            &AccessibilityController::UpdateBounceKeysDelayFromPref,
+            base::Unretained(this)));
+    pref_change_registrar_->Add(
+        prefs::kAccessibilitySlowKeysDelay,
+        base::BindRepeating(
+            &AccessibilityController::UpdateSlowKeysDelayFromPref,
+            base::Unretained(this)));
+  }
   if (::features::IsAccessibilityMouseKeysEnabled()) {
     pref_change_registrar_->Add(
         prefs::kAccessibilityMouseKeysAcceleration,
@@ -2686,6 +2741,10 @@ void AccessibilityController::ObservePrefs(PrefService* prefs) {
   UpdateAutoclickStabilizePositionFromPref();
   UpdateAutoclickMovementThresholdFromPref();
   UpdateAutoclickMenuPositionFromPref();
+  if (::features::IsAccessibilityFilterKeysEnabled()) {
+    UpdateBounceKeysDelayFromPref();
+    UpdateSlowKeysDelayFromPref();
+  }
   if (::features::IsAccessibilityMouseKeysEnabled()) {
     UpdateMouseKeysAccelerationFromPref();
     UpdateMouseKeysMaxSpeedFromPref();
@@ -2776,6 +2835,20 @@ void AccessibilityController::UpdateAutoclickMovementThresholdFromPref() {
 void AccessibilityController::UpdateAutoclickMenuPositionFromPref() {
   Shell::Get()->autoclick_controller()->SetMenuPosition(
       GetAutoclickMenuPosition());
+}
+
+void AccessibilityController::UpdateBounceKeysDelayFromPref() {
+  if (!filter_keys_event_rewriter_) {
+    return;
+  }
+  DCHECK(active_user_prefs_);
+  base::TimeDelta delay =
+      active_user_prefs_->GetTimeDelta(prefs::kAccessibilityBounceKeysDelay);
+  filter_keys_event_rewriter_->SetBounceKeysDelay(delay);
+}
+
+void AccessibilityController::UpdateSlowKeysDelayFromPref() {
+  // TODO(b/375218308): Hook up slow keys setter, similar to bounce keys above.
 }
 
 void AccessibilityController::UpdateMouseKeysAccelerationFromPref() {
@@ -2945,11 +3018,11 @@ void AccessibilityController::UpdateDisableTouchpadFromPrefs(bool notify) {
     return;
   }
 
-  const DisableTouchpadMode trackpad_mode = static_cast<DisableTouchpadMode>(
+  const DisableTouchpadMode touchpad_mode = static_cast<DisableTouchpadMode>(
       active_user_prefs_->GetInteger(prefs::kAccessibilityDisableTrackpadMode));
 
-  if (trackpad_mode == DisableTouchpadMode::kAlways ||
-      trackpad_mode == DisableTouchpadMode::kOnExternalMouseConnected) {
+  if (touchpad_mode == DisableTouchpadMode::kAlways ||
+      touchpad_mode == DisableTouchpadMode::kOnExternalMouseConnected) {
     disable_touchpad_event_rewriter_->SetEnabled(true);
   }
 }
@@ -2973,10 +3046,11 @@ void AccessibilityController::DisableTouchpadWithDialog() {
       break;
 
     case DisableTouchpadMode::kNever:
+      active_user_prefs_->SetBoolean(
+          prefs::kAccessibilityDisableTrackpadEnabled, false);
       message_center::MessageCenter* message_center =
           message_center::MessageCenter::Get();
       message_center->RemoveNotification(kNotificationId, false /* by_user */);
-
       ShowToast(AccessibilityToastType::kTouchpadDisabled);
       disable_touchpad_event_rewriter_->SetEnabled(false);
       break;
@@ -3009,6 +3083,8 @@ void AccessibilityController::ExternalDeviceConnected() {
 
 void AccessibilityController::ShowDisableTouchpadDialog() {
   accessibility_notification_controller_->CancelToast();
+  active_user_prefs_->SetBoolean(prefs::kAccessibilityDisableTrackpadEnabled,
+                                 true);
   // The internal touchpad should be disabled before the user clicks "Accept",
   // This is done to ensure the user can navigate with their keyboard.
   disable_touchpad_event_rewriter_->SetEnabled(true);
@@ -3064,6 +3140,14 @@ DisableTouchpadMode AccessibilityController::GetDisableTouchpadMode() {
       active_user_prefs_->GetInteger(prefs::kAccessibilityDisableTrackpadMode));
 }
 
+bool AccessibilityController::IsTouchpadDisabled() {
+  return disable_touchpad().enabled() &&
+         disable_touchpad_event_rewriter_->IsEnabled() &&
+         active_user_prefs_->GetInteger(
+             prefs::kAccessibilityDisableTrackpadMode) !=
+             static_cast<int>(DisableTouchpadMode::kNever);
+}
+
 void AccessibilityController::UpdateColorCorrectionFromPrefs() {
   DCHECK(active_user_prefs_);
 
@@ -3112,6 +3196,47 @@ void AccessibilityController::UpdateCaretBlinkIntervalFromPrefs() const {
   if (native_theme->GetCaretBlinkInterval() != caret_blink_interval) {
     notify_native = true;
     native_theme->set_caret_blink_interval(caret_blink_interval);
+  }
+  // Avoid unnecessary notifications.
+  if (notify_dark) {
+    native_theme_dark->NotifyOnNativeThemeUpdated();
+  }
+  if (notify_web) {
+    native_theme_web->NotifyOnNativeThemeUpdated();
+  }
+  if (notify_native) {
+    native_theme->NotifyOnNativeThemeUpdated();
+  }
+}
+
+void AccessibilityController::UpdateUseOverlayScrollbarFromPref() const {
+  if (!::features::IsOverlayScrollbarOSSettingEnabled()) {
+    return;
+  }
+  const bool overlay_scrollbar_enabled_by_feature_flag =
+      ::ui::IsOverlayScrollbarEnabledByFeatureFlag();
+  const bool overlay_scrollbar_enabled_by_os_setting =
+      !always_show_scrollbar().enabled();
+  const bool use_overlay_scrollbar =
+      overlay_scrollbar_enabled_by_feature_flag ||
+      overlay_scrollbar_enabled_by_os_setting;
+  bool notify_dark = false;
+  bool notify_web = false;
+  bool notify_native = false;
+  auto* native_theme_dark = ui::NativeTheme::GetInstanceForDarkUI();
+  if (native_theme_dark->use_overlay_scrollbar() != use_overlay_scrollbar) {
+    notify_dark = true;
+    native_theme_dark->set_use_overlay_scrollbar(use_overlay_scrollbar);
+  }
+  auto* native_theme_web = ui::NativeTheme::GetInstanceForWeb();
+  if (native_theme_web->use_overlay_scrollbar() != use_overlay_scrollbar) {
+    notify_web = true;
+    native_theme_web->set_use_overlay_scrollbar(use_overlay_scrollbar);
+  }
+  auto* native_theme = ui::NativeTheme::GetInstanceForNativeUi();
+  if (native_theme->use_overlay_scrollbar() != use_overlay_scrollbar) {
+    notify_native = true;
+    native_theme->set_use_overlay_scrollbar(use_overlay_scrollbar);
   }
   // Avoid unnecessary notifications.
   if (notify_dark) {
@@ -3587,6 +3712,11 @@ void AccessibilityController::UpdateFeatureFromPref(FeatureType feature) {
           enabled, /*show_confirmation_dialog=*/
           !no_auto_click_confirmation_dialog_for_testing_ && !is_managed);
       break;
+    case FeatureType::kBounceKeys:
+      if (filter_keys_event_rewriter_) {
+        filter_keys_event_rewriter_->SetBounceKeysEnabled(enabled);
+      }
+      break;
     case FeatureType::kCaretHighlight:
       UpdateAccessibilityHighlightingFromPrefs();
       break;
@@ -3661,8 +3791,7 @@ void AccessibilityController::UpdateFeatureFromPref(FeatureType feature) {
       // Handled in AccessibilityManager.
       break;
     case FeatureType::kAlwaysShowScrollbar:
-      ui::NativeTheme::SetPrefersAlwaysShowScrollbar(
-          always_show_scrollbar().enabled());
+      UpdateUseOverlayScrollbarFromPref();
       break;
     case FeatureType::kSelectToSpeak:
       select_to_speak_state_ = SelectToSpeakState::kSelectToSpeakStateInactive;
@@ -3672,6 +3801,11 @@ void AccessibilityController::UpdateFeatureFromPref(FeatureType feature) {
         select_to_speak_event_handler_.reset();
         HideSelectToSpeakPanel();
         select_to_speak_bubble_controller_.reset();
+      }
+      break;
+    case FeatureType::kSlowKeys:
+      if (filter_keys_event_rewriter_) {
+        // TODO(b/375218308): Hook up slow keys enablement.
       }
       break;
     case FeatureType::kStickyKeys:
@@ -3835,13 +3969,14 @@ void AccessibilityController::ScrollAtPoint(
   std::ignore = host->GetEventSink()->OnEventFromSource(&wheel);
 }
 
-void AccessibilityController::UpdateFaceGazeBubble(const std::u16string& text) {
+void AccessibilityController::UpdateFaceGazeBubble(const std::u16string& text,
+                                                   bool is_warning) {
   if (!facegaze_bubble_controller_ ||
       !::features::IsAccessibilityFaceGazeEnabled()) {
     return;
   }
 
-  facegaze_bubble_controller_->UpdateBubble(text);
+  facegaze_bubble_controller_->UpdateBubble(text, is_warning);
 }
 
 FaceGazeBubbleController*

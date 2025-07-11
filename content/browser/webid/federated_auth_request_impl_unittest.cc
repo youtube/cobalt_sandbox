@@ -154,7 +154,7 @@ struct IdentityProviderParameters {
   const char* login_hint;
   const char* domain_hint;
   std::optional<std::vector<std::string>> fields;
-  base::flat_map<std::string, std::string> params;
+  const char* params_json;
 };
 
 // Parameters for a call to RequestToken.
@@ -1138,7 +1138,9 @@ class FederatedAuthRequestImplTest : public RenderViewHostImplTestHarness {
       options->login_hint = identity_provider.login_hint;
       options->domain_hint = identity_provider.domain_hint;
       options->fields = std::move(identity_provider.fields);
-      options->params = std::move(identity_provider.params);
+      if (identity_provider.params_json) {
+        options->params_json = identity_provider.params_json;
+      }
       idp_ptrs.push_back(std::move(options));
     }
     blink::mojom::IdentityProviderGetParametersPtr get_params =
@@ -3497,7 +3499,8 @@ TEST_F(FederatedAuthRequestImplTest, DisclosureTextShownForFirstTimeUser) {
   checker->SetExpectedTokenPostData(
       "client_id=" + std::string(kClientId) + "&nonce=" + std::string(kNonce) +
       "&account_id=" + std::string(kAccountId) + "&disclosure_text_shown=true" +
-      "&is_auto_selected=false&fields=name,email,picture&disclosure_shown_for="
+      "&is_auto_selected=false&mode=passive&fields=name,email,picture&"
+      "disclosure_shown_for="
       "name,email,picture");
   SetNetworkRequestManager(std::move(checker));
 
@@ -3518,11 +3521,11 @@ TEST_F(FederatedAuthRequestImplTest, DisclosureTextNotShownForReturningUser) {
 
   std::unique_ptr<IdpNetworkRequestManagerParamChecker> checker =
       std::make_unique<IdpNetworkRequestManagerParamChecker>();
-  checker->SetExpectedTokenPostData("client_id=" + std::string(kClientId) +
-                                    "&nonce=" + std::string(kNonce) +
-                                    "&account_id=" + std::string(kAccountId) +
-                                    "&disclosure_text_shown=false&is_auto_"
-                                    "selected=false&fields=name,email,picture");
+  checker->SetExpectedTokenPostData(
+      "client_id=" + std::string(kClientId) + "&nonce=" + std::string(kNonce) +
+      "&account_id=" + std::string(kAccountId) +
+      "&disclosure_text_shown=false&is_auto_"
+      "selected=false&mode=passive&fields=name,email,picture");
   SetNetworkRequestManager(std::move(checker));
 
   MockConfiguration config = kConfigurationValid;
@@ -3543,7 +3546,8 @@ TEST_F(FederatedAuthRequestImplTest, TokenEndpointPostDataEscaping) {
   checker->SetExpectedTokenPostData(
       "client_id=" + std::string(kClientId) + "&nonce=" + std::string(kNonce) +
       "&account_id=account+id&disclosure_text_"
-      "shown=true&is_auto_selected=false&fields=name,email,picture&disclosure_"
+      "shown=true&is_auto_selected=false&mode=passive&fields=name,email,"
+      "picture&disclosure_"
       "shown_for=name,email,picture");
   SetNetworkRequestManager(std::move(checker));
 
@@ -3558,7 +3562,8 @@ TEST_F(FederatedAuthRequestImplTest, AutoSelectedFlagForNewUser) {
   checker->SetExpectedTokenPostData(
       "client_id=" + std::string(kClientId) + "&nonce=" + std::string(kNonce) +
       "&account_id=" + std::string(kAccountId) + "&disclosure_text_shown=true" +
-      "&is_auto_selected=false&fields=name,email,picture&disclosure_shown_for="
+      "&is_auto_selected=false&mode=passive&fields=name,email,picture&"
+      "disclosure_shown_for="
       "name,email,picture");
   SetNetworkRequestManager(std::move(checker));
 
@@ -3584,7 +3589,7 @@ TEST_F(FederatedAuthRequestImplTest,
       "client_id=" + std::string(kClientId) + "&nonce=" + std::string(kNonce) +
       "&account_id=" + std::string(kAccountId) +
       "&disclosure_text_shown=false" +
-      "&is_auto_selected=false&fields=name,email,picture");
+      "&is_auto_selected=false&mode=passive&fields=name,email,picture");
   SetNetworkRequestManager(std::move(checker));
 
   MockConfiguration config = kConfigurationValid;
@@ -3616,7 +3621,7 @@ TEST_F(FederatedAuthRequestImplTest,
       "client_id=" + std::string(kClientId) + "&nonce=" + std::string(kNonce) +
       "&account_id=" + std::string(kAccountId) +
       "&disclosure_text_shown=false" +
-      "&is_auto_selected=true&fields=name,email,picture");
+      "&is_auto_selected=true&mode=passive&fields=name,email,picture");
   SetNetworkRequestManager(std::move(checker));
 
   MockConfiguration config = kConfigurationValid;
@@ -3649,11 +3654,11 @@ TEST_F(FederatedAuthRequestImplTest, AutoSelectedFlagIfInQuietPeriod) {
 
   std::unique_ptr<IdpNetworkRequestManagerParamChecker> checker =
       std::make_unique<IdpNetworkRequestManagerParamChecker>();
-  checker->SetExpectedTokenPostData("client_id=" + std::string(kClientId) +
-                                    "&nonce=" + std::string(kNonce) +
-                                    "&account_id=" + std::string(kAccountId) +
-                                    "&disclosure_text_shown=false&is_auto_"
-                                    "selected=false&fields=name,email,picture");
+  checker->SetExpectedTokenPostData(
+      "client_id=" + std::string(kClientId) + "&nonce=" + std::string(kNonce) +
+      "&account_id=" + std::string(kAccountId) +
+      "&disclosure_text_shown=false&is_auto_"
+      "selected=false&mode=passive&fields=name,email,picture");
   SetNetworkRequestManager(std::move(checker));
 
   RequestExpectations expectations = kExpectationSuccess;
@@ -6053,7 +6058,7 @@ TEST_F(FederatedAuthRequestImplTest, RequestWithParameters) {
   list.InitAndEnableFeature(features::kFedCmAuthz);
 
   RequestParameters parameters = kDefaultRequestParameters;
-  parameters.identity_providers[0].params = {{"foo", "bar"}};
+  parameters.identity_providers[0].params_json = "{\"foo\", \"bar\"}";
 
   RunAuthTest(parameters, kExpectationSuccess, kConfigurationValid);
 
@@ -6069,7 +6074,7 @@ TEST_F(FederatedAuthRequestImplTest, RequestWithParametersAndScopes) {
 
   RequestParameters parameters = kDefaultRequestParameters;
   parameters.identity_providers[0].fields = {"non_default_field"};
-  parameters.identity_providers[0].params = {{"foo", "bar"}};
+  parameters.identity_providers[0].params_json = "{\"foo\", \"bar\"}";
 
   RunAuthTest(parameters, kExpectationSuccess, kConfigurationValid);
 

@@ -45,6 +45,7 @@
 #include "chrome/browser/web_applications/web_app_pref_guardrails.h"
 #include "chrome/browser/web_applications/web_app_provider.h"
 #include "chrome/browser/web_applications/web_app_registrar.h"
+#include "chrome/browser/web_applications/web_app_tab_helper.h"
 #include "chrome/browser/web_applications/web_app_ui_manager.h"
 #include "chrome/browser/web_applications/web_app_uninstall_dialog_user_options.h"
 #include "components/feature_engagement/public/feature_constants.h"
@@ -748,6 +749,14 @@ void WebAppUiManagerImpl::ClearWebAppSiteDataIfNeeded(
 }
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
+
+const base::Feature& GetPromoFeatureEngagementFromBrowser(
+    const Browser* browser) {
+  return browser->app_controller() != nullptr
+             ? feature_engagement::kIPHDesktopPWAsLinkCapturingLaunch
+             : feature_engagement::kIPHDesktopPWAsLinkCapturingLaunchAppInTab;
+}
+
 void WebAppUiManagerImpl::ShowIPHPromoForAppsLaunchedViaLinkCapturing(
     const Browser* browser,
     const webapps::AppId& app_id,
@@ -757,7 +766,7 @@ void WebAppUiManagerImpl::ShowIPHPromoForAppsLaunchedViaLinkCapturing(
   }
 
   user_education::FeaturePromoParams promo_params(
-      feature_engagement::kIPHDesktopPWAsLinkCapturingLaunch, app_id);
+      GetPromoFeatureEngagementFromBrowser(browser), app_id);
   promo_params.close_callback =
       base::BindOnce(&WebAppUiManagerImpl::OnIPHPromoResponseForLinkCapturing,
                      weak_ptr_factory_.GetWeakPtr(), browser, app_id);
@@ -770,6 +779,26 @@ void WebAppUiManagerImpl::ShowIPHPromoForAppsLaunchedViaLinkCapturing(
       });
 
   browser->window()->MaybeShowFeaturePromo(std::move(promo_params));
+
+  // This is only needed for IPH bubbles that are anchored to a tab in a
+  // browser. App browsers don't require this logic since tab switching and
+  // navigating to another page isn't something to worry about in an app
+  // window.
+  if (browser->window()->IsFeaturePromoActive(
+          feature_engagement::kIPHDesktopPWAsLinkCapturingLaunchAppInTab)) {
+    base::OnceCallback iph_deletion_callback = base::BindOnce(
+        [](const Browser* browser) {
+          CHECK(browser);
+          browser->window()->NotifyFeaturePromoFeatureUsed(
+              feature_engagement::kIPHDesktopPWAsLinkCapturingLaunchAppInTab,
+              FeaturePromoFeatureUsedAction::kClosePromoIfPresent);
+        },
+        browser);
+    WebAppTabHelper* tab_helper = WebAppTabHelper::FromWebContents(
+        browser->tab_strip_model()->GetActiveWebContents());
+    CHECK(tab_helper);
+    tab_helper->SetCallbackToRunOnTabChanges(std::move(iph_deletion_callback));
+  }
 }
 
 void WebAppUiManagerImpl::OnIPHPromoResponseForLinkCapturing(
@@ -788,8 +817,7 @@ void WebAppUiManagerImpl::OnIPHPromoResponseForLinkCapturing(
 
   user_education::FeaturePromoClosedReason close_reason;
   feature_promo_controller->HasPromoBeenDismissed(
-      {feature_engagement::kIPHDesktopPWAsLinkCapturingLaunch, app_id},
-      &close_reason);
+      {GetPromoFeatureEngagementFromBrowser(browser), app_id}, &close_reason);
   switch (close_reason) {
     case user_education::FeaturePromoClosedReason::kAction:
       base::RecordAction(
@@ -800,6 +828,9 @@ void WebAppUiManagerImpl::OnIPHPromoResponseForLinkCapturing(
       break;
     case user_education::FeaturePromoClosedReason::kDismiss:
     case user_education::FeaturePromoClosedReason::kCancel:
+    // This is needed if the promo is cancelled automatically by the
+    // `WebAppTabHelper`.
+    case user_education::FeaturePromoClosedReason::kFeatureEngaged:
       base::RecordAction(
           base::UserMetricsAction("LinkCapturingIPHAppBubbleNotAccepted"));
       WebAppPrefGuardrails::GetForNavigationCapturingIph(

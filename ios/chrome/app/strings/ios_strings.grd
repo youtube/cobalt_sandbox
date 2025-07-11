@@ -1666,7 +1666,7 @@ See your search engine’s instructions for deleting your search history, if app
           Configuration profile available
       </message>
       <message name="IDS_IOS_DRIVE_FILE_PICKER_ALERT_THIS_FILE_COUND_NOT_BE_OPENED" desc="Title for an alert which is presented when a file selected by the user cannot be opened in the Drive file picker. [iOS only]">
-          This File Couldn't Be Opened
+          <ph name="FILENAME">$1<ex>image.jpeg</ex></ph> couldn't be opened
       </message>
       <message name="IDS_IOS_DRIVE_FILE_PICKER_ALERT_TRY_AGAIN" desc="Title for an alert button to try again the selection of a file in the Drive file picker. The alert is presented when a file selected by the user couldn't be opened. [iOS only]">
           Try Again
@@ -3092,6 +3092,9 @@ See your search engine’s instructions for deleting your search history, if app
       <message name="IDS_IOS_OPTIONS_ACCOUNTS_RESTRICTED_IDENTITIES" desc="Message shown in the settings account switcher when enterprise policy has restricted some unseen identities. [iOS only]">
         Your organization allows you to sign in only with certain accounts. Accounts that aren't allowed are hidden. <ph name="BEGIN_LINK">BEGIN_LINK</ph>Learn more<ph name="END_LINK">END_LINK</ph>
       </message>
+      <message name="IDS_IOS_OPTIONS_ACCOUNTS_SIGNIN_ACCESSIBILITY_LABEL" desc="This string is found on a button on a list of available Google Accounts that the user sees when they open the profile menu on Chrome on iOS. When the user taps this button, Chrome will sign the user in to the selected account (and sign them out of the previous account). This text is a verb phrase. The tone should be factual. [iOS only]">
+        Sign in as <ph name="EMAIL">$1<ex>johndoe@gmail.com</ex></ph>
+      </message>
       <message name="IDS_IOS_OPTIONS_ACCOUNTS_SIGN_OUT_TURN_OFF_SYNC" desc="Title of the button to sign out and turn off sync. [iOS only]">
         Sign out and turn off sync
       </message>
@@ -3675,6 +3678,9 @@ While in Incognito, sites can't use cookies to see your browsing activity across
       <message name="IDS_IOS_PASSWORD_SETTINGS_CHANGE_PIN" desc="Label of the button that allows to change the PIN for Google Password Manager in password settings. [iOS Only]">
         Change PIN
       </message>
+      <message name="IDS_IOS_PASSWORD_SETTINGS_CHANGE_PIN_SET_UP_PASSCODE_CONTENT" desc="Message informing the user that in order to change their password manager PIN, a passcode or screen lock needs to be set up on the device. [iOS only]">
+        To change your PIN, first set up a passcode on your device.
+      </message>
       <message name="IDS_IOS_PASSWORD_SETTINGS_GOOGLE_PASSWORD_MANAGER_PIN_DESCRIPTION" desc="Help text explaining the functionality of a PIN for Google Password Manager. Refer to Glossary for the meaning of 'passkey', do not translate it as 'password'. [iOS Only]">
         Helps you access saved passkeys on any device
       </message>
@@ -4177,6 +4183,27 @@ While in Incognito, sites can't use cookies to see your browsing activity across
       </message>
       <message name="IDS_IOS_PROGRESS_BAR_ACCESSIBILITY" desc="Text read by voice over to inform the user about the progress of the page load. [Read by Text To Speech].">
         Page load progress bar, <ph name="EMAIL">$1<ex>20%</ex></ph> loaded.
+      </message>
+      <message name="IDS_IOS_PROMINENCE_NOTIFICATION_SETTINGS_ALERT_DECRIPTION" desc="Description of alert informing users that notifications are being delivered silently. [iOS only]">
+        Get notifications on your Lock Screen and as Banners to never miss what matters to you
+      </message>
+      <message name="IDS_IOS_PROMINENCE_NOTIFICATION_SETTINGS_ALERT_TITLE" desc="Title of alert informing users that notifications are being delivered silently. [iOS only]">
+        Your notifications are being delivered quietly
+      </message>
+      <message name="IDS_IOS_PROMINENCE_NOTIFICATION_SETTINGS_BANNERS_TEXT" desc="Text in contextual image of prominent notification settings alert matching the 'Banners' selection in the app notification settings page. [iOS only]">
+        Banners
+      </message>
+      <message name="IDS_IOS_PROMINENCE_NOTIFICATION_SETTINGS_LOCK_SCREEN_TEXT" desc="Text in contextual image of prominent notification settings alert matching the 'Lock Screen' selection in the app notification settings page. [iOS only]">
+        Lock Screen
+      </message>
+      <message name="IDS_IOS_PROMINENCE_NOTIFICATION_SETTINGS_NOTIFICATION_CENTER_TEXT" desc="Text in contextual image of prominent notification settings alert matching the 'Notification Center' selection in the app notification settings page. [iOS only]">
+        Notification Center
+      </message>
+            <message name="IDS_IOS_PROMINENCE_NOTIFICATION_SETTINGS_OPEN_SETTINGS_BUTTON" desc="Button text in prominence notification alert that takes users to the app's notification setting. [iOS only]">
+            Go to Settings...
+      </message>
+            <message name="IDS_IOS_PROMINENCE_NOTIFICATION_SETTINGS_NO_THANKS_BUTTON" desc="Button text in prominence notification alert for the user to say 'No thanks'. [iOS only]">
+            No thanks
       </message>
       <message name="IDS_IOS_PROMOS_MANAGER_ALERT_PROMO_DEFAULT_CANCEL_BUTTON_TEXT" desc="The default text for the cancel button alert promo. [iOS only]">
         Cancel
@@ -5576,7 +5603,9 @@ While in Incognito, sites can't use cookies to see your browsing activity across
        Don't hide
       </message>
       <message name="IDS_IOS_INCOGNITO_LOCK_HIDE_WITH_SOFT_LOCK_TITLE" desc="Incognito lock setting option to enable hiding Incognito tabs with a soft lock.  This appears in the incognito lock settings page under privacy and security. [iOS only]">
-       Hide after 10 minutes
+       {count, plural,
+          =1 {Hide after 1 minute}
+          other {Hide after {count} minutes}}
       </message>
       <message name="IDS_IOS_INCOGNITO_LOCK_HIDE_WITH_SOFT_LOCK_DESCRIPTION" desc="Description for enabling Incognito soft lock setting. This appears in the incognito lock settings page under privacy and security. [iOS only]">
        When you return, tabs are blurred until you tap to continue

@@ -326,6 +326,12 @@ base::expected<base::Value::Dict, std::string> ExtensionTabUtil::OpenTab(
   navigate_params.tabstrip_index = index;
   navigate_params.user_gesture = false;
   navigate_params.tabstrip_add_types = add_types;
+  // Ensure that this navigation will not get 'captured' into PWA windows, as
+  // this means that `browser` could be ignored. It may be useful/desired in
+  // the future to allow this behavior, but this may require an API change, and
+  // likely a re-write of how this navigation is called to be compatible with
+  // the navigation capturing behavior.
+  navigate_params.pwa_navigation_capturing_force_off = true;
   base::WeakPtr<content::NavigationHandle> handle = Navigate(&navigate_params);
   if (handle && params.bookmark_id) {
     ChromeNavigationUIData* ui_data =
@@ -494,6 +500,9 @@ api::tabs::Tab ExtensionTabUtil::CreateTabObject(
   tab_object.auto_discardable =
       !tab_lifecycle_unit_external ||
       tab_lifecycle_unit_external->IsAutoDiscardable();
+  tab_object.frozen = tab_lifecycle_unit_external &&
+                      tab_lifecycle_unit_external->GetTabState() ==
+                          ::mojom::LifecycleUnitState::FROZEN;
 
   tab_object.muted_info = CreateMutedInfo(contents);
   tab_object.incognito = contents->GetBrowserContext()->IsOffTheRecord();
@@ -905,12 +914,10 @@ api::tab_groups::Color ExtensionTabUtil::ColorIdToColor(
     case tab_groups::TabGroupColorId::kOrange:
       return api::tab_groups::Color::kOrange;
     case tab_groups::TabGroupColorId::kNumEntries:
-      NOTREACHED_IN_MIGRATION() << "kNumEntries is not a support color enum.";
-      return api::tab_groups::Color::kGrey;
+      NOTREACHED() << "kNumEntries is not a support color enum.";
   }
 
-  NOTREACHED_IN_MIGRATION();
-  return api::tab_groups::Color::kCyan;
+  NOTREACHED();
 }
 
 // static
@@ -936,11 +943,10 @@ tab_groups::TabGroupColorId ExtensionTabUtil::ColorToColorId(
     case api::tab_groups::Color::kOrange:
       return tab_groups::TabGroupColorId::kOrange;
     case api::tab_groups::Color::kNone:
-      NOTREACHED_IN_MIGRATION();
+      NOTREACHED();
   }
 
-  NOTREACHED_IN_MIGRATION();
-  return tab_groups::TabGroupColorId::kGrey;
+  NOTREACHED();
 }
 
 // static

@@ -2102,12 +2102,12 @@ void HTMLTreeBuilder::ProcessEndTagForInBody(AtomicHTMLToken* token) {
           auto* select = option->OwnerSelectElement();
           if (select && select->UsesMenuList() && !select->IsMultiple()) {
             CHECK_EQ(option, select->SelectedOption());
-            select->UpdateAllSelectedoptions();
+            select->UpdateAllSelectedcontents();
           }
         }
       }
-    }
       return;
+    }
     case HTMLTag::kForm:
       if (!IsParsingTemplateContents()) {
         Element* node = tree_.TakeForm();

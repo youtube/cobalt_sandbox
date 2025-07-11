@@ -1068,9 +1068,19 @@ chromium-metrics-reviews@google.com.
   </summary>
 </histogram>
 
+<histogram name="Ash.Birch.Coral.Action" enum="CoralActionType"
+    expires_after="2025-03-30">
+  <owner>zxdan@chromium.org</owner>
+  <owner>cros-coral@google.com</owner>
+  <summary>
+    Recorded when a coral cluster is restored, launched to a new desk, and saved
+    as a desk templated.
+  </summary>
+</histogram>
+
 <histogram name="Ash.Birch.Coral.ClusterCount" units="count"
     expires_after="2025-10-10">
-  <owner>yulunwu@chromium.org</owner>
+  <owner>zxdan@chromium.org</owner>
   <owner>cros-coral@google.com</owner>
   <summary>
     The number of coral items shown in the birch bar when the user enters
@@ -1080,11 +1090,20 @@ chromium-metrics-reviews@google.com.
 
 <histogram name="Ash.Birch.Coral.ClusterExpanded" enum="Boolean"
     expires_after="2025-03-30">
-  <owner>yulunwu@chromium.org</owner>
+  <owner>zxdan@chromium.org</owner>
   <owner>cros-coral@google.com</owner>
   <summary>
     Recorded whenever a user expands a coral BirchChipButton. Can be recorded
     multiple times during the lifetime of the BirchChipButton.
+  </summary>
+</histogram>
+
+<histogram name="Ash.Birch.Coral.ClusterItemRemoved" units="count"
+    expires_after="2025-03-30">
+  <owner>zxdan@chromium.org</owner>
+  <owner>cros-coral@google.com</owner>
+  <summary>
+    The number of coral items removed by user from the chevron expanded menu.
   </summary>
 </histogram>
 
@@ -1203,6 +1222,24 @@ chromium-metrics-reviews@google.com.
   </summary>
 </histogram>
 
+<histogram name="Ash.Boca.NumberOfActiveStudentsWhenSessionEnded"
+    units="students" expires_after="2025-04-04">
+  <owner>caott@google.com</owner>
+  <owner>cros-edu-eng@google.com</owner>
+  <summary>
+    Records the number of active students left when the session ends.
+  </summary>
+</histogram>
+
+<histogram name="Ash.Boca.NumberOfStudentsJoinedViaCodeDuringSession"
+    units="students" expires_after="2025-04-04">
+  <owner>caott@google.com</owner>
+  <owner>cros-edu-eng@google.com</owner>
+  <summary>
+    Records the number of students joined via code throughout a session.
+  </summary>
+</histogram>
+
 <histogram name="Ash.Boca.OnTask.MaxNumberOfTabsDuringSession" units="tabs"
     expires_after="2025-04-04">
   <owner>caott@google.com</owner>
@@ -1233,6 +1270,15 @@ chromium-metrics-reviews@google.com.
     <variant name="Locked" summary="locked mode"/>
     <variant name="Unlocked" summary="unlocked mode"/>
   </token>
+</histogram>
+
+<histogram name="Ash.Boca.PollingResult" enum="BocaPollingResult"
+    expires_after="2025-09-04">
+  <owner>aprilzhou@google.com</owner>
+  <owner>cros-edu-eng@google.com</owner>
+  <summary>
+    Records scheduled boca session polling result from out of and in-session.
+  </summary>
 </histogram>
 
 <histogram name="Ash.BrowserContext.UnexpectedGetPrimaryUserProfile"
@@ -2359,6 +2405,18 @@ chromium-metrics-reviews@google.com.
   <token key="TabletOrClamshell" variants="DisplayModes"/>
 </histogram>
 
+<histogram
+    name="Ash.CaptureModeController.MultimodalSearchRequest.{TabletOrClamshell}"
+    enum="Boolean" expires_after="2025-05-07">
+  <owner>hewer@chromium.org</owner>
+  <owner>sophiewen@google.com</owner>
+  <summary>
+    Recorded each time a multimodal search request is made in the search results
+    panel in {TabletOrClamshell}.
+  </summary>
+  <token key="TabletOrClamshell" variants="DisplayModes"/>
+</histogram>
+
 <histogram name="Ash.CaptureModeController.NumberOfConnectedCameras"
     units="connected cameras" expires_after="2025-02-13">
   <owner>afakhry@chromium.org</owner>
@@ -2500,6 +2558,68 @@ chromium-metrics-reviews@google.com.
     rough approximation. This means that this metric will only be recorded in
     sessions spanning at least 7 days.
   </summary>
+</histogram>
+
+<histogram
+    name="Ash.CaptureModeController.SearchButtonPressed.{TabletOrClamshell}"
+    enum="Boolean" expires_after="2025-05-07">
+  <owner>hewer@chromium.org</owner>
+  <owner>sophiewen@google.com</owner>
+  <summary>
+    Recorded each time the Search button is pressed in a default capture session
+    in {TabletOrClamshell}.
+  </summary>
+  <token key="TabletOrClamshell" variants="DisplayModes"/>
+</histogram>
+
+<histogram
+    name="Ash.CaptureModeController.SearchButtonShown.{TabletOrClamshell}"
+    enum="Boolean" expires_after="2025-05-07">
+  <owner>hewer@chromium.org</owner>
+  <owner>sophiewen@google.com</owner>
+  <summary>
+    Recorded each time the Search button is shown to a user in a default capture
+    session in {TabletOrClamshell}.
+  </summary>
+  <token key="TabletOrClamshell" variants="DisplayModes"/>
+</histogram>
+
+<histogram
+    name="Ash.CaptureModeController.SearchResultClicked.{TabletOrClamshell}"
+    enum="Boolean" expires_after="2025-05-07">
+  <owner>hewer@chromium.org</owner>
+  <owner>sophiewen@google.com</owner>
+  <summary>
+    Recorded each time a search result URL was clicked in the search results
+    panel in {TabletOrClamshell}.
+  </summary>
+  <token key="TabletOrClamshell" variants="DisplayModes"/>
+</histogram>
+
+<histogram
+    name="Ash.CaptureModeController.SearchResultsPanelEntryPoint.{TabletOrClamshell}"
+    enum="SearchResultsPanelEntryType" expires_after="2025-05-07">
+  <owner>hewer@chromium.org</owner>
+  <owner>sophiewen@google.com</owner>
+  <summary>
+    Recorded whenever the search results panel is created during a capture
+    session, either due to selecting a region (without an existing panel) in a
+    Sunfish session, or clicking the search button in a default session. The
+    recorded enum value indicates the entry point.
+  </summary>
+  <token key="TabletOrClamshell" variants="DisplayModes"/>
+</histogram>
+
+<histogram
+    name="Ash.CaptureModeController.SearchResultsPanelShown.{TabletOrClamshell}"
+    enum="Boolean" expires_after="2025-05-07">
+  <owner>hewer@chromium.org</owner>
+  <owner>sophiewen@google.com</owner>
+  <summary>
+    Recorded each time the search results panel was shown, including panel
+    creation, region adjustment, and region reselection, in {TabletOrClamshell}.
+  </summary>
+  <token key="TabletOrClamshell" variants="DisplayModes"/>
 </histogram>
 
 <histogram name="Ash.CaptureModeController.SwitchesFromInitialCaptureMode"
@@ -2904,27 +3024,6 @@ chromium-metrics-reviews@google.com.
   </summary>
 </histogram>
 
-<histogram name="Ash.Desks.DeskLifetime_Profile_{DeskIndex}" units="hr"
-    expires_after="2024-12-21">
-  <owner>dandersson@chromium.org</owner>
-  <owner>yongshun@chromium.org</owner>
-  <owner>chromeos-wm@google.com</owner>
-  <summary>
-    Variant of Ash.Desks.DeskLifetime that is emitted if the closed desk has a
-    desk profile assigned to it. It has the same semantics as DeskLifetime.
-  </summary>
-  <token key="DeskIndex">
-    <variant name="1" summary="1"/>
-    <variant name="2" summary="2"/>
-    <variant name="3" summary="3"/>
-    <variant name="4" summary="4"/>
-    <variant name="5" summary="5"/>
-    <variant name="6" summary="6"/>
-    <variant name="7" summary="7"/>
-    <variant name="8" summary="8"/>
-  </token>
-</histogram>
-
 <histogram name="Ash.Desks.DeskLifetime_{DeskIndex}" units="hr"
     expires_after="2025-04-20">
   <owner>afakhry@chromium.org</owner>
@@ -2946,40 +3045,6 @@ chromium-metrics-reviews@google.com.
     <variant name="7" summary="7"/>
     <variant name="8" summary="8"/>
   </token>
-</histogram>
-
-<histogram name="Ash.Desks.DeskProfiles.AvatarView.ButtonPressed"
-    enum="BooleanHit" expires_after="2025-02-23">
-  <owner>dandersson@chromium.org</owner>
-  <owner>yongshun@chromium.org</owner>
-  <owner>chromeos-wms@google.com</owner>
-  <summary>Records when the desk profiles button is pressed.</summary>
-</histogram>
-
-<histogram name="Ash.Desks.DeskProfiles.ContextMenu.OpenProfileManager"
-    units="BooleanHit" expires_after="2024-12-21">
-  <owner>dandersson@chromium.org</owner>
-  <owner>yongshun@chromium.org</owner>
-  <owner>chromeos-wms@google.com</owner>
-  <summary>
-    Records when the profile manager is opened from desk profiles context menu.
-  </summary>
-</histogram>
-
-<histogram name="Ash.Desks.DeskProfiles.SelectProfile"
-    enum="DeskProfilesSelectProfileSource" expires_after="2024-12-21">
-  <owner>dandersson@chromium.org</owner>
-  <owner>yongshun@chromium.org</owner>
-  <owner>chromeos-wms@google.com</owner>
-  <summary>Emitted when the user assigns a profile to a desk.</summary>
-</histogram>
-
-<histogram name="Ash.Desks.DeskProfiles.UsageStatus"
-    enum="DeskProfilesUsageStatus" expires_after="2025-04-27">
-  <owner>dandersson@chromium.org</owner>
-  <owner>yongshun@chromium.org</owner>
-  <owner>chromeos-wms@google.com</owner>
-  <summary>Records relative adoption of desk profiles.</summary>
 </histogram>
 
 <histogram name="Ash.Desks.DesksCount3" units="units"
@@ -5795,6 +5860,16 @@ chromium-metrics-reviews@google.com.
   </summary>
 </histogram>
 
+<histogram name="Ash.Mahi.Elucidation.LoadingTime" units="ms"
+    expires_after="2025-04-06">
+  <owner>leandre@chromium.org</owner>
+  <owner>cros-status-area-eng@google.com</owner>
+  <summary>
+    Record the time it takes to load the elucidation inside the Mahi panel.
+    Emitted when elucidation text is fully loaded and shows up.
+  </summary>
+</histogram>
+
 <histogram name="Ash.Mahi.Feedback" enum="BooleanThumbsUp"
     expires_after="2025-04-06">
   <owner>leandre@chromium.org</owner>
@@ -8254,6 +8329,41 @@ chromium-metrics-reviews@google.com.
     second is achieved during the animations. 0% should not happen. This metric
     is recorded exactly once when the user rotates the screen.
   </summary>
+</histogram>
+
+<histogram name="Ash.ScannerFeature.Timer.{Type}" units="ms"
+    expires_after="2025-05-04">
+  <owner>jhtin@google.com</owner>
+  <summary>
+    Measures the time between the start of a request for {Type} and when a
+    response is recieved.
+  </summary>
+  <token key="Type">
+    <variant name="ExecutePopulatedNewCalendarEventAction"
+        summary="when a new calendar event action is executed"/>
+    <variant name="ExecutePopulatedNewContactAction"
+        summary="when new contact action is executed"/>
+    <variant name="ExecutePopulatedNewCopyToClipboardAction"
+        summary="when new copy to clipboard action is executed"/>
+    <variant name="ExecutePopulatedNewGoogleDocAction"
+        summary="when new Google Doc action is executed"/>
+    <variant name="ExecutePopulatedNewGoogleSheetAction"
+        summary="when new Google Sheet action is executed"/>
+    <variant name="FetchActionsForImage"
+        summary="when a image is sent to fetch actions via scanner server"/>
+    <variant name="PopulateNewCalendarEventAction"
+        summary="when new calendar action is sent to server to be populated"/>
+    <variant name="PopulateNewContactAction"
+        summary="when new contact action is sent to server to be populated"/>
+    <variant name="PopulateNewCopyToClipboardAction"
+        summary="when new copy to clipboard action is sent to server to be
+                 populated"/>
+    <variant name="PopulateNewGoogleDocAction"
+        summary="when new Google Doc action is sent to server to be populated"/>
+    <variant name="PopulateNewGoogleSheetAction"
+        summary="When new Google Sheet action is sent to server to be
+                 populated"/>
+  </token>
 </histogram>
 
 <histogram name="Ash.ScannerFeature.UserState" enum="ScannerFeatureUserState"

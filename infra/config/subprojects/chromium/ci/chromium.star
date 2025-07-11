@@ -687,8 +687,9 @@ ci.builder(
         additional_compile_targets = "all",
     ),
     builderless = False,
-    cores = 32,
+    cores = 16,
     os = os.WINDOWS_DEFAULT,
+    ssd = True,
     console_view_entry = consoles.console_view_entry(
         category = "win|rel",
         short_name = "64",
@@ -740,8 +741,9 @@ ci.builder(
         additional_compile_targets = "all",
     ),
     builderless = False,
-    cores = 32,
+    cores = 16,
     os = os.WINDOWS_DEFAULT,
+    ssd = True,
     # TODO(crbug.com/335863313): Enable when verified.
     gardener_rotations = args.ignore_default(None),
     # TODO(crbug.com/335863313): Enable when verified.
@@ -796,8 +798,9 @@ ci.builder(
         additional_compile_targets = "all",
     ),
     builderless = False,
-    cores = 32,
+    cores = 16,
     os = os.WINDOWS_DEFAULT,
+    ssd = True,
     # TODO(crbug.com/346263463): Enable tree-closing when the builder no
     # longer flakily fails compile.
     tree_closing = False,
@@ -842,7 +845,7 @@ ci.builder(
         additional_compile_targets = "all",
     ),
     builderless = False,
-    cores = 32,
+    cores = 16,
     os = os.WINDOWS_DEFAULT,
     console_view_entry = consoles.console_view_entry(
         category = "win|rel",
@@ -893,8 +896,9 @@ ci.builder(
         additional_compile_targets = "all",
     ),
     builderless = False,
-    cores = 32,
+    cores = 16,
     os = os.WINDOWS_DEFAULT,
+    ssd = True,
     console_view_entry = consoles.console_view_entry(
         category = "win|off",
         short_name = "32",

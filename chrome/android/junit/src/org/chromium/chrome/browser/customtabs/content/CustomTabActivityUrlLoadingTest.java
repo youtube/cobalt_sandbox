@@ -19,6 +19,7 @@ import static org.chromium.chrome.browser.customtabs.content.CustomTabActivityCo
 import static org.chromium.chrome.browser.customtabs.content.CustomTabActivityContentTestEnvironment.SPECULATED_URL;
 
 import android.content.Intent;
+import android.net.Uri;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -33,6 +34,8 @@ import org.robolectric.annotation.Implements;
 import org.chromium.base.test.BaseRobolectricTestRunner;
 import org.chromium.base.test.util.Features;
 import org.chromium.base.test.util.JniMocker;
+import org.chromium.chrome.browser.content.WebContentsFactory;
+import org.chromium.chrome.browser.content.WebContentsFactoryJni;
 import org.chromium.chrome.browser.customtabs.CustomTabAuthUrlHeuristics;
 import org.chromium.chrome.browser.customtabs.CustomTabAuthUrlHeuristicsJni;
 import org.chromium.chrome.browser.customtabs.CustomTabIntentDataProvider;
@@ -78,12 +81,14 @@ public class CustomTabActivityUrlLoadingTest {
 
     @Mock UrlUtilities.Natives mUrlUtilitiesJniMock;
     @Mock CustomTabAuthUrlHeuristics.Natives mCustomTabAuthUrlHeuristicsJniMock;
+    @Mock WebContentsFactory.Natives mWebContentsFactoryJni;
 
     @Before
     public void setUp() {
         MockitoAnnotations.initMocks(this);
         mocker.mock(UrlUtilitiesJni.TEST_HOOKS, mUrlUtilitiesJniMock);
         mocker.mock(CustomTabAuthUrlHeuristicsJni.TEST_HOOKS, mCustomTabAuthUrlHeuristicsJniMock);
+        mocker.mock(WebContentsFactoryJni.TEST_HOOKS, mWebContentsFactoryJni);
 
         when(env.profileProvider.getOriginalProfile()).thenReturn(mProfile);
         when(env.profileProvider.getOffTheRecordProfile(eq(true))).thenReturn(mIncognitoProfile);
@@ -195,7 +200,9 @@ public class CustomTabActivityUrlLoadingTest {
         CustomTabIntentDataProvider dataProvider = mock(CustomTabIntentDataProvider.class);
         when(dataProvider.getUrlToLoad()).thenReturn(url);
         when(dataProvider.getSession()).thenReturn(env.session);
-        when(dataProvider.getIntent()).thenReturn(new Intent().setAction(Intent.ACTION_VIEW));
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setData(Uri.parse(url));
+        when(dataProvider.getIntent()).thenReturn(intent);
         return dataProvider;
     }
 }

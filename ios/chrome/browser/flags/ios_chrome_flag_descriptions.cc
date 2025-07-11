@@ -144,6 +144,12 @@ const char kAutofillParseVcnCardOnFileStandaloneCvcFieldsDescription[] =
     "When enabled, Autofill will attempt to find standalone CVC fields for VCN "
     "card on file when parsing forms.";
 
+const char kAutofillPaymentsSheetV2Name[] =
+    "Enable the payments suggestion bottom sheet V2";
+const char kAutofillPaymentsSheetV2Description[] =
+    "When enabled, the V2 of the payments suggestion bottom sheet will be "
+    "used.";
+
 const char kPasswordSuggestionBottomSheetV2Name[] =
     "Enable the password suggestion bottom sheet V2";
 const char kPasswordSuggestionBottomSheetV2Description[] =
@@ -164,6 +170,18 @@ const char kAutofillStickyInfobarName[] = "Sticky Autofill Infobar";
 const char kAutofillStickyInfobarDescription[] =
     "Makes the Address Infobar sticky to only dismiss on navigation from user "
     "gesture.";
+
+const char kAutofillThrottleDocumentFormScanName[] =
+    "Throttle Autofill Document Form Scans";
+const char kAutofillThrottleDocumentFormScanDescription[] =
+    "Enables the throttling of the recurrent document form scans done by "
+    "Autofill.";
+
+const char kAutofillThrottleFilteredDocumentFormScanName[] =
+    "Throttle Filtered Autofill Document Form Scans";
+const char kAutofillThrottleFilteredDocumentFormScanDescription[] =
+    "Enables the throttling of the on the spot filtered form scans done by "
+    "Autofill (e.g. get the latest state of a form that had an activity).";
 
 const char kAutofillUnmaskCardRequestTimeoutName[] =
     "Timeout for the credit card unmask request";
@@ -320,6 +338,11 @@ const char kDataSharingDescription[] =
 const char kDataSharingJoinOnlyName[] = "Data Sharing Join Only";
 const char kDataSharingJoinOnlyDescription[] =
     "Enabled Data Sharing Joining flow related UI and features.";
+
+const char kDefaultBrowserBannerPromoName[] = "Default Browser banner promo";
+const char kDefaultBrowserBannerPromoDescription[] =
+    "When enabled, the default browser banner promo will show when conditions "
+    "are met.";
 
 const char kDefaultBrowserIntentsShowSettingsName[] =
     "Default Browser Intents show settings";
@@ -521,6 +544,12 @@ const char kIOSDetectUsernameInUffName[] = "Detect username in UFF";
 const char kIOSDetectUsernameInUffDescription[] =
     "Detect the username in UFF for saving.";
 
+const char kIOSDisableParcelTrackingName[] = "Disable Parcel Tracking";
+const char kIOSDisableParcelTrackingDescription[] =
+    "Disables the parcel tracking feature; when set, users will not be offered "
+    "to track new parcels nor will they see Magic Stack cards for parcel "
+    "tracking.";
+
 const char kIOSDockingPromoName[] = "Docking Promo";
 const char kIOSDockingPromoDescription[] =
     "When enabled, the user will be presented an animated, instructional "
@@ -576,6 +605,11 @@ const char kIOSQuickDeleteDescription[] =
     "Enables a new way for users to more easily delete their browsing data in "
     "iOS.";
 
+const char kNewFeedPositioningExperimentName[] =
+    "New Personalized Feed Positioning for iOS";
+const char kNewFeedPositioningExperimentDescription[] =
+    "Positions the most visited tiles and the feed based on user frequency.";
+
 const char kNewTabPageFieldTrialName[] =
     "New tab page features that target new users";
 const char kNewTabPageFieldTrialDescription[] =
@@ -620,6 +654,15 @@ const char kIPHForSafariSwitcherName[] = "IPH for Safari Switcher";
 const char kIPHForSafariSwitcherDescription[] =
     "Enables displaying IPH for users who are considered Safari Switcher";
 
+const char kLensClearcutBackgroundUploadEnabledName[] =
+    "Lens clearcut background upload";
+const char kLensClearcutBackgroundUploadEnabledDescription[] =
+    "Enables uploading of clearcut logs in the background.";
+
+const char kLensClearcutLoggerFastQosEnabledName[] =
+    "Lens clearcut logger fast QOS";
+const char kLensClearcutLoggerFastQosEnabledDescription[] = "Enables fast QOS.";
+
 const char kLensFiltersAblationModeEnabledName[] =
     "Lens filters ablation mode enabled";
 const char kLensFiltersAblationModeEnabledDescription[] =
@@ -632,6 +675,12 @@ extern const char kLensOverlayDisablePriceInsightsDescription[] =
     "trumps lens overlay entrypoint in the location bar. This should only be "
     "used for experiments.";
 
+extern const char kLensOverlayPriceInsightsCounterfactualName[] =
+    "Lens overlay disable price insights counterfactual.";
+extern const char kLensOverlayPriceInsightsCounterfactualDescription[] =
+    "When enabled, show the lens overlay location bar entrypoint only when "
+    "price insights should have triggered.";
+
 extern const char kLensOverlayEnableIPadCompatibilityName[] =
     "Allow Lens overlay to also run on iPad devices if the feature is enabled";
 extern const char kLensOverlayEnableIPadCompatibilityDescription[] =
@@ -643,6 +692,12 @@ extern const char kLensOverlayEnableLocationBarEntrypointDescription[] =
     "When enabled, shows the Lens overlay entrypoint in the location bar when "
     "no other buttons are shown (price insight or messages). Enabled by "
     "default. ";
+
+extern const char kLensOverlayEnableLocationBarEntrypointOnSRPName[] =
+    "Enable Lens overlay location bar entrypoint on SRP.";
+extern const char kLensOverlayEnableLocationBarEntrypointOnSRPDescription[] =
+    "When enabled, the location bar entrypoint is available on SRP. Enabled by "
+    "default.";
 
 extern const char kLensOverlayEnableSameTabNavigationName[] =
     "Lens overlay same tab navigation";
@@ -665,6 +720,11 @@ const char kLensUnaryApisWithHttpTransportEnabledName[] =
     "Lens unary APIs with HTTP transport enabled";
 const char kLensUnaryApisWithHttpTransportEnabledDescription[] =
     "Enables the unary APIs with HTTP transport.";
+
+const char kLensUnaryHttpTransportEnabledName[] =
+    "Lens unary HTTP transport enabled";
+const char kLensUnaryHttpTransportEnabledDescription[] =
+    "Enables the HTTP transport for unary requests.";
 
 const char kLensWebPageLoadOptimizationEnabledName[] =
     "Lens web page load optimization";

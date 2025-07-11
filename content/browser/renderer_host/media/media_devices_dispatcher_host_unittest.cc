@@ -18,8 +18,10 @@
 #include "base/run_loop.h"
 #include "base/strings/stringprintf.h"
 #include "base/task/single_thread_task_runner.h"
+#include "base/test/scoped_feature_list.h"
 #include "base/test/test_future.h"
 #include "build/build_config.h"
+#include "content/browser/bad_message.h"
 #include "content/browser/media/media_devices_permission_checker.h"
 #include "content/browser/renderer_host/media/fake_video_capture_provider.h"
 #include "content/browser/renderer_host/media/in_process_video_capture_provider.h"
@@ -29,6 +31,7 @@
 #include "content/browser/renderer_host/media/video_capture_provider_switcher.h"
 #include "content/public/browser/content_browser_client.h"
 #include "content/public/common/content_client.h"
+#include "content/public/common/content_switches.h"
 #include "content/public/test/browser_task_environment.h"
 #include "content/public/test/test_browser_context.h"
 #include "content/public/test/test_renderer_host.h"
@@ -44,6 +47,7 @@
 #include "mojo/public/cpp/bindings/receiver_set.h"
 #include "testing/gmock/include/gmock/gmock.h"
 #include "testing/gtest/include/gtest/gtest.h"
+#include "third_party/blink/public/common/features_generated.h"
 #include "third_party/blink/public/mojom/media/capture_handle_config.mojom.h"
 #include "url/origin.h"
 
@@ -904,7 +908,25 @@ TEST_P(MediaDevicesDispatcherHostTest,
             0u);
 }
 
-TEST_P(MediaDevicesDispatcherHostTest, SelectAudioOutputNoUserActivation) {
+TEST_P(MediaDevicesDispatcherHostTest, SelectAudioOutputNoFeature) {
+  EXPECT_CALL(
+      *this,
+      MockOnBadMessage(render_frame_host_->GetGlobalId().child_id,
+                       bad_message::MDDH_SELECT_AUDIO_OUTPUT_WITHOUT_FEATURE));
+  host_->SelectAudioOutput(kDefaultAudioDeviceID, base::DoNothing());
+}
+
+#if !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_FUCHSIA)
+class SelectAudioOutputTest : public MediaDevicesDispatcherHostTest {
+ public:
+  SelectAudioOutputTest()
+      : feature_list_(blink::features::kSelectAudioOutput) {}
+
+ private:
+  base::test::ScopedFeatureList feature_list_;
+};
+
+TEST_P(SelectAudioOutputTest, SelectAudioOutputNoUserActivation) {
   base::test::TestFuture<blink::mojom::SelectAudioOutputResultPtr> future;
   host_->SelectAudioOutput(kDefaultAudioDeviceID, future.GetCallback());
 
@@ -915,7 +937,7 @@ TEST_P(MediaDevicesDispatcherHostTest, SelectAudioOutputNoUserActivation) {
   EXPECT_TRUE(result->device_info.label.empty());
 }
 
-TEST_P(MediaDevicesDispatcherHostTest, SelectAudioOutputNoPermission) {
+TEST_P(SelectAudioOutputTest, SelectAudioOutputNoPermission) {
   render_frame_host_->SimulateUserActivation();
 
   media_stream_manager_->media_devices_manager()->SetPermissionChecker(
@@ -930,6 +952,43 @@ TEST_P(MediaDevicesDispatcherHostTest, SelectAudioOutputNoPermission) {
   EXPECT_TRUE(result->device_info.group_id.empty());
   EXPECT_TRUE(result->device_info.label.empty());
 }
+
+TEST_P(SelectAudioOutputTest, SelectAudioOutputSuccess) {
+  render_frame_host_->SimulateUserActivation();
+  base::CommandLine::ForCurrentProcess()->AppendSwitch(
+      switches::kUseFakeUIForMediaStream);
+
+  media_stream_manager_->media_devices_manager()->SetPermissionChecker(
+      std::make_unique<MediaDevicesPermissionChecker>(true));
+
+  base::test::TestFuture<blink::mojom::SelectAudioOutputResultPtr> future;
+
+  EnumerateDevicesAndWaitForResult(false, false, true);
+
+  std::string last_audio_output_device_id;
+  last_audio_output_device_id =
+      enumerated_devices_[static_cast<size_t>(
+                              MediaDeviceType::kMediaAudioOutput)]
+          .back()
+          .device_id;
+  host_->SelectAudioOutput(last_audio_output_device_id, future.GetCallback());
+
+  blink::mojom::SelectAudioOutputResultPtr result = future.Take();
+  base::test::TestFuture<const MediaDeviceSaltAndOrigin&> salt_future;
+
+  GetMediaDeviceSaltAndOrigin(render_frame_host_->GetGlobalId(),
+                              salt_future.GetCallback());
+  MediaDeviceSaltAndOrigin salt_and_origin = salt_future.Get();
+
+  EXPECT_EQ(result->status, blink::mojom::AudioOutputStatus::kSuccess);
+  EXPECT_EQ(result->device_info.device_id, last_audio_output_device_id);
+}
+
+INSTANTIATE_TEST_SUITE_P(All,
+                         SelectAudioOutputTest,
+                         testing::Values(std::string(), "https://test.com"));
+
+#endif
 
 INSTANTIATE_TEST_SUITE_P(All,
                          MediaDevicesDispatcherHostTest,

@@ -115,11 +115,12 @@ id<GREYMatcher> ClearBrowsingDataCell() {
 // scheduled for removal.
 - (void)clearBrowsingData {
   [ChromeEarlGreyUI tapClearBrowsingDataMenuButton:ClearBrowsingDataButton()];
-  [ChromeEarlGreyUI waitForAppToIdle];
 
   // Wait for the browsing data button to disappear.
   [ChromeEarlGrey
       waitForUIElementToDisappearWithMatcher:BrowsingDataButtonMatcher()];
+
+  [ChromeEarlGreyUI waitForAppToIdle];
 }
 
 // From the NTP, clears the cookies and site data via the UI.

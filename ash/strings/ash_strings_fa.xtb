@@ -305,7 +305,7 @@
 <translation id="2018630726571919839">‏Tell me a joke (لطیفه‌ای بگو)</translation>
 <translation id="2021864487439853900">قفل‌گشایی با کلیک کردن</translation>
 <translation id="2034971124472263449">درهرصورت ذخیره شود</translation>
-<translation id="2041220428661959602">‏مقدار شارژ باتری: ‎<ph name="BATTERY_PERCENTAGE" />٪</translation>
+<translation id="2041220428661959602">‏سطح باتری: ‎<ph name="BATTERY_PERCENTAGE" />٪</translation>
 <translation id="204259843076055848">میان‌بر <ph name="SIX_PACK_KEY_NAME" /> درحال‌حاضر خاموش است</translation>
 <translation id="2049240716062114887">نام میز کار به <ph name="DESK_NAME" /> تغییر کرد</translation>
 <translation id="2064048859448024834">پیش‌نمای دوربین روشن است</translation>
@@ -630,7 +630,6 @@
 <translation id="3208321278970793882">برنامه</translation>
 <translation id="3213571860604332401">ذخیره کردن پیوند به‌عنوان نشانک</translation>
 <translation id="3217205077783620295">دکمه میزان صدا فعال است، با تغییر وضعیت صامت می‌شود.</translation>
-<translation id="3218561536255328229">‏کلید Esc را ۵ بار فشار دهید تا صفحه لمسی فعال شود</translation>
 <translation id="3226991577105957773">+<ph name="COUNT" /> مورد دیگر</translation>
 <translation id="3227137524299004712">میکروفن</translation>
 <translation id="3233611303007751344">«بهینه‌سازی باتری» خاموش شد</translation>
@@ -907,7 +906,7 @@
 <translation id="4146671046252289537">انتقال به انتهای کلمه بعدی</translation>
 <translation id="4146833061457621061">‏Play music (موسیقی پخش کن)</translation>
 <translation id="4150201353443180367">صفحه‌نمایش</translation>
-<translation id="4151054805501931758">رتوش پرتره</translation>
+<translation id="4151054805501931758">رتوش چهره</translation>
 <translation id="4156293514828496577">‫<ph name="PERCENTAGE" />٪ از شارژ باتری باقی مانده است (حدود <ph name="TIME_LEFT" />).
 برخی‌از ویژگی‌ها برای افزایش عمر باتری محدود شده‌اند.</translation>
 <translation id="4160919062868802509">چند منبع صوتی شناسایی شد</translation>
@@ -1127,7 +1126,7 @@
 <translation id="485806788160414322">پخش یا مکث رسانه</translation>
 <translation id="4858764087721901597"><ph name="MODIFIER_ONE" />سپس <ph name="KEY_ONE" /> یا <ph name="KEY_TWO" /> یا <ph name="KEY_THREE" /> یا <ph name="KEY_FOUR" /></translation>
 <translation id="4860284199500934869">برای بارگیری <ph name="FILENAME" />، اتصال شبکه را بررسی کنید</translation>
-<translation id="4864369630010738180">در حال ورود به سیستم...</translation>
+<translation id="4864369630010738180">درحال ورود به سیستم…</translation>
 <translation id="4864648187878336334">میز کار ۱۵</translation>
 <translation id="4868492592575313542">فعال شد</translation>
 <translation id="4871905435473761992">نمایش جزئیات نقطه اتصال. شبکه تلفن همراه شما از نقطه اتصال پشتیبانی نمی‌کند.</translation>
@@ -1305,6 +1304,7 @@
 <translation id="5393156353051693207">برای تغییر ترتیب برنامه‌ها، جایی را لمس کنید و نگه دارید</translation>
 <translation id="5395308026110844773"><ph name="DRAGGED_APP_NAME" /> موجود در بالای <ph name="IN_PLACE_APP" />، برای ایجاد پوشه رها کنید.</translation>
 <translation id="5397578532367286026">‏میزان مصرف و سابقه این کاربر می‌تواند توسط مدیر (<ph name="MANAGER_EMAIL" />) در chrome.com بازبینی شود.</translation>
+<translation id="540338817371815859">افقی</translation>
 <translation id="540713187982329711">روشن/ خاموش کردن نقطه اتصال. نقطه اتصال روشن است، هیچ دستگاهی متصل نیست.</translation>
 <translation id="5409208741270395213">علامت‌گذاری تکلیف به‌عنوان تکمیل‌شده</translation>
 <translation id="5413656666631274079">صفحه تنظیمات</translation>
@@ -1375,7 +1375,7 @@
 <translation id="5625955975703555628">LTE+‎</translation>
 <translation id="5627392655516693966">گذرواژه‌تان تأیید نشد. دوباره امتحان کنید.</translation>
 <translation id="5632485077360054581">نمایش روش انجام کار</translation>
-<translation id="5633826232582408011">‏وقتی «کمک گرفتن در نوشتن» و «کمک گرفتن در خواندن» را روشن می‌کنید، نوشتار ورودی، محتوای سند، و نشانی وب صفحه وب برای تولید پیشنهادهای نوشتاری، تولید خلاصه، پاسخ به سؤالات، و بهبود محصول، منوط به رعایت <ph name="LINK_TO_SERVICE_TERMS" />، به سرورهای هوش مصنوعی Google ارسال می‌شود. اطلاعات شخصی، حساس، یا محرمانه را وارد نکنید.</translation>
+<translation id="5633826232582408011">‏وقتی «کمک گرفتن در نوشتن» و «کمک گرفتن در خواندن» را روشن می‌کنید، نوشتار ورودی، محتوای سند، و نشانی وب صفحه وب برای تولید پیشنهادهای نگارشی، تولید خلاصه، پاسخ به سؤالات، و بهبود محصول، منوط به رعایت <ph name="LINK_TO_SERVICE_TERMS" />، به سرورهای هوش مصنوعی Google ارسال می‌شود. اطلاعات شخصی، حساس، یا محرمانه را وارد نکنید.</translation>
 <translation id="5648021990716966815">فیش میکروفون</translation>
 <translation id="5652575806481723716"><ph name="FOCUSED_APP_NAME" /> به توجه شما نیاز دارد.</translation>
 <translation id="5662075790140998213">میز کار ۱۰</translation>
@@ -1408,7 +1408,7 @@
 <translation id="573413375004481890">این دستگاه از همه نمایشگرهایتان پشتیبانی نمی‌کند، بنابراین ارتباط یک نمایشگر قطع شده است</translation>
 <translation id="5740328398383587084">هم‌رسانی با اطراف</translation>
 <translation id="574392208103952083">متوسط</translation>
-<translation id="5744083938413354016">کشیدن با ضربه</translation>
+<translation id="5744083938413354016">کشیدن با تک‌ضرب</translation>
 <translation id="5745612484876805746">«نور شب» هنگام غروب آفتاب به‌طور خودکار روشن می‌شود</translation>
 <translation id="5750765938512549687">بلوتوث خاموش است</translation>
 <translation id="5758114525425072423">شروع «تمرکز». زمان‌سنج روی <ph name="FOCUS_DURATION" /> تنظیم شده است.</translation>
@@ -1529,7 +1529,7 @@
 <translation id="6121838516699723042">تأیید بارگیری <ph name="FILENAME" /></translation>
 <translation id="612734058257491180">‏«دستیار Google» در جلسه مهمان دردسترس نیست.</translation>
 <translation id="6127395413317891856">آفلاین هستید. اتصالتان را بررسی کنید و دوباره امتحان کنید.</translation>
-<translation id="6129953537138746214">فاصله</translation>
+<translation id="6129953537138746214">Space</translation>
 <translation id="6137566720514957455">باز کردن کادر گفتگوی برداشتن <ph name="USER_EMAIL_ADDRESS" /></translation>
 <translation id="6141205840878048728">می‌خواهید روی چه چیزی تمرکز کنید؟</translation>
 <translation id="6141988275892716286">تأیید بارگیری</translation>
@@ -1662,7 +1662,7 @@
 <translation id="6574622320167699133">قفل با تلفنتان باز شد. برای ورود، تک‌ضرب بزنید یا کلیک کنید.</translation>
 <translation id="6578407462441924264">بدون نام</translation>
 <translation id="6582012689384648647">‏برای فهرست‌های پخش تمرکز که برای شما شخصی‌سازی شده است، دسترسی به YouTube Music را مجاز کنید</translation>
-<translation id="6582034443359256692">درحال محاسبه سطح شارژ باتری.</translation>
+<translation id="6582034443359256692">درحال محاسبه سطح باتری.</translation>
 <translation id="6585808820553845416">جلسه در <ph name="SESSION_TIME_REMAINING" /> به پایان می‌رسد.</translation>
 <translation id="6593850935013518327"><ph name="PRIMARY_TEXT" />، <ph name="SECONDARY_TEXT" /></translation>
 <translation id="6597278316891651699">دوربین به گوشه پایین سمت چپ چسبید. تداخلی با سطح سیستم روی داد.</translation>
@@ -1767,6 +1767,7 @@
 <translation id="6921427376813842559">به‌روزرسانی دستگاه</translation>
 <translation id="6929081673585394903">نمایش کنترل‌ها</translation>
 <translation id="6931576957638141829">ذخیره در</translation>
+<translation id="6935857786205183008">عمودی</translation>
 <translation id="6942518653766415536">منوی قالب ضبط</translation>
 <translation id="6945221475159498467">انتخاب</translation>
 <translation id="6945922087561257829">‏تلفن شما از شبکه تلفن همراه استفاده می‌کند. مطمئن شوید تلفن و Chromebook به یک شبکه Wi-Fi متصل باشند و سپس دوباره امتحان کنید. <ph name="LEARN_MORE" /></translation>
@@ -1827,7 +1828,7 @@
 <translation id="7144942256906679589">وضعیت باتری</translation>
 <translation id="7145639536026937076">شارژ باتری <ph name="PERCENTAGE" />٪ است و باتری درحال شارژ است. «بهینه‌سازی باتری» روشن است.</translation>
 <translation id="7147587499155271409">سابقه مروری وجود ندارد</translation>
-<translation id="7147657298465433425">‏برای دسترسی به کلیدهای F، کلید fn + کلیدهای ردیف بالا را فشار دهید</translation>
+<translation id="7147657298465433425">‏برای دسترسی به کلیدهای F، کلید fn را با کلیدهای ردیف بالا فشار دهید</translation>
 <translation id="7149149900052329230">‏فایل‌های محلی و فایل‌های Google Drive را در برنامه Files مدیریت کنید.</translation>
 <translation id="7165278925115064263">Alt+Shift+K</translation>
 <translation id="7167913274352523149"><ph name="HOTSPOT" />،
@@ -2310,7 +2311,7 @@
 <translation id="8847100217801213944">نمایش دما به فارنهایت</translation>
 <translation id="8849001918648564819">پنهان</translation>
 <translation id="8855885154700222542">کلید تمام‌صفحه</translation>
-<translation id="8858369206579825206">تنظیمات حریم خصوصی</translation>
+<translation id="8858369206579825206">کنترل‌های حریم خصوصی</translation>
 <translation id="8860366331836346216">افزودن سیم‌کارت داخلی</translation>
 <translation id="8870509716567206129">برنامه از تقسیم صفحه پشتیبانی نمی‌کند.</translation>
 <translation id="8873203135446552888">تأیید کنید که می‌خواهید صفحه لمسی داخلی را غیرفعال کنید</translation>
@@ -2434,6 +2435,7 @@
 <translation id="98120814841227350">رفتن به انتهای سند</translation>
 <translation id="987589956647469042">داده تلفن همراه روشن است</translation>
 <translation id="989374776391122812">کنترل‌های دوربین و صدا</translation>
+<translation id="990263227494928142">‏کلید Shift را ۵ بار فشار دهید تا صفحه لمسی فعال شود</translation>
 <translation id="990277280839877440">پنجره <ph name="WINDOW_TITILE" /> بسته شد.</translation>
 <translation id="993398562350683614">‏مرحله <ph name="STEP" /> از <ph name="TOTAL_STEPS" /> در مراحل گشت. بااستفاده از برنامه‌ها، کارهای موردنیازتان را در <ph name="PRODUCT_NAME" /> انجام دهید. می‌توانید برنامه‌ها را در «راه‌انداز» پیدا کنید. برای تمرکز کردن روی «راه‌انداز»، کلیدهای «دگرساز + تبدیل + L» را فشار دهید.</translation>
 <translation id="994354411665877646"><ph name="NETWORK_NAME" />، <ph name="SUBTEXT" /></translation>

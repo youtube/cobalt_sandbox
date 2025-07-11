@@ -10,11 +10,13 @@
 #include <vector>
 
 #include "base/check_op.h"
+#include "base/containers/span.h"
 #include "base/strings/utf_string_conversions.h"
 #include "pdf/pdf_ink_constants.h"
 #include "pdf/pdf_ink_conversions.h"
 #include "pdf/pdf_ink_transform.h"
 #include "pdf/pdfium/pdfium_api_wrappers.h"
+#include "printing/units.h"
 #include "third_party/ink/src/ink/geometry/mesh.h"
 #include "third_party/ink/src/ink/geometry/modeled_shape.h"
 #include "third_party/ink/src/ink/geometry/point.h"
@@ -63,13 +65,28 @@ ink::Point GetTransformedInkPoint(const gfx::AxisTransform2d& transform,
   return InkPointFromGfxPoint(transform.MapPoint(point));
 }
 
-// Creates an ink::Mesh from `polyline`. If it is valid, append it to `meshes`.
-void AppendPolylineToMeshesList(std::vector<ink::Mesh>& meshes,
-                                const std::vector<ink::Point>& polyline) {
-  auto mesh = ink::CreateMeshFromPolyline(polyline);
-  if (mesh.ok()) {
-    meshes.push_back(*mesh);
+// Wrapper around ink::CreateMeshFromPolyline() to convert `polyline` into an
+// ink::Mesh. It applies an additional check to make sure the points in
+// `polyline` have sane values.
+std::optional<ink::Mesh> CreateInkMeshFromPolyline(
+    base::span<const ink::Point> polyline) {
+  // Limit for ink::Point values in pixels. It is divided by 2 because the limit
+  // extends half way in the negative range.
+  constexpr int kInkPointDimensionLimit =
+      kMaxPdfDimensionInches * printing::kPixelsPerInch / 2;
+  for (const auto& pt : polyline) {
+    if (pt.x < -kInkPointDimensionLimit || pt.x > kInkPointDimensionLimit ||
+        pt.y < -kInkPointDimensionLimit || pt.y > kInkPointDimensionLimit) {
+      return std::nullopt;
+    }
   }
+
+  auto mesh = ink::CreateMeshFromPolyline(polyline);
+  if (!mesh.ok()) {
+    return std::nullopt;
+  }
+
+  return *mesh;
 }
 
 std::optional<ink::ModeledShape> ReadV2InkModeledShapeFromPath(
@@ -82,8 +99,8 @@ std::optional<ink::ModeledShape> ReadV2InkModeledShapeFromPath(
     return std::nullopt;
   }
 
-  std::vector<ink::Point> current_polyline;
-  current_polyline.reserve(segment_count);
+  std::vector<ink::Point> polyline;
+  polyline.reserve(segment_count);
 
   {
     // The first segment must be a move. Check it outside of the for-loop to
@@ -97,42 +114,32 @@ std::optional<ink::ModeledShape> ReadV2InkModeledShapeFromPath(
     }
 
     gfx::PointF point = GetSegmentPoint(segment);
-    current_polyline.push_back(GetTransformedInkPoint(transform, point));
+    polyline.push_back(GetTransformedInkPoint(transform, point));
   }
 
-  std::vector<ink::Mesh> meshes;
   for (int i = 1; i < segment_count; ++i) {
     FPDF_PATHSEGMENT segment = FPDFPath_GetPathSegment(path, i);
     CHECK(segment);
 
-    const int type = FPDFPathSegment_GetType(segment);
-    if (type == FPDF_SEGMENT_UNKNOWN || type == FPDF_SEGMENT_BEZIERTO) {
+    // Remaining entries must all be line-to segments, as "V2" shapes only have
+    // a single mesh inside.
+    if (FPDFPathSegment_GetType(segment) != FPDF_SEGMENT_LINETO) {
       return std::nullopt;
     }
 
     gfx::PointF point = GetSegmentPoint(segment);
-    if (type == FPDF_SEGMENT_LINETO) {
-      // Keep appending to the current polyline.
-      current_polyline.push_back(GetTransformedInkPoint(transform, point));
-      continue;
-    }
-
-    // Sanity check the `type` value.
-    CHECK_EQ(type, FPDF_SEGMENT_MOVETO);
-
-    AppendPolylineToMeshesList(meshes, current_polyline);
-
-    // Clear `current_polyline` and start populating the next one.
-    current_polyline.clear();
-    current_polyline.push_back(GetTransformedInkPoint(transform, point));
+    polyline.push_back(GetTransformedInkPoint(transform, point));
   }
 
-  // After the loop is done, take care of the remaining values.
-  AppendPolylineToMeshesList(meshes, current_polyline);
+  std::optional<ink::Mesh> mesh = CreateInkMeshFromPolyline(polyline);
+  if (!mesh.has_value()) {
+    return std::nullopt;
+  }
 
   // Note that `shape` only has enough data for use with ink::Intersects(). It
   // has no outline.
-  auto shape = ink::ModeledShape::FromMeshes(meshes, /*outlines=*/{});
+  auto shape = ink::ModeledShape::FromMeshes(base::span_from_ref(mesh.value()),
+                                             /*outlines=*/{});
   if (!shape.ok()) {
     return std::nullopt;
   }
@@ -168,6 +175,11 @@ std::vector<ReadV2InkPathResult> ReadV2InkPathsFromPageAsModeledShapes(
     results.emplace_back(page_object, std::move(shape.value()));
   }
   return results;
+}
+
+std::optional<ink::Mesh> CreateInkMeshFromPolylineForTesting(  // IN-TEST
+    base::span<const ink::Point> polyline) {
+  return CreateInkMeshFromPolyline(polyline);
 }
 
 }  // namespace chrome_pdf

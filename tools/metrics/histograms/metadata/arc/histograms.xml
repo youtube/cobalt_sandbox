@@ -41,8 +41,8 @@ chromium-metrics-reviews@google.com.
   <variant name="DataApp" summary="Android /data/app directory"/>
   <variant name="DataData" summary="Android /data/data directory"/>
   <variant name="DataMedia"
-      summary="Android /data/media/0 directory, excluding
-               /data/media/0/Android"/>
+      summary="Android /data/media/0 directory, excluding 'Android' and
+               'Download' subdirectories"/>
   <variant name="DataMediaAndroid"
       summary="Android /data/media/0/Android/ directory"/>
   <variant name="DataUserDE" summary="Android /data/user_de/0 directory"/>
@@ -935,9 +935,9 @@ chromium-metrics-reviews@google.com.
 </histogram>
 
 <histogram name="Arc.CumulativeUseTime" units="seconds"
-    expires_after="2024-11-17">
+    expires_after="2025-11-17">
   <owner>jhorwich@google.com</owner>
-  <owner>fahdi@google.com</owner>
+  <owner>shobnah@google.com</owner>
   <summary>
     ARC use time. The use time is incremented in regular intervals while android
     container is active. Reported at most once a day, at which point accumulated
@@ -958,8 +958,7 @@ chromium-metrics-reviews@google.com.
   <summary>
     The combined application data size for apps in the {Target}. The data size
     (StorageStats.dataBytes) is calculated with
-    StorageStatsManager#queryStatsForPackage, once per user for each ChromeOS
-    milestone update.
+    StorageStatsManager#queryStatsForPackage and reported for every ARC boot.
   </summary>
   <token key="Target" variants="AndroidAppCategories"/>
 </histogram>
@@ -970,9 +969,10 @@ chromium-metrics-reviews@google.com.
   <owner>momohatt@google.com</owner>
   <owner>arc-storage@google.com</owner>
   <summary>
-    The size of the {Target}. For the root /data directory, the size is reported
-    for every ARC boot. For other directories, the size is reported once per
-    user for each ChromeOS milestone update.
+    The size of the {Target}. The size of the root /data directory is reported
+    on every ARC boot, but reported only if virtio-blk is enabled for /data. The
+    sizes of other directories are reported regardless of virtio-blk, but
+    reported only once every 30 days for each user to save calculation cost.
   </summary>
   <token key="Target" variants="AndroidDataDirectories"/>
 </histogram>
@@ -1663,17 +1663,6 @@ chromium-metrics-reviews@google.com.
   <owner>mhasank@google.com</owner>
   <owner>arc-core@google.com</owner>
   <summary>Arc OptIn cancelation reason.</summary>
-</histogram>
-
-<histogram name="Arc.OptInNetworkErrorAction" enum="ArcOptInNetworkErrorAction"
-    expires_after="2024-12-15">
-  <owner>mhasank@google.com</owner>
-  <owner>arc-core@google.com</owner>
-  <summary>
-    Records user action on the optin dialog when a network-related provisioning
-    failure occurs by type: close window, retry, send feedback and check network
-    connection.
-  </summary>
 </histogram>
 
 <histogram name="Arc.OptInResult" enum="ArcOptInResult"

@@ -45,6 +45,7 @@
 #import "ios/chrome/app/application_mode.h"
 #import "ios/chrome/app/chrome_overlay_window.h"
 #import "ios/chrome/app/deferred_initialization_runner.h"
+#import "ios/chrome/app/deferred_initialization_task_names.h"
 #import "ios/chrome/app/profile/profile_state.h"
 #import "ios/chrome/app/profile/profile_state_observer.h"
 #import "ios/chrome/app/tests_hook.h"
@@ -76,6 +77,8 @@
 #import "ios/chrome/browser/incognito_reauth/ui_bundled/incognito_reauth_scene_agent.h"
 #import "ios/chrome/browser/infobars/model/infobar_manager_impl.h"
 #import "ios/chrome/browser/intents/user_activity_browser_agent.h"
+#import "ios/chrome/browser/lens_overlay/coordinator/lens_overlay_availability.h"
+#import "ios/chrome/browser/lens_overlay/model/lens_overlay_tab_helper.h"
 #import "ios/chrome/browser/mailto_handler/model/mailto_handler_service.h"
 #import "ios/chrome/browser/mailto_handler/model/mailto_handler_service_factory.h"
 #import "ios/chrome/browser/metrics/model/tab_usage_recorder_browser_agent.h"
@@ -1760,6 +1763,9 @@ using UserFeedbackDataCallback =
       (baseViewController.presentedViewController ||
        ![self isTabAvailableToPresentViewController])) {
     // Make sure the UI is available to present the sign-in view.
+    if (command.completion) {
+      command.completion(SigninCoordinatorUINotAvailable, nil);
+    }
     return;
   }
   if (self.signinCoordinator) {
@@ -2030,8 +2036,8 @@ using UserFeedbackDataCallback =
                [self.settingsNavigationController.viewControllers description]);
     return;
   }
-  [[DeferredInitializationRunner sharedInstance]
-      runBlockIfNecessary:kPrefObserverInit];
+  [_sceneState.profileState.appState.deferredRunner
+      runBlockNamed:kStartupInitPrefObservers];
 
   Browser* browser = self.mainInterface.browser;
 
@@ -2121,7 +2127,7 @@ using UserFeedbackDataCallback =
   if (self.sceneState.profileState.initStage < ProfileInitStage::kFinal) {
     return NO;
   }
-  if (self.sceneState.profileState.appState.currentUIBlocker) {
+  if (self.sceneState.profileState.currentUIBlocker) {
     return NO;
   }
   if (self.mainCoordinator.isTabGridActive) {
@@ -3377,9 +3383,21 @@ using UserFeedbackDataCallback =
   web::WebState* currentWebState =
       targetInterface.browser->GetWebStateList()->GetActiveWebState();
 
-  BOOL alwaysInsertNewTab =
+  // Refrain from reusing the same tab for Lens Overlay initiated requests.
+  BOOL initiatedByLensOverlay = false;
+  if (IsLensOverlayAvailable() && currentWebState) {
+    if (LensOverlayTabHelper* lensOverlayTabHelper =
+            LensOverlayTabHelper::FromWebState(currentWebState)) {
+      initiatedByLensOverlay =
+          lensOverlayTabHelper->IsLensOverlayUIAttachedAndAlive();
+    }
+  }
+
+  BOOL forceNewTabForIntentSearch =
       base::FeatureList::IsEnabled(kForceNewTabForIntentSearch) &&
       (self.startupParameters.postOpeningAction == FOCUS_OMNIBOX);
+  BOOL alwaysInsertNewTab =
+      initiatedByLensOverlay || forceNewTabForIntentSearch;
 
   // Don't call loadWithParams for chrome://newtab when it's already loaded.
   // Note that it's safe to use -GetVisibleURL here, as it doesn't matter if the

@@ -161,6 +161,17 @@ File::Error CallFcntlFlock(PlatformFile file,
 }
 #endif  // BUILDFLAG(IS_NACL)
 
+#if BUILDFLAG(IS_ANDROID)
+bool GetContentUriInfo(const base::FilePath& path, File::Info* info) {
+  FileEnumerator::FileInfo file_info;
+  bool result = internal::ContentUriGetFileInfo(path, &file_info);
+  if (result) {
+    info->FromStat(file_info.stat());
+  }
+  return result;
+}
+#endif
+
 }  // namespace
 
 void File::Info::FromStat(const stat_wrapper_t& stat_info) {
@@ -448,12 +459,20 @@ bool File::GetInfo(Info* info) const {
 #if BUILDFLAG(IS_ANDROID)
   if (path_.IsContentUri()) {
     // Content-URIs may represent files on the local disk, or may be virtual
-    // files backed by a ContentProvider. First attempt to use fstat(fd) with a
-    // FD from ContentResolver#openAssetFileDescriptor(). Some files may not
-    // succeed at all, or may have size=0 in which case we will attempt to get
-    // info via DocumentFile.
-    return (success && info->size > 0) ||
-           internal::ContentUriGetFileInfo(path_, info);
+    // files backed by a ContentProvider which may or may not use FUSE to back
+    // the FDs.
+    //
+    // For Document URIs, always use ContentUriGetFileInfo() since it will
+    // succeed by using the Java API DocumentFile, which can provide
+    // last-modified where FUSE cannot. FUSE always returns the current-time
+    // which is problematic because Blobs are registered with an
+    // expected-last-modified, and will fail if it changes by the time a client
+    // accesses it.
+    //
+    // For other Content-URIS, if fstat() succeeded with a non-zero size, then
+    // use the result, otherwise try via the Java APIs.
+    return (success && info->size > 0 && !internal::IsDocumentUri(path_)) ||
+           GetContentUriInfo(path_, info);
   }
 #endif
   return success;
@@ -712,7 +731,7 @@ int File::Stat(const FilePath& path, stat_wrapper_t* sb) {
     File file(path, base::File::FLAG_OPEN | base::File::FLAG_READ);
     Info info;
     if ((file.IsValid() && file.GetInfo(&info)) ||
-        internal::ContentUriGetFileInfo(path, &info)) {
+        GetContentUriInfo(path, &info)) {
       memset(sb, 0, sizeof(*sb));
       sb->st_mode = info.is_directory ? S_IFDIR : S_IFREG;
       sb->st_size = info.size;

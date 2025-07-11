@@ -311,8 +311,12 @@ NSString* const kCustomExpandedDetentIdentifier = @"customExpandedDetent";
 
     cell.imageView.image = [self.dataSource imageForGaiaID:gaiaID];
     cell.textLabel.text = [self.dataSource nameForGaiaID:gaiaID];
-    cell.detailTextLabel.text = [self.dataSource emailForGaiaID:gaiaID];
+    NSString* email = [self.dataSource emailForGaiaID:gaiaID];
+    cell.detailTextLabel.text = email;
     cell.detailTextLabel.textColor = [UIColor colorNamed:kTextSecondaryColor];
+    cell.accessibilityLabel = l10n_util::GetNSStringF(
+        IDS_IOS_OPTIONS_ACCOUNTS_SIGNIN_ACCESSIBILITY_LABEL,
+        base::SysNSStringToUTF16(email));
     cell.userInteractionEnabled = YES;
     cell.accessibilityIdentifier = kAccountMenuSecondaryAccountButtonId;
     if ([indexPath isEqual:_selectedIndexPath]) {
@@ -494,8 +498,6 @@ NSString* const kCustomExpandedDetentIdentifier = @"customExpandedDetent";
       case RowIdentifierErrorExplanation:
         break;
       case RowIdentifierErrorButton:
-        base::RecordAction(
-            base::UserMetricsAction("Signin_AccountMenu_ErrorButton"));
         [self.mutator didTapErrorButton];
         break;
       case RowIdentifierSignOut:

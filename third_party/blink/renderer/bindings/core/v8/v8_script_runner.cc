@@ -307,13 +307,8 @@ v8::MaybeLocal<v8::Script> CompileScriptInternal(
       return script;
     }
     default:
-      NOTREACHED_IN_MIGRATION();
+      NOTREACHED();
   }
-
-  // All switch branches should return and we should never get here.
-  // But some compilers aren't sure, hence this default.
-  NOTREACHED_IN_MIGRATION();
-  return v8::MaybeLocal<v8::Script>();
 }
 
 int GetMicrotasksScopeDepth(v8::Isolate* isolate,
@@ -409,12 +404,19 @@ v8::MaybeLocal<v8::Module> V8ScriptRunner::CompileModule(
         isolate->GetCurrentContext(), streamer->Source(v8::ScriptType::kModule),
         code, origin);
   } else {
-    switch (compile_options) {
+    switch (static_cast<int>(compile_options)) {
       // TODO(40286622): Compile hints for modules.
       case v8::ScriptCompiler::kProduceCompileHints:
       case v8::ScriptCompiler::kConsumeCompileHints:
-        compile_options = v8::ScriptCompiler::kNoCompileOptions;
+      case v8::ScriptCompiler::kFollowCompileHintsMagicComment |
+          v8::ScriptCompiler::kProduceCompileHints:
+      case v8::ScriptCompiler::kFollowCompileHintsMagicComment |
+          v8::ScriptCompiler::kConsumeCompileHints:
+        compile_options = v8::ScriptCompiler::CompileOptions(
+            compile_options & (~(v8::ScriptCompiler::kProduceCompileHints |
+                                 v8::ScriptCompiler::kConsumeCompileHints)));
         ABSL_FALLTHROUGH_INTENDED;
+      case v8::ScriptCompiler::kFollowCompileHintsMagicComment:
       case v8::ScriptCompiler::kNoCompileOptions:
       case v8::ScriptCompiler::kEagerCompile: {
         base::UmaHistogramEnumeration(
@@ -463,7 +465,7 @@ v8::MaybeLocal<v8::Module> V8ScriptRunner::CompileModule(
         break;
       }
       default:
-        NOTREACHED_IN_MIGRATION();
+        NOTREACHED();
     }
   }
 
@@ -628,16 +630,13 @@ ScriptEvaluationResult V8ScriptRunner::CompileAndRunScript(
     const bool can_use_crowdsourced_compile_hints =
         is_http && page != nullptr && page->MainFrame() == frame &&
         page->GetV8CrowdsourcedCompileHintsConsumer().HasData();
-    const bool v8_compile_hints_magic_comment_runtime_enabled =
-        RuntimeEnabledFeatures::JavaScriptCompileHintsMagicRuntimeEnabled(
-            execution_context);
 
     std::tie(compile_options, produce_cache_options, no_cache_reason) =
         V8CodeCache::GetCompileOptions(
             execution_context->GetV8CacheOptions(), *classic_script,
             might_generate_crowdsourced_compile_hints,
             can_use_crowdsourced_compile_hints,
-            v8_compile_hints_magic_comment_runtime_enabled);
+            v8_compile_hints::GetMagicCommentMode(execution_context));
 
     v8::ScriptOrigin origin = classic_script->CreateScriptOrigin(isolate);
     v8::MaybeLocal<v8::Value> maybe_result;

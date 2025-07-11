@@ -17,8 +17,8 @@
 #include "components/autofill/core/common/unique_ids.h"
 #include "components/autofill_ai/core/browser/autofill_ai_annotation_prompt_strike_database.h"
 #include "components/autofill_ai/core/browser/autofill_ai_client.h"
-#include "components/autofill_ai/core/browser/autofill_ai_filling_engine.h"
 #include "components/autofill_ai/core/browser/autofill_ai_logger.h"
+#include "components/autofill_ai/core/browser/suggestion/autofill_ai_model_executor.h"
 #include "url/gurl.h"
 
 namespace optimization_guide {
@@ -69,11 +69,10 @@ class AutofillAiManager : public autofill::AutofillAiDelegate {
       const std::vector<autofill::Suggestion>& autofill_suggestions,
       const autofill::FormData& form,
       const autofill::FormFieldData& field) override;
-  bool IsPredictionImprovementsEligible(
+  bool IsEligibleForAutofillAi(
       const autofill::FormStructure& form,
       const autofill::AutofillField& field) const override;
   bool IsUserEligible() const override;
-  bool ShouldProvidePredictionImprovements(const GURL& url) const override;
   void UserFeedbackReceived(UserFeedback feedback) override;
   void UserClickedLearnMore() override;
   void OnClickedTriggerSuggestion(
@@ -150,7 +149,7 @@ class AutofillAiManager : public autofill::AutofillAiDelegate {
   void OnReceivedPredictions(
       const autofill::FormData& form,
       const autofill::FormFieldData& trigger_field,
-      AutofillAiFillingEngine::PredictionsOrError predictions_or_error,
+      AutofillAiModelExecutor::PredictionsOrError predictions_or_error,
       std::optional<std::string> model_execution_id);
 
   // Method for showing filling or error suggestions, depending on the outcome
@@ -178,9 +177,9 @@ class AutofillAiManager : public autofill::AutofillAiDelegate {
   // Returns true if the user has the flag enabled and is overall eligible for
   // the feature, such as signin state (check the implementation for details).
   // It also checks whether the `url` is eligible. Note that differently from
-  // `ShouldProvidePredictionImprovements()` this method does not check whether
-  // the pref is enabled.
-  bool IsURLEligibleForPredictionImprovements(const GURL& url) const;
+  // `IsPredictionImprovementsEligible()` this method does not check whether the
+  // pref is enabled.
+  bool IsURLEligibleForAutofillAi(const GURL& url) const;
 
   // Returns values to fill based on the `cache_`.
   base::flat_map<autofill::FieldGlobalId, std::u16string> GetValuesToFill();
@@ -213,7 +212,7 @@ class AutofillAiManager : public autofill::AutofillAiDelegate {
 
   // Most recently retrieved form with field values set to prediction
   // improvements.
-  std::optional<AutofillAiFillingEngine::PredictionsByGlobalId> cache_ =
+  std::optional<AutofillAiModelExecutor::PredictionsByGlobalId> cache_ =
       std::nullopt;
   // The form global id for which predictions were retrieved last. Set at the
   // beginning of retrieving prediction improvements.

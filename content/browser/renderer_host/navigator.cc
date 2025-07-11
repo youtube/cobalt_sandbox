@@ -70,6 +70,8 @@ using CrossOriginOpenerPolicyValue =
     network::mojom::CrossOriginOpenerPolicyValue;
 using CrossOriginEmbedderPolicyValue =
     network::mojom::CrossOriginEmbedderPolicyValue;
+using DocumentIsolationPolicyValue =
+    network::mojom::DocumentIsolationPolicyValue;
 
 // Map Cross-Origin-Opener-Policy header value to its corresponding WebFeature.
 std::optional<WebFeature> FeatureCoop(CrossOriginOpenerPolicyValue value) {
@@ -137,6 +139,18 @@ std::optional<WebFeature> FeatureCoepRO(CrossOriginEmbedderPolicyValue value) {
   }
 }
 
+// Map Document-Isolation-Policy header value to its corresponding WebFeature.
+std::optional<WebFeature> FeatureDip(DocumentIsolationPolicyValue value) {
+  switch (value) {
+    case DocumentIsolationPolicyValue::kNone:
+      return std::nullopt;
+    case DocumentIsolationPolicyValue::kIsolateAndRequireCorp:
+      return WebFeature::kDocumentIsolationPolicyRequireCorp;
+    case DocumentIsolationPolicyValue::kIsolateAndCredentialless:
+      return WebFeature::kDocumentIsolationPolicyCredentialless;
+  }
+}
+
 ukm::SourceId GetPageUkmSourceId(RenderFrameHost& rfh) {
   // RenderFrameHost::GetPageUkmSourceId does not support being called in the
   // prerendering state, because our data collection policy disallows collecting
@@ -178,6 +192,11 @@ void RecordWebPlatformSecurityMetrics(RenderFrameHostImpl* rfh,
   // [COEP]
   log(FeatureCoep(rfh->cross_origin_embedder_policy().value));
   log(FeatureCoepRO(rfh->cross_origin_embedder_policy().report_only_value));
+
+  // Document-Isolation-Policy
+  log(FeatureDip(rfh->policy_container_host()
+                     ->policies()
+                     .document_isolation_policy.value));
 
   // Record iframes embedded in cross-origin contexts without a CSP
   // frame-ancestor directive.
@@ -692,15 +711,14 @@ void Navigator::DidNavigate(
   if (old_entry_count != controller_.GetEntryCount() ||
       details.previous_entry_index !=
           controller_.GetLastCommittedEntryIndex()) {
+    int history_offset = controller_.GetLastCommittedEntryIndex();
+    int history_count = controller_.GetEntryCount();
     frame_tree.root()->render_manager()->ExecutePageBroadcastMethod(
-        base::BindRepeating(
-            [](int history_offset, int history_count, RenderViewHostImpl* rvh) {
-              if (auto& broadcast = rvh->GetAssociatedPageBroadcast())
-                broadcast->SetHistoryOffsetAndLength(history_offset,
-                                                     history_count);
-            },
-            controller_.GetLastCommittedEntryIndex(),
-            controller_.GetEntryCount()),
+        [history_offset, history_count](RenderViewHostImpl* rvh) {
+          if (auto& broadcast = rvh->GetAssociatedPageBroadcast()) {
+            broadcast->SetHistoryOffsetAndLength(history_offset, history_count);
+          }
+        },
         site_instance->group());
   }
 
@@ -718,14 +736,12 @@ void Navigator::DidNavigate(
         final_site_instance->browsing_instance_token(),
         final_site_instance->coop_related_group_token());
     frame_tree.root()->render_manager()->ExecutePageBroadcastMethod(
-        base::BindRepeating(
-            [](const blink::BrowsingContextGroupInfo& info,
-               RenderViewHostImpl* rvh) {
-              if (auto& broadcast = rvh->GetAssociatedPageBroadcast()) {
-                broadcast->UpdatePageBrowsingContextGroup(info);
-              }
-            },
-            browsing_context_group_info),
+        [&browsing_context_group_info](RenderViewHostImpl* rvh) {
+          if (auto& broadcast = rvh->GetAssociatedPageBroadcast()) {
+            broadcast->UpdatePageBrowsingContextGroup(
+                browsing_context_group_info);
+          }
+        },
         final_site_instance->group());
   }
 
@@ -829,6 +845,7 @@ void Navigator::Navigate(std::unique_ptr<NavigationRequest> request,
   NavigationRequest* ongoing_navigation_request =
       frame_tree_node->navigation_request();
   bool is_duplicate_navigation = false;
+  base::TimeDelta nav_start_diff;
   if (ongoing_navigation_request &&
       request->common_params().navigation_start -
               ongoing_navigation_request->common_params().navigation_start <=
@@ -858,9 +875,23 @@ void Navigator::Navigate(std::unique_ptr<NavigationRequest> request,
           ongoing_navigation_request->common_params().transition) {
     is_duplicate_navigation = true;
   }
-  base::UmaHistogramBoolean("Navigation.IsDuplicate", is_duplicate_navigation);
+  base::UmaHistogramBoolean(
+      "Navigation.BrowserInitiated.IsDuplicateWithoutThresholdCheck",
+      is_duplicate_navigation);
   if (is_duplicate_navigation) {
-    if (base::FeatureList::IsEnabled(features::kIgnoreDuplicateNavs)) {
+    // The navigation is similar to a previous navigation. Check if it's started
+    // close enough to the start of the previous navigation, in which case we
+    // can just ignore the new navigation and keep the previous navigation.
+    bool start_diff_under_threshold =
+        (nav_start_diff <= features::kDuplicateNavThreshold.Get());
+    base::UmaHistogramBoolean(
+        "Navigation.BrowserInitiated.DuplicateNavIsUnderThreshold",
+        start_diff_under_threshold);
+    base::UmaHistogramTimes(
+        "Navigation.BrowserInitiated.DuplicateNavStartTimeDiff",
+        nav_start_diff);
+    if (start_diff_under_threshold &&
+        base::FeatureList::IsEnabled(features::kIgnoreDuplicateNavs)) {
       request->set_navigation_discard_reason(
           NavigationDiscardReason::kNeverStarted);
       return;

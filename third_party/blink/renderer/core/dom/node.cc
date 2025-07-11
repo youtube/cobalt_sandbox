@@ -481,8 +481,7 @@ Node* Node::PseudoAwarePreviousSibling() const {
     case kPseudoIdViewTransitionOld:
       return nullptr;
     default:
-      NOTREACHED_IN_MIGRATION();
-      return nullptr;
+      NOTREACHED();
   }
 }
 
@@ -573,8 +572,7 @@ Node* Node::PseudoAwareNextSibling() const {
     case kPseudoIdViewTransitionNew:
       return nullptr;
     default:
-      NOTREACHED_IN_MIGRATION();
-      return nullptr;
+      NOTREACHED();
   }
 }
 
@@ -769,9 +767,9 @@ Node* Node::moveBefore(Node* new_child,
       GetDocument() == new_child->GetDocument() &&
       // "If node is not an Element or a CharacterData node, then ..."
       (new_child->IsElementNode() || new_child->IsCharacterDataNode()) &&
-      // "If parent is not an Element node, then throw a "HierarchyRequestError"
-      // DOMException."
-      IsElementNode();
+      // "If parent is not an Element or DocumentFragment node, then throw a
+      // "HierarchyRequestError" DOMException."
+      (IsElementNode() || IsDocumentFragment());
   // These two conditions below are caught by `EnsurePreInsertionValidity()`
   // that gets invoked in `insertBefore()`:
   //
@@ -905,8 +903,7 @@ static Node* NodeOrStringToNode(
         return Text::Create(document,
                             node_or_string->GetAsTrustedScript()->toString());
     }
-    NOTREACHED_IN_MIGRATION();
-    return nullptr;
+    NOTREACHED();
   }
 
   // With trusted type checks, we can process trusted script or non-text nodes
@@ -2295,7 +2292,7 @@ void Node::setTextContentForBinding(const V8UnionStringOrTrustedScript* value,
       return setTextContent(value->GetAsTrustedScript()->toString());
   }
 
-  NOTREACHED_IN_MIGRATION();
+  NOTREACHED();
 }
 
 void Node::setTextContent(const String& text) {
@@ -2336,7 +2333,7 @@ void Node::setTextContent(const String& text) {
       // Do nothing.
       return;
   }
-  NOTREACHED_IN_MIGRATION();
+  NOTREACHED();
 }
 
 uint16_t Node::compareDocumentPosition(const Node* other_node,
@@ -2388,8 +2385,7 @@ uint16_t Node::compareDocumentPosition(const Node* other_node,
                kDocumentPositionPreceding;
     }
 
-    NOTREACHED_IN_MIGRATION();
-    return kDocumentPositionDisconnected;
+    NOTREACHED();
   }
 
   // If one node is in the document and the other is not, we must be
@@ -3459,8 +3455,7 @@ void Node::SetCustomElementState(CustomElementState new_state) {
 
   switch (new_state) {
     case CustomElementState::kUncustomized:
-      NOTREACHED_IN_MIGRATION();  // Everything starts in this state
-      return;
+      NOTREACHED();  // Everything starts in this state
 
     case CustomElementState::kUndefined:
       DCHECK_EQ(CustomElementState::kUncustomized, old_state);

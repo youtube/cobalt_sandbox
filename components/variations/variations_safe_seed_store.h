@@ -39,7 +39,7 @@ class VariationsSafeSeedStore {
   virtual void SetTimeForStudyDateChecks(const base::Time& safe_seed_time) = 0;
 
   // Getter and setter for the compressed and base64-encoded safe seed.
-  virtual std::string GetCompressedSeed() const = 0;
+  virtual const std::string& GetCompressedSeed() const = 0;
   virtual void SetCompressedSeed(const std::string& safe_compressed,
                                  const std::string& base64_safe_compressed) = 0;
 
@@ -65,7 +65,8 @@ class VariationsSafeSeedStore {
   virtual void SetSessionConsistencyCountry(
       const std::string& session_consistency_country) = 0;
 
-  // Setter for SeedReaderWriter for testing.
+  // Getter and setter for SeedReaderWriter for testing.
+  virtual SeedReaderWriter* GetSeedReaderWriterForTesting() = 0;
   virtual void SetSeedReaderWriterForTesting(
       std::unique_ptr<SeedReaderWriter> seed_reader_writer) = 0;
 

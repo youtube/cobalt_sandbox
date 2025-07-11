@@ -19,9 +19,34 @@ GroupMember& GroupMember::operator=(GroupMember&&) = default;
 
 GroupMember::~GroupMember() = default;
 
+// static
+GroupMemberPartialData GroupMemberPartialData::FromGroupMember(
+    const GroupMember& member) {
+  GroupMemberPartialData result;
+  result.gaia_id = member.gaia_id;
+  result.display_name = member.display_name;
+  result.email = member.email;
+  result.avatar_url = member.avatar_url;
+  return result;
+}
+
+GroupMemberPartialData::GroupMemberPartialData() = default;
+
+GroupMemberPartialData::GroupMemberPartialData(const GroupMemberPartialData&) =
+    default;
+GroupMemberPartialData& GroupMemberPartialData::operator=(
+    const GroupMemberPartialData&) = default;
+
+GroupMemberPartialData::GroupMemberPartialData(GroupMemberPartialData&&) =
+    default;
+GroupMemberPartialData& GroupMemberPartialData::operator=(
+    GroupMemberPartialData&&) = default;
+
+GroupMemberPartialData::~GroupMemberPartialData() = default;
+
 GroupToken::GroupToken() = default;
 
-GroupToken::GroupToken(GroupId group_id, std::string access_token)
+GroupToken::GroupToken(GroupId group_id, const std::string& access_token)
     : group_id(std::move(group_id)), access_token(std::move(access_token)) {}
 
 GroupToken::GroupToken(const GroupToken&) = default;
@@ -91,6 +116,14 @@ SharedTabGroupPreview::~SharedTabGroupPreview() = default;
 
 bool operator<(const GroupData& lhs, const GroupData& rhs) {
   return lhs.group_token.group_id < rhs.group_token.group_id;
+}
+
+bool operator==(const GroupToken& lhs, const GroupToken& rhs) {
+  return lhs.group_id == rhs.group_id && lhs.access_token == rhs.access_token;
+}
+
+bool operator<(const GroupToken& lhs, const GroupToken& rhs) {
+  return lhs.group_id < rhs.group_id;
 }
 
 }  // namespace data_sharing

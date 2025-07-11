@@ -630,7 +630,6 @@ V nasprotnem primeru bo vgrajena sledilna ploščica znova omogočena čez <ph n
 <translation id="3208321278970793882">Aplikacija</translation>
 <translation id="3213571860604332401">Shranjevanje povezave kot zaznamek</translation>
 <translation id="3217205077783620295">Glasnost je vklopljena: če to preklopite, bo zvok izklopljen.</translation>
-<translation id="3218561536255328229">Petkrat pritisnite tipko Esc, če želite omogočiti sledilno ploščico</translation>
 <translation id="3226991577105957773">in še <ph name="COUNT" /></translation>
 <translation id="3227137524299004712">Mikrofon</translation>
 <translation id="3233611303007751344">Varčevanje z energijo baterije je izklopljeno</translation>
@@ -1305,6 +1304,7 @@ Nobena naprava ni povezana.</translation>
 <translation id="5393156353051693207">Če želite preurediti aplikacije, se kjer koli dotaknite in pridržite.</translation>
 <translation id="5395308026110844773"><ph name="DRAGGED_APP_NAME" /> na <ph name="IN_PLACE_APP" />, spustite, da ustvarite mapo.</translation>
 <translation id="5397578532367286026">Upravitelj (<ph name="MANAGER_EMAIL" />) lahko na chrome.com pregleduje uporabo in zgodovino tega uporabnika.</translation>
+<translation id="540338817371815859">Ležeče</translation>
 <translation id="540713187982329711">Preklop dostopne točke. Dostopna točka je vklopljena, nobena naprava ni povezana.</translation>
 <translation id="5409208741270395213">Označevanje opravila kot dokončanega</translation>
 <translation id="5413656666631274079">stran z nastavitvami</translation>
@@ -1529,7 +1529,7 @@ Nobena naprava ni povezana.</translation>
 <translation id="6121838516699723042">Potrditev prenosa datoteke <ph name="FILENAME" /></translation>
 <translation id="612734058257491180">Pomočnik Google ni na voljo v gostujoči seji.</translation>
 <translation id="6127395413317891856">Nimate vzpostavljene povezave. Preverite povezavo in poskusite znova.</translation>
-<translation id="6129953537138746214">Presledek</translation>
+<translation id="6129953537138746214">Preslednica</translation>
 <translation id="6137566720514957455">Odpri pogovorno okno za odstranjevanje za <ph name="USER_EMAIL_ADDRESS" /></translation>
 <translation id="6141205840878048728">Na kaj se želite osredotočiti?</translation>
 <translation id="6141988275892716286">Potrdi prenos</translation>
@@ -1767,6 +1767,7 @@ Nova namestitev</translation>
 <translation id="6921427376813842559">Posodobitev naprave</translation>
 <translation id="6929081673585394903">Prikaz kontrolnikov</translation>
 <translation id="6931576957638141829">Shrani v</translation>
+<translation id="6935857786205183008">Pokončno</translation>
 <translation id="6942518653766415536">Meni oblike zapisa posnetka</translation>
 <translation id="6945221475159498467">Izberi</translation>
 <translation id="6945922087561257829">Telefon uporablja mobilno omrežje. Poskrbite, da sta telefon in Chromebook povezana v isto omrežje Wi-Fi, nato poskusite znova. <ph name="LEARN_MORE" /></translation>
@@ -1940,7 +1941,7 @@ Nova namestitev</translation>
 <translation id="7569886975397378678">Opustitev nastavitve ogleda obvestil in aplikacij telefona</translation>
 <translation id="7571361473021531288"><ph name="BATTERY_PERCENTAGE" /> % baterije | še <ph name="TIME" /></translation>
 <translation id="7573585051776738856">Aktivno okno je zasidrano na desni.</translation>
-<translation id="7579778809502851308">Zajemanje slike</translation>
+<translation id="7579778809502851308">Zaslonski posnetek</translation>
 <translation id="7593891976182323525">Iskanje ali Shift</translation>
 <translation id="7598054670902114203">Posnetek uporabe CPE-ja, <ph name="CPU_USEAGE" /> %. Temperatura <ph name="TEMPERATURE" /> stopinj Celzija, trenutna hitrost: <ph name="CPU_AVERAGE_CURRENT_FREQUENCY_GHZ" /> GHz.</translation>
 <translation id="7599378375976398913">Vstavljanje izbranega rezultata</translation>
@@ -2435,6 +2436,7 @@ Nova namestitev</translation>
 <translation id="98120814841227350">Premik na konec dokumenta</translation>
 <translation id="987589956647469042">Prenos podatkov v mobilnem omrežju je vklopljen</translation>
 <translation id="989374776391122812">Kontrolniki za kamero in zvok</translation>
+<translation id="990263227494928142">Petkrat pritisnite tipko Shift, če želite omogočiti sledilno ploščico</translation>
 <translation id="990277280839877440">Okno <ph name="WINDOW_TITILE" /> je zaprto.</translation>
 <translation id="993398562350683614"><ph name="STEP" />. korak predstavitve od <ph name="TOTAL_STEPS" />. Za vse, kar morate opraviti v napravi <ph name="PRODUCT_NAME" />, lahko uporabite aplikacije. Aplikacije so na voljo v zaganjalniku. Pritisnite Alt + Shift + L, če želite preklopiti na gumb za zaganjalnik.</translation>
 <translation id="994354411665877646"><ph name="NETWORK_NAME" />, <ph name="SUBTEXT" /></translation>

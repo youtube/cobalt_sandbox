@@ -87,6 +87,7 @@ buildflag_header("buildflags") {
     "HAS_PLATFORM_ACCESSIBILITY_SUPPORT=$has_platform_accessibility_support",
     "USE_GTK=$use_gtk",
     "USE_QT=$use_qt",
+    "ENABLE_PSEUDOLOCALES=$enable_pseudolocales",
   ]
 }
 
@@ -114,6 +115,8 @@ component("base") {
   output_name = "ui_base"
 
   sources = [
+    "accelerators/accelerator.cc",
+    "accelerators/accelerator.h",
     "class_property.cc",
     "class_property.h",
     "default_style.h",
@@ -369,8 +372,6 @@ component("base") {
 
   if (use_blink) {
     sources += [
-      "accelerators/accelerator.cc",
-      "accelerators/accelerator.h",
       "accelerators/accelerator_manager.cc",
       "accelerators/accelerator_manager.h",
       "accelerators/accelerator_map.h",
@@ -462,10 +463,6 @@ component("base") {
 
   defines = [ "IS_UI_BASE_IMPL" ]
 
-  if (enable_pseudolocales) {
-    defines += [ "ENABLE_PSEUDOLOCALES" ]
-  }
-
   public_deps = [
     ":buildflags",
     ":features",
@@ -525,6 +522,9 @@ component("base") {
     deps += [
       ":l10n_util_ios",
       "//base",
+      "//ui/events:dom_keycode_converter",
+      "//ui/events:events",
+      "//ui/events:events_base",
     ]
   }
 

@@ -15,8 +15,10 @@
 #include "chrome/browser/ui/tabs/tab_strip_model.h"
 #include "chrome/browser/ui/tabs/tab_strip_model_delegate.h"
 #include "chrome/browser/ui/ui_features.h"
+#include "components/constrained_window/constrained_window_views.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "third_party/perfetto/include/perfetto/tracing/traced_value.h"
+#include "ui/views/widget/widget.h"
 
 namespace tabs {
 
@@ -180,14 +182,12 @@ base::CallbackListSubscription TabModel::RegisterDidInsert(
 }
 
 base::CallbackListSubscription TabModel::RegisterPinnedStateChanged(
-    base::RepeatingCallback<void(TabModel*, bool new_pinned_state)> callback) {
+    TabInterface::PinnedStateChangedCallback callback) {
   return pinned_state_changed_callback_list_.Add(std::move(callback));
 }
 
 base::CallbackListSubscription TabModel::RegisterGroupChanged(
-    base::RepeatingCallback<
-        void(TabModel*, std::optional<tab_groups::TabGroupId> new_group)>
-        callback) {
+    TabInterface::GroupChangedCallback callback) {
   return group_changed_callback_list_.Add(std::move(callback));
 }
 
@@ -211,7 +211,22 @@ tabs::TabFeatures* TabModel::GetTabFeatures() {
   return tab_features_.get();
 }
 
-uint32_t TabModel::GetTabHandle() {
+std::unique_ptr<views::Widget> TabModel::CreateAndShowTabScopedWidget(
+    views::WidgetDelegate* delegate) {
+  // TODO(kylixrd): Remove the use of constrained window API.
+  return base::WrapUnique(
+      constrained_window::ShowWebModalDialogViews(delegate, GetContents()));
+}
+
+bool TabModel::IsPinned() const {
+  return pinned_;
+}
+
+std::optional<tab_groups::TabGroupId> TabModel::GetGroup() const {
+  return group_;
+}
+
+uint32_t TabModel::GetTabHandle() const {
   return GetHandle().raw_value();
 }
 

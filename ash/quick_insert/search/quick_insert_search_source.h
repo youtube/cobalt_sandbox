@@ -7,7 +7,7 @@
 
 namespace ash {
 
-enum class PickerSearchSource {
+enum class QuickInsertSearchSource {
   kOmnibox = 0,
   kDate,
   kAction,
@@ -17,8 +17,9 @@ enum class PickerSearchSource {
   kClipboard,
   kEditorWrite,
   kEditorRewrite,
-  kLobster,
-  kMaxValue = kLobster,
+  kLobsterWithNoSelectedText,
+  kLobsterWithSelectedText,
+  kMaxValue = kLobsterWithSelectedText,
 };
 }
 

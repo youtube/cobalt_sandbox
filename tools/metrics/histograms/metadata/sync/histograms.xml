@@ -227,13 +227,13 @@ chromium-metrics-reviews@google.com.
   </summary>
 </histogram>
 
-<histogram name="Sync.BatchUpload.Opened" enum="BooleanHit"
+<histogram name="Sync.BatchUpload.Opened" enum="BatchUploadEntryPoint"
     expires_after="2025-04-14">
   <owner>rsult@google.com</owner>
   <owner>chrome-signin-team@google.com</owner>
   <summary>
-    Records that the Batch Upload Dialog was opened. Records when the dialog is
-    first shown.
+    Records the entry point from which the Batch Upload Dialog was opened.
+    Records when the dialog is first shown.
   </summary>
 </histogram>
 
@@ -738,16 +738,6 @@ chromium-metrics-reviews@google.com.
     with the total number of incremental updates. Not recorded for NIGORI.
   </summary>
   <token key="SyncDataType" variants="SyncDataType"/>
-</histogram>
-
-<histogram name="Sync.DataTypeEntityMetadataWithoutInitialSync"
-    enum="SyncDataTypes" expires_after="2024-12-08">
-  <owner>mastiz@chromium.org</owner>
-  <owner>treib@chromium.org</owner>
-  <summary>
-    Records whenever ClientTagBasedDataTypeProcessor finds entity metadata
-    during ModelReadyToSync() but initial_sync_done is false.
-  </summary>
 </histogram>
 
 <histogram name="Sync.DataTypeErrorSite{SyncDataType}"
@@ -1390,6 +1380,19 @@ chromium-metrics-reviews@google.com.
     This is logged when, upon a batch upload request, passwords have been moved
     to the account store. Note that passwords may not have been uploaded to the
     server yet. Upload happens as part of the regular commit process.
+  </summary>
+</histogram>
+
+<histogram name="Sync.PaymentsAccountStorageUponSyncConfiguration"
+    enum="PaymentsAccountStorageUponConfiguration" expires_after="2025-04-30">
+  <owner>mastiz@chromium.org</owner>
+  <owner>droger@chromium.org</owner>
+  <owner>src/components/sync/OWNERS</owner>
+  <summary>
+    A combined value representing whether or not the user is signed in
+    implicitly vs explicitly and whether autofill wallet data is persisted on
+    disk vs in-memory only. Recorded when AUTOFILL_WALLET_DATA is being
+    configured (model loaded). Recorded on desktop platforms only.
   </summary>
 </histogram>
 

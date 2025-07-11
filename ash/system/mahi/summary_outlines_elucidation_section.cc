@@ -42,10 +42,11 @@ namespace {
 
 constexpr int64_t kSectionHeaderChildSpacing = 4;
 constexpr int64_t kSectionHeaderIconSize = 16;
-constexpr gfx::Insets kSectionPadding = gfx::Insets(16);
 constexpr int64_t kSectionChildSpacing = 8;
 constexpr int kTextLabelDefaultMaximumWidth =
-    mahi_constants::kScrollViewWidth - kSectionPadding.width();
+    mahi_constants::kPanelDefaultWidth -
+    mahi_constants::kPanelBorderAndPadding -
+    mahi_constants::kSummaryOutlinesElucidationSectionPadding.width();
 
 std::unique_ptr<views::View> CreateSectionHeader(const gfx::VectorIcon& icon,
                                                  int name_id) {
@@ -79,7 +80,8 @@ SummaryOutlinesElucidationSection::SummaryOutlinesElucidationSection(
 
   SetOrientation(views::BoxLayout::Orientation::kVertical);
   SetCrossAxisAlignment(views::BoxLayout::CrossAxisAlignment::kStart);
-  SetInsideBorderInsets(kSectionPadding);
+  SetInsideBorderInsets(
+      mahi_constants::kSummaryOutlinesElucidationSectionPadding);
   SetBetweenChildSpacing(kSectionChildSpacing);
 
   AddChildView(CreateSectionHeader(chromeos::kMahiSummarizeIcon,
@@ -94,6 +96,20 @@ SummaryOutlinesElucidationSection::SummaryOutlinesElucidationSection(
           .SetAnimatedImage(mahi_animation_utils::GetLottieAnimationData(
               IDR_MAHI_LOADING_SUMMARY_ANIMATION))
           .Build());
+
+  AddChildView(views::Builder<views::Label>()
+                   .CopyAddressTo(&indicator_label_)
+                   .SetVisible(false)
+                   .SetID(mahi_constants::ViewId::kSummaryElucidationIndicator)
+                   .SetSelectable(false)
+                   .SetMultiLine(false)
+                   .SetEnabledColorId(cros_tokens::kCrosSysOnSurface)
+                   .SetHorizontalAlignment(gfx::HorizontalAlignment::ALIGN_LEFT)
+                   .AfterBuild(base::BindOnce([](views::Label* self) {
+                     TypographyProvider::Get()->StyleLabel(
+                         TypographyToken::kCrosButton2, *self);
+                   }))
+                   .Build());
 
   AddChildView(
       views::Builder<views::Label>()
@@ -169,19 +185,39 @@ void SummaryOutlinesElucidationSection::OnUpdated(const MahiUiUpdate& update) {
   switch (update.type()) {
     case MahiUiUpdateType::kContentsRefreshInitiated:
     case MahiUiUpdateType::kSummaryAndOutlinesReloaded:
+      indicator_label_->SetVisible(false);
       LoadContentForDisplay(ContentType::kSummaryAndOutline);
       return;
     case MahiUiUpdateType::kOutlinesLoaded:
       HandleOutlinesLoaded(update.GetOutlines());
       return;
+    case MahiUiUpdateType::kPanelBoundsChanged: {
+      const gfx::Rect& panel_bounds = update.GetPanelBounds();
+      // If the width of the panel has changed, update the maximum size of the
+      // text.
+      if (summary_or_elucidation_label_ != nullptr &&
+          summary_or_elucidation_label_->GetMaximumWidth() !=
+              panel_bounds.width()) {
+        summary_or_elucidation_label_->SetMaximumWidth(
+            panel_bounds.width() - mahi_constants::kPanelBorderAndPadding -
+            mahi_constants::kSummaryOutlinesElucidationSectionPadding.width());
+      }
+      return;
+    }
     case MahiUiUpdateType::kSummaryLoaded:
       HandleSummaryOrElucidationLoaded(update.GetSummary());
+      base::UmaHistogramTimes(mahi_constants::kSummaryLoadingTimeHistogramName,
+                              base::Time::Now() - start_loading_time_);
       return;
     case MahiUiUpdateType::kElucidationRequested:
+      indicator_label_->SetVisible(false);
       LoadContentForDisplay(ContentType::kElucidation);
       return;
     case MahiUiUpdateType::kElucidationLoaded:
       HandleSummaryOrElucidationLoaded(update.GetElucidation());
+      base::UmaHistogramTimes(
+          mahi_constants::kElucidationLoadingTimeHistogramName,
+          base::Time::Now() - start_loading_time_);
       return;
     case MahiUiUpdateType::kAnswerLoaded:
     case MahiUiUpdateType::kErrorReceived:
@@ -236,14 +272,11 @@ void SummaryOutlinesElucidationSection::HandleOutlinesLoaded(
 
 void SummaryOutlinesElucidationSection::HandleSummaryOrElucidationLoaded(
     const std::u16string& result_text) {
+  indicator_label_->SetVisible(true);
   summary_or_elucidation_label_->SetVisible(true);
   summary_or_elucidation_label_->SetText(result_text);
   summary_or_elucidation_loading_animated_image_->Stop();
   summary_or_elucidation_loading_animated_image_->SetVisible(false);
-
-  // TODO(b:375944345): deal with metrics properly
-  base::UmaHistogramTimes(mahi_constants::kSummaryLoadingTimeHistogramName,
-                          base::Time::Now() - start_loading_time_);
 
   GetViewAccessibility().AnnounceText(
       l10n_util::GetStringUTF16(IDS_ASH_MAHI_LOADED_ACCESSIBLE_NAME));
@@ -282,13 +315,19 @@ void SummaryOutlinesElucidationSection::LoadContentForDisplay(
 
   start_loading_time_ = base::Time::Now();
 
-  // TODO(b:374173466): need a label to indicate the result type.
   switch (content_type) {
-    case ContentType::kSummaryAndOutline:
+    case ContentType::kSummaryAndOutline: {
+      indicator_label_->SetText(
+          l10n_util::GetStringUTF16(IDS_MAHI_SUMMARIZE_INDICATOR_LABEL));
       ui_controller_->UpdateSummaryAndOutlines();
       return;
-    case ContentType::kElucidation:
+    }
+    case ContentType::kElucidation: {
+      indicator_label_->SetText(
+          l10n_util::GetStringUTF16(IDS_MAHI_SIMPLIFY_INDICATOR_LABEL));
       ui_controller_->UpdateElucidation();
+      return;
+    }
   }
 }
 

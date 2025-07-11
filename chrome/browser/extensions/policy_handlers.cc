@@ -115,11 +115,7 @@ bool ExtensionInstallForceListPolicyHandler::CheckPolicySettings(
 void ExtensionInstallForceListPolicyHandler::ApplyPolicySettings(
     const policy::PolicyMap& policies,
     PrefValueMap* prefs) {
-#if BUILDFLAG(IS_CHROMEOS)
-  auto dict = GetAshPolicyDict(policies);
-#else
   auto dict = GetPolicyDict(policies);
-#endif
 
   if (dict.has_value()) {
     prefs->SetValue(pref_names::kInstallForceList,
@@ -137,8 +133,7 @@ bool ExtensionInstallForceListPolicyHandler::ParseList(
 
   if (!policy_value->is_list()) {
     // This should have been caught in CheckPolicySettings.
-    NOTREACHED_IN_MIGRATION();
-    return false;
+    NOTREACHED();
   }
 
   int index = -1;
@@ -195,15 +190,6 @@ bool ExtensionInstallForceListPolicyHandler::ParseList(
   return true;
 }
 
-#if BUILDFLAG(IS_CHROMEOS)
-std::optional<base::Value::Dict>
-ExtensionInstallForceListPolicyHandler::GetAshPolicyDict(
-    const policy::PolicyMap& policies) {
-  std::optional<base::Value::Dict> dict = GetPolicyDict(policies);
-  return dict;
-}
-#endif  // BUILDFLAG(IS_CHROMEOS)
-
 std::optional<base::Value::Dict>
 ExtensionInstallForceListPolicyHandler::GetPolicyDict(
     const policy::PolicyMap& policies) {
@@ -235,15 +221,6 @@ bool ExtensionInstallBlockListPolicyHandler::CheckPolicySettings(
 void ExtensionInstallBlockListPolicyHandler::ApplyPolicySettings(
     const policy::PolicyMap& policies,
     PrefValueMap* prefs) {
-#if BUILDFLAG(IS_CHROMEOS)
-  if (crosapi::browser_util::IsLacrosEnabled()) {
-    // When Lacros is enabled extensions are managed by Lacros, not Ash
-    // (except for some very specific extensions, see `ExtensionsAppRunsInOS`
-    // and `ExtensionsRunsInOS`), so keep the block list empty on the Ash side.
-    return;
-  }
-#endif  // BUILDFLAG(IS_CHROMEOS)
-
   list_handler_.ApplyPolicySettings(policies, prefs);
 }
 
@@ -271,8 +248,7 @@ bool ExtensionURLPatternListPolicyHandler::CheckPolicySettings(
   }
 
   if (!value->is_list()) {
-    NOTREACHED_IN_MIGRATION();
-    return false;
+    NOTREACHED();
   }
 
   // Check that the list contains valid URLPattern strings only.

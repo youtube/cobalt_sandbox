@@ -630,7 +630,6 @@ In caso contrario, il touchpad integrato verrà riattivato dopo <ph name="TIMEOU
 <translation id="3208321278970793882">App</translation>
 <translation id="3213571860604332401">Salva link come preferito</translation>
 <translation id="3217205077783620295">Il volume è attivo. Selezionalo per disattivarlo.</translation>
-<translation id="3218561536255328229">Premi Esc 5 volte per attivare il touchpad</translation>
 <translation id="3226991577105957773">+ altre <ph name="COUNT" /></translation>
 <translation id="3227137524299004712">Microfono</translation>
 <translation id="3233611303007751344">Risparmio energetico disattivato</translation>
@@ -865,7 +864,7 @@ Collega il dispositivo all'alimentazione.</translation>
 <translation id="4002066346123236978">Titolo</translation>
 <translation id="40062176907008878">Scrittura a mano libera</translation>
 <translation id="4011112806063830608">Modalità Non disturbare attiva.</translation>
-<translation id="4015144849380506405">Metti in pausa/riprendi i tasti del mouse quando il criterio è attivo</translation>
+<translation id="4015144849380506405">Metti in pausa/riprendi i tasti del mouse quando la policy è attiva</translation>
 <translation id="4017989525502048489">Puntatore laser</translation>
 <translation id="401993194061514265">Indicatore non disponibile. Riapri Registra schermo.</translation>
 <translation id="4021716437419160885">Scorri verso il basso</translation>
@@ -1302,6 +1301,7 @@ Nessun dispositivo connesso.</translation>
 <translation id="5393156353051693207">Tocca e tieni premuto un punto qualsiasi per riordinare le app</translation>
 <translation id="5395308026110844773"><ph name="DRAGGED_APP_NAME" /> sopra <ph name="IN_PLACE_APP" />, rilascia per creare una cartella.</translation>
 <translation id="5397578532367286026">L'utilizzo e la cronologia di questo utente possono essere esaminati dal gestore (<ph name="MANAGER_EMAIL" />) su chrome.com.</translation>
+<translation id="540338817371815859">Orizzontale</translation>
 <translation id="540713187982329711">Attiva/disattiva l'hotspot. L'hotspot è attivo, nessun dispositivo connesso.</translation>
 <translation id="5409208741270395213">Contrassegna l'attività come completata</translation>
 <translation id="5413656666631274079">Pagina Impostazioni</translation>
@@ -1366,7 +1366,7 @@ Nessun dispositivo connesso.</translation>
 <translation id="5600837773213129531">Premi CTRL + ALT + Z per disattivare la funzione di lettura vocale.</translation>
 <translation id="5601503069213153581">PIN</translation>
 <translation id="5618148318840095371">Abbiamo eseguito per te il passaggio a una rete migliore</translation>
-<translation id="5619862035903135339">Il criterio dell'amministratore disattiva l'acquisizione schermo</translation>
+<translation id="5619862035903135339">La policy dell'amministratore disattiva l'acquisizione schermo</translation>
 <translation id="5620856676199877916">Visualizza tutti i lavori del corso sul sito web di Google Classroom</translation>
 <translation id="5620979661744857819">Consente l'accesso per <ph name="APP_NAME" />, tutte le app e tutti i siti web che hanno le autorizzazioni di accesso al microfono e alla fotocamera. Potresti dover aggiornare la pagina web o riavviare l'app.</translation>
 <translation id="5625955975703555628">LTE+</translation>
@@ -1382,7 +1382,7 @@ Nessun dispositivo connesso.</translation>
 <translation id="5672890847723042801">Utilità</translation>
 <translation id="5673434351075758678">Da "<ph name="FROM_LOCALE" />" a "<ph name="TO_LOCALE" />" dopo la sincronizzazione delle impostazioni.</translation>
 <translation id="5675363643668471212">Elemento barra delle app</translation>
-<translation id="5677928146339483299">Autorizzazione bloccata</translation>
+<translation id="5677928146339483299">Autorizzazione negata</translation>
 <translation id="5678564054339031017">Mostra la settimana successiva</translation>
 <translation id="5679050765726761783">Alimentatore a basso consumo energetico collegato</translation>
 <translation id="5682642926269496722">L'Assistente Google non è disponibile per l'attuale account utente.</translation>
@@ -1526,7 +1526,7 @@ Nessun dispositivo connesso.</translation>
 <translation id="6121838516699723042">Conferma download <ph name="FILENAME" /></translation>
 <translation id="612734058257491180">L'Assistente Google non è disponibile in una sessione Ospite.</translation>
 <translation id="6127395413317891856">Sei offline. Controlla la connessione e riprova.</translation>
-<translation id="6129953537138746214">Spazio</translation>
+<translation id="6129953537138746214">BARRA SPAZIATRICE</translation>
 <translation id="6137566720514957455">Apri la finestra di dialogo di rimozione per <ph name="USER_EMAIL_ADDRESS" /></translation>
 <translation id="6141205840878048728">Su cosa ti piacerebbe concentrati?</translation>
 <translation id="6141988275892716286">Conferma download</translation>
@@ -1764,6 +1764,7 @@ Nuova installazione</translation>
 <translation id="6921427376813842559">Aggiorna il dispositivo</translation>
 <translation id="6929081673585394903">Mostra controlli</translation>
 <translation id="6931576957638141829">Salva in</translation>
+<translation id="6935857786205183008">Verticale</translation>
 <translation id="6942518653766415536">Menu del formato di registrazione</translation>
 <translation id="6945221475159498467">Seleziona</translation>
 <translation id="6945922087561257829">Il tuo telefono è connesso a una rete mobile. Assicurati che il telefono e Chromebook siano collegati alla stessa rete Wi-Fi, quindi riprova. <ph name="LEARN_MORE" />:</translation>
@@ -1894,7 +1895,7 @@ Nuova installazione</translation>
 <translation id="7441711280402516925">In riproduzione · Passa alla scheda</translation>
 <translation id="7453330308669753048">Risultato della cronologia delle ricerche rimosso</translation>
 <translation id="7459485586006128091">L'hotspot è stato disattivato a causa di un errore interno. Prova a riconnetterti tra qualche minuto.</translation>
-<translation id="7461924472993315131">Blocca</translation>
+<translation id="7461924472993315131">Fissa</translation>
 <translation id="746232733191930409">Modalità Registrazione dello schermo</translation>
 <translation id="7466449121337984263">Tocca il sensore</translation>
 <translation id="7477793887173910789">Gestisci la tua musica, i tuoi video e altro ancora</translation>
@@ -2431,6 +2432,7 @@ Per arrestare il dispositivo, tieni di nuovo premuto il relativo tasto di accens
 <translation id="98120814841227350">Passa alla fine del documento</translation>
 <translation id="987589956647469042">I dati mobili sono attivi</translation>
 <translation id="989374776391122812">Controlli audio e fotocamera</translation>
+<translation id="990263227494928142">Premi Maiusc 5 volte per attivare il touchpad</translation>
 <translation id="990277280839877440">Finestra <ph name="WINDOW_TITILE" /> chiusa.</translation>
 <translation id="993398562350683614">Passaggio <ph name="STEP" /> di <ph name="TOTAL_STEPS" /> del tour. Usa le app per fare tutto ciò che ti serve sul tuo <ph name="PRODUCT_NAME" />. Puoi trovare le tue app in Avvio app. Premi Alt + Maiusc + L per impostare lo stato attivo sul pulsante Avvio app.</translation>
 <translation id="994354411665877646"><ph name="NETWORK_NAME" />, <ph name="SUBTEXT" /></translation>

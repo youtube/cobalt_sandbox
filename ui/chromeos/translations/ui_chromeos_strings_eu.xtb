@@ -422,6 +422,7 @@
 <translation id="4387004326333427325">Autentifikazio-ziurtagiria urrunetik baztertu da</translation>
 <translation id="4394214039309501350">Kanpoko esteka</translation>
 <translation id="4394980935660306080">Aste honetan lehenago</translation>
+<translation id="4397435965699247285">OneDrive ezin da erabili konexiorik gabe</translation>
 <translation id="4398096759193130964">Leheneratu elementuak edo arrasta itzazu zaborrontzitik kanpoko beste karpeta batera</translation>
 <translation id="4401287888955153199">Atera guztia</translation>
 <translation id="4410695710508688828">Ezin izan da atera. <ph name="ERROR_MESSAGE" /></translation>
@@ -582,7 +583,6 @@
 <translation id="5447680084201416734">Ez dago behar adina toki biltegian.</translation>
 <translation id="5449551289610225147">Pasahitzak ez du balio</translation>
 <translation id="5459064203055649751">Badago "<ph name="FILENAME" />" izeneko fitxategi bat. Mugitzen ari zarenarekin ordeztu nahi duzu?</translation>
-<translation id="5462378611565326489">OneDrive ezin da erabili konexiorik gabe.</translation>
 <translation id="5463231940765244860">Idatzi</translation>
 <translation id="5469868506864199649">Italiarra</translation>
 <translation id="5473333559083690127">Idatzi berriro PINa</translation>
@@ -941,7 +941,7 @@
 <translation id="8151638057146502721">Konfiguratu</translation>
 <translation id="8154666764013920974">{NUM_ERROR,plural, =1{1 errore.}other{# errore.}}</translation>
 <translation id="8154842056504218462">Hautatu dira sarrera guztiak.</translation>
-<translation id="8157684860301034423">Ezin izan da eskuratu aplikazioaren informazioa.</translation>
+<translation id="8157684860301034423">Ezin izan da eskuratu aplikazioari buruzko informazioa.</translation>
 <translation id="8175731104491895765">Frantsesa (Belgika)</translation>
 <translation id="8175799081768705361">Drive-ko <ph name="NUMBER_OF_FILES_SYNCING" /> fitxategi sinkronizatzen</translation>
 <translation id="8179976553408161302">Sartu</translation>
@@ -1050,7 +1050,7 @@
 <translation id="8919081441417203123">Daniarra</translation>
 <translation id="8949925099261528566">Konektatuta; ezin dago Interneteko konexiorik</translation>
 <translation id="8965697826696209160">Ez dago memoria nahikorik.</translation>
-<translation id="8970887620466824814">Arazo bat izan da.</translation>
+<translation id="8970887620466824814">Arazoren bat izan da.</translation>
 <translation id="8971742885766657349">Sinkronizatzen: % <ph name="PERCENT" /></translation>
 <translation id="8997962250644902079">Txinatarra (tradizionala, pinyin)</translation>
 <translation id="8998871447376656508">Ez dago kargatzen amaitzeko behar adina toki librerik Google Drive-n.</translation>

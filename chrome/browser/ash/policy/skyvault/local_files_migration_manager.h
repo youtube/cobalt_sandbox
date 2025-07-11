@@ -8,6 +8,7 @@
 #include <memory>
 #include <optional>
 
+#include "base/functional/callback_helpers.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
@@ -42,6 +43,9 @@ class LocalFilesMigrationManager : public LocalUserFilesPolicyObserver,
     // Called when the migration of files to the cloud has completed
     // successfully.
     virtual void OnMigrationSucceeded() = 0;
+
+    // Called when the migration of files to the cloud has been reset.
+    virtual void OnMigrationReset() = 0;
   };
 
   // Creates an instance of LocalFilesMigrationManager with overridden
@@ -85,6 +89,9 @@ class LocalFilesMigrationManager : public LocalUserFilesPolicyObserver,
   // policy::local_user_files::Observer overrides:
   void OnLocalUserFilesPolicyChanged() override;
 
+  // Called after migration is stopped and can be started again.
+  void OnMigrationStopped(bool log_file_deleted);
+
   // Called after contents of MyFiles are checked. If empty, removes the volume
   // and restricts write access, otherwise initiates the migration based on the
   // current state.
@@ -119,12 +126,12 @@ class LocalFilesMigrationManager : public LocalUserFilesPolicyObserver,
   // the errors otherwise.
   void OnMigrationDone(std::map<base::FilePath, MigrationUploadError> errors,
                        base::FilePath upload_root_path,
-                       std::optional<base::FilePath> error_log_path);
+                       base::FilePath error_log_path);
 
   // Completes the migration process, taking into account any errors that
   // occurred during the migration.
   void ProcessErrors(std::map<base::FilePath, MigrationUploadError> errors,
-                     std::optional<base::FilePath> error_log_path);
+                     base::FilePath error_log_path);
 
   // Cleans up any remaining files from the device after a successful migration.
   void CleanupLocalFiles();
@@ -143,10 +150,17 @@ class LocalFilesMigrationManager : public LocalUserFilesPolicyObserver,
 
   // Stops the migration if currently ongoing.
   void MaybeStopMigration(CloudProvider previous_provider,
-                          bool close_dialog = true);
+                          bool close_dialog = true,
+                          MigrationStoppedCallback = base::DoNothing());
 
   // Sets and stores the state on the device.
   void SetState(State new_state);
+
+  // Notifies the observers that migration succeeded.
+  void NotifySuccess();
+
+  // Notifies the observers that migration was reset.
+  void NotifyReset();
 
   // Observers for migration events.
   base::ObserverList<Observer>::Unchecked observers_;
@@ -184,6 +198,9 @@ class LocalFilesMigrationManager : public LocalUserFilesPolicyObserver,
 
   // Timer for delaying the start of migration and showing dialogs.
   std::unique_ptr<base::WallClockTimer> scheduling_timer_;
+
+  // Number of times the entire upload failed and was retried.
+  int current_retry_count_;
 
   base::WeakPtrFactory<LocalFilesMigrationManager> weak_factory_{this};
 };

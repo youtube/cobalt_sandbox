@@ -115,7 +115,7 @@ developer::ExtensionType GetExtensionType(Manifest::Type manifest_type) {
       type = developer::ExtensionType::kExtension;
       break;
     default:
-      NOTREACHED_IN_MIGRATION();
+      NOTREACHED();
   }
   return type;
 }
@@ -164,7 +164,7 @@ developer::RuntimeError ConstructRuntimeError(const RuntimeError& error) {
       result.severity = developer::ErrorLevel::kError;
       break;
     default:
-      NOTREACHED_IN_MIGRATION();
+      NOTREACHED();
   }
   result.context_url = error.context_url().spec();
   result.occurrences = error.occurrences();
@@ -658,6 +658,15 @@ void ExtensionInfoGenerator::CreateExtensionInfoHelper(
        Manifest::ShouldAlwaysAllowFileAccess(extension.location()));
   info->file_access.is_active =
       util::AllowFileAccess(extension.id(), browser_context_);
+#if BUILDFLAG(IS_CHROMEOS)
+  info->file_access_pending_change =
+      extension_prefs_->HasAllowFileAccessPendingUpdate(extension.id());
+  if (info->file_access_pending_change) {
+    info->file_access.is_active = !info->file_access.is_active;
+  }
+#else
+  info->file_access_pending_change = false;
+#endif
 
   // Home page.
   info->home_page.url = ManifestURL::GetHomepageURL(&extension).spec();
@@ -676,6 +685,15 @@ void ExtensionInfoGenerator::CreateExtensionInfoHelper(
   info->incognito_access.is_enabled = util::CanBeIncognitoEnabled(&extension);
   info->incognito_access.is_active =
       util::IsIncognitoEnabled(extension.id(), browser_context_);
+#if BUILDFLAG(IS_CHROMEOS)
+  info->incognito_access_pending_change =
+      extension_prefs_->HasIncognitoEnabledPendingUpdate(extension.id());
+  if (info->incognito_access_pending_change) {
+    info->incognito_access.is_active = !info->incognito_access.is_active;
+  }
+#else
+  info->incognito_access_pending_change = false;
+#endif
 
   // Install warnings, but only if unpacked, the error console isn't enabled
   // (otherwise it shows these), and we're in developer mode (normal users don't
@@ -745,8 +763,7 @@ void ExtensionInfoGenerator::CreateExtensionInfoHelper(
           // https://crbug.com/503427.
           break;
         case ExtensionError::Type::kNumErrorTypes:
-          NOTREACHED_IN_MIGRATION();
-          break;
+          NOTREACHED();
       }
     }
   }

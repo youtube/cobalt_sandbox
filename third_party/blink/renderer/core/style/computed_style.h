@@ -56,7 +56,7 @@
 #include "third_party/blink/renderer/core/style/display_style.h"
 #include "third_party/blink/renderer/core/style/filter_operations.h"
 #include "third_party/blink/renderer/core/style/font_size_style.h"
-#include "third_party/blink/renderer/core/style/gap_color_data_list.h"
+#include "third_party/blink/renderer/core/style/gap_data_list.h"
 #include "third_party/blink/renderer/core/style/style_cached_data.h"
 #include "third_party/blink/renderer/core/style/style_highlight_data.h"
 #include "third_party/blink/renderer/core/style/style_scrollbar_color.h"
@@ -999,7 +999,7 @@ class ComputedStyle final : public ComputedStyleBase {
   }
   bool ColumnRuleIsTransparent() const {
     return ColumnRuleColor()
-        .GetLegacyGapColor()
+        .GetLegacyValue()
         .Resolve(GetCurrentColor(), UsedColorScheme())
         .IsFullyTransparent();
   }
@@ -2287,11 +2287,13 @@ class ComputedStyle final : public ComputedStyleBase {
     }
     if (pseudo == kPseudoIdScrollMarkerGroupBefore) {
       return ScrollMarkerGroup() == EScrollMarkerGroup::kBefore &&
-             IsScrollContainer();
+             IsScrollContainer() &&
+             HasPseudoElementStyle(kPseudoIdScrollMarkerGroup);
     }
     if (pseudo == kPseudoIdScrollMarkerGroupAfter) {
       return ScrollMarkerGroup() == EScrollMarkerGroup::kAfter &&
-             IsScrollContainer();
+             IsScrollContainer() &&
+             HasPseudoElementStyle(kPseudoIdScrollMarkerGroup);
     }
     if (!HasPseudoElementStyle(pseudo)) {
       return false;

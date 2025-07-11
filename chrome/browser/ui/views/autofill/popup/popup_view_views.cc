@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <memory>
 #include <optional>
+#include <ranges>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -19,6 +20,7 @@
 #include "base/functional/bind.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
+#include "base/not_fatal_until.h"
 #include "base/notreached.h"
 #include "base/time/time.h"
 #include "build/build_config.h"
@@ -684,19 +686,21 @@ void PopupViewViews::OnSuggestionsChanged(bool prefer_prev_arrow_side) {
   SetRowWithOpenSubPopup(std::nullopt);
 
   CreateSuggestionViews();
-  DoUpdateBoundsAndRedrawPopup(prefer_prev_arrow_side);
+  // Updating bounds and redrawing popup can cause the popup to hide.
+  if (!DoUpdateBoundsAndRedrawPopup(prefer_prev_arrow_side)) {
+    return;
+  }
 
   // TODO(crbug.com/374715256): Prediction improvements suggestions are
   // generated asynchronously, after showing the "loading" popup. Testing on
   // the `kPredictionImprovementsFeedback` suggestion is a way to understand
   // that the suggestions are generated successfully and announce it. This
   // approach should be reconsidered in favor of something more reliable.
-  const auto& suggestions = this->controller()->GetSuggestions();
-  if (std::any_of(suggestions.begin(), suggestions.end(),
-                  [](const Suggestion& suggestion) {
-                    return suggestion.type ==
-                           SuggestionType::kPredictionImprovementsFeedback;
-                  })) {
+  CHECK(controller(), base::NotFatalUntil::M134);
+  if (controller() &&
+      base::Contains(controller()->GetSuggestions(),
+                     SuggestionType::kPredictionImprovementsFeedback,
+                     &Suggestion::type)) {
     a11y_announcer_.Run(
         l10n_util::GetStringUTF16(
             IDS_AUTOFILL_PREDICTION_IMPROVEMENTS_SUGGESTIONS_LOADED_A11Y_HINT),
@@ -794,11 +798,11 @@ void PopupViewViews::OnWidgetVisibilityChanged(views::Widget* widget,
   // educational messages. The promo bubble should only be shown once in one
   // session and has a limit for how many times it can be shown at most in a
   // period of time.
-  for (auto feature : base::MakeFlatSet<raw_ptr<const base::Feature>>(
+  for (auto iph_metadata : base::MakeFlatSet<Suggestion::IPHMetadata>(
            controller_->GetSuggestions(), /*comp=*/{},
-           &Suggestion::feature_for_iph)) {
-    if (feature) {
-      browser->window()->MaybeShowFeaturePromo(*feature);
+           &Suggestion::iph_metadata)) {
+    if (iph_metadata.feature) {
+      browser->window()->MaybeShowFeaturePromo(*iph_metadata.feature);
     }
   }
 }
@@ -1060,37 +1064,34 @@ void PopupViewViews::CreateSuggestionViews() {
                 kAutofillPredictionImprovementsErrorElementId);
           }
 
-          const base::Feature* const feature_for_iph =
-              suggestions[current_line_number].feature_for_iph;
+          const base::Feature* const feature =
+              suggestions[current_line_number].iph_metadata.feature;
 
           // Set appropriate element ids for IPH targets, it is important to
           // set them earlier to make sure the elements are discoverable later
           // during popup's visibility change and the promo bubble showing.
-          if (feature_for_iph == &feature_engagement::
-                                     kIPHAutofillVirtualCardSuggestionFeature ||
-              feature_for_iph ==
-                  &feature_engagement::
-                      kIPHAutofillDisabledVirtualCardSuggestionFeature) {
+          if (feature == &feature_engagement::
+                             kIPHAutofillVirtualCardSuggestionFeature ||
+              feature == &feature_engagement::
+                             kIPHAutofillDisabledVirtualCardSuggestionFeature) {
             row_view->SetProperty(views::kElementIdentifierKey,
                                   kAutofillCreditCardSuggestionEntryElementId);
-          } else if (feature_for_iph ==
+          } else if (feature ==
                      &feature_engagement::
                          kIPHAutofillVirtualCardCVCSuggestionFeature) {
             row_view->SetProperty(views::kElementIdentifierKey,
                                   kAutofillStandaloneCvcSuggestionElementId);
-          } else if (feature_for_iph ==
+          } else if (feature ==
                      &feature_engagement::
                          kIPHAutofillExternalAccountProfileSuggestionFeature) {
             row_view->SetProperty(views::kElementIdentifierKey,
                                   kAutofillSuggestionElementId);
-          } else if (feature_for_iph ==
-                     &feature_engagement::
-                         kIPHAutofillCreditCardBenefitFeature) {
+          } else if (feature == &feature_engagement::
+                                    kIPHAutofillCreditCardBenefitFeature) {
             row_view->SetProperty(views::kElementIdentifierKey,
                                   kAutofillCreditCardBenefitElementId);
-          } else if (feature_for_iph ==
-                     &feature_engagement::
-                         kIPHPlusAddressCreateSuggestionFeature) {
+          } else if (feature == &feature_engagement::
+                                    kIPHPlusAddressCreateSuggestionFeature) {
             row_view->SetProperty(views::kElementIdentifierKey,
                                   kPlusAddressCreateSuggestionElementId);
           }

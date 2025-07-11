@@ -22,6 +22,7 @@
 #include "content/public/browser/javascript_dialog_manager.h"
 #include "content/public/browser/media_player_watch_time.h"
 #include "content/public/browser/media_stream_request.h"
+#include "content/public/browser/select_audio_output_request.h"
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/visibility.h"
 #include "content/public/common/javascript_dialog_type.h"
@@ -127,6 +128,8 @@ struct PartitionedPopinOpenerProperties {
   url::Origin top_frame_origin;
   net::SiteForCookies site_for_cookies;
   blink::mojom::AncestorChainBit ancestor_chain_bit;
+
+  blink::mojom::PartitionedPopinParamsPtr AsMojom() const;
 };
 
 // An interface implemented by an object interested in knowing about the state
@@ -287,6 +290,13 @@ class CONTENT_EXPORT RenderFrameHostDelegate {
   // calling |callback|.
   virtual void RequestMediaAccessPermission(const MediaStreamRequest& request,
                                             MediaResponseCallback callback);
+
+  // Called when a renderer requests to select an audio output device.
+  // |request| contains parameters for audio output device selection.
+  // |callback| is called with the unique ID of the selected device, or
+  // std::nullopt if selection fails.
+  virtual void ProcessSelectAudioOutput(const SelectAudioOutputRequest& request,
+                                        SelectAudioOutputCallback callback);
 
   // Checks if we have permission to access the microphone or camera. Note that
   // this does not query the user. |type| must be MEDIA_DEVICE_AUDIO_CAPTURE
@@ -731,11 +741,10 @@ class CONTENT_EXPORT RenderFrameHostDelegate {
   // Whether the containing window was initially opened as a new popup.
   virtual bool IsPopup() const;
 
-  // If the containing window was opened as a new partitioned popin.
-  // If this returns true, IsPopup must also return true as all
-  // popins are considered popups for UX purposes.
+  // Returns true if `this` is a partitioned popin. If you are calling this to
+  // check if a `RenderFrameHost` should be partitioned due to being in a popin,
+  // check `ShouldPartitionAsPopin` on that host instead.
   // See https://explainers-by-googlers.github.io/partitioned-popins/
-  // TODO(crbug.com/340606651): Integrate Fenced Frame check into this function.
   virtual bool IsPartitionedPopin() const;
 
   // If this window is a partitioned popin then this returns the properties
@@ -749,6 +758,9 @@ class CONTENT_EXPORT RenderFrameHostDelegate {
   // no popin can open a popin.
   // See https://explainers-by-googlers.github.io/partitioned-popins/
   virtual WebContents* GetOpenedPartitionedPopin() const;
+
+  // Called when a first contentful paint happened in the primary main frame.
+  virtual void OnFirstContentfulPaintInPrimaryMainFrame() {}
 
  protected:
   virtual ~RenderFrameHostDelegate() = default;

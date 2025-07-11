@@ -152,6 +152,26 @@ class ASH_EXPORT CaptureModeSession
   // `current_root_` is different`.
   void RefreshBarWidgetBounds();
 
+  // Invalidates all pointers previously returned from `GetImageSearchToken()`.
+  // This should be called whenever any parameters relating to the capture
+  // (type, source, bounds - excluding window) change:
+  //
+  // - when `controller_->SetUserCaptureRegion()` is called
+  //   (`UpdateCaptureRegion()` and `ClampCaptureRegionToRootWindowSize()`)
+  // - when `is_drag_in_progress_` is modified (`OnLocatedEventPressed()` and
+  //   `EndSelection()`). Note that this does not directly affect parameters
+  //   relating to the capture (`CaptureModeController::GetCaptureParams()`).
+  // - when the source changes (`OnCaptureSourceChanged()`)
+  // - when the type changes (`OnCaptureTypeChanged()`). Note that this does not
+  //   directly affect parameters relating to the capture
+  //   (`CaptureModeController::GetCaptureParams()`).
+  // - when `current_root_` changes (indirectly from `MaybeChangeRoot()`, as it
+  //   calls `UpdateCaptureRegion()`)
+  // - when the session starts (indirectly from `InitInternal()`, as it calls
+  //   `ClampCaptureRegionToRootWindowSize()`)
+  // - when `is_shutting_down_` is set (`ShutdownInternal()`)
+  void InvalidateImageSearchTokens();
+
   // BaseCaptureModeSession:
   views::Widget* GetCaptureModeBarWidget() override;
   aura::Window* GetSelectedWindow() const override;
@@ -179,6 +199,10 @@ class ASH_EXPORT CaptureModeSession
   void MaybeChangeRoot(aura::Window* new_root,
                        bool root_window_will_shutdown) override;
   std::set<aura::Window*> GetWindowsToIgnoreFromWidgets() override;
+  void OnPerformCaptureForSearchStarting(
+      PerformCaptureType capture_type) override;
+  void OnPerformCaptureForSearchEnded(PerformCaptureType capture_type) override;
+  base::WeakPtr<BaseCaptureModeSession> GetImageSearchToken() override;
   ActionButtonView* AddActionButton(views::Button::PressedCallback callback,
                                     std::u16string text,
                                     const gfx::VectorIcon* icon,
@@ -244,8 +268,12 @@ class ASH_EXPORT CaptureModeSession
   void HideAllUis();
   void ShowAllUis();
 
-  // Called by `ShowAllUis` for each widget. Returns true if the given `widget`
-  // could be shown, otherwise, returns false.
+  // Shows or hides all session UI widgets.
+  void HideAllWidgets();
+  void ShowAllWidgets();
+
+  // Called by `ShowAllWidgets()` for each widget. Returns true if the given
+  // `widget` could be shown, otherwise, returns false.
   bool CanShowWidget(views::Widget* widget) const;
 
   // If possible, this recreates and shows the nudge that alerts the user about
@@ -407,27 +435,28 @@ class ASH_EXPORT CaptureModeSession
   bool IsPointOverSelectedWindow(const gfx::Point& screen_point) const;
 
   // Creates the the action container widget if it wasn't previously created,
-  // and updates the widget's bounds.
+  // and updates the widget's bounds and visibility.
   void UpdateActionContainerWidget();
-
-  // Updates the action container widget's bounds.
-  void UpdateActionContainerWidgetBounds();
 
   // Calculates the targeted action container widget bounds in screen
   // coordinates.
   gfx::Rect CalculateActionContainerWidgetBounds() const;
 
   // Removes any existing action buttons from `action_container_view_` if the
-  // `action_container_widget_` exists,
+  // `action_container_widget_` exists.
   void RemoveAllActionButtons();
 
   // Sets the enabled state of all existing action buttons. Action buttons that
   // are added after this is called will still be enabled by default.
   void SetActionButtonsEnabled(bool enabled);
 
-  // Called back when the smart actions button is pressed. This will trigger a
-  // request to fetch and show Scanner actions.
+  // Called back when the smart actions button is pressed.
   void OnSmartActionsButtonPressed();
+
+  // Called back when the smart actions button is pressed and disclaimer check
+  // was successful. This will trigger a request to fetch and show Scanner
+  // actions.
+  void OnSmartActionsButtonDisclaimerCheckSuccess();
 
   // Called back when a Scanner action button is pressed.
   void OnScannerActionButtonPressed(
@@ -446,6 +475,9 @@ class ASH_EXPORT CaptureModeSession
   // hide it, as the button should only be shown when we are in region selection
   // mode for an image (including Sunfish/Scanner sessions).
   bool ShouldHideFeedbackWidget(views::Widget* widget) const;
+
+  // Returns true if the action container should be shown.
+  bool ShouldShowActionContainerWidget() const;
 
   // Shows the feedback page with preset information for sunfish.
   void ShowFeedbackPage();
@@ -584,6 +616,10 @@ class ASH_EXPORT CaptureModeSession
   // Controls creating, destroying or updating the visibility of the capture
   // toast.
   CaptureModeToastController capture_toast_controller_;
+
+  // Weak pointers from this factory are invalidated when any parameters
+  // relating to the capture (type, source, bounds - excluding window) change.
+  base::WeakPtrFactory<CaptureModeSession> weak_token_factory_{this};
 
   base::WeakPtrFactory<CaptureModeSession> weak_ptr_factory_{this};
 };

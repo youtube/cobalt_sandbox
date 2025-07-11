@@ -216,7 +216,13 @@ interface LensPageHandler {
   MaybeCloseTranslateFeaturePromo(bool feature_engaged);
 
   // Requests to fetch the supported languages from the translate server.
-  FetchSupportedLanguages() => (array<Language> source_languages,
+  // Returns the supported source and target languages to translate from and to.
+  // Also returns the browser locale as that determines the browser UI language.
+  // This can't be retrieved from the `navigator.language` call in TS because
+  // the user's browser UI language can differ from the language used for web
+  // content.
+  FetchSupportedLanguages() => (string browser_locale,
+                                array<Language> source_languages,
                                 array<Language> target_languages);
 };
 
@@ -309,7 +315,7 @@ interface LensSidePanelPage {
 // WebUI page handler for request from Browser side.
 // (C++ -> TypeScript)
 interface LensGhostLoaderPage {
-  // Notify the ghost loader that the autocomplete stop timer has triggered.
-  // This will hide the ghost loader and show the error state.
-  NotifyAutocompleteStopTimerTriggered();
+  // Notify the ghost loader to show error state. This can happen when the
+  // autocomplete stop timer triggers or when empty results are returned.
+  ShowErrorState();
 };

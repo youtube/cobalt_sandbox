@@ -12,6 +12,7 @@
 #include "base/test/bind.h"
 #include "base/test/gtest_util.h"
 #include "base/test/metrics/histogram_tester.h"
+#include "base/test/metrics/user_action_tester.h"
 #include "base/test/test_future.h"
 #include "chrome/browser/plus_addresses/plus_address_service_factory.h"
 #include "chrome/browser/plus_addresses/plus_address_setting_service_factory.h"
@@ -120,6 +121,7 @@ class PlusAddressCreationControllerAndroidEnabledTest
 TEST_F(PlusAddressCreationControllerAndroidEnabledTest, AcceptCreation) {
   base::test::ScopedFeatureList features_{
       features::kPlusAddressUserOnboardingEnabled};
+  base::UserActionTester user_action_tester;
   std::unique_ptr<content::WebContents> web_contents =
       ChromeRenderViewHostTestHarness::CreateTestWebContents();
 
@@ -160,6 +162,9 @@ TEST_F(PlusAddressCreationControllerAndroidEnabledTest, AcceptCreation) {
   EXPECT_EQ(
       profile()->GetPrefs()->GetTime(prefs::kFirstPlusAddressCreationTime),
       base::Time());
+  EXPECT_EQ(user_action_tester.GetActionCount(
+                "PlusAddresses.OfferedPlusAddressAccepted"),
+            1);
 }
 
 // Tests that no notice is shown if the onboarding feature is disabled.
@@ -412,6 +417,7 @@ TEST_F(PlusAddressCreationControllerAndroidEnabledTest,
 }
 
 TEST_F(PlusAddressCreationControllerAndroidEnabledTest, ModalCanceled) {
+  base::UserActionTester user_action_tester;
   std::unique_ptr<content::WebContents> web_contents =
       ChromeRenderViewHostTestHarness::CreateTestWebContents();
 
@@ -443,6 +449,9 @@ TEST_F(PlusAddressCreationControllerAndroidEnabledTest, ModalCanceled) {
           metrics::PlusAddressModalCompletionStatus::kModalCanceled,
           /*notice_shown=*/false),
       0, 1);
+  EXPECT_EQ(user_action_tester.GetActionCount(
+                "PlusAddresses.OfferedPlusAddressDeclined"),
+            1);
 }
 
 TEST_F(PlusAddressCreationControllerAndroidEnabledTest,

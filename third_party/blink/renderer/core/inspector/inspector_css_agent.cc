@@ -259,6 +259,7 @@ enum ForcePseudoClassFlags {
   kPseudoIndeterminate = 1 << 20,
   kPseudoPlaceholderShown = 1 << 21,
   kPseudoAutofill = 1 << 22,
+  kPseudoLink = 1 << 23,
 };
 
 static unsigned ComputePseudoClassMask(
@@ -287,6 +288,7 @@ static unsigned ComputePseudoClassMask(
   DEFINE_STATIC_LOCAL(String, indeterminate, ("indeterminate"));
   DEFINE_STATIC_LOCAL(String, placeholderShown, ("placeholder-shown"));
   DEFINE_STATIC_LOCAL(String, autofill, ("autofill"));
+  DEFINE_STATIC_LOCAL(String, link, ("link"));
 
   if (!pseudo_class_array || pseudo_class_array->empty())
     return kPseudoNone;
@@ -339,6 +341,8 @@ static unsigned ComputePseudoClassMask(
       result |= kPseudoPlaceholderShown;
     } else if (pseudo_class == autofill) {
       result |= kPseudoAutofill;
+    } else if (pseudo_class == link) {
+      result |= kPseudoLink;
     }
   }
   return result;
@@ -463,9 +467,8 @@ class InspectorCSSAgent::ModifyRuleAction final
         return style_sheet_->SetScopeRuleText(new_range_, old_text_, nullptr,
                                               nullptr, exception_state);
       default:
-        NOTREACHED_IN_MIGRATION();
+        NOTREACHED();
     }
-    return false;
   }
 
   bool Redo(ExceptionState& exception_state) override {
@@ -503,7 +506,7 @@ class InspectorCSSAgent::ModifyRuleAction final
             old_range_, new_text_, &new_range_, &old_text_, exception_state);
         break;
       default:
-        NOTREACHED_IN_MIGRATION();
+        NOTREACHED();
     }
     return css_rule_ != nullptr;
   }
@@ -746,6 +749,7 @@ void InspectorCSSAgent::Reset() {
   document_to_css_style_sheets_.clear();
   invalidated_documents_.clear();
   node_to_inspector_style_sheet_.clear();
+  notify_computed_style_updated_node_ids_.clear();
   ResetNonPersistentData();
 }
 
@@ -1036,6 +1040,9 @@ void InspectorCSSAgent::ForcePseudoState(Element* element,
     case CSSSelector::kPseudoVisited:
       force = forced_pseudo_state & kPseudoVisited;
       break;
+    case CSSSelector::kPseudoLink:
+      force = forced_pseudo_state & kPseudoLink;
+      break;
     case CSSSelector::kPseudoChecked:
       force = forced_pseudo_state & kPseudoChecked;
       break;
@@ -1251,7 +1258,9 @@ protocol::Response InspectorCSSAgent::getMatchedStylesForNode(
   for (InspectorStyleSheet* stylesheet :
        css_style_sheet_to_inspector_style_sheet_.Values()) {
     stylesheet->SyncTextIfNeeded();
-    ghost_rules.Populate(*stylesheet->PageStyleSheet());
+    if (RuntimeEnabledFeatures::InspectorGhostRulesEnabled()) {
+      ghost_rules.Populate(*stylesheet->PageStyleSheet());
+    }
   }
 
   CheckPseudoHasCacheScope check_pseudo_has_cache_scope(

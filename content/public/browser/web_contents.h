@@ -1458,6 +1458,7 @@ class WebContents : public PageNavigator, public base::SupportsUserData {
       base::RepeatingCallback<bool(const blink::WebInputEvent&)>;
   [[nodiscard]] virtual ScopedIgnoreInputEvents IgnoreInputEvents(
       std::optional<WebInputEventAuditCallback> audit_callback) = 0;
+  virtual bool ShouldIgnoreInputEventsForTesting() = 0;
 
   // Returns the group id for all audio streams that correspond to a single
   // WebContents. This can be used to determine if a AudioOutputStream was
@@ -1580,6 +1581,7 @@ class WebContents : public PageNavigator, public base::SupportsUserData {
       const std::string& embedder_histogram_suffix,
       ui::PageTransition page_transition,
       bool should_warm_up_compositor,
+      bool should_prepare_paint_tree,
       PreloadingHoldbackStatus holdback_status_override,
       PreloadingAttempt* preloading_attempt,
       base::RepeatingCallback<bool(const GURL&,

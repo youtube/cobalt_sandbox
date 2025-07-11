@@ -44,7 +44,7 @@ class EarlyBootSafeSeed : public VariationsSafeSeedStore {
   base::Time GetTimeForStudyDateChecks() const override;
   void SetTimeForStudyDateChecks(const base::Time& safe_seed_time) override;
 
-  std::string GetCompressedSeed() const override;
+  const std::string& GetCompressedSeed() const override;
   void SetCompressedSeed(const std::string& safe_compressed,
                          const std::string& base64_safe_compressed) override;
 
@@ -62,6 +62,7 @@ class EarlyBootSafeSeed : public VariationsSafeSeedStore {
   void SetSessionConsistencyCountry(
       const std::string& session_consistency_country) override;
 
+  SeedReaderWriter* GetSeedReaderWriterForTesting() override;
   void SetSeedReaderWriterForTesting(
       std::unique_ptr<SeedReaderWriter> seed_reader_writer) override;
 

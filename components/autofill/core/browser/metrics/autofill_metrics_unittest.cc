@@ -92,6 +92,9 @@
 #include "components/autofill/core/browser/payments/test_credit_card_fido_authenticator.h"
 #endif
 
+namespace autofill::autofill_metrics {
+namespace {
+
 using ::autofill::test::AddFieldPredictionToForm;
 using ::autofill::test::CreateTestFormField;
 using ::base::ASCIIToUTF16;
@@ -104,9 +107,6 @@ using ::testing::HasSubstr;
 using ::testing::Matcher;
 using ::testing::NiceMock;
 using ::testing::UnorderedPointwise;
-
-namespace autofill::autofill_metrics {
-namespace {
 
 using PaymentsRpcResult = payments::PaymentsAutofillClient::PaymentsRpcResult;
 using PaymentsSigninState = AutofillMetrics::PaymentsSigninState;
@@ -296,10 +296,11 @@ TEST_F(AutofillMetricsTest, StoredProfileCountAutofillableFormSubmission) {
 // Verify that when submitting a non-autofillable form, the stored profile
 // metric is not logged.
 TEST_F(AutofillMetricsTest, StoredProfileCountNonAutofillableFormSubmission) {
-  // Two fields is not enough to make it an autofillable form.
+  // Two non-email fields is not enough to make it an autofillable form.
   FormData form = CreateForm(
       {CreateTestFormField("Name", "name", "", FormControlType::kInputText),
-       CreateTestFormField("Email", "email", "", FormControlType::kInputText)});
+       CreateTestFormField("Last Name", "last-name", "",
+                           FormControlType::kInputText)});
 
   base::HistogramTester histogram_tester;
   SeeForm(form);
@@ -371,7 +372,8 @@ TEST_F(AutofillMetricsTest, EditedAutofilledFieldAtSubmission) {
 TEST_F(AutofillMetricsTest, DeveloperEngagement) {
   FormData form = CreateForm(
       {CreateTestFormField("Name", "name", "", FormControlType::kInputText),
-       CreateTestFormField("Email", "email", "", FormControlType::kInputText)});
+       CreateTestFormField("Last Name", "last-name", "",
+                           FormControlType::kInputText)});
 
   // Ensure no metrics are logged when small form support is disabled (min
   // number of fields enforced).
@@ -425,7 +427,8 @@ TEST_F(AutofillMetricsTest,
        UkmDeveloperEngagement_LogFillableFormParsedWithoutTypeHints) {
   FormData form = CreateForm(
       {CreateTestFormField("Name", "name", "", FormControlType::kInputText),
-       CreateTestFormField("Email", "email", "", FormControlType::kInputText)});
+       CreateTestFormField("Last Name", "last-name", "",
+                           FormControlType::kInputText)});
 
   // Ensure no entries are logged when loading a non-fillable form.
   {
@@ -4625,9 +4628,8 @@ TEST_F(AutofillMetricsParseQueryResponseTest, ServerHasData) {
 
   std::string response_string = SerializeAndEncode(response);
   base::HistogramTester histogram_tester;
-  ParseServerPredictionsQueryResponse(response_string, forms_,
-                                      test::GetEncodedSignatures(forms_),
-                                      nullptr, nullptr);
+  ParseServerPredictionsQueryResponse(
+      response_string, forms_, test::GetEncodedSignatures(forms_), nullptr);
   EXPECT_THAT(
       histogram_tester.GetAllSamples("Autofill.ServerResponseHasDataForForm"),
       ElementsAre(Bucket(true, 2)));
@@ -4649,9 +4651,8 @@ TEST_F(AutofillMetricsParseQueryResponseTest, OneFormNoServerData) {
                            form_suggestion);
   std::string response_string = SerializeAndEncode(response);
   base::HistogramTester histogram_tester;
-  ParseServerPredictionsQueryResponse(response_string, forms_,
-                                      test::GetEncodedSignatures(forms_),
-                                      nullptr, nullptr);
+  ParseServerPredictionsQueryResponse(
+      response_string, forms_, test::GetEncodedSignatures(forms_), nullptr);
   EXPECT_THAT(
       histogram_tester.GetAllSamples("Autofill.ServerResponseHasDataForForm"),
       ElementsAre(Bucket(false, 1), Bucket(true, 1)));
@@ -4671,9 +4672,8 @@ TEST_F(AutofillMetricsParseQueryResponseTest, AllFormsNoServerData) {
 
   std::string response_string = SerializeAndEncode(response);
   base::HistogramTester histogram_tester;
-  ParseServerPredictionsQueryResponse(response_string, forms_,
-                                      test::GetEncodedSignatures(forms_),
-                                      nullptr, nullptr);
+  ParseServerPredictionsQueryResponse(
+      response_string, forms_, test::GetEncodedSignatures(forms_), nullptr);
   EXPECT_THAT(
       histogram_tester.GetAllSamples("Autofill.ServerResponseHasDataForForm"),
       ElementsAre(Bucket(false, 2)));
@@ -4696,9 +4696,8 @@ TEST_F(AutofillMetricsParseQueryResponseTest, PartialNoServerData) {
 
   std::string response_string = SerializeAndEncode(response);
   base::HistogramTester histogram_tester;
-  ParseServerPredictionsQueryResponse(response_string, forms_,
-                                      test::GetEncodedSignatures(forms_),
-                                      nullptr, nullptr);
+  ParseServerPredictionsQueryResponse(
+      response_string, forms_, test::GetEncodedSignatures(forms_), nullptr);
   EXPECT_THAT(
       histogram_tester.GetAllSamples("Autofill.ServerResponseHasDataForForm"),
       ElementsAre(Bucket(true, 2)));
@@ -5235,12 +5234,11 @@ class AutofillMetricsCrossFrameFormTest : public AutofillMetricsTest {
                         /*include_masked_server_credit_card=*/false,
                         /*masked_card_is_enrolled_for_virtual_card=*/false);
 
-    credit_card_with_cvc_ = {
-        .credit_card = *autofill_client_->GetPersonalDataManager()
-                            ->payments_data_manager()
-                            .GetCreditCardsToSuggest()
-                            .front(),
-        .cvc = u"123"};
+    credit_card_ = *autofill_client_->GetPersonalDataManager()
+                        ->payments_data_manager()
+                        .GetCreditCardsToSuggest()
+                        .front();
+    credit_card_.set_cvc(u"123");
 
     url::Origin main_origin =
         url::Origin::Create(GURL("https://example.test/"));
@@ -5285,15 +5283,14 @@ class AutofillMetricsCrossFrameFormTest : public AutofillMetricsTest {
         this));
   }
 
-  CreditCardAndCvc& fill_data() { return credit_card_with_cvc_; }
+  CreditCard& credit_card() { return credit_card_; }
 
   // Any call to FillForm() should be followed by a SetFormValues() call to
   // mimic its effect on |form_|.
   void FillForm(const FormFieldData& triggering_field) {
     autofill_manager().FillOrPreviewCreditCardForm(
         mojom::ActionPersistence::kFill, form_, triggering_field.global_id(),
-        fill_data().credit_card, fill_data().cvc,
-        {.trigger_source = AutofillTriggerSource::kPopup});
+        credit_card(), {.trigger_source = AutofillTriggerSource::kPopup});
   }
 
   // Sets the field values of |form_| according to the parameters.
@@ -5314,9 +5311,7 @@ class AutofillMetricsCrossFrameFormTest : public AutofillMetricsTest {
       auto index_it = type_to_index.find(fill_type);
       ASSERT_NE(index_it, type_to_index.end());
       FormFieldData& field = test_api(form_).field(index_it->second);
-      field.set_value(fill_type != CREDIT_CARD_VERIFICATION_CODE
-                          ? fill_data().credit_card.GetRawInfo(fill_type)
-                          : fill_data().cvc);
+      field.set_value(credit_card().GetRawInfo(fill_type));
       field.set_is_autofilled(is_autofilled);
       field.set_properties_mask((field.properties_mask() & ~kUserTyped) |
                                 (is_user_typed ? kUserTyped : 0));
@@ -5331,7 +5326,7 @@ class AutofillMetricsCrossFrameFormTest : public AutofillMetricsTest {
   }
 
   FormData form_;
-  CreditCardAndCvc credit_card_with_cvc_;
+  CreditCard credit_card_;
 };
 
 // This fixture adds utilities for the seamlessness metric names.
@@ -5450,7 +5445,7 @@ TEST_F(AutofillMetricsSeamlessnessTest,
 
   SeeForm(form_);
 
-  fill_data().cvc = u"";
+  credit_card().set_cvc(u"");
 
   // Fakes an Autofill with the following behavior:
   // - before security and assuming a complete profile: kFullFill;
@@ -5481,8 +5476,6 @@ TEST_F(AutofillMetricsSeamlessnessTest,
   // Bitmask metrics.
   EXPECT_THAT(SamplesOf({kFillable, kBefore, kAll, kBitmask}),
               BucketsAre(Bucket(kName | kNumber | kExp | kCvc, 2)));
-  EXPECT_THAT(SamplesOf({kFillable, kAfter, kAll, kBitmask}),
-              BucketsAre(Bucket(kName | kExp, 1), Bucket(kNumber | kCvc, 1)));
   EXPECT_THAT(
       SamplesOf({kFills, kBefore, kAll, kBitmask}),
       BucketsAre(Bucket(kName | kNumber | kExp, 1), Bucket(kNumber, 1)));
@@ -5493,8 +5486,6 @@ TEST_F(AutofillMetricsSeamlessnessTest,
   // Bitmask metrics restricted to visible fields.
   EXPECT_THAT(SamplesOf({kFillable, kBefore, kVisible, kBitmask}),
               BucketsAre(Bucket(kName | kNumber | kExp, 2)));
-  EXPECT_THAT(SamplesOf({kFillable, kAfter, kVisible, kBitmask}),
-              BucketsAre(Bucket(kName | kExp, 1), Bucket(kNumber, 1)));
   EXPECT_THAT(
       SamplesOf({kFills, kBefore, kVisible, kBitmask}),
       BucketsAre(Bucket(kName | kNumber | kExp, 1), Bucket(kNumber, 1)));
@@ -5504,8 +5495,6 @@ TEST_F(AutofillMetricsSeamlessnessTest,
   // Qualitative metrics.
   EXPECT_THAT(SamplesOf({kFillable, kBefore, kAll, kQualitative}),
               BucketsAre(Bucket(Metric::kFullFill, 2)));
-  EXPECT_THAT(SamplesOf({kFillable, kAfter, kAll, kQualitative}),
-              BucketsAre(Bucket(Metric::kPartialFill, 2)));
   EXPECT_THAT(SamplesOf({kFills, kBefore, kAll, kQualitative}),
               BucketsAre(Bucket(Metric::kOptionalCvcMissing, 1),
                          Bucket(Metric::kPartialFill, 1)));
@@ -5516,8 +5505,6 @@ TEST_F(AutofillMetricsSeamlessnessTest,
   // Qualitative metrics restricted to visible fields.
   EXPECT_THAT(SamplesOf({kFillable, kBefore, kVisible, kQualitative}),
               BucketsAre(Bucket(Metric::kOptionalCvcMissing, 2)));
-  EXPECT_THAT(SamplesOf({kFillable, kAfter, kVisible, kQualitative}),
-              BucketsAre(Bucket(Metric::kPartialFill, 2)));
   EXPECT_THAT(SamplesOf({kFills, kBefore, kVisible, kQualitative}),
               BucketsAre(Bucket(Metric::kOptionalCvcMissing, 1),
                          Bucket(Metric::kPartialFill, 1)));
@@ -5528,22 +5515,18 @@ TEST_F(AutofillMetricsSeamlessnessTest,
       &test_ukm_recorder(), form_, UkmBuilder::kEntryName,
       {{
            {UkmBuilder::kFillable_BeforeSecurity_QualitativeName, kFullFill},
-           {UkmBuilder::kFillable_AfterSecurity_QualitativeName, kPartialFill},
            {UkmBuilder::kFilled_BeforeSecurity_QualitativeName,
             kOptionalCvcMissing},
            {UkmBuilder::kFilled_AfterSecurity_QualitativeName, kPartialFill},
 
            {UkmBuilder::kFillable_BeforeSecurity_BitmaskName,
             kName | kNumber | kExp | kCvc},
-           {UkmBuilder::kFillable_AfterSecurity_BitmaskName, kName | kExp},
            {UkmBuilder::kFilled_BeforeSecurity_BitmaskName,
             kName | kNumber | kExp},
            {UkmBuilder::kFilled_AfterSecurity_BitmaskName, kName | kExp},
 
            {UkmBuilder::kFillable_BeforeSecurity_Visible_QualitativeName,
             kOptionalCvcMissing},
-           {UkmBuilder::kFillable_AfterSecurity_Visible_QualitativeName,
-            kPartialFill},
            {UkmBuilder::kFilled_BeforeSecurity_Visible_QualitativeName,
             kOptionalCvcMissing},
            {UkmBuilder::kFilled_AfterSecurity_Visible_QualitativeName,
@@ -5551,8 +5534,6 @@ TEST_F(AutofillMetricsSeamlessnessTest,
 
            {UkmBuilder::kFillable_BeforeSecurity_Visible_BitmaskName,
             kName | kNumber | kExp},
-           {UkmBuilder::kFillable_AfterSecurity_Visible_BitmaskName,
-            kName | kExp},
            {UkmBuilder::kFilled_BeforeSecurity_Visible_BitmaskName,
             kName | kNumber | kExp},
            {UkmBuilder::kFilled_AfterSecurity_Visible_BitmaskName,
@@ -5565,20 +5546,16 @@ TEST_F(AutofillMetricsSeamlessnessTest,
        },
        {
            {UkmBuilder::kFillable_BeforeSecurity_QualitativeName, kFullFill},
-           {UkmBuilder::kFillable_AfterSecurity_QualitativeName, kPartialFill},
            {UkmBuilder::kFilled_BeforeSecurity_QualitativeName, kPartialFill},
            {UkmBuilder::kFilled_AfterSecurity_QualitativeName, kPartialFill},
 
            {UkmBuilder::kFillable_BeforeSecurity_BitmaskName,
             kName | kNumber | kExp | kCvc},
-           {UkmBuilder::kFillable_AfterSecurity_BitmaskName, kNumber | kCvc},
            {UkmBuilder::kFilled_BeforeSecurity_BitmaskName, kNumber},
            {UkmBuilder::kFilled_AfterSecurity_BitmaskName, kNumber},
 
            {UkmBuilder::kFillable_BeforeSecurity_Visible_QualitativeName,
             kOptionalCvcMissing},
-           {UkmBuilder::kFillable_AfterSecurity_Visible_QualitativeName,
-            kPartialFill},
            {UkmBuilder::kFilled_BeforeSecurity_Visible_QualitativeName,
             kPartialFill},
            {UkmBuilder::kFilled_AfterSecurity_Visible_QualitativeName,
@@ -5586,7 +5563,6 @@ TEST_F(AutofillMetricsSeamlessnessTest,
 
            {UkmBuilder::kFillable_BeforeSecurity_Visible_BitmaskName,
             kName | kNumber | kExp},
-           {UkmBuilder::kFillable_AfterSecurity_Visible_BitmaskName, kNumber},
            {UkmBuilder::kFilled_BeforeSecurity_Visible_BitmaskName, kNumber},
            {UkmBuilder::kFilled_AfterSecurity_Visible_BitmaskName, kNumber},
 

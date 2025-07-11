@@ -28,7 +28,7 @@ MockMigrationCoordinator::MockMigrationCoordinator(Profile* profile)
                             MigrationDoneCallback callback) {
         is_running_ = true;
         if (run_cb_) {
-          std::move(run_cb_).Run();
+          run_cb_.Run();
           return;
         }
         // Simulate upload lasting a while.
@@ -44,7 +44,11 @@ MockMigrationCoordinator::MockMigrationCoordinator(Profile* profile)
                 base::Minutes(5));  // Delay 5 minutes
       });
 
-  ON_CALL(*this, Cancel).WillByDefault([this]() { is_running_ = false; });
+  ON_CALL(*this, Cancel)
+      .WillByDefault([this](MigrationStoppedCallback callback) {
+        is_running_ = false;
+        std::move(callback).Run(true);
+      });
 }
 
 MockMigrationCoordinator::~MockMigrationCoordinator() = default;
@@ -53,7 +57,7 @@ void MockMigrationCoordinator::OnMigrationDone(
     MigrationDoneCallback callback,
     std::map<base::FilePath, MigrationUploadError> errors,
     base::FilePath upload_root_path,
-    std::optional<base::FilePath> error_log_path) {
+    base::FilePath error_log_path) {
   if (is_running_) {
     std::move(callback).Run(std::move(errors), upload_root_path,
                             error_log_path);
@@ -61,7 +65,7 @@ void MockMigrationCoordinator::OnMigrationDone(
   }
 }
 
-void MockMigrationCoordinator::SetRunCallback(base::OnceClosure run_cb) {
+void MockMigrationCoordinator::SetRunCallback(base::RepeatingClosure run_cb) {
   CHECK(run_cb);
   run_cb_ = std::move(run_cb);
 }

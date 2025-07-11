@@ -2267,7 +2267,7 @@ const blink::Color ColumnRuleColor::ColorIncludingFallback(
     bool* is_current_color) const {
   DCHECK(!visited_link);
   const StyleColor& column_rule_color =
-      style.ColumnRuleColor().GetLegacyGapColor();
+      style.ColumnRuleColor().GetLegacyValue();
   if (style.ShouldForceColor(column_rule_color)) {
     return style.GetInternalForcedCurrentColor(is_current_color);
   }
@@ -2288,8 +2288,8 @@ const CSSValue* ColumnRuleColor::CSSValueFromComputedStyleInternal(
 
   // TODO(crbug.com/357648037): Add UseCounter to  measure the use of
   // column-rule-color in :visited style rules.
-  return ComputedStyleUtils::ValueForGapColorDataList(style.ColumnRuleColor(),
-                                                      style, value_phase);
+  return ComputedStyleUtils::ValueForGapDecorationColorDataList(
+      style.ColumnRuleColor(), style, value_phase);
 }
 
 const CSSValue* ColumnRuleStyle::CSSValueFromComputedStyleInternal(
@@ -5126,7 +5126,7 @@ const blink::Color InternalVisitedColumnRuleColor::ColorIncludingFallback(
     bool* is_current_color) const {
   DCHECK(visited_link);
   const StyleColor& visited_column_rule_color =
-      style.InternalVisitedColumnRuleColor().GetLegacyGapColor();
+      style.InternalVisitedColumnRuleColor().GetLegacyValue();
   if (style.ShouldForceColor(visited_column_rule_color)) {
     return style.GetInternalForcedVisitedCurrentColor(is_current_color);
   }
@@ -11324,6 +11324,17 @@ const CSSValue* WordBreak::CSSValueFromComputedStyleInternal(
     bool allow_visited_style,
     CSSValuePhase value_phase) const {
   return CSSIdentifierValue::Create(style.WordBreak());
+}
+
+void WordBreak::ApplyValue(StyleResolverState& state,
+                           const CSSValue& value,
+                           ValueMode) const {
+  blink::EWordBreak word_break =
+      To<CSSIdentifierValue>(value).ConvertTo<blink::EWordBreak>();
+  if (word_break == EWordBreak::kAutoPhrase) {
+    UseCounter::Count(state.GetDocument(), WebFeature::kCSSWordBreakAutoPhrase);
+  }
+  state.StyleBuilder().SetWordBreak(word_break);
 }
 
 const CSSValue* WordSpacing::ParseSingleValue(

@@ -4,7 +4,10 @@
 
 #include "chromeos/ash/components/boca/boca_metrics_util.h"
 
+#include "base/metrics/histogram_functions.h"
 #include "base/metrics/histogram_macros.h"
+#include "base/metrics/metrics_hashes.h"
+#include "base/metrics/user_metrics.h"
 
 namespace ash::boca {
 
@@ -24,6 +27,17 @@ void RecordOnTaskLockedStateDurationPercentage(
                            percentage_unlocked);
 }
 
+void RecordNumOfStudentsJoinedViaCodeDuringSession(
+    int num_of_students_joined_via_code) {
+  UMA_HISTOGRAM_COUNTS_1000(kBocaNumOfStudentsJoinedViaCodeDuringSession,
+                            num_of_students_joined_via_code);
+}
+
+void RecordNumOfActiveStudentsWhenSessionEnded(int num_of_active_students) {
+  UMA_HISTOGRAM_COUNTS_1000(kBocaNumOfActiveStudentsWhenSessionEnded,
+                            num_of_active_students);
+}
+
 void RecordOnTaskNumOfTabsWhenSessionEnded(int num_of_tabs) {
   UMA_HISTOGRAM_COUNTS_100(kBocaOnTaskNumOfTabsWhenSessionEnded, num_of_tabs);
 }
@@ -31,6 +45,21 @@ void RecordOnTaskNumOfTabsWhenSessionEnded(int num_of_tabs) {
 void RecordOnTaskMaxNumOfTabsDuringSession(int max_num_of_tabs) {
   UMA_HISTOGRAM_COUNTS_100(kBocaOnTaskMaxNumOfTabsDuringSession,
                            max_num_of_tabs);
+}
+
+void RecordStudentJoinedSession() {
+  base::RecordAction(
+      base::UserMetricsAction(kBocaActionOfStudentJoinedSession));
+}
+
+void RecordBabelOrcaTranslationLanguage(const std::string& language) {
+  base::UmaHistogramSparse(kBocaBabelorcaTargetLanguage,
+                           base::HashMetricName(language));
+}
+
+void RecordBabelOrcaTranslationLanguageSwitched() {
+  base::RecordAction(
+      base::UserMetricsAction(kBocaBabelorcaActionOfStudentSwitchLanguage));
 }
 
 }  // namespace ash::boca

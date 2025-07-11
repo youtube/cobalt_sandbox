@@ -21,6 +21,9 @@ BASE_DECLARE_FEATURE(kPlusAddressAndroidOpenGmsCoreManagementPage);
 #endif  // BUILDFLAG(IS_ANDROID)
 
 COMPONENT_EXPORT(PLUS_ADDRESSES_FEATURES)
+BASE_DECLARE_FEATURE(kPlusAddressDeclinedFirstTimeCreateSurvey);
+
+COMPONENT_EXPORT(PLUS_ADDRESSES_FEATURES)
 BASE_DECLARE_FEATURE(kPlusAddressesEnabled);
 
 // Used to control the enterprise plus address feature's OAuth scope.
@@ -38,10 +41,6 @@ extern const base::FeatureParam<std::string> kPlusAddressManagementUrl;
 // Url used to redirect the user to the feature description page.
 COMPONENT_EXPORT(PLUS_ADDRESSES_FEATURES)
 extern const base::FeatureParam<std::string> kPlusAddressLearnMoreUrl;
-
-// Url for user to report issues with plus addresses.
-COMPONENT_EXPORT(PLUS_ADDRESSES_FEATURES)
-extern const base::FeatureParam<std::string> kPlusAddressErrorReportUrl;
 
 // The amount of time before the client aborts a request to the plus address
 // server.
@@ -61,14 +60,6 @@ BASE_DECLARE_FEATURE(kPlusAddressGlobalToggle);
 COMPONENT_EXPORT(PLUS_ADDRESSES_FEATURES)
 BASE_DECLARE_FEATURE(kPlusAddressInlineCreation);
 #endif
-
-#if BUILDFLAG(IS_IOS)
-COMPONENT_EXPORT(PLUS_ADDRESSES_FEATURES)
-BASE_DECLARE_FEATURE(kPlusAddressIOSErrorAndLoadingStatesEnabled);
-
-COMPONENT_EXPORT(PLUS_ADDRESSES_FEATURES)
-BASE_DECLARE_FEATURE(kPlusAddressIOSManualFallbackEnabled);
-#endif  // BUILDFLAG(IS_IOS)
 
 COMPONENT_EXPORT(PLUS_ADDRESSES_FEATURES)
 BASE_DECLARE_FEATURE(kPlusAddressOfferCreationIfPasswordFieldIsNotVisible);
@@ -90,6 +81,9 @@ extern const base::FeatureParam<int> kPlusAddressPreallocationMinimumSize;
 
 COMPONENT_EXPORT(PLUS_ADDRESSES_FEATURES)
 BASE_DECLARE_FEATURE(kPlusAddressRefinedPasswordFormClassification);
+
+COMPONENT_EXPORT(PLUS_ADDRESSES_FEATURES)
+BASE_DECLARE_FEATURE(kPlusAddressUserCreatedMultiplePlusAddressesSurvey);
 
 COMPONENT_EXPORT(PLUS_ADDRESSES_FEATURES)
 BASE_DECLARE_FEATURE(kPlusAddressUserOnboardingEnabled);

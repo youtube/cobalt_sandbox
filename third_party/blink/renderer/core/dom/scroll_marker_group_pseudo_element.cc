@@ -20,6 +20,7 @@ ScrollMarkerGroupPseudoElement::ScrollMarkerGroupPseudoElement(
 
 void ScrollMarkerGroupPseudoElement::Trace(Visitor* v) const {
   v->Trace(selected_marker_);
+  v->Trace(pending_selected_marker_);
   v->Trace(focus_group_);
   PseudoElement::Trace(v);
 }
@@ -86,11 +87,12 @@ void ScrollMarkerGroupPseudoElement::ActivateScrollMarker(
   if (!scroll_marker || scroll_marker == selected_marker_) {
     return;
   }
+  // parentElement is ::column for column scroll marker and
+  // ultimate originating element for regular scroll marker.
   mojom::blink::ScrollIntoViewParamsPtr params =
       scroll_into_view_util::CreateScrollIntoViewParams(
-          *scroll_marker->UltimateOriginatingElement()->GetComputedStyle());
-  scroll_marker->UltimateOriginatingElement()->ScrollIntoViewNoVisualUpdate(
-      std::move(params));
+          *scroll_marker->parentElement()->GetComputedStyle());
+  scroll_marker->ScrollIntoViewNoVisualUpdate(std::move(params));
   GetDocument().SetFocusedElement(scroll_marker,
                                   FocusParams(SelectionBehaviorOnFocus::kNone,
                                               mojom::blink::FocusType::kNone,
@@ -108,6 +110,7 @@ bool ScrollMarkerGroupPseudoElement::SetSelected(
   }
   scroll_marker.SetSelected(true);
   selected_marker_ = scroll_marker;
+  pending_selected_marker_.Clear();
   return true;
 }
 
@@ -128,7 +131,8 @@ void ScrollMarkerGroupPseudoElement::ClearFocusGroup() {
   focus_group_.clear();
 }
 
-bool ScrollMarkerGroupPseudoElement::UpdateSelectedScrollMarker() {
+bool ScrollMarkerGroupPseudoElement::UpdateSelectedScrollMarker(
+    const ScrollOffset& offset) {
   // Implements scroll tracking for scroll marker controls as per
   // https://drafts.csswg.org/css-overflow-5/#scroll-container-scroll.
   Element* originating_element = UltimateOriginatingElement();
@@ -140,7 +144,9 @@ bool ScrollMarkerGroupPseudoElement::UpdateSelectedScrollMarker() {
     return false;
   }
   ScrollMarkerPseudoElement* selected = nullptr;
-  PhysicalOffset scroll_offset = scroller->ScrolledContentOffset();
+  PhysicalOffset scroll_offset = PhysicalOffset::FromVector2dFFloor(offset);
+  ScrollableArea* scrollable_area = scroller->GetScrollableArea();
+  CHECK(scrollable_area);
   for (ScrollMarkerPseudoElement* scroll_marker : ScrollMarkers()) {
     if (!selected) {
       selected = scroll_marker;
@@ -165,8 +171,6 @@ bool ScrollMarkerGroupPseudoElement::UpdateSelectedScrollMarker() {
     PhysicalRect rect_to_scroll = scroller->AbsoluteToLocalRect(
         scroll_marker_box->AbsoluteBoundingBoxRectForScrollIntoView(), flag);
     rect_to_scroll.Expand(scroll_margin);
-    ScrollableArea* scrollable_area = scroller->GetScrollableArea();
-    CHECK(scrollable_area);
     ScrollOffset target_scroll_offset =
         scroll_into_view_util::GetScrollOffsetToExpose(
             *scrollable_area, rect_to_scroll, scroll_margin,
@@ -193,17 +197,27 @@ bool ScrollMarkerGroupPseudoElement::UpdateSelectedScrollMarker() {
     }
   }
   if (selected) {
-    return SetSelected(*selected);
+    // We avoid calling ScrollMarkerPseudoElement::SetSelected here so as not to
+    // cause style to be dirty right after layout, which might violate lifecycle
+    // expectations.
+    pending_selected_marker_ = selected;
+  }
+  return false;
+}
+
+bool ScrollMarkerGroupPseudoElement::UpdateSnapshotInternal() {
+  if (pending_selected_marker_) {
+    return SetSelected(*pending_selected_marker_);
   }
   return false;
 }
 
 void ScrollMarkerGroupPseudoElement::UpdateSnapshot() {
-  UpdateSelectedScrollMarker();
+  UpdateSnapshotInternal();
 }
 
 bool ScrollMarkerGroupPseudoElement::ValidateSnapshot() {
-  return !UpdateSelectedScrollMarker();
+  return !UpdateSnapshotInternal();
 }
 
 bool ScrollMarkerGroupPseudoElement::ShouldScheduleNextService() {

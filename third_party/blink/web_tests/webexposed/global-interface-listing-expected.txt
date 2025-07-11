@@ -31,9 +31,10 @@ interface AILanguageDetectorFactory
     method capabilities
     method constructor
     method create
-interface AILanguageModel
+interface AILanguageModel : EventTarget
     attribute @@toStringTag
     getter maxTokens
+    getter oncontextoverflow
     getter temperature
     getter tokensLeft
     getter tokensSoFar
@@ -44,6 +45,7 @@ interface AILanguageModel
     method destroy
     method prompt
     method promptStreaming
+    setter oncontextoverflow
 interface AILanguageModelCapabilities
     attribute @@toStringTag
     getter available
@@ -4897,8 +4899,8 @@ interface HTMLSelectElement : HTMLElement
     getter name
     getter options
     getter required
+    getter selectedContentElement
     getter selectedIndex
-    getter selectedOptionElement
     getter selectedOptions
     getter size
     getter type
@@ -4922,11 +4924,11 @@ interface HTMLSelectElement : HTMLElement
     setter multiple
     setter name
     setter required
+    setter selectedContentElement
     setter selectedIndex
-    setter selectedOptionElement
     setter size
     setter value
-interface HTMLSelectedOptionElement : HTMLElement
+interface HTMLSelectedContentElement : HTMLElement
     attribute @@toStringTag
     method constructor
 interface HTMLSlotElement : HTMLElement
@@ -5393,6 +5395,12 @@ interface IDBOpenDBRequest : IDBRequest
     method constructor
     setter onblocked
     setter onupgradeneeded
+interface IDBRecord
+    attribute @@toStringTag
+    getter key
+    getter primaryKey
+    getter value
+    method constructor
 interface IDBRequest : EventTarget
     attribute @@toStringTag
     getter error
@@ -5678,6 +5686,7 @@ interface LanguageDetector
 interface LanguageTranslator
     attribute @@toStringTag
     method constructor
+    method destroy
     method translate
 interface LargestContentfulPaint : PerformanceEntry
     attribute @@toStringTag

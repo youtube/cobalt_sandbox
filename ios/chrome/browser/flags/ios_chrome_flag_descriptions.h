@@ -115,6 +115,11 @@ extern const char kAutofillIsolatedWorldForJavascriptIOSDescription[];
 extern const char kAutofillParseVcnCardOnFileStandaloneCvcFieldsName[];
 extern const char kAutofillParseVcnCardOnFileStandaloneCvcFieldsDescription[];
 
+// Title and description for the flag to enable the V2 of the Autofill Payments
+// Sheet.
+extern const char kAutofillPaymentsSheetV2Name[];
+extern const char kAutofillPaymentsSheetV2Description[];
+
 // Title and description for the flag that enables the password suggestion
 // bottom sheet V2.
 extern const char kPasswordSuggestionBottomSheetV2Name[];
@@ -133,6 +138,17 @@ extern const char kAutofillShowManualFillForVirtualCardsDescription[];
 // Title and description for the flag that makes the autofill infobars sticky.
 extern const char kAutofillStickyInfobarName[];
 extern const char kAutofillStickyInfobarDescription[];
+
+// Title and description for the flag that enables the throttling of Autofill
+// document form scans.
+extern const char kAutofillThrottleDocumentFormScanName[];
+extern const char kAutofillThrottleDocumentFormScanDescription[];
+
+// Title and description for the flag that enables the throttling of Autofill
+// filtered document form scans. Those are the scans used to take the latest
+// snapshot of a specific form, on the spot.
+extern const char kAutofillThrottleFilteredDocumentFormScanName[];
+extern const char kAutofillThrottleFilteredDocumentFormScanDescription[];
 
 // Title and description for the flag that sets a client-side timeout on
 // UnmaskCardRequests to Google Payments servers.
@@ -263,6 +279,10 @@ extern const char kDataSharingDescription[];
 // The feature flag is shared across other platforms (kOsAll).
 extern const char kDataSharingJoinOnlyName[];
 extern const char kDataSharingJoinOnlyDescription[];
+
+// Title and description for Default Browser banner promo experiment.
+extern const char kDefaultBrowserBannerPromoName[];
+extern const char kDefaultBrowserBannerPromoDescription[];
 
 // Title and description for the flag to show the default browser tutorial from
 // an external app.
@@ -449,6 +469,10 @@ extern const char kIOSBrowserEditMenuMetricsDescription[];
 extern const char kIOSDetectUsernameInUffName[];
 extern const char kIOSDetectUsernameInUffDescription[];
 
+// Title and description for the flag to disable parcel tracking.
+extern const char kIOSDisableParcelTrackingName[];
+extern const char kIOSDisableParcelTrackingDescription[];
+
 // Title and description for the flag to enable the Docking Promo.
 extern const char kIOSDockingPromoName[];
 extern const char kIOSDockingPromoDescription[];
@@ -497,6 +521,12 @@ extern const char kIOSSaveToPhotosDescription[];
 extern const char kIOSSaveToPhotosImprovementsName[];
 extern const char kIOSSaveToPhotosImprovementsDescription[];
 
+// Title and description for the flag to enable the new feed positionig
+// experiment on iOS. This experiments controls the UX of the most visited tiles
+// and the homestack.
+extern const char kNewFeedPositioningExperimentName[];
+extern const char kNewFeedPositioningExperimentDescription[];
+
 // Title and description of the flag to enable client side new tab page
 // experiments aimed at improving user retention.
 extern const char kNewTabPageFieldTrialName[];
@@ -538,6 +568,15 @@ extern const char kIOSReactivationNotificationsDescription[];
 extern const char kIPHForSafariSwitcherName[];
 extern const char kIPHForSafariSwitcherDescription[];
 
+// Title and description for the flag to enable clearcut log background
+// uploading.
+extern const char kLensClearcutBackgroundUploadEnabledName[];
+extern const char kLensClearcutBackgroundUploadEnabledDescription[];
+
+// Title and description for the flag to enable fast QOS for clearcut logging.
+extern const char kLensClearcutLoggerFastQosEnabledName[];
+extern const char kLensClearcutLoggerFastQosEnabledDescription[];
+
 // Title and description for the flag to enable the Lens filters ablation mode.
 extern const char kLensFiltersAblationModeEnabledName[];
 extern const char kLensFiltersAblationModeEnabledDescription[];
@@ -552,6 +591,11 @@ extern const char kLensOverlayForceShowOnboardingScreenDescription[];
 extern const char kLensOverlayDisablePriceInsightsName[];
 extern const char kLensOverlayDisablePriceInsightsDescription[];
 
+// Title and description for the flag to enable the lens overlay location bar
+// entrypoint only when price insights should have triggered.
+extern const char kLensOverlayPriceInsightsCounterfactualName[];
+extern const char kLensOverlayPriceInsightsCounterfactualDescription[];
+
 // Title and description for the flag to allow lens overlay on iPad devices.
 extern const char kLensOverlayEnableIPadCompatibilityName[];
 extern const char kLensOverlayEnableIPadCompatibilityDescription[];
@@ -560,6 +604,11 @@ extern const char kLensOverlayEnableIPadCompatibilityDescription[];
 // entrypoint.
 extern const char kLensOverlayEnableLocationBarEntrypointName[];
 extern const char kLensOverlayEnableLocationBarEntrypointDescription[];
+
+// Title and description for the flag to enable the Lens overlay location bar
+// entrypoint on SRP.
+extern const char kLensOverlayEnableLocationBarEntrypointOnSRPName[];
+extern const char kLensOverlayEnableLocationBarEntrypointOnSRPDescription[];
 
 // Title and description for the flag to allow lens overlay same tab navigation.
 extern const char kLensOverlayEnableSameTabNavigationName[];
@@ -573,6 +622,11 @@ extern const char kLensTranslateToggleModeEnabledDescription[];
 // transport.
 extern const char kLensUnaryApisWithHttpTransportEnabledName[];
 extern const char kLensUnaryApisWithHttpTransportEnabledDescription[];
+
+// Title and description for the flag to enable HTTP transport for unary
+// requests.
+extern const char kLensUnaryHttpTransportEnabledName[];
+extern const char kLensUnaryHttpTransportEnabledDescription[];
 
 // Title and description for the flag to enable the Lens web page load
 // optimization.

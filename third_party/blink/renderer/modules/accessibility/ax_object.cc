@@ -1478,6 +1478,14 @@ void AXObject::Serialize(ui::AXNodeData* node_data,
       SerializeHTMLAttributesForSnapshot(node_data);
     } else {
       SerializeHTMLNonStandardAttributesForJAWS(node_data);
+      // Serialize <input name> for use by password managers.
+      if (auto* input = DynamicTo<HTMLInputElement>(GetNode())) {
+        if (const AtomicString& input_name = input->GetName()) {
+          TruncateAndAddStringAttribute(
+              node_data, ax::mojom::blink::StringAttribute::kHtmlInputName,
+              input_name);
+        }
+      }
     }
   }
   SerializeOtherScreenReaderAttributes(node_data);
@@ -1704,6 +1712,10 @@ void AXObject::SerializeHTMLNonStandardAttributesForJAWS(
   // TODO(https://github.com/w3c/aria/issues/2352): replace with ARIA feature.
   DEFINE_STATIC_LOCAL(QualifiedName, brailleonlyregion_attr,
                       (AtomicString("brailleonlyregion")));
+  if (GetElement()->FastHasAttribute(brailleonlyregion_attr)) {
+    node_data->html_attributes.push_back(
+        std::make_pair(brailleonlyregion_attr.LocalName().Utf8(), ""));
+  }
 
   // data-at-shortcutkeys: a nonstandard attribute used by Twitter and Facebook
   // to provide keyboard shortcuts for an entire web page, in the form of a
@@ -1711,39 +1723,25 @@ void AXObject::SerializeHTMLNonStandardAttributesForJAWS(
   // TODO(https://github.com/w3c/aria/issues/2351): Replace with ARIA feature.
   DEFINE_STATIC_LOCAL(QualifiedName, data_at_shortcutkeys_attr,
                       (AtomicString("data-at-shortcutkeys")));
-
-  // data-sr* attributes: non-standard attributes used by McDonald's restaurant
-  // chain in their kiosks.
-  // TODO(accessibility) Stop supporting these once we find a new solution.
-  DEFINE_STATIC_LOCAL(QualifiedName, data_srTouchTutor_attr,
-                      (AtomicString("data-srTouchTutor")));
-  DEFINE_STATIC_LOCAL(QualifiedName, data_srKeyTutor_attr,
-                      (AtomicString("data-srKeyTutor")));
-  DEFINE_STATIC_LOCAL(QualifiedName, data_srControlState_attr,
-                      (AtomicString("data-srControlState")));
-  DEFINE_STATIC_LOCAL(QualifiedName, data_srItemCount_attr,
-                      (AtomicString("data-srItemCount")));
-  DEFINE_STATIC_LOCAL(QualifiedName, data_srItemGroup_attr,
-                      (AtomicString("data-srItemGroup")));
-  DEFINE_STATIC_LOCAL(QualifiedName, data_srAdditionalHelp_attr,
-                      (AtomicString("data-srAdditionalHelp")));
-
-  for (const Attribute& attr : GetElement()->AttributesWithoutUpdate()) {
-    // Add attribute if in the allow list.
-    const QualifiedName& attr_name = attr.GetName();
-    if (attr_name == brailleonlyregion_attr ||
-        attr_name == data_at_shortcutkeys_attr ||
-        attr_name == data_srTouchTutor_attr ||
-        attr_name == data_srKeyTutor_attr ||
-        attr_name == data_srControlState_attr ||
-        attr_name == data_srItemCount_attr ||
-        attr_name == data_srItemGroup_attr ||
-        attr_name == data_srAdditionalHelp_attr) {
-      std::string value = attr.Value().Utf8();
-      node_data->html_attributes.push_back(
-          std::make_pair(attr_name.LocalName().Utf8(), value));
-    }
+  const AtomicString& data_at_shorcutkeys_value =
+      GetElement()->FastGetAttribute(data_at_shortcutkeys_attr);
+  if (data_at_shorcutkeys_value) {
+    node_data->html_attributes.push_back(
+        std::make_pair(data_at_shortcutkeys_attr.LocalName().Utf8(),
+                       data_at_shorcutkeys_value.Utf8()));
   }
+
+  // formcontrolname: a nonstandard attribute used by Angular and consumed by
+  // some password managers (see https://crbug.com/378908266).
+  DEFINE_STATIC_LOCAL(QualifiedName, formcontrolname_attr,
+                      (AtomicString("formcontrolname")));
+  const AtomicString& formcontrolname_value =
+      GetElement()->FastGetAttribute(formcontrolname_attr);
+  if (formcontrolname_value) {
+    node_data->html_attributes.push_back(std::make_pair(
+        formcontrolname_attr.LocalName().Utf8(), formcontrolname_value.Utf8()));
+  }
+
 #endif
 }
 
@@ -2532,13 +2530,19 @@ void AXObject::SerializeUnignoredAttributes(ui::AXNodeData* node_data,
                                   ax::mojom::blink::StringAttribute::kValue,
                                   GetValueForControl());
 
-    if (IsA<HTMLInputElement>(element)) {
+    if (auto* input = DynamicTo<HTMLInputElement>(element)) {
       String type = element->getAttribute(html_names::kTypeAttr);
       if (type.empty()) {
         type = "text";
       }
       TruncateAndAddStringAttribute(
           node_data, ax::mojom::blink::StringAttribute::kInputType, type);
+      // Serialize <input name> for use by password managers.
+      if (const AtomicString& input_name = input->GetName()) {
+        TruncateAndAddStringAttribute(
+            node_data, ax::mojom::blink::StringAttribute::kHtmlInputName,
+            input_name);
+      }
     }
 
     if (IsAtomicTextField()) {
@@ -2584,6 +2588,13 @@ void AXObject::SerializeUnignoredAttributes(ui::AXNodeData* node_data,
           ax::mojom::blink::IntListAttribute::kControlsIds,
           {static_cast<int32_t>(listbox->AXObjectID())});
     }
+  }
+
+  // Check for presence of aria-actions. Even if the value is empty because the
+  // targets are hidden, we still want to expose that there could be actions.
+  if (RuntimeEnabledFeatures::AriaActionsEnabled() &&
+      HasAriaAttribute(html_names::kAriaActionsAttr)) {
+    node_data->AddState(ax::mojom::blink::State::kHasActions);
   }
 
   if (IsScrollableContainer())
@@ -4243,10 +4254,8 @@ bool AXObject::ComputeIsIgnoredButIncludedInTree() {
   // pseudo elements: Specifically, ::first-letter/::backdrop are not visited by
   // LayoutTreeBuilderTraversal, and cannot be in the tree, therefore do not add
   // a special rule to include their parents.
-  if (element && (element->GetPseudoElement(kPseudoIdCheck) ||
-                  element->GetPseudoElement(kPseudoIdBefore) ||
+  if (element && (element->GetPseudoElement(kPseudoIdBefore) ||
                   element->GetPseudoElement(kPseudoIdAfter) ||
-                  element->GetPseudoElement(kPseudoIdSelectArrow) ||
                   element->GetPseudoElement(kPseudoIdMarker) ||
                   element->GetPseudoElement(kPseudoIdScrollNextButton) ||
                   element->GetPseudoElement(kPseudoIdScrollPrevButton) ||

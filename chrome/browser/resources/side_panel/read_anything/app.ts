@@ -872,6 +872,19 @@ export class AppElement extends AppElementBase {
     }
 
     const newVoicePackStatus = mojoVoicePackStatusToVoicePackStatusEnum(status);
+    // If the previous status is the same as the new status, no need to update
+    // any state. Updating to an installed state will cause a language to be
+    // automatically enabled because we want the newly downloaded language to be
+    // available in the voice menu. Thus we only want to mark it installed if
+    // it's newly installed, otherwise we may enable a language that was
+    // previously installed but disabled. If the status is not installed, then
+    // we do want to update again, in case we want to request an install now.
+    if ((newVoicePackStatus.code !==
+         VoicePackServerStatusSuccessCode.NOT_INSTALLED) &&
+        (this.getVoicePackServerStatus_(lang)?.code ===
+         newVoicePackStatus.code)) {
+      return;
+    }
 
     // Keep the server responses
     this.setVoicePackServerStatus_(lang, newVoicePackStatus);
@@ -2153,6 +2166,11 @@ export class AppElement extends AppElementBase {
           convertLangOrLocaleForVoicePackManager(toggledLanguage);
       if (langCodeForVoicePackManager) {
         this.languagesForVoiceDownloads.delete(langCodeForVoicePackManager);
+        // Uninstall the Natural voice when a language is deselected.
+        if (chrome.readingMode.isLanguagePackDownloadingEnabled) {
+          chrome.readingMode.sendUninstallVoiceRequest(
+              langCodeForVoicePackManager);
+        }
       }
     }
     this.enabledLangs = currentlyEnabled ?
@@ -2328,8 +2346,9 @@ export class AppElement extends AppElementBase {
 
     // Enable the locale for the preferred voice for this language.
     if (this.selectedVoice_ &&
-        !this.enabledLangs.includes(this.selectedVoice_.lang)) {
-      this.enabledLangs = [...this.enabledLangs, this.selectedVoice_.lang];
+        !this.enabledLangs.includes(this.selectedVoice_.lang.toLowerCase())) {
+      this.enabledLangs =
+          [...this.enabledLangs, this.selectedVoice_.lang.toLowerCase()];
     }
   }
 

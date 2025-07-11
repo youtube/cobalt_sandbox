@@ -42,15 +42,14 @@
 #import "ios/chrome/app/app_metrics_app_state_agent.h"
 #import "ios/chrome/app/application_delegate/app_state.h"
 #import "ios/chrome/app/application_delegate/metrics_mediator.h"
-#import "ios/chrome/app/application_storage_metrics.h"
 #import "ios/chrome/app/background_refresh/background_refresh_app_agent.h"
 #import "ios/chrome/app/background_refresh/test_refresher.h"
 #import "ios/chrome/app/blocking_scene_commands.h"
 #import "ios/chrome/app/change_profile_commands.h"
 #import "ios/chrome/app/deferred_initialization_runner.h"
+#import "ios/chrome/app/deferred_initialization_task_names.h"
 #import "ios/chrome/app/enterprise_app_agent.h"
 #import "ios/chrome/app/fast_app_terminate_buildflags.h"
-#import "ios/chrome/app/features.h"
 #import "ios/chrome/app/launch_screen_view_controller.h"
 #import "ios/chrome/app/memory_monitor.h"
 #import "ios/chrome/app/profile/profile_controller.h"
@@ -81,14 +80,9 @@
 #import "ios/chrome/browser/default_browser/model/utils.h"
 #import "ios/chrome/browser/discover_feed/model/discover_feed_app_agent.h"
 #import "ios/chrome/browser/download/model/download_directory_util.h"
-#import "ios/chrome/browser/enterprise/model/idle/idle_service_factory.h"
-#import "ios/chrome/browser/external_files/model/external_file_remover_factory.h"
-#import "ios/chrome/browser/external_files/model/external_file_remover_impl.h"
 #import "ios/chrome/browser/feature_engagement/model/tracker_factory.h"
 #import "ios/chrome/browser/first_run/model/first_run.h"
 #import "ios/chrome/browser/first_run/ui_bundled/first_run_util.h"
-#import "ios/chrome/browser/mailto_handler/model/mailto_handler_service.h"
-#import "ios/chrome/browser/mailto_handler/model/mailto_handler_service_factory.h"
 #import "ios/chrome/browser/memory/model/memory_debugger_manager.h"
 #import "ios/chrome/browser/metrics/model/first_user_action_recorder.h"
 #import "ios/chrome/browser/metrics/model/incognito_usage_app_state_agent.h"
@@ -98,11 +92,11 @@
 #import "ios/chrome/browser/omaha/model/omaha_service.h"
 #import "ios/chrome/browser/passwords/model/password_manager_util_ios.h"
 #import "ios/chrome/browser/profile/model/constants.h"
+#import "ios/chrome/browser/reading_list/model/reading_list_download_service.h"
+#import "ios/chrome/browser/reading_list/model/reading_list_download_service_factory.h"
 #import "ios/chrome/browser/saved_tab_groups/model/tab_group_sync_service_factory.h"
 #import "ios/chrome/browser/screenshot/model/screenshot_metrics_recorder.h"
-#import "ios/chrome/browser/search_engines/model/extension_search_engine_data_updater.h"
 #import "ios/chrome/browser/search_engines/model/search_engines_util.h"
-#import "ios/chrome/browser/search_engines/model/template_url_service_factory.h"
 #import "ios/chrome/browser/sessions/model/session_restoration_service.h"
 #import "ios/chrome/browser/sessions/model/session_restoration_service_factory.h"
 #import "ios/chrome/browser/sessions/model/session_util.h"
@@ -126,7 +120,6 @@
 #import "ios/chrome/browser/shared/public/features/features.h"
 #import "ios/chrome/browser/shared/public/features/system_flags.h"
 #import "ios/chrome/browser/shared/ui/util/uikit_ui_util.h"
-#import "ios/chrome/browser/snapshots/model/snapshot_browser_agent.h"
 #import "ios/chrome/browser/sync/model/sync_service_factory.h"
 #import "ios/chrome/browser/ui/device_orientation/scoped_force_portrait_orientation.h"
 #import "ios/chrome/browser/ui/main/browser_view_wrangler.h"
@@ -171,18 +164,11 @@ BASE_FEATURE(kFastApplicationWillTerminate,
              base::FEATURE_DISABLED_BY_DEFAULT);
 #endif  // BUILDFLAG(FAST_APP_TERMINATE_ENABLED)
 
-// Constants for deferring resetting the startup attempt count (to give the app
-// a little while to make sure it says alive).
-NSString* const kStartupAttemptReset = @"StartupAttemptReset";
-
 // Constants for deferring memory debugging tools startup.
 NSString* const kMemoryDebuggingToolsStartup = @"MemoryDebuggingToolsStartup";
 
 // Constant for deferring the cleanup of discarded sessions on disk.
 NSString* const kCleanupDiscardedSessions = @"CleanupDiscardedSessions";
-
-// Constants for deferring mailto handling initialization.
-NSString* const kMailtoHandlingInitialization = @"MailtoHandlingInitialization";
 
 // Constants for deferring saving field trial values
 NSString* const kSaveFieldTrialValues = @"SaveFieldTrialValues";
@@ -212,9 +198,6 @@ NSString* const kSendQueuedFeedback = @"SendQueuedFeedback";
 // Constants for deferring the upload of crash reports.
 NSString* const kUploadCrashReports = @"UploadCrashReports";
 
-// Constants for deferring the cleanup of snapshots on disk.
-NSString* const kCleanupSnapshots = @"CleanupSnapshots";
-
 // Constants for deferring startup Spotlight bookmark indexing.
 NSString* const kStartSpotlightBookmarksIndexing =
     @"StartSpotlightBookmarksIndexing";
@@ -225,15 +208,12 @@ NSString* const kEnterpriseManagedDeviceCheck = @"EnterpriseManagedDeviceCheck";
 // Constants for deferred deletion of leftover session state files.
 NSString* const kPurgeWebSessionStates = @"PurgeWebSessionStates";
 
-// Constants for deferred favicons clean up.
-NSString* const kFaviconsCleanup = @"FaviconsCleanup";
-
 // Constant for deffered memory experimentation.
 NSString* const kMemoryExperimentation = @"BeginMemoryExperimentation";
 
-// The minimum amount of time (2 weeks) between calculating and
-// logging metrics about the amount of device storage space used by Chrome.
-const base::TimeDelta kMinimumTimeBetweenDocumentsSizeLogging = base::Days(14);
+// Constants for deferred initilization of reading list download service.
+NSString* const kInitializeReadingListDownloadService =
+    @"InitializeReadingListDownloadService";
 
 // Adapted from chrome/browser/ui/browser_init.cc.
 void RegisterComponentsForUpdate() {
@@ -248,9 +228,6 @@ void RegisterComponentsForUpdate() {
   RegisterOptimizationHintsComponent(cus);
   RegisterPlusAddressBlocklistComponent(cus);
 }
-
-// The delay, in seconds, for cleaning external files.
-const int kExternalFilesCleanupDelaySeconds = 60;
 
 // The delay before beginning memory experimentation.
 constexpr base::TimeDelta kMemoryExperimentationDelay = base::Minutes(1);
@@ -354,10 +331,6 @@ void BeginMemoryExperimentationAfterDelay() {
 // Handles collecting metrics on user triggered screenshots
 @property(nonatomic, strong)
     ScreenshotMetricsRecorder* screenshotMetricsRecorder;
-// Cleanup any persisted data for the session restration on disk.
-- (void)cleanupSessionStateCache;
-// Cleanup snapshots on disk.
-- (void)cleanupSnapshots;
 // Cleanup discarded sessions on disk.
 - (void)cleanupDiscardedSessions;
 // Pings distribution services.
@@ -374,8 +347,6 @@ void BeginMemoryExperimentationAfterDelay() {
 - (void)scheduleAppDistributionPings;
 // Asynchronously schedule the init of the memoryDebuggerManager.
 - (void)scheduleMemoryDebuggingTools;
-// Creates the MailtoHandlerService for all loaded profiles.
-- (void)createMailtoHandlerServices;
 // Asynchronously kick off regular free memory checks.
 - (void)startFreeMemoryMonitoring;
 // Asynchronously schedules the reset of the failed startup attempt counter.
@@ -384,14 +355,8 @@ void BeginMemoryExperimentationAfterDelay() {
 - (void)scheduleCrashReportUpload;
 // Asynchronously schedules the cleanup of discarded session files on disk.
 - (void)scheduleDiscardedSessionsCleanup;
-// Asynchronously schedules the cleanup of snapshots on disk.
-- (void)scheduleSnapshotsCleanup;
-// Schedules various cleanup tasks that are performed after launch.
-- (void)scheduleStartupCleanupTasks;
 // Schedules various tasks to be performed after the application becomes active.
 - (void)scheduleLowPriorityStartupTasks;
-// Schedules external file removal.
-- (void)scheduleExternalFileClenup;
 // Schedules the deletion of user downloaded files that might be leftover
 // from the last time Chrome was run.
 - (void)scheduleDeleteTempDownloadsDirectory;
@@ -443,11 +408,6 @@ void BeginMemoryExperimentationAfterDelay() {
 
   // Registrar for pref changes notifications to the local state.
   PrefChangeRegistrar _localStatePrefChangeRegistrar;
-
-  // Vector updating search engine data (to be accessed in extensions)
-  // for all loaded profiles.
-  std::vector<std::unique_ptr<ExtensionSearchEngineDataUpdater>>
-      _extensionSearchEngineDataUpdaters;
 
   // The class in charge of showing/hiding the memory debugger when the
   // appropriate pref changes.
@@ -653,22 +613,19 @@ SEQUENCE_CHECKER(_sequenceChecker);
   [_startupTasks registerForApplicationWillResignActiveNotification];
   [self registerForOrientationChangeNotifications];
 
-  [self scheduleExternalFileClenup];
-
   CustomizeUIAppearance();
 
-  [self scheduleStartupCleanupTasks];
+  // Schedule the prefs observer init first to ensure kMetricsReportingEnabled
+  // is synced before starting uploads.
+  [self schedulePrefObserverInitialization];
+  [self scheduleCrashReportUpload];
+
+  // Remove all discarded sessions from disk.
+  [self scheduleDiscardedSessionsCleanup];
 
   ios::provider::InstallOverrides();
 
   [self scheduleLowPriorityStartupTasks];
-
-  // Run after UI created to avoid trying to update UI before it is available.
-  for (ProfileIOS* profile :
-       GetApplicationContext()->GetProfileManager()->GetLoadedProfiles()) {
-    enterprise_idle::IdleServiceFactory::GetForProfile(profile)
-        ->OnApplicationWillEnterForeground();
-  }
 
   // Now that everything is properly set up, run the tests.
   tests_hook::RunTestsIfPresent();
@@ -759,8 +716,7 @@ SEQUENCE_CHECKER(_sequenceChecker);
   if (self.appState.initStage < AppInitStage::kBrowserObjectsForUI) {
     LaunchScreenViewController* launchScreen =
         [[LaunchScreenViewController alloc] init];
-    [sceneState.window setRootViewController:launchScreen];
-    [sceneState.window makeKeyAndVisible];
+    [sceneState setRootViewController:launchScreen makeKeyAndVisible:YES];
   }
 
   if (self.appState.initStage >= AppInitStage::kNormalUI) {
@@ -936,8 +892,6 @@ SEQUENCE_CHECKER(_sequenceChecker);
   }
   [_spotlightManagers removeAllObjects];
 
-  _extensionSearchEngineDataUpdaters.clear();
-
   // _localStatePrefChangeRegistrar is observing the local state PrefService,
   // which is owned indirectly by _chromeMain (through the ApplicationContext).
   // Unregister the observer before the ApplicationContext is destroyed.
@@ -952,6 +906,10 @@ SEQUENCE_CHECKER(_sequenceChecker);
   }
 
   _profileControllers.clear();
+
+  // Cancel any pending deferred startup tasks (the application is shutting
+  // down, so there is no point in running them).
+  [_appState.deferredRunner cancelAllBlocks];
 
 #if BUILDFLAG(FAST_APP_TERMINATE_ENABLED)
   // _chromeMain.reset() is a blocking call that regularly causes
@@ -1034,7 +992,7 @@ SEQUENCE_CHECKER(_sequenceChecker);
 
 - (void)sendQueuedFeedback {
   if (ios::provider::IsUserFeedbackSupported()) {
-    [[DeferredInitializationRunner sharedInstance]
+    [_appState.deferredRunner
         enqueueBlockNamed:kSendQueuedFeedback
                     block:^{
                       ios::provider::UploadAllPendingUserFeedback();
@@ -1059,11 +1017,10 @@ SEQUENCE_CHECKER(_sequenceChecker);
 
 - (void)schedulePrefObserverInitialization {
   __weak MainController* weakSelf = self;
-  [[DeferredInitializationRunner sharedInstance]
-      enqueueBlockNamed:kPrefObserverInit
-                  block:^{
-                    [weakSelf initializePrefObservers];
-                  }];
+  [_appState.deferredRunner enqueueBlockNamed:kStartupInitPrefObservers
+                                        block:^{
+                                          [weakSelf initializePrefObservers];
+                                        }];
 }
 
 - (void)initializePrefObservers {
@@ -1092,95 +1049,52 @@ SEQUENCE_CHECKER(_sequenceChecker);
            ->IsDefaultValue()) {
     [self onPreferenceChanged:metrics::prefs::kMetricsReportingEnabled];
   }
-
-  // Track changes to default search engine for all loaded profiles.
-  for (ProfileIOS* profile :
-       GetApplicationContext()->GetProfileManager()->GetLoadedProfiles()) {
-    TemplateURLService* service =
-        ios::TemplateURLServiceFactory::GetForProfile(profile);
-    _extensionSearchEngineDataUpdaters.push_back(
-        std::make_unique<ExtensionSearchEngineDataUpdater>(service));
-  }
 }
 
 - (void)scheduleAppDistributionPings {
-  [[DeferredInitializationRunner sharedInstance]
-      enqueueBlockNamed:kSendInstallPingIfNecessary
-                  block:^{
-                    [self pingDistributionServices];
-                  }];
+  __weak MainController* weakSelf = self;
+  [_appState.deferredRunner enqueueBlockNamed:kSendInstallPingIfNecessary
+                                        block:^{
+                                          [weakSelf pingDistributionServices];
+                                        }];
 }
 
 - (void)scheduleStartupAttemptReset {
-  [[DeferredInitializationRunner sharedInstance]
-      enqueueBlockNamed:kStartupAttemptReset
+  [_appState.deferredRunner
+      enqueueBlockNamed:kStartupResetAttemptCount
                   block:^{
                     crash_util::ResetFailedStartupAttemptCount();
                   }];
 }
 
 - (void)scheduleCrashReportUpload {
-  [[DeferredInitializationRunner sharedInstance]
-      enqueueBlockNamed:kUploadCrashReports
-                  block:^{
-                    crash_helper::UploadCrashReports();
-                  }];
+  [_appState.deferredRunner enqueueBlockNamed:kUploadCrashReports
+                                        block:^{
+                                          crash_helper::UploadCrashReports();
+                                        }];
 }
 
 - (void)scheduleDiscardedSessionsCleanup {
-  [[DeferredInitializationRunner sharedInstance]
-      enqueueBlockNamed:kCleanupDiscardedSessions
-                  block:^{
-                    [self cleanupDiscardedSessions];
-                  }];
+  __weak MainController* weakSelf = self;
+  [_appState.deferredRunner enqueueBlockNamed:kCleanupDiscardedSessions
+                                        block:^{
+                                          [weakSelf cleanupDiscardedSessions];
+                                        }];
 }
 
-- (void)scheduleSnapshotsCleanup {
-  [[DeferredInitializationRunner sharedInstance]
-      enqueueBlockNamed:kCleanupSnapshots
+- (void)scheduleReadingListDownloadServiceInitialization {
+  __weak MainController* weakSelf = self;
+  [_appState.deferredRunner
+      enqueueBlockNamed:kInitializeReadingListDownloadService
                   block:^{
-                    [self cleanupSnapshots];
+                    [weakSelf initializeReadListDownloadService];
                   }];
-}
-
-- (void)scheduleSessionStateCacheCleanup {
-  [[DeferredInitializationRunner sharedInstance]
-      enqueueBlockNamed:kPurgeWebSessionStates
-                  block:^{
-                    [self cleanupSessionStateCache];
-                  }];
-}
-
-- (void)scheduleStartupCleanupTasks {
-  // Schedule the prefs observer init first to ensure kMetricsReportingEnabled
-  // is synced before starting uploads.
-  [self schedulePrefObserverInitialization];
-  [self scheduleCrashReportUpload];
-
-  // ClearSessionCookies() is not synchronous.
-  for (ProfileIOS* profile :
-       GetApplicationContext()->GetProfileManager()->GetLoadedProfiles()) {
-    if (cookie_util::ShouldClearSessionCookies(profile->GetPrefs())) {
-      cookie_util::ClearSessionCookies(profile->GetOriginalProfile());
-      if (profile->HasOffTheRecordProfile()) {
-        cookie_util::ClearSessionCookies(profile->GetOffTheRecordProfile());
-      }
-    }
-  }
-  // Remove all discarded sessions from disk.
-  [self scheduleDiscardedSessionsCleanup];
-
-  // If the user chooses to restore their session, some cached snapshots and
-  // session states may be needed. Otherwise, cleanup the snapshots and session
-  // states
-  [self scheduleSnapshotsCleanup];
-  [self scheduleSessionStateCacheCleanup];
 }
 
 - (void)scheduleMemoryDebuggingTools {
   if (experimental_flags::IsMemoryDebuggingEnabled()) {
     __weak MainController* weakSelf = self;
-    [[DeferredInitializationRunner sharedInstance]
+    [_appState.deferredRunner
         enqueueBlockNamed:kMemoryDebuggingToolsStartup
                     block:^{
                       [weakSelf initializedMemoryDebuggingTools];
@@ -1196,26 +1110,11 @@ SEQUENCE_CHECKER(_sequenceChecker);
              prefs:GetApplicationContext()->GetLocalState()];
 }
 
-- (void)initializeMailtoHandling {
-  [[DeferredInitializationRunner sharedInstance]
-      enqueueBlockNamed:kMailtoHandlingInitialization
-                  block:^{
-                    [self createMailtoHandlerServices];
-                  }];
-}
-
-- (void)createMailtoHandlerServices {
-  for (ProfileIOS* profile :
-       GetApplicationContext()->GetProfileManager()->GetLoadedProfiles()) {
-    MailtoHandlerServiceFactory::GetForProfile(profile);
-  }
-}
-
 // Schedule a call to `scheduleSaveFieldTrialValuesForExternals` for deferred
 // execution. Externals can be extensions or 1st party apps.
 - (void)scheduleSaveFieldTrialValuesForExternals {
   __weak __typeof(self) weakSelf = self;
-  [[DeferredInitializationRunner sharedInstance]
+  [_appState.deferredRunner
       enqueueBlockNamed:kSaveFieldTrialValues
                   block:^{
                     [weakSelf saveFieldTrialValuesForExtensions];
@@ -1266,10 +1165,11 @@ SEQUENCE_CHECKER(_sequenceChecker);
 // Schedules a call to `logIfEnterpriseManagedDevice` for deferred
 // execution.
 - (void)scheduleEnterpriseManagedDeviceCheck {
-  [[DeferredInitializationRunner sharedInstance]
+  __weak MainController* weakSelf = self;
+  [_appState.deferredRunner
       enqueueBlockNamed:kEnterpriseManagedDeviceCheck
                   block:^{
-                    [self logIfEnterpriseManagedDevice];
+                    [weakSelf logIfEnterpriseManagedDevice];
                   }];
 }
 
@@ -1292,8 +1192,7 @@ SEQUENCE_CHECKER(_sequenceChecker);
 
   // Deferred tasks.
   [self scheduleMemoryDebuggingTools];
-  [StartupTasks
-      scheduleDeferredProfileInitialization:self.appState.mainProfile.profile];
+  [self scheduleReadingListDownloadServiceInitialization];
   [self sendQueuedFeedback];
   [self scheduleSpotlightResync];
   [self scheduleDeleteTempDownloadsDirectory];
@@ -1303,50 +1202,30 @@ SEQUENCE_CHECKER(_sequenceChecker);
   [self scheduleStartupAttemptReset];
   [self startFreeMemoryMonitoring];
   [self scheduleAppDistributionPings];
-  [self initializeMailtoHandling];
   [self scheduleSaveFieldTrialValuesForExternals];
   [self scheduleEnterpriseManagedDeviceCheck];
-  [self scheduleFaviconsCleanup];
   [self scheduleMemoryExperimentation];
-#if !TARGET_IPHONE_SIMULATOR
-  [self scheduleLogDocumentsSize];
-#endif
 #if BUILDFLAG(IOS_ENABLE_SANDBOX_DUMP)
   [self scheduleDumpDocumentsStatistics];
 #endif  // BUILDFLAG(IOS_ENABLE_SANDBOX_DUMP)
 }
 
-- (void)scheduleExternalFileClenup {
-  if (GetApplicationContext()->WasLastShutdownClean()) {
-    // Delay the cleanup of the unreferenced files to not impact startup
-    // performance.
-    for (ProfileIOS* profile :
-         GetApplicationContext()->GetProfileManager()->GetLoadedProfiles()) {
-      ExternalFileRemoverFactory::GetForProfile(profile)->RemoveAfterDelay(
-          base::Seconds(kExternalFilesCleanupDelaySeconds),
-          base::OnceClosure());
-    }
-  }
-}
-
 - (void)scheduleDeleteTempDownloadsDirectory {
-  [[DeferredInitializationRunner sharedInstance]
-      enqueueBlockNamed:kDeleteDownloads
-                  block:^{
-                    DeleteTempDownloadsDirectory();
-                  }];
+  [_appState.deferredRunner enqueueBlockNamed:kDeleteDownloads
+                                        block:^{
+                                          DeleteTempDownloadsDirectory();
+                                        }];
 }
 
 - (void)scheduleDeleteTempChooseFileDirectory {
-  [[DeferredInitializationRunner sharedInstance]
-      enqueueBlockNamed:kDeleteChooseFile
-                  block:^{
-                    DeleteTempChooseFileDirectory();
-                  }];
+  [_appState.deferredRunner enqueueBlockNamed:kDeleteChooseFile
+                                        block:^{
+                                          DeleteTempChooseFileDirectory();
+                                        }];
 }
 
 - (void)scheduleDeleteTempPasswordsDirectory {
-  [[DeferredInitializationRunner sharedInstance]
+  [_appState.deferredRunner
       enqueueBlockNamed:kDeleteTempPasswords
                   block:^{
                     password_manager::DeletePasswordsDirectory();
@@ -1354,7 +1233,7 @@ SEQUENCE_CHECKER(_sequenceChecker);
 }
 
 - (void)scheduleMemoryExperimentation {
-  [[DeferredInitializationRunner sharedInstance]
+  [_appState.deferredRunner
       enqueueBlockNamed:kMemoryExperimentation
                   block:^{
                     BeginMemoryExperimentationAfterDelay();
@@ -1363,37 +1242,24 @@ SEQUENCE_CHECKER(_sequenceChecker);
 
 - (void)scheduleLogSiriShortcuts {
   __weak StartupTasks* startupTasks = _startupTasks;
-  [[DeferredInitializationRunner sharedInstance]
-      enqueueBlockNamed:kLogSiriShortcuts
-                  block:^{
-                    [startupTasks logSiriShortcuts];
-                  }];
+  [_appState.deferredRunner enqueueBlockNamed:kLogSiriShortcuts
+                                        block:^{
+                                          [startupTasks logSiriShortcuts];
+                                        }];
 }
 
 - (void)scheduleSpotlightResync {
   __weak MainController* weakSelf = self;
-  [[DeferredInitializationRunner sharedInstance]
-      enqueueBlockNamed:kStartSpotlightBookmarksIndexing
-                  block:^{
-                    [weakSelf resyncIndex];
-                  }];
+  [_appState.deferredRunner enqueueBlockNamed:kStartSpotlightBookmarksIndexing
+                                        block:^{
+                                          [weakSelf resyncIndex];
+                                        }];
 }
 
 - (void)resyncIndex {
   for (SpotlightManager* manager : _spotlightManagers) {
     [manager resyncIndex];
   }
-}
-
-- (void)scheduleFaviconsCleanup {
-#if BUILDFLAG(IOS_CREDENTIAL_PROVIDER_ENABLED)
-  __weak MainController* weakSelf = self;
-  [[DeferredInitializationRunner sharedInstance]
-      enqueueBlockNamed:kFaviconsCleanup
-                  block:^{
-                    [weakSelf performFaviconsCleanup];
-                  }];
-#endif
 }
 
 #if BUILDFLAG(IOS_ENABLE_SANDBOX_DUMP)
@@ -1409,31 +1275,6 @@ SEQUENCE_CHECKER(_sequenceChecker);
   }
 }
 #endif  // BUILDFLAG(IOS_ENABLE_SANDBOX_DUMP)
-
-- (void)scheduleLogDocumentsSize {
-  if (!base::FeatureList::IsEnabled(kLogApplicationStorageSizeMetrics)) {
-    return;
-  }
-  for (ProfileIOS* profile :
-       GetApplicationContext()->GetProfileManager()->GetLoadedProfiles()) {
-    PrefService* prefService = profile->GetPrefs();
-    const base::Time lastLogged =
-        prefService->GetTime(prefs::kLastApplicationStorageMetricsLogTime);
-    if (lastLogged != base::Time() &&
-        base::Time::Now() - lastLogged <
-            kMinimumTimeBetweenDocumentsSizeLogging) {
-      continue;
-    }
-
-    // TODO(crbug.com/356657400): Consider doing this a bit later in startup, or
-    // only ifif metrics are enabled.
-    prefService->SetTime(prefs::kLastApplicationStorageMetricsLogTime,
-                         base::Time::Now());
-    base::FilePath profilePath = profile->GetStatePath();
-    base::FilePath offTheRecordStatePath = profile->GetOffTheRecordStatePath();
-    LogApplicationStorageMetrics(profilePath, offTheRecordStatePath);
-  }
-}
 
 - (void)expireFirstUserActionRecorder {
   // Clear out any scheduled calls to this method. For example, the app may have
@@ -1470,27 +1311,6 @@ SEQUENCE_CHECKER(_sequenceChecker);
 }
 
 #pragma mark - Helper methods.
-
-- (void)cleanupSessionStateCache {
-  for (ProfileIOS* profile :
-       GetApplicationContext()->GetProfileManager()->GetLoadedProfiles()) {
-    SessionRestorationServiceFactory::GetForProfile(profile)
-        ->PurgeUnassociatedData(base::DoNothing());
-  }
-}
-
-- (void)cleanupSnapshots {
-  // TODO(crbug.com/40144759): Browsers for disconnected scenes are not in the
-  // BrowserList, so this may not reach all folders.
-  for (ProfileIOS* profile :
-       GetApplicationContext()->GetProfileManager()->GetLoadedProfiles()) {
-    BrowserList* browserList = BrowserListFactory::GetForProfile(profile);
-    for (Browser* browser :
-         browserList->BrowsersOfType(BrowserList::BrowserType::kAll)) {
-      SnapshotBrowserAgent::FromBrowser(browser)->PerformStorageMaintenance();
-    }
-  }
-}
 
 - (void)cleanupDiscardedSessions {
   const std::set<std::string> discardedSessionIDs =
@@ -1553,6 +1373,13 @@ SEQUENCE_CHECKER(_sequenceChecker);
   std::move(concurrent).Done(std::move(closure));
 }
 
+- (void)initializeReadListDownloadService {
+  for (ProfileIOS* profile :
+       GetApplicationContext()->GetProfileManager()->GetLoadedProfiles()) {
+    ReadingListDownloadServiceFactory::GetForProfile(profile)->Initialize();
+  }
+}
+
 - (void)pingDistributionServices {
   const base::Time installDate =
       base::Time::FromTimeT(GetApplicationContext()->GetLocalState()->GetInt64(
@@ -1564,28 +1391,6 @@ SEQUENCE_CHECKER(_sequenceChecker);
                                                       isFirstRun);
   ios::provider::InitializeFirebase(installDate, isFirstRun);
 }
-
-#if BUILDFLAG(IOS_CREDENTIAL_PROVIDER_ENABLED)
-- (void)performFaviconsCleanup {
-  for (ProfileIOS* profile :
-       GetApplicationContext()->GetProfileManager()->GetLoadedProfiles()) {
-    syncer::SyncService* syncService =
-        SyncServiceFactory::GetForProfile(profile);
-    // Only use the fallback to the Google server when fetching favicons for
-    // normal encryption users saving to the account, because they are the only
-    // users who consented to share data to Google.
-    BOOL fallbackToGoogleServer =
-        password_manager_util::IsSavingPasswordsToAccountWithNormalEncryption(
-            syncService);
-    if (fallbackToGoogleServer) {
-      base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
-          FROM_HERE,
-          base::BindOnce(&UpdateFaviconsStorageForBrowserState,
-                         profile->AsWeakPtr(), fallbackToGoogleServer));
-    }
-  }
-}
-#endif
 
 // Records launch metrics when the application and all initial profiles have
 // been fully initialised.
@@ -1713,7 +1518,6 @@ SEQUENCE_CHECKER(_sequenceChecker);
       sceneState.connectionOptions;
 
   // Get the SceneDelegate from the SceneState.
-  UIWindow* window = sceneState.window;
   UIWindowScene* scene = sceneState.scene;
   SceneDelegate* sceneDelegate =
       base::apple::ObjCCast<SceneDelegate>(scene.delegate);
@@ -1727,8 +1531,7 @@ SEQUENCE_CHECKER(_sequenceChecker);
   // a temporary view controller to perform an animation).
   LaunchScreenViewController* launchScreen =
       [[LaunchScreenViewController alloc] init];
-  [window setRootViewController:launchScreen];
-  [window makeKeyAndVisible];
+  [sceneState setRootViewController:launchScreen makeKeyAndVisible:YES];
 
   [sceneDelegate sceneDidDisconnect:scene];  // destroy the old SceneState
   sceneState = sceneDelegate.sceneState;     // recreate a new SceneState

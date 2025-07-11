@@ -51,6 +51,7 @@ enum ViewId {
   kQuestionAnswerErrorImage,
   kQuestionAnswerErrorLabel,
   kInfoSparkIcon,
+  kSummaryElucidationIndicator,
 };
 
 // The size of the icon that appears in the panel's source row.
@@ -64,9 +65,10 @@ inline constexpr gfx::Insets kPanelPadding = gfx::Insets::TLBR(12, 15, 15, 15);
 inline constexpr int kPanelMaximumWidth = 540;
 inline constexpr int kPanelMaximumHeight = 600;
 
-inline constexpr int kScrollViewWidth = kPanelDefaultWidth -
-                                        views::kHighlightBorderThickness * 2 -
-                                        kPanelPadding.width();
+inline constexpr int kPanelBorderAndPadding =
+    views::kHighlightBorderThickness * 2 + kPanelPadding.width();
+inline constexpr int kScrollViewDefaultWidth =
+    kPanelDefaultWidth - kPanelBorderAndPadding;
 
 inline constexpr int kScrollContentsViewBottomPadding = 40;
 
@@ -113,6 +115,9 @@ inline constexpr int kFakeMahiManagerLoadSummaryDelaySeconds = 4;
 inline constexpr int kFakeMahiManagerLoadElucidationDelaySeconds = 4;
 inline constexpr int kFakeMahiManagerLoadOutlinesDelaySeconds = 6;
 
+inline constexpr gfx::Insets kSummaryOutlinesElucidationSectionPadding =
+    gfx::Insets(16);
+
 // Nudge constants
 inline constexpr char kMahiNudgeId[] = "mahi.nudge";
 inline constexpr base::TimeDelta kNudgeTimeBetweenShown = base::Hours(24);
@@ -139,6 +144,8 @@ inline constexpr char kAnswerLoadingTimeHistogramName[] =
     "Ash.Mahi.QuestionAnswer.LoadingTime";
 inline constexpr char kSummaryLoadingTimeHistogramName[] =
     "Ash.Mahi.Summary.LoadingTime";
+inline constexpr char kElucidationLoadingTimeHistogramName[] =
+    "Ash.Mahi.Elucidation.LoadingTime";
 inline constexpr char kMahiUserJourneyTimeHistogramName[] =
     "Ash.Mahi.UserJourneyTime";
 inline constexpr char kMahiQuestionSourceHistogramName[] =

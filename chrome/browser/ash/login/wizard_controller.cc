@@ -453,10 +453,14 @@ WizardController::~WizardController() {
     obs.OnShutdown();
   }
 
-  if (GetOobeUI() && GetOobeUI()->GetOobeScreensHandlerFactory()) {
-      GetOobeUI()
-        ->GetOobeScreensHandlerFactory()
-        ->UnbindScreensHandlerFactory();
+  // Use `OobeUI` reference in `oobe_ui_observation_` because the destructor
+  // could be called after `LoginDisplayHost` resets its reference to OobeUI.
+  // As a result,`GetOobeUI()` would return nullptr but the actual OobeUI
+  // instance might still be alive and could call us.
+  // See http://crbug.com/384745864.
+  OobeUI* oobe_ui = oobe_ui_observation_.GetSource();
+  if (oobe_ui && oobe_ui->GetOobeScreensHandlerFactory()) {
+    oobe_ui->GetOobeScreensHandlerFactory()->UnbindScreensHandlerFactory();
   }
 
   previous_screens_.clear();
@@ -729,12 +733,10 @@ WizardController::CreateScreens() {
                             weak_factory_.GetWeakPtr())));
   }
 
-  if (features::IsOobeGeminiIntroEnabled()) {
-    append(std::make_unique<GeminiIntroScreen>(
-        oobe_ui->GetView<GeminiIntroScreenHandler>()->AsWeakPtr(),
-        base::BindRepeating(&WizardController::OnGeminiIntroScreenExit,
-                            weak_factory_.GetWeakPtr())));
-  }
+  append(std::make_unique<GeminiIntroScreen>(
+      oobe_ui->GetView<GeminiIntroScreenHandler>()->AsWeakPtr(),
+      base::BindRepeating(&WizardController::OnGeminiIntroScreenExit,
+                          weak_factory_.GetWeakPtr())));
 
   append(std::make_unique<WrongHWIDScreen>(
       oobe_ui->GetView<WrongHWIDScreenHandler>()->AsWeakPtr(),
@@ -1938,10 +1940,8 @@ void WizardController::OnPerksDiscoveryScreenExit(
                PerksDiscoveryScreen::GetResultString(result));
   if (features::IsOobeAiIntroEnabled()) {
     ShowAiIntroScreen();
-  } else if (features::IsOobeGeminiIntroEnabled()) {
-    ShowGeminiIntroScreen();
   } else {
-    ShowAssistantOptInFlowScreen();
+    ShowGeminiIntroScreen();
   }
 }
 
@@ -2482,7 +2482,19 @@ void WizardController::OnLocalPasswordSetupScreenExit(
                LocalPasswordSetupScreen::GetResultString(result));
   switch (result) {
     case LocalPasswordSetupScreen::Result::kBack:
-      ShowPasswordSelectionScreen();
+      // Go back to the PasswordSelectionScreen if the user had a choice between
+      // local vs. online password.
+      if (!wizard_context_->knowledge_factor_setup.local_password_forced) {
+        ShowPasswordSelectionScreen();
+        return;
+      }
+
+      // The user could not choose between an online vs. local password because
+      // they went through a passwordless signin. In that case, going back is
+      // only possible for returning to the PinSetupScreen as a main factor.
+      CHECK_EQ(wizard_context_->knowledge_factor_setup.pin_setup_mode,
+               WizardContext::PinSetupMode::kUserChosePasswordInstead);
+      ShowPinSetupScreenAsMainFactor();
       return;
     case LocalPasswordSetupScreen::Result::kDone:
     case LocalPasswordSetupScreen::Result::kNotApplicable:
@@ -2750,12 +2762,7 @@ void WizardController::OnAppDownloadingScreenExit() {
 void WizardController::OnAiIntroScreenExit(AiIntroScreen::Result result) {
   OnScreenExit(AiIntroScreenView::kScreenId,
                AiIntroScreen::GetResultString(result));
-
-  if (features::IsOobeGeminiIntroEnabled()) {
-    ShowGeminiIntroScreen();
-  } else {
-    ShowAssistantOptInFlowScreen();
-  }
+  ShowGeminiIntroScreen();
 }
 
 void WizardController::OnGeminiIntroScreenExit(

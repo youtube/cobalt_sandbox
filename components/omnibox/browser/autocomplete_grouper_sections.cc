@@ -191,13 +191,18 @@ AndroidHubZPSSection::AndroidHubZPSSection(
 
 AndroidHubNonZPSSection::AndroidHubNonZPSSection(
     omnibox::GroupConfigMap& group_configs)
-    : Section(25,
-              // Reserve most of the spots for open tabs.
-              {{20, omnibox::GROUP_MOBILE_OPEN_TABS},
-               // Fallback to search suggestions at the bottom of the reuslts.
-               {5, omnibox::GROUP_SEARCH}},
-              group_configs,
-              omnibox::GroupConfig_SideType_DEFAULT_PRIMARY) {}
+    : Section(
+          35,
+          // Reserve most of the spots for open tabs.
+          {{20, omnibox::GROUP_MOBILE_OPEN_TABS},
+           {5, omnibox::GROUP_MOBILE_BOOKMARKS},
+           // LINT.IfChange(HubHistorySectionSlots)
+           {5, omnibox::GROUP_MOBILE_HISTORY},
+           // LINT.ThenChange(//components/omnibox/browser/history_quick_provider.cc:HubHistoryMaxMatches)
+           // Fallback to search suggestions at the bottom of the reuslts.
+           {5, omnibox::GROUP_SEARCH}},
+          group_configs,
+          omnibox::GroupConfig_SideType_DEFAULT_PRIMARY) {}
 
 AndroidNTPZpsSection::AndroidNTPZpsSection(
     omnibox::GroupConfigMap& group_configs)
@@ -455,29 +460,31 @@ IOSIpadNTPZpsSection::IOSIpadNTPZpsSection(
 IOSIpadSRPZpsSection::IOSIpadSRPZpsSection(
     size_t total_count,
     omnibox::GroupConfigMap& group_configs)
-    : ZpsSectionWithMVTiles(total_count,
-                            {
-                                // Verbatim match:
-                                {1, omnibox::GROUP_MOBILE_SEARCH_READY_OMNIBOX},
-                                {1, omnibox::GROUP_MOBILE_CLIPBOARD},
-                                {kMobileMostVisitedTilesLimit,
-                                 omnibox::GROUP_MOBILE_MOST_VISITED},
-                                {8, omnibox::GROUP_PREVIOUS_SEARCH_RELATED},
-                                {10, omnibox::GROUP_PERSONALIZED_ZERO_SUGGEST},
-                            },
-                            group_configs) {}
+    : ZpsSectionWithMVTiles(
+          total_count,
+          {
+              // Verbatim match:
+              {1, omnibox::GROUP_MOBILE_SEARCH_READY_OMNIBOX},
+              {1, omnibox::GROUP_MOBILE_CLIPBOARD},
+              {kMobileMostVisitedTilesLimit,
+               omnibox::GROUP_MOBILE_MOST_VISITED},
+              {8, omnibox::GROUP_PREVIOUS_SEARCH_RELATED},
+              {total_count, omnibox::GROUP_PERSONALIZED_ZERO_SUGGEST},
+          },
+          group_configs) {}
 
 IOSIpadWebZpsSection::IOSIpadWebZpsSection(
     size_t total_count,
     omnibox::GroupConfigMap& group_configs)
-    : ZpsSectionWithMVTiles(total_count,
-                            {
-                                // Verbatim match:
-                                {1, omnibox::GROUP_MOBILE_SEARCH_READY_OMNIBOX},
-                                {1, omnibox::GROUP_MOBILE_CLIPBOARD},
-                                {kMobileMostVisitedTilesLimit,
-                                 omnibox::GROUP_MOBILE_MOST_VISITED},
-                                {8, omnibox::GROUP_VISITED_DOC_RELATED},
-                                {10, omnibox::GROUP_PERSONALIZED_ZERO_SUGGEST},
-                            },
-                            group_configs) {}
+    : ZpsSectionWithMVTiles(
+          total_count,
+          {
+              // Verbatim match:
+              {1, omnibox::GROUP_MOBILE_SEARCH_READY_OMNIBOX},
+              {1, omnibox::GROUP_MOBILE_CLIPBOARD},
+              {kMobileMostVisitedTilesLimit,
+               omnibox::GROUP_MOBILE_MOST_VISITED},
+              {8, omnibox::GROUP_VISITED_DOC_RELATED},
+              {total_count, omnibox::GROUP_PERSONALIZED_ZERO_SUGGEST},
+          },
+          group_configs) {}

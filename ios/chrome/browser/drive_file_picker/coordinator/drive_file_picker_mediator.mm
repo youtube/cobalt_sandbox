@@ -8,6 +8,7 @@
 #import <unordered_set>
 
 #import "base/apple/foundation_util.h"
+#import "base/cancelable_callback.h"
 #import "base/files/file_path.h"
 #import "base/files/file_util.h"
 #import "base/notreached.h"
@@ -95,6 +96,9 @@ NSString* kDriveIconRepositoryPrefix =
   // to the current selection, and removed when a local copy of the file is
   // ready to be passed to the WebState.
   std::queue<DriveItem> _downloadingQueue;
+  // Callback used to determine if a local copy of a file is already on disk
+  // before performing any attempt to download it.
+  base::CancelableOnceCallback<void(bool)> _fileVersionReadyCallback;
   // If `_selectedFiles` is not empty, then this indicates whether the files are
   // search items or not.
   BOOL _selectedFilesAreSearchItems;
@@ -703,6 +707,16 @@ NSString* kDriveIconRepositoryPrefix =
     _metricsHelper.searchingState = DriveFilePickerSearchState::kSearchRecent;
   }
 
+  if (_shouldShowSearchItems == _selectedFilesAreSearchItems) {
+    NSMutableSet<NSString*>* selectedFilesIdentifiers = [NSMutableSet set];
+    for (const DriveItem& selectedFile : _selectedFiles) {
+      [selectedFilesIdentifiers addObject:selectedFile.identifier];
+    }
+    [self.consumer setSelectedItemIdentifiers:selectedFilesIdentifiers];
+  } else {
+    [self.consumer setSelectedItemIdentifiers:nil];
+  }
+
   // When switching between search items and non-search items, the list of items
   // is cleared and the loading indicator is presented.
   [self clearItemsAndShowLoadingIndicator];
@@ -713,6 +727,14 @@ NSString* kDriveIconRepositoryPrefix =
 }
 
 - (void)selectOrDeselectFile:(const DriveItem&)file {
+  if (_shouldShowSearchItems && !_selectedFilesAreSearchItems) {
+    // If the file picker is now in search mode but the selected files come from
+    // outside search mode, reset the selection before editing it further. This
+    // is unnecessary in the other direction since the selection is already
+    // cleared when exiting search mode if files were selected from search mode.
+    [self setSelectedFiles:{}];
+  }
+
   const std::unordered_set<DriveItem>& oldSelectedFiles = _selectedFiles;
   bool fileWasAlreadySelected = oldSelectedFiles.contains(file);
 
@@ -752,9 +774,16 @@ NSString* kDriveIconRepositoryPrefix =
 - (void)setSelectedFiles:(std::unordered_set<DriveItem>)newSelectedFiles {
   const std::unordered_set<DriveItem>& oldSelectedFiles = _selectedFiles;
 
-  if (oldSelectedFiles == newSelectedFiles) {
+  if (oldSelectedFiles == newSelectedFiles &&
+      _shouldShowSearchItems == _selectedFilesAreSearchItems) {
     // If the selection is the same, do nothing.
     return;
+  }
+
+  if (!_fileVersionReadyCallback.IsCancelled()) {
+    // If there is a running task to retrieve a local copy of
+    // `_downloadingQueue.front()` then cancel that task for now.
+    _fileVersionReadyCallback.Cancel();
   }
 
   // If there is a file being downloaded which is no longer selected, cancel the
@@ -797,8 +826,15 @@ NSString* kDriveIconRepositoryPrefix =
 // part of the selection, or otherwise downloading them. Updates the consumer
 // with the current download status accordingly.
 - (void)processDownloadingQueue {
-  if (_downloadingFileDownloadID) {
-    // If there is an ongoing download, wait for its completion, do nothing now.
+  if (!_webState || _webState->IsBeingDestroyed()) {
+    // If the WebState was or is being destroyed, do nothing.
+    return;
+  }
+
+  if (_downloadingFileDownloadID || !_fileVersionReadyCallback.IsCancelled()) {
+    // If there is an ongoing download, or if there is a running task to
+    // retrieve a local copy of `_downloadingQueue.front()`, wait for its
+    // completion and do nothing for now.
     return;
   }
 
@@ -817,19 +853,59 @@ NSString* kDriveIconRepositoryPrefix =
     return;
   }
 
-  // Otherwise, download the file at the front of the queue.
+  // Get the file at the front of the queue.
   const DriveItem& fileToDownload = _downloadingQueue.front();
   std::optional<base::FilePath> filePath =
       DriveFilePickerGenerateDownloadFilePath(_webState->GetUniqueIdentifier(),
                                               fileToDownload.identifier,
                                               fileToDownload.name);
-  CHECK(filePath);
   NSURL* fileURL = base::apple::FilePathToNSURL(*filePath);
+  CHECK(fileURL);
+
+  // Check if a local copy of this version of the file is ready.
+  __weak __typeof(self) weakSelf = self;
+  _fileVersionReadyCallback.Reset(base::BindOnce(
+      [](DriveFilePickerMediator* mediator, NSURL* fileURL,
+         NSString* fileIdentifier, bool fileURLReady) {
+        [mediator handleFileURL:fileURL
+              readyForSelection:fileURLReady
+                 fileIdentifier:fileIdentifier];
+      },
+      weakSelf, fileURL, fileToDownload.identifier));
+  ChooseFileTabHelper* tabHelper =
+      ChooseFileTabHelper::GetOrCreateForWebState(_webState.get());
+  tabHelper->CheckFileUrlReadyForSelection(
+      fileURL, fileToDownload.modified_time,
+      _fileVersionReadyCallback.callback());
+}
+
+// Called when a local copy of the correct version of the file with identifier
+// `fileIdentifier` has been found to exist at URL `fileURL`. If
+// `readyForSelection` is false then it means there is no local copy ready for
+// selection, in which case the file should be downloaded.
+- (void)handleFileURL:(NSURL*)fileURL
+    readyForSelection:(BOOL)readyForSelection
+       fileIdentifier:(NSString*)fileIdentifier {
+  if (!_webState || _webState->IsBeingDestroyed()) {
+    // If the WebState was or is being destroyed, do nothing.
+    return;
+  }
+  CHECK(!_downloadingQueue.empty());
+  CHECK([fileIdentifier isEqualToString:_downloadingQueue.front().identifier]);
+
+  if (readyForSelection) {
+    // If there is a copy of the file ready, dequeue the file.
+    _downloadingQueue.pop();
+    [self processDownloadingQueue];
+    return;
+  }
+
+  // Otherwise, download the file at the front of the queue.
   [self.consumer setDownloadStatus:DriveFileDownloadStatus::kInProgress];
   __weak __typeof(self) weakSelf = self;
-  _downloadingFileIdentifier = [fileToDownload.identifier copy];
+  _downloadingFileIdentifier = [fileIdentifier copy];
   _downloadingFileDownloadID = _driveDownloader->DownloadFile(
-      fileToDownload, fileURL,
+      _downloadingQueue.front(), fileURL,
       base::BindRepeating(^(DriveFileDownloadID driveFileDownloadID,
                             const DriveFileDownloadProgress& progress){
       }),
@@ -842,8 +918,15 @@ NSString* kDriveIconRepositoryPrefix =
                                      fileURL:downloadFileURL];
           },
           weakSelf, fileURL));
+  // Inform the WebState that the destination URL isn't ready for selection yet.
+  ChooseFileTabHelper* tabHelper =
+      ChooseFileTabHelper::GetOrCreateForWebState(_webState.get());
+  tabHelper->RemoveFileUrlReadyForSelection(fileURL);
 }
 
+// Called when a file was downloaded at `fileURL`. If `error` is nil then it
+// means the download was successful. It is expected that the file associated
+// with `fileURL` is the file at the front of `_downloadingQueue`.
 - (void)handleDownloadResponse:(DriveFileDownloadID)driveFileDownloadID
                          error:(NSError*)error
                        fileURL:(NSURL*)fileURL {
@@ -851,6 +934,7 @@ NSString* kDriveIconRepositoryPrefix =
     return;
   }
   CHECK(!_downloadingQueue.empty());
+  CHECK([driveFileDownloadID isEqualToString:_downloadingFileDownloadID]);
   CHECK([_downloadingFileIdentifier
       isEqualToString:_downloadingQueue.front().identifier]);
   // Reset the download ID to indicate that there is no ongoing download
@@ -874,14 +958,20 @@ NSString* kDriveIconRepositoryPrefix =
         weakSelf, _downloadingQueue.front());
     // Then present an alert to ask the user whether to try again.
     [self.consumer
-        showDownloadFailureAlertWithRetryBlock:base::CallbackToBlock(
-                                                   std::move(retryCallback))
-                                   cancelBlock:base::CallbackToBlock(
-                                                   std::move(cancelCallback))];
+        showDownloadFailureAlertForFileName:_downloadingQueue.front().name
+                                 retryBlock:base::CallbackToBlock(
+                                                std::move(retryCallback))
+                                cancelBlock:base::CallbackToBlock(
+                                                std::move(cancelCallback))];
     return;
   }
-  // If the download was successful, pop the file from the queue and continue
-  // processing the download queue.
+  // If the download was successful, add it to the set of files ready for
+  // selection, pop the file from the queue and continue processing the download
+  // queue.
+  ChooseFileTabHelper* tabHelper =
+      ChooseFileTabHelper::GetOrCreateForWebState(_webState.get());
+  tabHelper->AddFileUrlReadyForSelection(
+      fileURL, _downloadingQueue.front().modified_time);
   _downloadingQueue.pop();
   [self processDownloadingQueue];
 }

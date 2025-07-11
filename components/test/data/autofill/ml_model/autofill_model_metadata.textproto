@@ -16,7 +16,6 @@ output_type: 35
 output_type: 7
 output_type: 9
 output_type: 13
-confidence_threshold: 0.8
 input_version: 3
 encoding_parameters {
   maximum_number_of_fields: 30

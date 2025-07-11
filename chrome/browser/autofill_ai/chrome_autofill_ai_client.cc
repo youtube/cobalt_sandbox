@@ -31,8 +31,8 @@
 #include "components/autofill/core/common/autofill_prefs.h"
 #include "components/autofill_ai/core/browser/autofill_ai_client.h"
 #include "components/autofill_ai/core/browser/autofill_ai_features.h"
-#include "components/autofill_ai/core/browser/autofill_ai_filling_engine_impl.h"
 #include "components/autofill_ai/core/browser/autofill_ai_manager.h"
+#include "components/autofill_ai/core/browser/suggestion/autofill_ai_model_executor_impl.h"
 #include "components/optimization_guide/core/model_execution/model_execution_features.h"
 #include "components/optimization_guide/core/optimization_guide_proto_util.h"
 #include "components/optimization_guide/proto/model_quality_service.pb.h"
@@ -98,13 +98,13 @@ autofill_ai::AutofillAiManager& ChromeAutofillAiClient::GetManager() {
   return prediction_improvements_manager_;
 }
 
-autofill_ai::AutofillAiFillingEngine*
-ChromeAutofillAiClient::GetFillingEngine() {
+autofill_ai::AutofillAiModelExecutor*
+ChromeAutofillAiClient::GetModelExecutor() {
   if (!filling_engine_) {
     Profile* profile =
         Profile::FromBrowserContext(web_contents_->GetBrowserContext());
     filling_engine_ =
-        std::make_unique<autofill_ai::AutofillAiFillingEngineImpl>(
+        std::make_unique<autofill_ai::AutofillAiModelExecutorImpl>(
             OptimizationGuideKeyedServiceFactory::GetForProfile(profile),
             UserAnnotationsServiceFactory::GetForProfile(profile));
   }

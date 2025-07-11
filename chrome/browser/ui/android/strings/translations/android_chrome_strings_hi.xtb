@@ -118,7 +118,6 @@ Chrome के अनुभव को बेहतर बनाने के ल�
 <translation id="1477626028522505441">सर्वर संबधी समस्‍याओं के कारण <ph name="FILE_NAME" /> डाउनलोड विफल रहा.</translation>
 <translation id="147982357559798527">बदला गया</translation>
 <translation id="1480287803138246127">ऐसा हो सकता है कि आपको Chrome पर ब्राउज़िंग के इतिहास का कुछ डेटा न दिखे. पूरा इतिहास देखने के लिए, Chrome का पूरा इतिहास खोलें.</translation>
-<translation id="148482509007564431">बुकमार्क सेव फ़्लो</translation>
 <translation id="1492417797159476138">आपने इस साइट के लिए, यह उपयोगकर्ता नाम पहले ही सेव कर दिया है</translation>
 <translation id="1493287004536771723">आप <ph name="SITE_NAME" /> को फ़ॉलो कर रहे हैं</translation>
 <translation id="1502010315804028179">अपने पासवर्ड मैनेज करने के लिए, Google Play services को अपडेट करें</translation>
@@ -128,6 +127,7 @@ Chrome के अनुभव को बेहतर बनाने के ल�
 <translation id="1513858653616922153">पासवर्ड मिटाएं</translation>
 <translation id="1521774566618522728">आज सक्रिय है</translation>
 <translation id="153446405401665083">Chrome का नया वर्शन उपलब्ध है</translation>
+<translation id="1543379346429265919">{BOOKMARKS_COUNT,plural, =1{1 बुकमार्क को सिर्फ़ इस डिवाइस में सेव किया गया है. अपने दूसरे डिवाइसों पर इसका इस्तेमाल करने के लिए, इसे अपने Google खाते <ph name="ACCOUNT_EMAIL" /> में सेव करें.}one{# बुकमार्क को सिर्फ़ इस डिवाइस में सेव किया गया है. अपने दूसरे डिवाइसों पर इसका इस्तेमाल करने के लिए, इसे अपने Google खाते <ph name="ACCOUNT_EMAIL" /> में सेव करें.}other{# बुकमार्क सिर्फ़ इस डिवाइस में सेव किए गए हैं. अपने दूसरे डिवाइसों पर इनका इस्तेमाल करने के लिए, इन्हें अपने Google खाते <ph name="ACCOUNT_EMAIL" /> में सेव करें.}}</translation>
 <translation id="1544084554881119930">पेमेंट के तरीके और पते एन्क्रिप्ट यानी सुरक्षित नहीं किए जाएंगे. Chrome के ब्राउज़िंग इतिहास को सिंक नहीं किया जाएगा.
 आपका एन्क्रिप्ट यानी सुरक्षित किया गया डेटा, सिर्फ़ वही व्यक्ति देख सकता है जिसके पास आपका लंबा पासवर्ड है. Google को लंबा पासवर्ड नहीं भेजा जाता, न ही Google इसे सेव करता है. अगर आपको अपना लंबा पासवर्ड याद नहीं है या आपको यह सेटिंग बदलनी है, तो <ph name="BEGIN_LINK" />अपने खाते में मौजूद Chrome का डेटा मिटाएं<ph name="END_LINK" />.</translation>
 <translation id="1544826120773021464">अपना Google खाता प्रबंधित करने के लिए, "खाता प्रबंधित करें" बटन पर टैप करें</translation>
@@ -143,6 +143,7 @@ Chrome के अनुभव को बेहतर बनाने के ल�
 <translation id="1598163867407640634"><ph name="IDENTITY_PROVIDER_ETLD_PLUS_ONE" /> की मदद से, <ph name="SITE_ETLD_PLUS_ONE" /> का इस्तेमाल करें</translation>
 <translation id="160275202205869636">इसके चालू होने पर, अपने Google खाते के डेटा को इस्तेमाल करें और उसे सेव करें. इसके बंद होने पर, डेटा सिर्फ़ इस डिवाइस पर सेव किया जाता है.</translation>
 <translation id="1628019612362412531">{NUM_SELECTED,plural, =1{1 चयनित आइटम निकालें}one{# चयनित आइटम निकालें}other{# चयनित आइटम निकालें}}</translation>
+<translation id="163206315857427258">{BOOKMARKS_COUNT,plural, =1{1 बुकमार्क और अन्य आइटम सिर्फ़ इस डिवाइस में सेव किए गए हैं. अपने अन्य डिवाइसों पर इनका इस्तेमाल करने के लिए, इन्हें अपने Google खाते <ph name="ACCOUNT_EMAIL" /> में सेव करें.}one{# बुकमार्क और अन्य आइटम सिर्फ़ इस डिवाइस में सेव किए गए हैं. अपने अन्य डिवाइसों पर इनका इस्तेमाल करने के लिए, इन्हें अपने Google खाते <ph name="ACCOUNT_EMAIL" /> में सेव करें.}other{# बुकमार्क और अन्य आइटम सिर्फ़ इस डिवाइस में सेव किए गए हैं. अपने अन्य डिवाइसों पर इनका इस्तेमाल करने के लिए, इन्हें अपने Google खाते <ph name="ACCOUNT_EMAIL" /> में सेव करें.}}</translation>
 <translation id="1641113438599504367">सुरक्षित ब्राउज़िंग</translation>
 <translation id="164269334534774161">इस पेज की <ph name="CREATION_TIME" /> वाली ऑफ़लाइन कॉपी देखी जा रही है</translation>
 <translation id="1644574205037202324">इतिहास</translation>
@@ -251,6 +252,7 @@ Chrome के अनुभव को बेहतर बनाने के ल�
 <translation id="2172905120685242547">क्या आप विंडो बंद करना चाहते हैं?</translation>
 <translation id="2173302385160625112">अपना इंटरनेट कनेक्शन जाँचें</translation>
 <translation id="2175927920773552910">क्यूआर कोड</translation>
+<translation id="2184272387334793084">अपने सभी डिवाइसों पर पासवर्ड वगैरह का ऐक्सेस पाने के लिए साइन इन करें</translation>
 <translation id="218608176142494674">शेयर किया जा रहा है</translation>
 <translation id="2194856509914051091">इन बातों का ध्यान रखें</translation>
 <translation id="22091350895006575">उपयोगकर्ता नाम जोड़ें</translation>
@@ -263,6 +265,7 @@ Chrome के अनुभव को बेहतर बनाने के ल�
 <translation id="2247789808226901522">कार्ड की समयसीमा खत्म हो चुकी है</translation>
 <translation id="2248941474044011069">Google पासवर्ड मैनेजर में सेव होने से पहले, आपके डिवाइस पर पासवर्ड एन्क्रिप्ट (सुरक्षित) किए जाते हैं</translation>
 <translation id="2249635629516220541">विज्ञापन दिखाने के लिए साइटें जिस जानकारी का इस्तेमाल करती हैं उसमें अपनी ज़रूरत के हिसाब से बदलाव करें</translation>
+<translation id="2253927598983295051">चुनें कि <ph name="APP_NAME" /> के साथ क्या शेयर करना है</translation>
 <translation id="2259659629660284697">पासवर्ड एक्सपोर्ट करें…</translation>
 <translation id="2276696007612801991">अपने पासवर्ड की जांच करने के लिए, Google खाते में साइन इन करें</translation>
 <translation id="2278052315791335171">यह पासवर्ड मिटाने से, आपका <ph name="SITE" /> वाला खाता नहीं मिटेगा</translation>
@@ -283,6 +286,7 @@ Chrome के अनुभव को बेहतर बनाने के ल�
 <translation id="235789365079050412">Google निजता नीति</translation>
 <translation id="2359808026110333948">जारी रखें</translation>
 <translation id="2362083820973145409"><ph name="USER_NAME" /> के तौर पर साइन इन किया गया. <ph name="USER_EMAIL" />. इस बटन से सेटिंग खुलती है.</translation>
+<translation id="2363734411417672757">ज़्यादा पेज पहले से ही लोड होते हैं. दूसरी साइटों या ऐप्लिकेशन के अनुरोध करने पर, Google के सर्वर का इस्तेमाल करके पेजों को पहले से लोड किया जा सकता है.</translation>
 <translation id="2366554533468315977">इस विकल्प के लिए वेब पर, कीमत के इतिहास से जुड़ा डेटा</translation>
 <translation id="2385605401818128172">उन साइटों की समीक्षा की जा सकती है जो बहुत ज़्यादा सूचनाएं भेजती हैं. साथ ही, आने वाले समय में उन्हें और सूचनाएं भेजने से रोका जा सकता है</translation>
 <translation id="2386938421315164605">विषयों को छिपाएं और दिखाएं</translation>
@@ -296,6 +300,7 @@ Chrome के अनुभव को बेहतर बनाने के ल�
 <translation id="2433507940547922241">दिखने का तरीका</translation>
 <translation id="2435457462613246316">पासवर्ड दिखाएं</translation>
 <translation id="2439153523196674349"><ph name="SITE_NAME" /> की झलक</translation>
+<translation id="2449931042095204989">जब कोई Google साइट या ऐप्लिकेशन अपने पेज पर, लिंक को निजी तौर पर पहले से लोड करने के लिए कहता है, तो Google के सर्वर की मदद से Chrome, पेजों को एन्क्रिप्ट करके पहले से लोड कर देता है. Chrome इसके लिए कुकी का इस्तेमाल नहीं करता. इससे, पहले से लोड की गई साइट से आपकी पहचान छिपी रहती है.</translation>
 <translation id="2450083983707403292">क्या <ph name="FILE_NAME" /> को फिर से डाउनलोड करना है?</translation>
 <translation id="2451607499823206582">ट्रैक किया जा रहा है</translation>
 <translation id="2453860139492968684">खत्म करें</translation>
@@ -320,6 +325,7 @@ Chrome के अनुभव को बेहतर बनाने के ल�
 <translation id="2527779675047087889">क्लिपबोर्ड का कॉन्टेंट छिपाएं</translation>
 <translation id="2532336938189706096">वेब व्यू</translation>
 <translation id="2534155362429831547"><ph name="NUMBER_OF_ITEMS" /> आइटम मिटाए गए</translation>
+<translation id="253498598929009420">साइट, आपकी स्क्रीन पर मौजूद कॉन्टेंट देख पाएगी</translation>
 <translation id="2536728043171574184">इस पृष्‍ठ की ऑफ़लाइन कॉपी देख रहे हैं</translation>
 <translation id="2546283357679194313">कुकी और साइट डेटा</translation>
 <translation id="2547843573592965873">आपका प्रोफ़ाइल लॉक, कार में आपकी जानकारी को सुरक्षित रखता है. इसमें आपके Google खाते में सेव किए गए पासवर्ड, पेमेंट की जानकारी वगैरह शामिल है.</translation>
@@ -457,6 +463,7 @@ Chrome के अनुभव को बेहतर बनाने के ल�
 <translation id="3091010850649238832">क्लिपबोर्ड का कॉन्टेंट दिखाएं</translation>
 <translation id="3098745985164956033">कुछ इमेज Google को भेजी जाती हैं, ताकि आपको मिलने वाली जानकारी को बेहतर बनाया जा सके</translation>
 <translation id="3114507951000454849">आज की खबरें <ph name="NEWS_ICON" /> पढ़ें</translation>
+<translation id="3122883569442693641">ज़्यादा जानकारी</translation>
 <translation id="3123734510202723619">एलान</translation>
 <translation id="3131961580615093332"><ph name="GIVEN_NAME" /> ने “<ph name="TAB_NAME" />” टैब बदल दिया है</translation>
 <translation id="3148237711805373460">मुझे वहां ले जाएं</translation>
@@ -535,6 +542,7 @@ Chrome के अनुभव को बेहतर बनाने के ल�
 <translation id="3524334353996115845"><ph name="ORIGIN" /> को आपकी पहचान की पुष्टि करने दें</translation>
 <translation id="3527085408025491307">फ़ोल्डर</translation>
 <translation id="3542235761944717775"><ph name="KILOBYTES" /> केबी उपलब्ध</translation>
+<translation id="3549537543136628349">अगर पहले से लोड किए गए पेजों को एन्क्रिप्ट यानी सुरक्षित किया गया है और इन्हें लिंक करने वाली साइट या ऐप्लिकेशन एक Google साइट या ऐप्लिकेशन है, तो निजी तौर पर पहले से लोड करते समय, Google के सर्वर को इनसे जुड़ी कोई नई जानकारी नहीं मिलती.</translation>
 <translation id="3549657413697417275">अपने इतिहास में खोजें</translation>
 <translation id="3557336313807607643">संपर्कों में जोड़ें</translation>
 <translation id="3563767357928833671">क्लिपबोर्ड का कॉन्टेंट दिखाया गया</translation>
@@ -565,6 +573,7 @@ Chrome के अनुभव को बेहतर बनाने के ल�
 <translation id="3699022356773522638">फ़ाइल डाउनलोड करें?</translation>
 <translation id="3701167022068948696">अभी ठीक करें</translation>
 <translation id="3701515417135397388">डेटा के गलत इस्तेमाल की वजह से पासवर्ड हैक होने पर सूचना देना</translation>
+<translation id="3703166520839776970">अगर यह समस्या बार-बार आती है, तो <ph name="IDENTITY_PROVIDER_ETLD_PLUS_ONE" /> से ज़्यादा जानकारी पाने के लिए, नीचे मौजूद "ज़्यादा जानकारी" चुनें.</translation>
 <translation id="3710501561113687889">जारी रखने के लिए, <ph name="IDENTITY_PROVIDER_ETLD_PLUS_ONE" /> इस साइट के साथ आपका <ph name="FIELDS_STRING" /> शेयर करेगा.</translation>
 <translation id="3714981814255182093">ढूंढें बार खोलें</translation>
 <translation id="3716182511346448902">यह पेज बहुत ज़्यादा स्टोरेज का इस्तेमाल करता है, इसलिए Chrome ने इसे रोक दिया है.</translation>
@@ -591,12 +600,15 @@ Chrome के अनुभव को बेहतर बनाने के ल�
 <translation id="3819183753496523827">आप ऑफ़लाइन हैं. अपने इंटरनेट कनेक्शन की जांच करें और फिर से कोशिश करें.</translation>
 <translation id="3823019343150397277">IBAN</translation>
 <translation id="38243391581572867">इस खाते के लिए Lens उपलब्ध नहीं है.</translation>
+<translation id="38258275871320156">सिर्फ़ छोटी विंडो के लिए उपलब्ध</translation>
 <translation id="3830886834687455630">अपने पासवर्ड की जांच करने के लिए, Google Play Services को अपडेट करें</translation>
 <translation id="3843603704176567761">ऐसा हो सकता है कि जल्द ही, आप इस डिवाइस में सेव किए गए पासवर्ड ऐक्सेस न कर पाएं. सेव किए गए पासवर्ड का ऐक्सेस बनाए रखने के लिए, Google Play services को अपडेट करें.</translation>
 <translation id="3845098929839618392">गुप्त टैब में खोलें</translation>
 <translation id="3847319713229060696">वेब को सभी के लिए ज़्यादा सुरक्षित बनाने में मदद करें</translation>
+<translation id="385051799172605136">वापस जाएं</translation>
 <translation id="3856096718352044181">कृपया पुष्टि करें कि यह एक मान्य डीएनएस सेवा है या थोड़ी देर बाद कोशिश करें</translation>
 <translation id="3858860766373142691">नाम</translation>
+<translation id="3863527519275151528">सूचना को प्रोसेस किया जा रहा है</translation>
 <translation id="3873174561423636563">जारी रखने के लिए, <ph name="IDENTITY_PROVIDER_ETLD_PLUS_ONE" /> इस साइट के साथ आपका <ph name="FIELDS_STRING" /> शेयर करेगा. इस साइट की <ph name="BEGIN_LINK1" />सेवा की शर्तें<ph name="END_LINK1" /> देखें.</translation>
 <translation id="3892148308691398805">टेक्स्ट कॉपी करें</translation>
 <translation id="3899682235662194879">सभी गुप्त टैब बंद करें</translation>
@@ -745,6 +757,7 @@ Chrome के अनुभव को बेहतर बनाने के ल�
 <translation id="4594952190837476234">यह पेज <ph name="CREATION_TIME" /> का है और यह ऑनलाइन वर्शन से अलग हो सकता है.</translation>
 <translation id="4595805675102978678">Google खाते में गड़बड़ी</translation>
 <translation id="4601095002996233687">संदिग्ध डाउनलोड की गहराई से जांच की जाती है.</translation>
+<translation id="4606559747793337066">जब कोई साइट या ऐप्लिकेशन अपने पेज पर, लिंक को निजी तौर पर पहले से लोड करने के लिए कहता है, तो Google के सर्वर की मदद से Chrome, पेजों को एन्क्रिप्ट करके पहले से लोड कर देता है. Chrome इसके लिए कुकी का इस्तेमाल नहीं करता. इससे, पहले से लोड की गई साइट से आपकी पहचान छिपी रहती है.</translation>
 <translation id="4609429330876432068">Chrome और <ph name="CHROME_CHANNEL" /> पर सेव किए गए पासवर्ड की सूचियां मर्ज कर दी गई हैं. आपके पास अब भी दोनों ऐप्लिकेशन पर, सेव किए गए अपने सभी पासवर्ड ऑटोमैटिक भरने की सुविधा है.</translation>
 <translation id="4616150815774728855"><ph name="WEBAPK_NAME" /> को खोलें</translation>
 <translation id="4619564267100705184">अपनी पहचान की पुष्टि करें</translation>
@@ -792,6 +805,7 @@ Chrome के अनुभव को बेहतर बनाने के ल�
 <translation id="4769632191812288342">आपके खाते के लिए स्टैंडर्ड सुरक्षा मोड को सेट किया गया है</translation>
 <translation id="4775646243557794597"><ph name="TIME_PERIOD" /> का डेटा मिटाया गया</translation>
 <translation id="4778653490315793244">फ़िलहाल, कोई कॉन्टेंट मौजूद नहीं है</translation>
+<translation id="4782929588435725897"><ph name="SEARCH_ENGINE" /> आपका डिफ़ॉल्ट सर्च इंजन है</translation>
 <translation id="4787736314074622408">क्या आपको <ph name="ITEM_TITLE" /> मिटाना है?</translation>
 <translation id="4793679854893018356">जानें कि Chrome आपको इंटरनेट पर कैसे सुरक्षित रखता है</translation>
 <translation id="4794291718671962615">(<ph name="MEGABYTES" />) <ph name="URL" /></translation>
@@ -855,6 +869,7 @@ Chrome के अनुभव को बेहतर बनाने के ल�
 <translation id="5016205925109358554">Serif</translation>
 <translation id="5017529052065664584">पिछले 15 मिनट का</translation>
 <translation id="5032430150487044192">क्यूआर कोड नहीं बनाया जा सकता</translation>
+<translation id="5035846135112863536"><ph name="IDENTITY_PROVIDER_ETLD_PLUS_ONE" /> से ज़्यादा जानकारी पाने के लिए, नीचे मौजूद "ज़्यादा जानकारी" चुनें.</translation>
 <translation id="5039678609803776426">{TAB_COUNT,plural, =1{<ph name="TAB_COUNT_ONE" /> टैब - <ph name="URL_LIST" />}one{<ph name="TAB_COUNT_MANY" /> टैब - <ph name="URL_LIST" />}other{<ph name="TAB_COUNT_MANY" /> टैब - <ph name="URL_LIST" />}}</translation>
 <translation id="5040262127954254034">निजता</translation>
 <translation id="504456571576643789">इन बातों का ध्यान रखें</translation>
@@ -865,7 +880,7 @@ Chrome के अनुभव को बेहतर बनाने के ल�
 <translation id="5085038751173179818">अपने सभी डिवाइसों पर बुकमार्क वगैरह पाने के लिए, इस साइट पर और Chrome, दोनों में साइन इन करें</translation>
 <translation id="5091199029769593641">जल्द ही, कोई भी नया टैब खोलते ही आपको <ph name="SITE_NAME" /> से जुड़ी जानकारी दिखेगी. आप जिन साइटों को फ़ॉलो करते हैं वे आपके Google खाते में सेव हो जाती हैं. आप उन्हें डिस्कवर की सेटिंग में मैनेज कर सकते हैं.</translation>
 <translation id="509429900233858213">कोई गड़बड़ी हुई.</translation>
-<translation id="5097349930204431044">विज़िट की गई साइटें आपकी दिलचस्पी का पता लगा सकती हैं. इसके बाद, ब्राउज़ करते समय नई साइटों पर आपकी दिलचस्पी के हिसाब से विज्ञापन दिखाए जा सकते हैं</translation>
+<translation id="5097349930204431044">आपने जिन साइटों पर विज़िट किया है वे आपकी दिलचस्पी का अनुमान लगा सकती हैं और फिर आपके ब्राउज़ करने पर, इस हिसाब से विज्ञापन दिखा सकती हैं</translation>
 <translation id="510275257476243843">1 घंटा शेष</translation>
 <translation id="5114895953710637392">ऐप्लिकेशन फ़िल्टर करने वाली शीट बंद है.</translation>
 <translation id="5115811374190515607"><ph name="PRODUCT_NAME" /> में ले जाया गया</translation>
@@ -874,6 +889,7 @@ Chrome के अनुभव को बेहतर बनाने के ल�
 <translation id="5123685120097942451">गुप्त टैब</translation>
 <translation id="5139940364318403933">Google डिस्क के इस्तेमाल का तरीका जानें</translation>
 <translation id="5142281402488957685">फ़ीड का कॉन्टेंट रीफ़्रेश करने के लिए, पेज को नीचे खींचें, ताकि नई स्टोरी दिखें</translation>
+<translation id="5144385790872094440">आपके विज़िट किए गए पेजों में से, कुछ पेज पहले से ही लोड होते हैं. Google की साइट या ऐप्लिकेशन से लिंक होने पर, Google के सर्वर का इस्तेमाल करके पेजों को पहले से लोड किया जा सकता है.</translation>
 <translation id="5152843274749979095">भुगतान करने के लिए कोई ऐप्लिकेशन इंस्‍टॉल नहीं है</translation>
 <translation id="5161254044473106830">टाइटल आवश्‍यक</translation>
 <translation id="5161262286013276579">पासकी की पुष्टि वाली शीट खोली गई</translation>
@@ -1028,6 +1044,7 @@ Chrome के अनुभव को बेहतर बनाने के ल�
 <translation id="5885378508678660271">सूचनाएं <ph name="SEPARATOR" /> Chrome ने इस साइट के लिए यह अनुमति हटा दी है, क्योंकि यह सुरक्षित नहीं है</translation>
 <translation id="5895834791314695851">ऐसा हो सकता है कि जल्द ही, आप इस डिवाइस में सेव किए गए पासवर्ड ऐक्सेस न कर पाएं. सेव किए गए पासवर्ड का ऐक्सेस बनाए रखने के लिए, Google Play services को अपडेट करें. <ph name="BEGIN_LINK" />ज़्यादा जानें<ph name="END_LINK" /></translation>
 <translation id="5899667542927581604">कोई पासकी शीट बंद नहीं की गई</translation>
+<translation id="5907542076239273525">बुकमार्क को <ph name="FOLDER_NAME" /> में सेव किया गया</translation>
 <translation id="5916664084637901428">चालू है</translation>
 <translation id="5919204609460789179">सिंक शुरू करने के लिए <ph name="PRODUCT_NAME" /> अपडेट करें</translation>
 <translation id="5938820472109305350"><ph name="INTEREST" /> जोड़ें</translation>

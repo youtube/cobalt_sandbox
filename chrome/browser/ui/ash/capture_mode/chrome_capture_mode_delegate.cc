@@ -13,6 +13,7 @@
 #include "ash/constants/ash_features.h"
 #include "ash/constants/ash_pref_names.h"
 #include "ash/constants/web_app_id_constants.h"
+#include "ash/public/cpp/capture_mode/capture_mode_api.h"
 #include "ash/strings/grit/ash_strings.h"
 #include "base/check.h"
 #include "base/files/file_path.h"
@@ -55,6 +56,7 @@
 #include "chromeos/ash/experiences/screenshot_area/screenshot_area.h"
 #include "chromeos/ash/services/recording/public/mojom/recording_service.mojom.h"
 #include "components/drive/file_errors.h"
+#include "components/lens/lens_overlay_mime_type.h"
 #include "components/prefs/pref_service.h"
 #include "components/services/app_service/public/cpp/app_launch_util.h"
 #include "content/public/browser/audio_service.h"
@@ -503,7 +505,7 @@ void ChromeCaptureModeDelegate::SendRegionSearch(
   if (!profile || image.empty() || region.IsEmpty()) {
     return;
   }
-  DCHECK(ash::features::IsSunfishFeatureEnabled());
+  DCHECK(ash::IsSunfishFeatureEnabledWithFeatureKey());
   if (!gen204_controller_) {
     gen204_controller_ = std::make_unique<lens::LensOverlayGen204Controller>();
   }
@@ -534,8 +536,8 @@ void ChromeCaptureModeDelegate::SendRegionSearch(
       /*page_title=*/std::nullopt, /*significant_region_boxes=*/
       std::vector<lens::mojom::CenterRotatedBoxPtr>(),
       /*underlying_content_bytes=*/base::span<const uint8_t>(),
-      /*underlying_content_type=*/lens::PageContentMimeType(),
-      /*ui_scale_factor=*/1.f);
+      /*underlying_content_type=*/lens::MimeType(),
+      /*ui_scale_factor=*/1.f, /*invocation_time=*/base::TimeTicks::Now());
   lens_overlay_query_controller_->SendRegionSearch(
       lens::GetCenterRotatedBoxFromTabViewAndImageBounds(
           /*tab_bounds=*/region, /*view_bounds=*/region,

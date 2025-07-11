@@ -23,8 +23,8 @@ BASE_DECLARE_FEATURE(kAndroidAppIntegrationWithFavicon);
 BASE_DECLARE_FEATURE(kAndroidBottomToolbar);
 BASE_DECLARE_FEATURE(kAndroidElegantTextHeight);
 BASE_DECLARE_FEATURE(kAndroidHubFloatingActionButton);
-BASE_DECLARE_FEATURE(kAndroidHubSearch);
 BASE_DECLARE_FEATURE(kAndroidNoVisibleHintForDifferentTLD);
+BASE_DECLARE_FEATURE(kAndroidOpenPdfInlineBackport);
 BASE_DECLARE_FEATURE(kAndroidTabDeclutter);
 BASE_DECLARE_FEATURE(kAndroidTabDeclutterArchiveAllButActiveTab);
 BASE_DECLARE_FEATURE(kAndroidTabDeclutterRescueKillswitch);
@@ -83,6 +83,7 @@ BASE_DECLARE_FEATURE(kContextMenuSysUiMatchesActivity);
 BASE_DECLARE_FEATURE(kContextMenuTranslateWithGoogleLens);
 BASE_DECLARE_FEATURE(kContextualSearchDisableOnlineDetection);
 BASE_DECLARE_FEATURE(kContextualSearchSuppressShortView);
+BASE_DECLARE_FEATURE(kControlsVisibilityFromNavigations);
 BASE_DECLARE_FEATURE(kCrossDeviceTabPaneAndroid);
 BASE_DECLARE_FEATURE(kDelayTempStripRemoval);
 BASE_DECLARE_FEATURE(kDeviceAuthenticatorAndroidx);
@@ -187,7 +188,6 @@ BASE_DECLARE_FEATURE(kUseLibunwindstackNativeUnwinderAndroid);
 BASE_DECLARE_FEATURE(kUserMediaScreenCapturing);
 BASE_DECLARE_FEATURE(kVoiceSearchAudioCapturePolicy);
 BASE_DECLARE_FEATURE(kWebOtpCrossDeviceSimpleString);
-BASE_DECLARE_FEATURE(kWebApkAllowIconUpdate);
 
 // For FeatureParam, Alphabetical:
 constexpr base::FeatureParam<int> kAuxiliarySearchMaxBookmarksCountParam(

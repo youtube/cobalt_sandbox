@@ -208,6 +208,7 @@ CredentialProviderService::CredentialProviderService(
 
   // Make sure the initial value of the pref is stored.
   OnSavingPasswordsEnabledChanged();
+  UpdatePasswordSyncSetting();
 }
 
 CredentialProviderService::~CredentialProviderService() {}
@@ -313,11 +314,12 @@ void CredentialProviderService::SyncAllCredentials(
   SyncStore();
 }
 
-bool CredentialProviderService::SaveGaia() {
+bool CredentialProviderService::SaveAccountInfo() {
   CoreAccountInfo account =
       identity_manager_->GetPrimaryAccountInfo(signin::ConsentLevel::kSignin);
-  return credential_provider_extension::StoreGaiaInKeychain(
-      base::SysUTF8ToNSString(account.gaia));
+  return credential_provider_extension::StoreAccountInfoInKeychain(
+      base::SysUTF8ToNSString(account.gaia),
+      base::SysUTF8ToNSString(account.email));
 }
 
 void CredentialProviderService::SyncStore() {
@@ -336,11 +338,9 @@ void CredentialProviderService::SyncStore() {
     if (error) {
       return;
     }
-    if (!SaveGaia()) {
-      return;
-    }
     if (weak_credential_store) {
       SyncASIdentityStore(weak_credential_store);
+      SaveAccountInfo();
     }
   }];
 }
@@ -522,6 +522,14 @@ void CredentialProviderService::UpdateUserEmail() {
          forKey:AppGroupUserDefaultsCredentialProviderUserEmail()];
 }
 
+void CredentialProviderService::UpdatePasswordSyncSetting() {
+  BOOL is_syncing =
+      password_manager::sync_util::HasChosenToSyncPasswords(sync_service_);
+  [app_group::GetGroupUserDefaults()
+      setObject:[NSNumber numberWithBool:is_syncing]
+         forKey:AppGroupUserDefaultsCredentialProviderPasswordSyncSetting()];
+}
+
 void CredentialProviderService::OnGetPasswordStoreResultsOrErrorFrom(
     password_manager::PasswordStoreInterface* store,
     password_manager::LoginsResultOrError results) {
@@ -564,6 +572,7 @@ void CredentialProviderService::OnStateChanged(syncer::SyncService* sync) {
   // When the state changes, it's possible that password syncing has
   // started/stopped, so the user's email must be updated.
   UpdateUserEmail();
+  UpdatePasswordSyncSetting();
 }
 
 // PasskeyModel::Observer:
@@ -623,6 +632,9 @@ void CredentialProviderService::OnSavingPasswordsEnabledChanged() {
   [app_group::GetGroupUserDefaults()
       setObject:[NSNumber numberWithBool:saving_passwords_enabled_.GetValue()]
          forKey:AppGroupUserDefaulsCredentialProviderSavingPasswordsEnabled()];
+  [app_group::GetGroupUserDefaults()
+      setObject:[NSNumber numberWithBool:saving_passwords_enabled_.IsManaged()]
+         forKey:AppGroupUserDefaulsCredentialProviderSavingPasswordsManaged()];
 }
 
 MemoryCredentialStore* CredentialProviderService::GetCredentialStore(

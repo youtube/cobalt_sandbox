@@ -18,10 +18,10 @@ BASE_FEATURE(kAutoApproveSharedPasswordUpdatesFromSameSender,
 BASE_FEATURE(kAutofillPasswordUserPerceptionSurvey,
              "AutofillPasswordUserPerceptionSurvey",
              base::FEATURE_DISABLED_BY_DEFAULT);
-// Default enabled in M131. Remove in or after M134.
+// Disabled by default.
 BASE_FEATURE(kWebAuthnUsePasskeyFromAnotherDeviceInContextMenu,
              "WebAuthnUsePasskeyFromAnotherDeviceInContextMenu",
-             base::FEATURE_ENABLED_BY_DEFAULT);
+             base::FEATURE_DISABLED_BY_DEFAULT);
 #endif  // !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_IOS)
 
 BASE_FEATURE(kBiometricTouchToFill,
@@ -93,7 +93,7 @@ BASE_FEATURE(kPasswordGenerationChunking,
 
 BASE_FEATURE(kPasswordGenerationSoftNudge,
              "PasswordGenerationSoftNudge",
-             base::FEATURE_DISABLED_BY_DEFAULT);
+             base::FEATURE_ENABLED_BY_DEFAULT);
 
 #endif
 
@@ -156,6 +156,9 @@ BASE_FEATURE(kBiometricAuthIdentityCheck,
 BASE_FEATURE(kClearLoginDatabaseForAllMigratedUPMUsers,
              "ClearLoginDatabaseForAllMigratedUPMUsers",
              base::FEATURE_ENABLED_BY_DEFAULT);
+BASE_FEATURE(kDropLoginDbRenameForUpmSyncingUsers,
+             "DropLoginDbRenameForUpmSyncingUsers",
+             base::FEATURE_ENABLED_BY_DEFAULT);
 #endif
 
 BASE_FEATURE(kUsernameFirstFlowFallbackCrowdsourcing,
@@ -180,6 +183,14 @@ BASE_FEATURE(kUseNewEncryptionMethod,
 
 BASE_FEATURE(kEncryptAllPasswordsWithOSCryptAsync,
              "EncryptAllPasswordsWithOSCryptAsync",
+             base::FEATURE_DISABLED_BY_DEFAULT);
+
+BASE_FEATURE(kMarkAllCredentialsAsLeaked,
+             "MarkAllCredentialsAsLeaked",
+             base::FEATURE_DISABLED_BY_DEFAULT);
+
+BASE_FEATURE(kImprovedPasswordChangeService,
+             "ImprovedPasswordChangeService",
              base::FEATURE_DISABLED_BY_DEFAULT);
 
 }  // namespace password_manager::features

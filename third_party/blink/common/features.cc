@@ -54,12 +54,6 @@ BASE_FEATURE(kAdInterestGroupAPIRestrictedPolicyByDefault,
              "AdInterestGroupAPIRestrictedPolicyByDefault",
              base::FEATURE_DISABLED_BY_DEFAULT);
 
-// Allow DeprecatedRenderURLReplacements when
-// CookieDeprecationFacilitatedTesting is enabled.
-BASE_FEATURE(kAlwaysAllowFledgeDeprecatedRenderURLReplacements,
-             "kAlwaysAllowFledgeDeprecatedRenderURLReplacements",
-             base::FEATURE_DISABLED_BY_DEFAULT);
-
 // Block all MIDI access with the MIDI_SYSEX permission
 BASE_FEATURE(kBlockMidiByDefault,
              "BlockMidiByDefault",
@@ -824,17 +818,9 @@ BASE_FEATURE(kFencedFrames, "FencedFrames", base::FEATURE_ENABLED_BY_DEFAULT);
 // subframes. This requires opt-in both from the cross-origin subframe that is
 // sending the beacon as well as the document that contains information about
 // the reportEvent() endpoints.
-// The "UnlabeledTraffic" flag only allows cross-origin reportEvent() beacons
-// for non-Mode A/B 3PCD Chrome-facilitated testing traffic. See the
-// "CookieDeprecationFacilitatedTesting" feature in
-// `content/public/common/content_features.cc` for more information.
-BASE_FEATURE(kFencedFramesCrossOriginEventReportingUnlabeledTraffic,
-             "FencedFramesCrossOriginEventReportingUnlabeledTraffic",
+BASE_FEATURE(kFencedFramesCrossOriginEventReporting,
+             "FencedFramesCrossOriginEventReporting",
              base::FEATURE_ENABLED_BY_DEFAULT);
-// The "AllTraffic" flag allows the feature for all traffic regardless of label.
-BASE_FEATURE(kFencedFramesCrossOriginEventReportingAllTraffic,
-             "FencedFramesCrossOriginEventReportingAllTraffic",
-             base::FEATURE_DISABLED_BY_DEFAULT);
 
 // Temporarily un-disable credentials on fenced frame automatic beacons until
 // third party cookie deprecation.
@@ -909,7 +895,7 @@ BASE_FEATURE(kFledge, "Fledge", base::FEATURE_ENABLED_BY_DEFAULT);
 // https://github.com/WICG/turtledove/blob/main/FLEDGE_browser_bidding_and_auction_API.md
 BASE_FEATURE(kFledgeBiddingAndAuctionServer,
              "FledgeBiddingAndAuctionServer",
-             base::FEATURE_DISABLED_BY_DEFAULT);
+             base::FEATURE_ENABLED_BY_DEFAULT);
 BASE_FEATURE_PARAM(std::string,
                    kFledgeBiddingAndAuctionKeyURL,
                    &kFledgeBiddingAndAuctionServer,
@@ -990,11 +976,6 @@ BASE_FEATURE_PARAM(int,
                    &kFledgeNumberBidderWorkletGroupByOriginContextsToKeep,
                    "GroupByOriginContextLimit",
                    10);
-BASE_FEATURE_PARAM(bool,
-                   kFledgeNumberBidderWorkletContextsIncludeFacilitedTesting,
-                   &kFledgeNumberBidderWorkletGroupByOriginContextsToKeep,
-                   "IncludeFacilitatedTestingGroups",
-                   false);
 
 BASE_FEATURE(kFledgeAlwaysReuseBidderContext,
              "FledgeAlwaysReuseBidderContext",
@@ -1034,6 +1015,10 @@ BASE_FEATURE_PARAM(int,
 // privateAggregation.contributeToHistogramOnEvent.
 BASE_FEATURE(kFledgeEnforcePermissionPolicyContributeOnEvent,
              "FledgeEnforcePermissionPolicyContributeOnEvent",
+             base::FEATURE_DISABLED_BY_DEFAULT);
+
+BASE_FEATURE(kFledgeNoWasmLazyCompilation,
+             "FledgeNoWasmLazyCompilation",
              base::FEATURE_DISABLED_BY_DEFAULT);
 
 BASE_FEATURE(kForceHighPerformanceGPUForWebGL,
@@ -1145,6 +1130,15 @@ BASE_FEATURE(kHiddenSelectionBounds,
 BASE_FEATURE(kImageLoadingPrioritizationFix,
              "ImageLoadingPrioritizationFix",
              base::FEATURE_DISABLED_BY_DEFAULT);
+
+BASE_FEATURE(kIndexedDBCompressValuesWithSnappy,
+             "IndexedDBCompressValuesWithSnappy",
+             base::FEATURE_ENABLED_BY_DEFAULT);
+constexpr base::FeatureParam<int>
+    kIndexedDBCompressValuesWithSnappyCompressionThreshold{
+        &features::kIndexedDBCompressValuesWithSnappy,
+        /*name=*/"compression-threshold",
+        /*default_value=*/-1};
 
 BASE_FEATURE(kInputPredictorTypeChoice,
              "InputPredictorTypeChoice",
@@ -1924,16 +1918,10 @@ BASE_FEATURE_PARAM(bool,
                    false);
 #endif  // BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_CHROMEOS)
 
-// When enabled, this flag partitions the :visited link hashtable by <link url,
-// top-level site, frame origin> AND adds the "self link" <link url, link as a
-// schemeful site, link as an origin> for each link :visited from a top-level or
-// same-origin subframe to the hashtable as well.
-// NOTE: users need only enable kPartitionVisitedLinkDatabaseWithSelfLinks
-// to achieve partitioning AND self links. You do NOT need to enable
-// kPartitionVisitedLinkDatabase as well, though doing so is a no-op and will
-// not change the behavior of this feature.
-BASE_FEATURE(kPartitionVisitedLinkDatabaseWithSelfLinks,
-             "PartitionVisitedLinkDatabaseWithSelfLinks",
+// When enabled, this flag partitions the :visited link hashtable by
+// <link url, top-level site, frame origin>
+BASE_FEATURE(kPartitionVisitedLinkDatabase,
+             "PartitionVisitedLinkDatabase",
              base::FEATURE_DISABLED_BY_DEFAULT);
 
 // Enables the use of the PaintCache for Path2D objects that are rasterized
@@ -2439,17 +2427,6 @@ BASE_FEATURE_PARAM(bool,
                    "ExposeDebugMessageForSettingsStatus",
                    false);
 
-BASE_FEATURE(kSharedStorageSelectURLLimit,
-             "SharedStorageSelectURLLimit",
-             base::FEATURE_ENABLED_BY_DEFAULT);
-const base::FeatureParam<int> kSharedStorageSelectURLBitBudgetPerPageLoad = {
-    &kSharedStorageSelectURLLimit, "SharedStorageSelectURLBitBudgetPerPageLoad",
-    12};
-const base::FeatureParam<int>
-    kSharedStorageSelectURLBitBudgetPerSitePerPageLoad = {
-        &kSharedStorageSelectURLLimit,
-        "SharedStorageSelectURLBitBudgetPerSitePerPageLoad", 6};
-
 BASE_FEATURE(kSharedStorageWorkletSharedBackingThreadImplementation,
              "SharedStorageWorkletSharedBackingThreadImplementation",
              base::FEATURE_DISABLED_BY_DEFAULT);
@@ -2476,7 +2453,7 @@ BASE_FEATURE(kSharedStorageCreateWorkletCustomDataOrigin,
 
 BASE_FEATURE(kSharedStorageSelectURLSavedQueries,
              "SharedStorageSelectURLSavedQueries",
-             base::FEATURE_DISABLED_BY_DEFAULT);
+             base::FEATURE_ENABLED_BY_DEFAULT);
 
 BASE_FEATURE(kSharedStorageAPIEnableWALForDatabase,
              "SharedStorageAPIEnableWALForDatabase",
@@ -2498,6 +2475,10 @@ const char kSkipTouchEventFilterFilteringProcessParamValueBrowserAndRenderer[] =
 BASE_FEATURE(kSpeculationRulesPrefetchFuture,
              "SpeculationRulesPrefetchFuture",
              base::FEATURE_ENABLED_BY_DEFAULT);
+
+BASE_FEATURE(kSpeculativeImageDecodes,
+             "SpeculativeImageDecodes",
+             base::FEATURE_DISABLED_BY_DEFAULT);
 
 // Enable service worker warming-up feature. (https://crbug.com/1431792)
 BASE_FEATURE(kSpeculativeServiceWorkerWarmUp,
@@ -2600,11 +2581,6 @@ BASE_FEATURE(kStylusPointerAdjustment,
 
 BASE_FEATURE(kStylusRichGestures,
              "StylusRichGestures",
-             base::FEATURE_ENABLED_BY_DEFAULT);
-
-// Enables third party script regex matching for detecting technologies.
-BASE_FEATURE(kThirdPartyScriptDetection,
-             "ThirdPartyScriptDetection",
              base::FEATURE_ENABLED_BY_DEFAULT);
 
 BASE_FEATURE(kThreadedBodyLoader,
@@ -2880,6 +2856,17 @@ BASE_FEATURE(kReleaseResourceStrongReferencesOnMemoryPressure,
 // Whether `blink::Resource` deletes its decoded data on memory pressure.
 BASE_FEATURE(kReleaseResourceDecodedDataOnMemoryPressure,
              "ReleaseResourceDecodedDataOnMemoryPressure",
+             base::FEATURE_ENABLED_BY_DEFAULT);
+
+// WorkerThread termination procedure (prepare and shutdown) runs sequentially
+// in the same task without calling another cross thread post task.
+// Kill switch for crbug.com/409059706.
+BASE_FEATURE(kWorkerThreadSequentialShutdown,
+             "WorkerThreadSequentialShutdown",
+             base::FEATURE_ENABLED_BY_DEFAULT);
+
+BASE_FEATURE(kNoReferrerForPreloadFromSubresource,
+             "NoReferrerForPreloadFromSubresource",
              base::FEATURE_ENABLED_BY_DEFAULT);
 
 // When adding new features or constants for features, please keep the features

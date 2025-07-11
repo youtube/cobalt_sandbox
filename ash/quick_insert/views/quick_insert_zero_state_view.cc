@@ -93,7 +93,7 @@ EditorSubmenu GetEditorSubmenu(
 PickerZeroStateView::PickerZeroStateView(
     PickerZeroStateViewDelegate* delegate,
     base::span<const QuickInsertCategory> available_categories,
-    int picker_view_width,
+    int quick_insert_view_width,
     PickerAssetFetcher* asset_fetcher,
     PickerSubmenuController* submenu_controller,
     PickerPreviewBubbleController* preview_controller)
@@ -104,15 +104,20 @@ PickerZeroStateView::PickerZeroStateView(
       ->SetOrientation(views::LayoutOrientation::kVertical);
 
   section_list_view_ = AddChildView(std::make_unique<PickerSectionListView>(
-      picker_view_width, asset_fetcher, submenu_controller_));
+      quick_insert_view_width, asset_fetcher, submenu_controller_));
 
   for (QuickInsertCategory category : available_categories) {
-    // kEditorRewrite is not visible in the zero-state, since it's replaced with
-    // the rewrite suggestions.
-    // TODO: b/369701127 - Shows kLobster entry once its implementation is
-    // ready.
+    // kEditorRewrite and LobsterWithSelectedText are not visible in the
+    // zero-state, since it's replaced with the rewrite suggestions and the
+    // lobster result, respectively.
     if (category == QuickInsertCategory::kEditorRewrite ||
-        category == QuickInsertCategory::kLobster) {
+        category == QuickInsertCategory::kLobsterWithSelectedText) {
+      continue;
+    }
+
+    if (!base::FeatureList::IsEnabled(
+            ash::features::kLobsterQuickInsertZeroState) &&
+        category == QuickInsertCategory::kLobsterWithNoSelectedText) {
       continue;
     }
 
@@ -333,11 +338,8 @@ void PickerZeroStateView::OnFetchSuggestedResults(
           break;
       }
     } else if (std::holds_alternative<QuickInsertLobsterResult>(result)) {
-      primary_section_view_->AddResult(
-          result, preview_controller_,
-          QuickInsertSectionView::LocalFileResultStyle::kList,
-          base::BindRepeating(&PickerZeroStateView::OnResultSelected,
-                              weak_ptr_factory_.GetWeakPtr(), result));
+      AddResultToSection(
+          result, GetOrCreateSectionView(QuickInsertCategoryType::kLobster));
     } else if (std::holds_alternative<QuickInsertCaseTransformResult>(result)) {
       if (case_transform_submenu == nullptr) {
         case_transform_submenu =
@@ -346,7 +348,8 @@ void PickerZeroStateView::OnFetchSuggestedResults(
                 .SetText(l10n_util::GetStringUTF16(
                     IDS_PICKER_CHANGE_CAPITALIZATION_MENU_LABEL))
                 .SetLeadingIcon(ui::ImageModel::FromVectorIcon(
-                    kPickerSentenceCaseIcon, cros_tokens::kCrosSysOnSurface))
+                    kQuickInsertSentenceCaseIcon,
+                    cros_tokens::kCrosSysOnSurface))
                 .Build();
       }
 

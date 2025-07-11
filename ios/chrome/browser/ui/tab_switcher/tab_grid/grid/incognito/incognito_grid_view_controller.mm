@@ -4,7 +4,12 @@
 
 #import "ios/chrome/browser/ui/tab_switcher/tab_grid/grid/incognito/incognito_grid_view_controller.h"
 
+#import "base/metrics/histogram_functions.h"
+#import "base/metrics/user_metrics.h"
+#import "base/metrics/user_metrics_action.h"
+#import "ios/chrome/browser/incognito_reauth/ui_bundled/features.h"
 #import "ios/chrome/browser/incognito_reauth/ui_bundled/incognito_reauth_commands.h"
+#import "ios/chrome/browser/incognito_reauth/ui_bundled/incognito_reauth_constants.h"
 #import "ios/chrome/browser/incognito_reauth/ui_bundled/incognito_reauth_view.h"
 #import "ios/chrome/browser/tabs/model/inactive_tabs/features.h"
 #import "ios/chrome/browser/ui/tab_switcher/tab_grid/grid/base_grid_view_controller+subclassing.h"
@@ -66,6 +71,23 @@
                  addTarget:self.reauthHandler
                     action:@selector(authenticateIncognitoContent)
           forControlEvents:UIControlEventTouchUpInside];
+
+      if (IsIOSSoftLockEnabled()) {
+        id<GridCommands> gridHandler = self.gridHandler;
+        id<IncognitoReauthCommands> reauthHandler = self.reauthHandler;
+        [_blockingView.exitIncognitoButton
+                   addAction:[UIAction actionWithHandler:^(UIAction* action) {
+                     base::UmaHistogramEnumeration(
+                         kIncognitoLockOverlayInteractionHistogram,
+                         IncognitoLockOverlayInteraction::
+                             kCloseIncognitoTabsButtonClicked);
+                     base::RecordAction(base::UserMetricsAction(
+                         "IOS.IncognitoLock.Overlay.CloseIncognitoTabs"));
+                     [gridHandler closeAllItems];
+                     [reauthHandler manualAuthenticationOverride];
+                   }]
+            forControlEvents:UIControlEventTouchUpInside];
+      }
     }
 
     [self.view addSubview:_blockingView];
@@ -90,15 +112,6 @@
   if (require) {
     [_blockingView setAuthenticateButtonText:text
                           accessibilityLabel:accessibilityLabel];
-
-    id<GridCommands> gridHandler = self.gridHandler;
-    id<IncognitoReauthCommands> reauthHandler = self.reauthHandler;
-    [_blockingView.exitIncognitoButton
-               addAction:[UIAction actionWithHandler:^(UIAction* action) {
-                 [gridHandler closeAllItems];
-                 [reauthHandler manualAuthenticationOverride];
-               }]
-        forControlEvents:UIControlEventTouchUpInside];
   } else {
     // No primary button text or accessibility label should be set when
     // authentication is not required.

@@ -312,10 +312,19 @@ extern const base::NotFatalUntil kLensOverlayNotFatalUntil;
 // default.
 BASE_DECLARE_FEATURE(kLensOverlayEnableLocationBarEntrypoint);
 
+// Feature flag to enable the Lens overlay location bar entrypoint on SRP.
+// Enabled by default.
+BASE_DECLARE_FEATURE(kLensOverlayEnableLocationBarEntrypointOnSRP);
+
 // Feature flag to disable price insights for a lens overlay experiment. As the
 // price insights entrypoint trumps the lens overlay entrypoint. This flag
 // should only be used for experiment.
 BASE_DECLARE_FEATURE(kLensOverlayDisablePriceInsights);
+
+// Feature flag to enable lens overlay location bar entrypoint only when price
+// insights should trigger. This is used as counterfactual for
+// kLensOverlayDisablePriceInsights.
+BASE_DECLARE_FEATURE(kLensOverlayPriceInsightsCounterfactual);
 
 // Feature to force allow iPad support of lens overlay.
 BASE_DECLARE_FEATURE(kLensOverlayEnableIPadCompatibility);
@@ -947,5 +956,23 @@ BASE_DECLARE_FEATURE(kProvisionalNotificationAlert);
 
 // Returns whether `kIOSReactivationNotifications` is enabled.
 bool IsProvisionalNotificationAlertEnabled();
+
+// Feature and parameters for the feed positioning experiment, which will
+// determine two things: 1) whether the MVT should be combined with the magic
+// stack 2) whether homestack should be enabled.
+BASE_DECLARE_FEATURE(kNewFeedPositioning);
+extern const char kNewFeedPositioningCombinedMVTForHighEngaged[];
+extern const char kNewFeedPositioningCombinedMVTForMidEngaged[];
+extern const char kNewFeedPositioningCombinedMVTForLowEngaged[];
+extern const char kNewFeedPositioningHomestackOnForAll[];
+
+// Returns whether homestack should be enabled.
+bool ShouldEnableHomestack();
+
+// Feature flag to control whether the Default Browser banner promo is enabled.
+BASE_DECLARE_FEATURE(kDefaultBrowserBannerPromo);
+
+// Returns whether `kDefaultBrowserBannerPromo` is enabled.
+bool IsDefaultBrowserBannerPromoEnabled();
 
 #endif  // IOS_CHROME_BROWSER_SHARED_PUBLIC_FEATURES_FEATURES_H_

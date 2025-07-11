@@ -267,8 +267,7 @@ std::unique_ptr<Volume> CreateForFuseBoxDownloads(
 }
 
 bool IsArcEnabled(Profile* profile) {
-  return base::FeatureList::IsEnabled(arc::kMediaViewFeature) &&
-         arc::IsArcAllowedForProfile(profile);
+  return arc::IsArcAllowedForProfile(profile);
 }
 
 bool IsSkyVaultV2Enabled() {
@@ -393,6 +392,11 @@ void VolumeManager::Initialize() {
   RegisterShareCacheMountPoint(profile_);
   DoMountEvent(
       Volume::CreateForShareCache(util::GetShareCacheFilePath(profile_)));
+
+  // Start Trash autocleanup.
+  if (!base::FeatureList::IsEnabled(ash::features::kFilesTrashAutoCleanup)) {
+    trash_auto_cleanup_ = trash::TrashAutoCleanup::Create(profile_);
+  }
 }
 
 void VolumeManager::Shutdown() {
@@ -409,6 +413,7 @@ void VolumeManager::Shutdown() {
   disk_mount_manager_->RemoveObserver(this);
   documents_provider_root_manager_->RemoveObserver(this);
   documents_provider_root_manager_.reset();
+  trash_auto_cleanup_.reset();
 
   if (storage_monitor::StorageMonitor* const p =
           storage_monitor::StorageMonitor::GetInstance()) {
@@ -1780,6 +1785,13 @@ void VolumeManager::OnMigrationSucceeded() {
 
   read_only_local_folders_ = false;
   OnLocalUserFilesDisabled();
+}
+
+void VolumeManager::OnMigrationReset() {
+  if (!read_only_local_folders_) {
+    read_only_local_folders_ = true;
+    OnLocalUserFilesPolicyChanged();
+  }
 }
 
 }  // namespace file_manager

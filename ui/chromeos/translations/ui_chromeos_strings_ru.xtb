@@ -422,6 +422,7 @@
 <translation id="4387004326333427325">Сертификат аутентификации отклонен удаленно</translation>
 <translation id="4394214039309501350">Внешняя ссылка</translation>
 <translation id="4394980935660306080">На этой неделе</translation>
+<translation id="4397435965699247285">OneDrive недоступен в офлайн-режиме.</translation>
 <translation id="4398096759193130964">Восстановите их или перетащите из корзины в новую папку.</translation>
 <translation id="4401287888955153199">Извлечь всё</translation>
 <translation id="4410695710508688828">Ошибка извлечения. <ph name="ERROR_MESSAGE" /></translation>
@@ -582,7 +583,6 @@
 <translation id="5447680084201416734">Недостаточно свободного места.</translation>
 <translation id="5449551289610225147">Неправильный пароль</translation>
 <translation id="5459064203055649751">Файл "<ph name="FILENAME" />" уже существует. Заменить его?</translation>
-<translation id="5462378611565326489">OneDrive недоступен в офлайн-режиме.</translation>
 <translation id="5463231940765244860">Ввод</translation>
 <translation id="5469868506864199649">Итальянский</translation>
 <translation id="5473333559083690127">Повторно введите новый PIN-код</translation>
@@ -761,7 +761,7 @@
 <translation id="6876155724392614295">Велосипед</translation>
 <translation id="6878261347041253038">Раскладка деванагари (фонетическая)</translation>
 <translation id="6885780034956018177">Улитка</translation>
-<translation id="6896758677409633944">Копировать</translation>
+<translation id="6896758677409633944">Скопировать</translation>
 <translation id="6898028766943174120">Другие вложенные папки…</translation>
 <translation id="6915678159055240887">Chromebox</translation>
 <translation id="6918340160281024199">США (Workman)</translation>

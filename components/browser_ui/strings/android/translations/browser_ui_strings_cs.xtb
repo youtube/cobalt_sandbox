@@ -78,10 +78,8 @@
 <translation id="228293613124499805">Většina navštěvovaných webů pravděpodobně ukládá data do vašeho zařízení, často za účelem zlepšení uživatelského prostředí (uloží se vaše předvolby a informace sdílené s weby). Doporučujeme toto nastavení ponechat zapnuté.</translation>
 <translation id="2289270750774289114">Zeptat se, když chce web objevit zařízení Bluetooth v okolí (doporučeno)</translation>
 <translation id="2315043854645842844">Volbu certifikátu na straně klienta operační systém nepodporuje.</translation>
-<translation id="2321958826496381788">Přetahujte posuvník tak dlouho, dokud nebudete moci pohodlně přečíst tento text. Po dvojitém klepnutí na odstavec by měl být text alespoň takto velký.</translation>
 <translation id="2359808026110333948">Pokračovat</translation>
 <translation id="2379925928934107488">Když Chrome používá tmavý motiv, použít ho i pro Chrome (pokud je to možné)</translation>
-<translation id="2387895666653383613">Zvětšení/zmenšení textu</translation>
 <translation id="2390272837142897736">Zvýšit přiblížení</translation>
 <translation id="2402980924095424747"><ph name="MEGABYTES" /> MB</translation>
 <translation id="2404630663942400771">{PERMISSIONS_SUMMARY_ALLOWED,plural, =1{Povolená oprávnění: <ph name="PERMISSION_1" />, <ph name="PERMISSION_2" /> a další (<ph name="NUM_MORE" />)}few{Povolená oprávnění: <ph name="PERMISSION_1" />, <ph name="PERMISSION_2" /> a další (<ph name="NUM_MORE" />)}many{Povolená oprávnění: <ph name="PERMISSION_1" />, <ph name="PERMISSION_2" /> a další (<ph name="NUM_MORE" />)}other{Povolená oprávnění: <ph name="PERMISSION_1" />, <ph name="PERMISSION_2" /> a další (<ph name="NUM_MORE" />)}}</translation>
@@ -106,7 +104,6 @@
 <translation id="2621115761605608342">Povolit JavaScript pro konkrétní web.</translation>
 <translation id="2653659639078652383">Odeslat</translation>
 <translation id="2677748264148917807">Odejít</translation>
-<translation id="2678468611080193228">Zkuste dočasně povolit soubory cookie třetích stran – budete méně chráněni, ale funkce webu budou s větší pravděpodobností fungovat</translation>
 <translation id="2682367912565197520">Smazat uloženou úroveň přiblížení</translation>
 <translation id="2683434792633810741">Vymazat a resetovat?</translation>
 <translation id="2713106313042589954">Vypnout kameru</translation>
@@ -158,7 +155,6 @@
 <translation id="3403537308306431953"><ph name="ZOOM_LEVEL" /> %%</translation>
 <translation id="344449859752187052">Soubory cookie třetích stran jsou blokovány</translation>
 <translation id="3448554387819310837">Když je tato možnost zapnutá, weby mohou žádat o použití kamery. Když je vypnutá, weby kameru používat nemohou.</translation>
-<translation id="3465378418721443318">{DAYS,plural, =1{Zítra začne Chrome soubory cookie opět blokovat}few{Za # dny začne Chrome soubory cookie opět blokovat}many{Za # dne začne Chrome soubory cookie opět blokovat}other{Za # dní začne Chrome soubory cookie opět blokovat}}</translation>
 <translation id="3521663503435878242">Weby pod doménou <ph name="DOMAIN" /></translation>
 <translation id="3523447078673133727">Nepovolovat webům sledovat vaše ruce</translation>
 <translation id="3536227077203206203">Tentokrát povolit</translation>
@@ -174,6 +170,7 @@
 <translation id="3669841141196828854">{COUNT,plural, =1{<ph name="RWS_MEMBERS_COUNT" /> web ve skupině webů vlastníka <ph name="RWS_OWNER" />, které vidí vaši aktivitu ve skupině}few{<ph name="RWS_MEMBERS_COUNT" /> weby ve skupině webů vlastníka <ph name="RWS_OWNER" />, které vidí vaši aktivitu ve skupině}many{<ph name="RWS_MEMBERS_COUNT" /> webu ve skupině webů vlastníka <ph name="RWS_OWNER" />, které vidí vaši aktivitu ve skupině}other{<ph name="RWS_MEMBERS_COUNT" /> webů ve skupině webů vlastníka <ph name="RWS_OWNER" />, které vidí vaši aktivitu ve skupině}}</translation>
 <translation id="3697164069658504920">Když je tato možnost zapnutá, weby mohou žádat o použití zařízení USB. Když je vypnutá, weby zařízení USB používat nemohou.</translation>
 <translation id="3707034683772193706">Navštívené weby mohou do Chromu uložit malé množství informací (zejména k ověření, že nejste robot)</translation>
+<translation id="3709818294139939629">Odebrán přístup webu k souboru</translation>
 <translation id="3721953990244350188">Zavřít a zobrazit další dostupnou akci</translation>
 <translation id="3744111561329211289">Synchronizace na pozadí</translation>
 <translation id="3763247130972274048">Dvojitým klepnutím na šipku vlevo nebo vpravo přeskočíte video o 10 s</translation>
@@ -436,6 +433,7 @@
 <translation id="7425915948813553151">Tmavý motiv pro weby</translation>
 <translation id="7521387064766892559">JavaScript</translation>
 <translation id="7547989957535180761">Když je tato možnost zapnutá, weby mohou zobrazovat výzvy k přihlášení. Když je tato možnost vypnutá, weby výzvy k přihlášení zobrazovat nemohou.</translation>
+<translation id="7553211568594248088">Ukončit vyhledávání v centru</translation>
 <translation id="7554752735887601236">Webové stránky používají váš mikrofon</translation>
 <translation id="7561196759112975576">Vždy</translation>
 <translation id="757524316907819857">Bránit webům v přehrávání chráněného obsahu</translation>
@@ -444,7 +442,6 @@
 <translation id="7649070708921625228">Nápověda</translation>
 <translation id="7658239707568436148">Zrušit</translation>
 <translation id="7667547420449112975">Čaroděj ze země Oz</translation>
-<translation id="7684642910516280563">Nepovolení, aby web používal soubory cookie třetích stran</translation>
 <translation id="7688240020069572972">Skrýt kartu s tipy pro Chrome</translation>
 <translation id="7719367874908701697">Přiblížení/oddálení stránky</translation>
 <translation id="7759147511335618829">Ovládání a přeprogramování zařízení MIDI</translation>
@@ -478,6 +475,7 @@
 <translation id="813082847718468539">Zobrazit informace o stránkách</translation>
 <translation id="8131740175452115882">Potvrdit</translation>
 <translation id="8168435359814927499">Obsah</translation>
+<translation id="818487310457576362">Přetažením ze strany obrazovky ukončíte celou obrazovku.</translation>
 <translation id="8186479265534291036">Web nefunguje? Soubory cookie třetích stran jsou blokovány</translation>
 <translation id="8197286292360124385">Oprávnění <ph name="PERMISSION_1" /> je povoleno</translation>
 <translation id="8200772114523450471">Pokračovat</translation>

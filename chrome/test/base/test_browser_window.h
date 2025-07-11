@@ -95,7 +95,6 @@ class TestBrowserWindow : public BrowserWindow {
   void UpdateDevTools() override {}
   void UpdateLoadingAnimations(bool is_visible) override {}
   void SetStarredState(bool is_starred) override {}
-  void SetTranslateIconToggled(bool is_lit) override {}
   void OnActiveTabChanged(content::WebContents* old_contents,
                           content::WebContents* new_contents,
                           int index,
@@ -250,7 +249,7 @@ class TestBrowserWindow : public BrowserWindow {
 
   void CreateTabSearchBubble(
       tab_search::mojom::TabSearchSection section =
-          tab_search::mojom::TabSearchSection::kNone,
+          tab_search::mojom::TabSearchSection::kSearch,
       tab_search::mojom::TabOrganizationFeature feature =
           tab_search::mojom::TabOrganizationFeature::kNone) override {}
   void CloseTabSearchBubble() override {}
@@ -260,7 +259,7 @@ class TestBrowserWindow : public BrowserWindow {
       const base::Feature& iph_feature) const override;
   void MaybeShowFeaturePromo(
       user_education::FeaturePromoParams params) override;
-  bool MaybeShowStartupFeaturePromo(
+  void MaybeShowStartupFeaturePromo(
       user_education::FeaturePromoParams params) override;
   bool AbortFeaturePromo(const base::Feature& iph_feature) override;
   user_education::FeaturePromoHandle CloseFeaturePromoAndContinue(

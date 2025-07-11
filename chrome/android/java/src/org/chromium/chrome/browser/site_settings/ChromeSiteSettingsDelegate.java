@@ -23,6 +23,8 @@ import org.chromium.base.CommandLine;
 import org.chromium.base.IntentUtils;
 import org.chromium.base.PackageManagerUtils;
 import org.chromium.base.supplier.OneshotSupplier;
+import org.chromium.base.task.PostTask;
+import org.chromium.base.task.TaskTraits;
 import org.chromium.build.BuildConfig;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.LaunchIntentDispatcher;
@@ -43,6 +45,7 @@ import org.chromium.chrome.browser.settings.ChromeManagedPreferenceDelegate;
 import org.chromium.chrome.browser.settings.FaviconLoader;
 import org.chromium.chrome.browser.settings.SettingsNavigationFactory;
 import org.chromium.chrome.browser.tab.RequestDesktopUtils;
+import org.chromium.chrome.browser.ui.messages.snackbar.Snackbar;
 import org.chromium.chrome.browser.ui.messages.snackbar.SnackbarManager;
 import org.chromium.chrome.browser.webapps.WebappRegistry;
 import org.chromium.components.browser_ui.settings.ManagedPreferenceDelegate;
@@ -76,6 +79,7 @@ public class ChromeSiteSettingsDelegate implements SiteSettingsDelegate {
     private final PrivacySandboxBridge mPrivacySandboxBridge;
     private BrowsingDataModel mBrowsingDataModel;
     private ManagedPreferenceDelegate mManagedPreferenceDelegate;
+    private SnackbarManager mSnackbarManager;
     private PrivacySandboxSnackbarController mPrivacySandboxController;
     private LargeIconBridge mLargeIconBridge;
 
@@ -103,6 +107,7 @@ public class ChromeSiteSettingsDelegate implements SiteSettingsDelegate {
             OneshotSupplier<SnackbarManager> snackbarManagerSupplier) {
         snackbarManagerSupplier.onAvailable(
                 (snackbarManager) -> {
+                    mSnackbarManager = snackbarManager;
                     mPrivacySandboxController =
                             new PrivacySandboxSnackbarController(mContext, snackbarManager);
                 });
@@ -199,6 +204,11 @@ public class ChromeSiteSettingsDelegate implements SiteSettingsDelegate {
     }
 
     @Override
+    public boolean isAlwaysBlock3pcsIncognitoEnabled() {
+        return ChromeFeatureList.isEnabled(ChromeFeatureList.ALWAYS_BLOCK_3PCS_INCOGNITO);
+    }
+
+    @Override
     public String getChannelIdForOrigin(String origin) {
         return SiteChannelsManager.getInstance().getChannelIdForOrigin(origin);
     }
@@ -212,7 +222,7 @@ public class ChromeSiteSettingsDelegate implements SiteSettingsDelegate {
     public @Nullable String getDelegateAppNameForOrigin(
             Origin origin, @ContentSettingsType.EnumType int type) {
         if (type == ContentSettingsType.NOTIFICATIONS) {
-            return InstalledWebappPermissionManager.get().getDelegateAppName(origin);
+            return InstalledWebappPermissionManager.getDelegateAppName(origin);
         }
 
         return null;
@@ -222,7 +232,7 @@ public class ChromeSiteSettingsDelegate implements SiteSettingsDelegate {
     public @Nullable String getDelegatePackageNameForOrigin(
             Origin origin, @ContentSettingsType.EnumType int type) {
         if (type == ContentSettingsType.NOTIFICATIONS) {
-            return InstalledWebappPermissionManager.get().getDelegatePackageName(origin);
+            return InstalledWebappPermissionManager.getDelegatePackageName(origin);
         }
 
         return null;
@@ -278,7 +288,7 @@ public class ChromeSiteSettingsDelegate implements SiteSettingsDelegate {
 
     @Override
     public Set<String> getAllDelegatedNotificationOrigins() {
-        return InstalledWebappPermissionManager.get().getAllDelegatedOrigins();
+        return InstalledWebappPermissionManager.getAllDelegatedOrigins();
     }
 
     @Override
@@ -294,6 +304,16 @@ public class ChromeSiteSettingsDelegate implements SiteSettingsDelegate {
     @Override
     public void revokeFileSystemAccessGrant(String origin, String file) {
         ChromeSiteSettingsDelegateJni.get().revokeFileSystemAccessGrant(mProfile, origin, file);
+        if (mSnackbarManager != null) {
+            Snackbar snackbar =
+                    Snackbar.make(
+                            mContext.getString(
+                                    R.string.website_settings_file_system_revoke_grant_text),
+                            /* controller= */ null,
+                            Snackbar.TYPE_NOTIFICATION,
+                            Snackbar.UMA_REVOKE_FILE_EDIT_GRANT);
+            mSnackbarManager.showSnackbar(snackbar);
+        }
     }
 
     @Override
@@ -421,7 +441,13 @@ public class ChromeSiteSettingsDelegate implements SiteSettingsDelegate {
                 mProfile,
                 model -> {
                     if (mBrowsingDataModel != null) {
-                        mBrowsingDataModel.destroy();
+                        // Posting the task to destroy the model to avoid ANR hangs/crashes caused
+                        // by sometimes slow model building and JNI deadlock.
+                        // The old model reference needs to be captured before posting the destroy
+                        // task to avoid crashing caused by destroying the new model instead of the
+                        // old model.
+                        BrowsingDataModel oldModel = mBrowsingDataModel;
+                        PostTask.postTask(TaskTraits.UI_DEFAULT, oldModel::destroy);
                     }
                     mBrowsingDataModel = model;
                     callback.onResult(mBrowsingDataModel);

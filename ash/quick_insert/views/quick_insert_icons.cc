@@ -26,7 +26,8 @@ const gfx::VectorIcon& GetVectorIconForQuickInsertCategory(
     case QuickInsertCategory::kEditorRewrite:
       // TODO: b/322926823 - Use correct icons.
       return kPencilIcon;
-    case QuickInsertCategory::kLobster:
+    case QuickInsertCategory::kLobsterWithNoSelectedText:
+    case QuickInsertCategory::kLobsterWithSelectedText:
 #if BUILDFLAG(GOOGLE_CHROME_BRANDING)
       return kLobsterIcon;
 #else
@@ -34,19 +35,19 @@ const gfx::VectorIcon& GetVectorIconForQuickInsertCategory(
 #endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
     case QuickInsertCategory::kEmojisGifs:
     case QuickInsertCategory::kEmojis:
-      return kPickerEmojiIcon;
+      return kQuickInsertEmojiIcon;
     case QuickInsertCategory::kLinks:
-      return kPickerBrowsingHistoryIcon;
+      return kQuickInsertBrowsingHistoryIcon;
     case QuickInsertCategory::kClipboard:
-      return kPickerClipboardIcon;
+      return kQuickInsertClipboardIcon;
     case QuickInsertCategory::kDriveFiles:
-      return kPickerDriveFilesIcon;
+      return kQuickInsertDriveFilesIcon;
     case QuickInsertCategory::kLocalFiles:
       return kFilesAppIcon;
     case QuickInsertCategory::kDatesTimes:
-      return kPickerCalendarIcon;
+      return kQuickInsertCalendarIcon;
     case QuickInsertCategory::kUnitsMaths:
-      return kPickerUnitsMathsIcon;
+      return kQuickInsertUnitsMathsIcon;
   }
 }
 

@@ -25,6 +25,8 @@ import static org.robolectric.Shadows.shadowOf;
 import android.app.Activity;
 import android.app.SearchManager;
 import android.content.Intent;
+import android.view.View;
+import android.view.View.OnClickListener;
 
 import org.junit.After;
 import org.junit.Before;
@@ -55,7 +57,6 @@ import org.chromium.chrome.R;
 import org.chromium.chrome.browser.content.WebContentsFactory;
 import org.chromium.chrome.browser.firstrun.FirstRunStatus;
 import org.chromium.chrome.browser.flags.ActivityType;
-import org.chromium.chrome.browser.flags.ChromeFeatureList;
 import org.chromium.chrome.browser.metrics.UmaActivityObserver;
 import org.chromium.chrome.browser.omnibox.LocationBarCoordinator;
 import org.chromium.chrome.browser.omnibox.UrlBarCoordinator;
@@ -78,6 +79,7 @@ import org.chromium.chrome.browser.ui.searchactivityutils.SearchActivityExtras.R
 import org.chromium.chrome.browser.ui.searchactivityutils.SearchActivityExtras.SearchType;
 import org.chromium.components.embedder_support.util.UrlConstants;
 import org.chromium.components.metrics.OmniboxEventProtos.OmniboxEventProto.PageClassification;
+import org.chromium.components.omnibox.OmniboxFeatureList;
 import org.chromium.components.search_engines.TemplateUrlService;
 import org.chromium.content_public.browser.WebContents;
 import org.chromium.ui.base.PageTransition;
@@ -106,6 +108,7 @@ public class SearchActivityUnitTest {
     private static final String HISTOGRAM_SUFFIX_SHORTCUTS_WIDGET = ".ShortcutsWidget";
     private static final String HISTOGRAM_SUFFIX_CUSTOM_TAB = ".CustomTab";
     private static final String HISTOGRAM_SUFFIX_LAUNCHER = ".Launcher";
+    private static final String HISTOGRAM_SUFFIX_HUB = ".Hub";
 
     // SearchActivityUtils call intercepting mock.
     private interface TestSearchActivityUtils {
@@ -440,6 +443,54 @@ public class SearchActivityUnitTest {
     }
 
     @Test
+    public void exitSearchViaCustomBackArrow_HubSearch() {
+        LocationBarCoordinator locationBarCoordinator = mock(LocationBarCoordinator.class);
+        StatusCoordinator statusCoordinator = mock(StatusCoordinator.class);
+        View view = mock(View.class);
+        doReturn(statusCoordinator).when(locationBarCoordinator).getStatusCoordinator();
+        mActivity.setLocationBarCoordinatorForTesting(locationBarCoordinator);
+
+        ArgumentCaptor<OnClickListener> captor = ArgumentCaptor.forClass(OnClickListener.class);
+        var histograms =
+                HistogramWatcher.newBuilder()
+                        .expectIntRecord(
+                                SearchActivity.HISTOGRAM_SESSION_TERMINATION_REASON
+                                        + HISTOGRAM_SUFFIX_HUB,
+                                TerminationReason.CUSTOM_BACK_ARROW)
+                        .build();
+
+        mActivity.handleNewIntent(buildTestServiceIntent(IntentOrigin.HUB), false);
+        verify(statusCoordinator).setOnStatusIconNavigateBackButtonPress(captor.capture());
+        OnClickListener listener = captor.getValue();
+        listener.onClick(view);
+        histograms.assertExpected();
+    }
+
+    @Test
+    public void cancelHubSearch_onBackKeyPressed() {
+        LocationBarCoordinator locationBarCoordinator = mock(LocationBarCoordinator.class);
+        StatusCoordinator statusCoordinator = mock(StatusCoordinator.class);
+        doReturn(statusCoordinator).when(locationBarCoordinator).getStatusCoordinator();
+        mActivity.setLocationBarCoordinatorForTesting(locationBarCoordinator);
+
+        mActivity.handleNewIntent(buildTestServiceIntent(IntentOrigin.HUB), false);
+        var histograms =
+                HistogramWatcher.newBuilder()
+                        .expectIntRecord(
+                                SearchActivity.HISTOGRAM_SESSION_TERMINATION_REASON
+                                        + HISTOGRAM_SUFFIX_HUB,
+                                TerminationReason.BACK_KEY_PRESSED)
+                        .build();
+
+        assertFalse(mActivity.isFinishing());
+        assertFalse(mActivity.isActivityFinishingOrDestroyed());
+        mActivity.handleBackKeyPressed();
+        assertTrue(mActivity.isActivityFinishingOrDestroyed());
+        assertTrue(mActivity.isFinishing());
+        histograms.assertExpected();
+    }
+
+    @Test
     public void handleNewIntent_forJumpStartOmnibox() {
         // Jump-start Omnibox relies on cached data above anything else.
         // Save some data to confirm it's properly picked.
@@ -589,7 +640,8 @@ public class SearchActivityUnitTest {
                 Set.of(
                         IntentOrigin.SEARCH_WIDGET,
                         IntentOrigin.QUICK_ACTION_SEARCH_WIDGET,
-                        IntentOrigin.CUSTOM_TAB);
+                        IntentOrigin.CUSTOM_TAB,
+                        IntentOrigin.HUB);
         int[] searchTypes = new int[] {SearchType.TEXT, SearchType.VOICE, SearchType.LENS};
 
         for (int origin = 0; origin < 10; origin++) {
@@ -802,7 +854,7 @@ public class SearchActivityUnitTest {
     }
 
     @Test
-    @EnableFeatures(ChromeFeatureList.ANDROID_HUB_SEARCH)
+    @EnableFeatures(OmniboxFeatureList.ANDROID_HUB_SEARCH)
     public void finishNativeInitialization_setHubSearchBoxUrlBarElements() {
         LocationBarCoordinator locationBarCoordinator = mock(LocationBarCoordinator.class);
         UrlBarCoordinator urlBarCoordinator = mock(UrlBarCoordinator.class);

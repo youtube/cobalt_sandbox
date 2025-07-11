@@ -29,6 +29,7 @@ from devil.android.tools import system_app
 from devil.android.tools import webview_app
 from devil.utils import reraiser_thread
 from incremental_install import installer
+from lib.proto import exception_recorder
 from pylib import constants
 from pylib.base import base_test_result
 from pylib.base import output_manager
@@ -415,11 +416,16 @@ class LocalDeviceInstrumentationTestRun(
                 instant_app=instant_app,
                 force_queryable=self._test_instance.IsApkForceQueryable(apk))
           except device_errors.CommandFailedError as e:
-            raise test_exception.InstallationFailedError(e) from e
+            exception_recorder.register(
+                test_exception.InstallationFailedError(e))
+            raise
           except device_errors.CommandTimeoutError as e:
-            raise test_exception.InstallationTimeoutError(e) from e
+            exception_recorder.register(
+                test_exception.InstallationTimeoutError(e))
+            raise
           except base_error.BaseError as e:
-            raise test_exception.InstallationError(e) from e
+            exception_recorder.register(test_exception.InstallationError(e))
+            raise
 
         return install_helper_internal
 
@@ -440,11 +446,16 @@ class LocalDeviceInstrumentationTestRun(
           try:
             installer.Install(d, json_path, apk=apk, permissions=permissions)
           except device_errors.CommandFailedError as e:
-            raise test_exception.InstallationFailedError(e) from e
+            exception_recorder.register(
+                test_exception.InstallationFailedError(e))
+            raise
           except device_errors.CommandTimeoutError as e:
-            raise test_exception.InstallationTimeoutError(e) from e
+            exception_recorder.register(
+                test_exception.InstallationTimeoutError(e))
+            raise
           except base_error.BaseError as e:
-            raise test_exception.InstallationError(e) from e
+            exception_recorder.register(test_exception.InstallationError(e))
+            raise
 
         return incremental_install_helper_internal
 
@@ -1130,11 +1141,17 @@ class LocalDeviceInstrumentationTestRun(
           output = device.StartInstrumentation(
               target, raw=True, extras=extras, timeout=timeout, retries=0)
         except device_errors.CommandFailedError as e:
-          raise test_exception.StartInstrumentationFailedError(e) from e
+          exception_recorder.register(
+              test_exception.StartInstrumentationFailedError(e))
+          raise
         except device_errors.CommandTimeoutError as e:
-          raise test_exception.StartInstrumentationTimeoutError(e) from e
+          exception_recorder.register(
+              test_exception.StartInstrumentationTimeoutError(e))
+          raise
         except base_error.BaseError as e:
-          raise test_exception.StartInstrumentationError(e) from e
+          exception_recorder.register(
+              test_exception.StartInstrumentationError(e))
+          raise
 
       duration_ms = time_ms() - start_ms
 

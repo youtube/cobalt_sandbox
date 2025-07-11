@@ -178,7 +178,7 @@ Hier zijn wat voorbeelden van wat je kunt proberen om aan de slag te gaan.</tran
 <translation id="1550523713251050646">Klik voor meer opties</translation>
 <translation id="1555130319947370107">Blauw</translation>
 <translation id="1557622599341396706">Bureaunaam tonen</translation>
-<translation id="1567138500090284106">Knop voor muisknoppen</translation>
+<translation id="1567138500090284106">Knop voor muistoetsen</translation>
 <translation id="1569384531973824928">Hiermee geef je toegang aan alle apps en websites met camera- en microfoonrechten. Je moet misschien de webpagina vernieuwen of de app opnieuw starten.</translation>
 <translation id="1571697193564730395">Niet storen aan-/uitzetten. <ph name="STATE_TEXT" /></translation>
 <translation id="1576623706766186887">Uitzoomen als vergrootglas aanstaat</translation>
@@ -630,7 +630,6 @@ Anders wordt de ingebouwde touchpad over <ph name="TIMEOUT_SECONDS" /> weer aang
 <translation id="3208321278970793882">App</translation>
 <translation id="3213571860604332401">Link opslaan als bookmark</translation>
 <translation id="3217205077783620295">Volume staat aan. Als je het uitzet, hoor je geen audio.</translation>
-<translation id="3218561536255328229">Druk 5 keer op Esc om de touchpad aan te zetten</translation>
 <translation id="3226991577105957773">+<ph name="COUNT" /> andere meldingen</translation>
 <translation id="3227137524299004712">Microfoon</translation>
 <translation id="3233611303007751344">Batterijbesparing staat uit</translation>
@@ -843,7 +842,7 @@ Sluit je apparaat aan op een stopcontact.</translation>
 <translation id="3927049937406914450">Weer is niet beschikbaar omdat locatietoegang uitstaat. Je kunt dit wijzigen in de instellingen.</translation>
 <translation id="3932043219784172185">Geen apparaat aangesloten</translation>
 <translation id="3934456833412894880">Aangepast opladen staat aan. Je batterij blijft op 80% om de batterijduur te verlengen en wordt volledig opgeladen wanneer je dat nodig hebt.</translation>
-<translation id="3943857333388298514">Plak</translation>
+<translation id="3943857333388298514">Plakken</translation>
 <translation id="394485226368336402">Audio-instellingen</translation>
 <translation id="3945319193631853098">Tik om het instellen af te ronden</translation>
 <translation id="3945867833895287237">Verbinding maken met hotspot...</translation>
@@ -868,7 +867,7 @@ Sluit je apparaat aan op een stopcontact.</translation>
 <translation id="4002066346123236978">Titel</translation>
 <translation id="40062176907008878">Handschrift</translation>
 <translation id="4011112806063830608">Niet storen staat aan.</translation>
-<translation id="4015144849380506405">Muisknoppen onderbreken/hervatten als dit actief is</translation>
+<translation id="4015144849380506405">Muistoetsen onderbreken/hervatten als dit actief is</translation>
 <translation id="4017989525502048489">Laserpen</translation>
 <translation id="401993194061514265">Stift niet beschikbaar. Open Screencast opnieuw.</translation>
 <translation id="4021716437419160885">Omlaag scrollen</translation>
@@ -1305,6 +1304,7 @@ Geen apparaten verbonden.</translation>
 <translation id="5393156353051693207">Tik ergens op het scherm en houd vast om je apps opnieuw te ordenen</translation>
 <translation id="5395308026110844773"><ph name="DRAGGED_APP_NAME" /> bovenop <ph name="IN_PLACE_APP" />, laat los om een map te maken.</translation>
 <translation id="5397578532367286026">Het gebruik en de geschiedenis van deze gebruiker kunnen worden bekeken door de beheerder (<ph name="MANAGER_EMAIL" />) op chrome.com.</translation>
+<translation id="540338817371815859">Liggend</translation>
 <translation id="540713187982329711">Hotspot aan-/uitzetten. Hotspot staat aan: geen apparaat verbonden.</translation>
 <translation id="5409208741270395213">Taak als voltooid markeren</translation>
 <translation id="5413656666631274079">Pagina Instellingen</translation>
@@ -1338,7 +1338,7 @@ Geen apparaten verbonden.</translation>
 <translation id="5532994612895037630">Tik ergens om het hele scherm op te nemen</translation>
 <translation id="5536723544185013515">Recente apps, navigeer met de pijl-links of -rechts voor toegang tot alle recente apps</translation>
 <translation id="553675580533261935">Sessie sluiten</translation>
-<translation id="5537725057119320332">Cast</translation>
+<translation id="5537725057119320332">Casten</translation>
 <translation id="554017492391497564">Kan niet markeren als afgerond.</translation>
 <translation id="5546397813406633847">Gebruiker herstellen</translation>
 <translation id="554893713779400387">Dicteren aan/uit</translation>
@@ -1529,7 +1529,7 @@ Geen apparaten verbonden.</translation>
 <translation id="6121838516699723042">Downloaden van <ph name="FILENAME" /> bevestigen</translation>
 <translation id="612734058257491180">De Google Assistent is niet beschikbaar in een gastsessie.</translation>
 <translation id="6127395413317891856">Je bent offline. Check de verbinding en probeer het opnieuw.</translation>
-<translation id="6129953537138746214">Spatie</translation>
+<translation id="6129953537138746214">Spatiebalk</translation>
 <translation id="6137566720514957455">Dialoogvenster 'Account verwijderen' openen voor <ph name="USER_EMAIL_ADDRESS" /></translation>
 <translation id="6141205840878048728">Waarop wil je je focussen?</translation>
 <translation id="6141988275892716286">Download bevestigen</translation>
@@ -1667,7 +1667,7 @@ Nieuwe installatie</translation>
 <translation id="6593850935013518327"><ph name="PRIMARY_TEXT" />, <ph name="SECONDARY_TEXT" /></translation>
 <translation id="6597278316891651699">Camera uitgelijnd op de linkerbenedenhoek. Conflict met systeemoppervlak.</translation>
 <translation id="6605415194043280389">Focus staat aan</translation>
-<translation id="660846213831377756">Muisknoppen</translation>
+<translation id="660846213831377756">Muistoetsen</translation>
 <translation id="661203523074512333"><ph name="SECURITY_STATUS" />, signaalsterkte <ph name="SIGNAL_STRENGTH" />, beheerd door je beheerder</translation>
 <translation id="6612802754306526077">Schermopnamemodus geselecteerd</translation>
 <translation id="6612889377159412215">subtaak</translation>
@@ -1767,6 +1767,7 @@ Nieuwe installatie</translation>
 <translation id="6921427376813842559">Apparaat updaten</translation>
 <translation id="6929081673585394903">Bedieningselementen tonen</translation>
 <translation id="6931576957638141829">Opslaan in</translation>
+<translation id="6935857786205183008">Staand</translation>
 <translation id="6942518653766415536">Menu voor opname-indelingen</translation>
 <translation id="6945221475159498467">Selecteren</translation>
 <translation id="6945922087561257829">Je telefoon gebruikt een mobiel netwerk. Zorg dat je telefoon en Chromebook met hetzelfde wifi-netwerk zijn verbonden en probeer het opnieuw. <ph name="LEARN_MORE" /></translation>
@@ -1983,7 +1984,7 @@ Als je het apparaat wilt uitzetten, houd je de aan/uit-knop op het apparaat weer
 <translation id="7721132362314201794">Naam bureau</translation>
 <translation id="7723389094756330927">{NUM_NOTIFICATIONS,plural, =1{Eén melding}other{# meldingen}}</translation>
 <translation id="7723703419796509666">Developer Tools-console tonen of verbergen</translation>
-<translation id="7724603315864178912">Knip</translation>
+<translation id="7724603315864178912">Knippen</translation>
 <translation id="7725108879223146004">Toon de hotspotdetails. Hotspot wordt uitgezet.</translation>
 <translation id="7726391492136714301">Meldingen en apps van je telefoon bekijken</translation>
 <translation id="7727952505535211425">De website in de adresbalk openen in een nieuw tabblad</translation>
@@ -2301,7 +2302,7 @@ Als je het apparaat wilt uitzetten, houd je de aan/uit-knop op het apparaat weer
 <translation id="8815390544836110344">Druk op de snelkoppeling voor een screenshot, Ctrl plus Shift plus de toets voor de overzichtsmodus</translation>
 <translation id="881757059229893486">Instellingen voor invoermethoden</translation>
 <translation id="8819728065740986820">Aangepast opladen staat aan</translation>
-<translation id="8822104519413696986">Dit is een game met tikbediening</translation>
+<translation id="8822104519413696986">Dit is een game met aanraakbediening</translation>
 <translation id="8825863694328519386">Swipe vanaf de linkerkant om terug te gaan</translation>
 <translation id="8832513206237979203">Bookmarkbalk tonen of verbergen</translation>
 <translation id="8834539327799336565">Momenteel verbonden</translation>
@@ -2435,6 +2436,7 @@ Als je het apparaat wilt uitzetten, houd je de aan/uit-knop op het apparaat weer
 <translation id="98120814841227350">Naar het einde van het document gaan</translation>
 <translation id="987589956647469042">Mobiele data staan aan</translation>
 <translation id="989374776391122812">Camera- en audiobediening</translation>
+<translation id="990263227494928142">Druk 5 keer op Shift om de touchpad aan te zetten</translation>
 <translation id="990277280839877440">Venster <ph name="WINDOW_TITILE" /> gesloten.</translation>
 <translation id="993398562350683614">Rondleiding stap <ph name="STEP" /> van <ph name="TOTAL_STEPS" />. Gebruik apps waarmee je van alles kunt doen op je <ph name="PRODUCT_NAME" />. Je vindt je apps in de Launcher. Druk op Alt + Shift + L om de focus op de Launcher-knop te plaatsen.</translation>
 <translation id="994354411665877646"><ph name="NETWORK_NAME" />, <ph name="SUBTEXT" /></translation>

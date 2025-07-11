@@ -27,9 +27,10 @@ UIView* CreateNavigationItemTitleView(UIFont* font) {
   BrandedNavigationItemTitleView* titleView =
       [[BrandedNavigationItemTitleView alloc] initWithFont:font];
 
-  titleView.title = NSLocalizedString(
-      @"IDS_IOS_CREDENTIAL_PROVIDER_CREDENTIAL_LIST_BRANDED_TITLE",
-      @"Google Password Manager");
+  NSString* titleString = NSLocalizedString(
+      @"IDS_IOS_CREDENTIAL_PROVIDER_BRANDED_TITLE", @"Password Manager");
+  titleView.title = titleString;
+  titleView.accessibilityLabel = titleString;
 
   UIImage* symbol =
       [UIImage imageNamed:kMulticolorCredentialSymbol

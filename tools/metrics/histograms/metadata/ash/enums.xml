@@ -323,6 +323,13 @@ ash/webui/personalization_app/mojom/personalization_app.mojom -->
   <int value="11" label="Coral"/>
 </enum>
 
+<enum name="BocaPollingResult">
+  <int value="0" label="No Update"/>
+  <int value="1" label="Polling causes session to start"/>
+  <int value="2" label="Polling causes session to end"/>
+  <int value="3" label="Polling causes in-session update"/>
+</enum>
+
 <enum name="BooleanMuted">
   <int value="0" label="Muted"/>
   <int value="1" label="Unmuted"/>
@@ -544,6 +551,12 @@ ash/webui/personalization_app/mojom/personalization_app.mojom -->
       label="Disabled because the related app is disabled by policy"/>
   <int value="3"
       label="Disabled because the related URLs are blocked by policy"/>
+</enum>
+
+<enum name="CoralActionType">
+  <int value="0" label="Restore"/>
+  <int value="1" label="LaunchToNewDesk"/>
+  <int value="2" label="SaveAsDeskTemplate"/>
 </enum>
 
 <enum name="CriticalNotificationOutcome">
@@ -1995,19 +2008,27 @@ chromeos/ash/components/peripheral_notification/peripheral_notification_manager.
   <int value="6" label="No actions detected"/>
   <int value="7" label="New calendar event action detected"/>
   <int value="8" label="New calendar event action finished successfully"/>
-  <int value="9" label="New calendar event action failed"/>
+  <int value="9" label="New calendar event action population failed"/>
   <int value="10" label="New contact action detected"/>
   <int value="11" label="New contact action finished successfully"/>
-  <int value="12" label="New contact action failed"/>
+  <int value="12" label="New contact action population failed"/>
   <int value="13" label="New Google Sheet action detected"/>
   <int value="14" label="New Google Sheet action finished successfully"/>
-  <int value="15" label="New Google Sheet action failed"/>
+  <int value="15" label="New Google Sheet action population failed"/>
   <int value="16" label="New Google Doc action detected"/>
   <int value="17" label="New Google Doc action finished successfully"/>
-  <int value="18" label="New Google Doc action failed"/>
+  <int value="18" label="New Google Doc action population failed"/>
   <int value="19" label="Copy to clipboard action detected"/>
   <int value="20" label="Copy to clipboard action finished successfully"/>
-  <int value="21" label="Copy to clipboard action failed"/>
+  <int value="21" label="Copy to clipboard action population failed"/>
+  <int value="22"
+      label="New calendar event populated action failed on execution"/>
+  <int value="23" label="New contact populated action failed on execution"/>
+  <int value="24"
+      label="New Google Sheet populated action failed on execution"/>
+  <int value="25" label="New Google Doc populated action failed on execution"/>
+  <int value="26"
+      label="Copy to clipboard populated action failed on execution"/>
 </enum>
 
 <!-- LINT.ThenChange(//ash/scanner/scanner_metrics.h:ScannerFeatureUserState) -->
@@ -2095,6 +2116,15 @@ chromeos/ash/components/peripheral_notification/peripheral_notification_manager.
   <int value="999" label="Freeform"/>
   <int value="1000" label="VcBackgroundFreeform"/>
 </enum>
+
+<!-- LINT.IfChange(SearchResultsPanelEntryType) -->
+
+<enum name="SearchResultsPanelEntryType">
+  <int value="0" label="Sunfish session region selection"/>
+  <int value="1" label="Default session search action button"/>
+</enum>
+
+<!-- LINT.ThenChange(//ash/capture_mode/capture_mode_metrics.h:SearchResultsPanelEntryType) -->
 
 <!-- LINT.IfChange(SessionLockEvent) -->
 
@@ -2238,6 +2268,7 @@ chromeos/ash/components/peripheral_notification/peripheral_notification_manager.
   <int value="18" label="Snap to replace"/>
   <int value="19" label="Visible on all desks"/>
   <int value="20" label="Select a window in Snap Group in partial Overview"/>
+  <int value="21" label="Move a window in Snap Group to new coral desk"/>
 </enum>
 
 <enum name="SpeechRecognitionEndState">
@@ -2346,6 +2377,7 @@ chromeos/ash/components/peripheral_notification/peripheral_notification_manager.
   <int value="54" label="OnTask session end (deprecated)"/>
   <int value="55" label="OnTask URL blocked"/>
   <int value="56" label="Copy Image To Clipboard Action"/>
+  <int value="57" label="Capture Mode Text Copied"/>
 </enum>
 
 <enum name="TogglePickerAction">

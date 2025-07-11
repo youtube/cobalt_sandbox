@@ -545,6 +545,7 @@
 <translation id="1947454675006758438">Спајање у горњем десном углу</translation>
 <translation id="1953729392594614704">Блокирањем теме <ph name="TOPIC" /> блокираћете и све сродне теме, чак и ако је тема активна</translation>
 <translation id="1954847915560574887">A3x3</translation>
+<translation id="1955773397805078763">Додајте начин плаћања</translation>
 <translation id="1956486093533522234">Пронађите, заштитите или избришите уређај</translation>
 <translation id="1957274554973357626">Комедија уживо</translation>
 <translation id="1958218078413065209">Ваш највиши резултат је <ph name="SCORE" />.</translation>
@@ -921,6 +922,7 @@
 <translation id="2622754869869445457">Најновија картица</translation>
 <translation id="2625385379895617796">Сат вам жури</translation>
 <translation id="262745152991669301">Може да тражи да се повезује са USB уређајима</translation>
+<translation id="2627847595568876492">Текст се издваја из PDF-а…</translation>
 <translation id="2628224721443278970">Пријави ме на Microsoft OneDrive</translation>
 <translation id="2634124572758952069">Нисмо успели да пронађемо IP адресу сервера хоста <ph name="HOST_NAME" />.</translation>
 <translation id="2639739919103226564">Статус:</translation>
@@ -1042,7 +1044,6 @@
 <translation id="290376772003165898">Ова страница није на језику <ph name="LANGUAGE" />?</translation>
 <translation id="2904165004205947971">Управљајте подацима</translation>
 <translation id="2905107382358353958">Обавештење о новом подешавању плаћања</translation>
-<translation id="2909120679423833511">Ваша организација, <ph name="MANAGER" />, захтева да се пријавите помоћу одређеног профила</translation>
 <translation id="2909946352844186028">Откривена је промена на мрежи.</translation>
 <translation id="2911255567212929079">Машинско учење и вештачка интелигенција</translation>
 <translation id="2911973620368911614">ИД корисника за рачуноводствени задатак</translation>
@@ -1411,6 +1412,7 @@
 <translation id="353816159217417898">Екран (страница)</translation>
 <translation id="3542628208405253498">Слика картице</translation>
 <translation id="3542768452570884558">Отвори линк у новом прозору</translation>
+<translation id="3543935938072367282">Плаћајте брже помоћу аутоматског попуњавања</translation>
 <translation id="3547442767634383572">Преглед пословног профила</translation>
 <translation id="3547746132308051926">20×24 in</translation>
 <translation id="3550325450190222557">Пошаљите повратне информације за аутоматско попуњавање помоћу вештачке интелигенције.</translation>
@@ -1579,6 +1581,7 @@
 <translation id="3801297763951514916">Често посећујете</translation>
 <translation id="380329542618494757">Име</translation>
 <translation id="3803801106042434208">Ови претраживачи су популарни у вашем региону</translation>
+<translation id="380666903981445943">Сачувајте начин плаћања на Google налогу да бисте га аутоматски попуњавали за куповине у Chrome-у</translation>
 <translation id="3807366285948165054">Померање слике по X оси</translation>
 <translation id="3807709094043295184">Класични рок и евергрин</translation>
 <translation id="3807873520724684969">Блокиран је штетан садржај.</translation>
@@ -1735,6 +1738,7 @@
 <translation id="4102567721634170493">Локалне вести</translation>
 <translation id="4103249731201008433">Серијски број уређаја је неважећи</translation>
 <translation id="4103592298805904008">Картон (један слој)</translation>
+<translation id="4104702906064390950">IBAN информације се чувају</translation>
 <translation id="4106887816571530227">Уграђен садржај није дозвољен</translation>
 <translation id="4110652170750985508">Прегледајте уплату</translation>
 <translation id="4111546256784973544">Пејнтбол</translation>
@@ -3051,11 +3055,11 @@
 <translation id="6499038740797743453">Желите ли да ресетујете лозинку?</translation>
 <translation id="6502510275417601303">Обавештење о новом подешавању плаћања је затворено</translation>
 <translation id="6502991525169604759">Без ваших промена</translation>
+<translation id="6505072878288254563">Преводи се</translation>
 <translation id="6506959208958864820">Коверта</translation>
 <translation id="6507117483253822672">Пишите са више самопоуздања било где на вебу</translation>
 <translation id="6508722015517270189">Поново покрените Chrome</translation>
 <translation id="6513005815064132016">Може да тражи да прати положај камере</translation>
-<translation id="6514932395202175590">Да бисте наставили, пријавите се на <ph name="EMAIL" />, па подесите нов профил</translation>
 <translation id="6517596291481585650">Упозорење: Ове смернице нису обједињене као листа како је наведено у смерницама јер нису листа.</translation>
 <translation id="6518133107902771759">Верификуј</translation>
 <translation id="6519885440226079262">Може да тражи да прати ваше руке</translation>
@@ -3136,7 +3140,7 @@
 <translation id="6671697161687535275">Желите ли да уклоните предлог из Chromium-а?</translation>
 <translation id="6677351035258626477">Брза храна</translation>
 <translation id="6679277702745908544">{FINANCIAL_ACCOUNT,plural, =1{Када купујете у Chrome-у, погледајте <ph name="FINANCIAL_ACCOUNT_TYPES" /> као опцију}one{Када купујете у Chrome-у, погледајте <ph name="FINANCIAL_ACCOUNT_TYPES" /> као опције}few{Када купујете у Chrome-у, погледајте <ph name="FINANCIAL_ACCOUNT_TYPES" /> као опције}other{Када купујете у Chrome-у, погледајте <ph name="FINANCIAL_ACCOUNT_TYPES" /> као опције}}</translation>
-<translation id="6679354743514146922">Chrome прегледач покушава да унесе лозинку на <ph name="APP_NAME" />.</translation>
+<translation id="6679354743514146922">Chrome прегледач покушава да унесе лозинку у <ph name="APP_NAME" />.</translation>
 <translation id="6681790815630918386">CVC је сачуван</translation>
 <translation id="6683022854667115063">Слушалице</translation>
 <translation id="6687230248707087982">Коверта (обична)</translation>
@@ -3229,6 +3233,7 @@
 <translation id="6831043979455480757">Преведи</translation>
 <translation id="683108308100148227">Сакриј ставку</translation>
 <translation id="6832753933931306326">Образац је попуњен</translation>
+<translation id="6837361937093656245">Пријављивање је обавезно</translation>
 <translation id="6841864657731852591">Цилиндар за гравирање</translation>
 <translation id="6842196666980060516">184×260 mm</translation>
 <translation id="6844998850832008753">Праћење руку је дозвољено овај пут</translation>
@@ -3621,6 +3626,7 @@
 <translation id="7525804896095537619">Поље за назив не може да буде празно</translation>
 <translation id="7526934274050461096">Веза са овим сајтом није приватна</translation>
 <translation id="7529884293139707752">Школовање код куће</translation>
+<translation id="7531464389616946220">Скенирај картицу</translation>
 <translation id="7534987659046836932">Коверта C7</translation>
 <translation id="7535087603100972091">Вредност</translation>
 <translation id="753556296624075801">Омогућава Google</translation>
@@ -3984,7 +3990,6 @@
 <translation id="8194412401381329820">Не можете да користите ову страницу са налога којим се управља на овом уређају којим се не управља. Сви налози којима се управља ће бити закључани ако користите ову страницу, осим налога којима управља исти ентитет као овај уређај (повезани налози).</translation>
 <translation id="8194797478851900357">&amp;Опозови премештање</translation>
 <translation id="8194956568907463262">Пуцачке игре</translation>
-<translation id="819931074683918462">Организација захтева да се пријавите помоћу одређеног профила.</translation>
 <translation id="8199437620497683918">Оптички диск (сјајан)</translation>
 <translation id="8199730148066603000">Преглед URL-а који није HTTPS није дозвољен.</translation>
 <translation id="8200772114523450471">Настави</translation>

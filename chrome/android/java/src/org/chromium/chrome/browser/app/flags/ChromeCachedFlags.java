@@ -15,7 +15,7 @@ import org.chromium.base.ApplicationStatus;
 import org.chromium.base.library_loader.LibraryLoader;
 import org.chromium.build.BuildConfig;
 import org.chromium.chrome.browser.JankTrackerExperiment;
-import org.chromium.chrome.browser.auxiliary_search.AuxiliarySearchProvider;
+import org.chromium.chrome.browser.auxiliary_search.AuxiliarySearchUtils;
 import org.chromium.chrome.browser.browserservices.ui.controller.AuthTabVerifier;
 import org.chromium.chrome.browser.customtabs.CustomTabIntentDataProvider;
 import org.chromium.chrome.browser.customtabs.features.minimizedcustomtab.MinimizedFeatureUtils;
@@ -42,6 +42,7 @@ import org.chromium.chrome.browser.tabmodel.TabGroupFeatureUtils;
 import org.chromium.chrome.browser.tabpersistence.TabStateFileManager;
 import org.chromium.chrome.browser.tasks.ReturnToChromeUtil;
 import org.chromium.chrome.browser.tasks.tab_management.TabManagementFieldTrial;
+import org.chromium.chrome.browser.toolbar.top.ToolbarPhone;
 import org.chromium.chrome.browser.ui.edge_to_edge.EdgeToEdgeUtils;
 import org.chromium.chrome.browser.ui.google_bottom_bar.BottomBarConfigCreator;
 import org.chromium.chrome.browser.webapps.WebappLauncherActivity;
@@ -78,7 +79,8 @@ public class ChromeCachedFlags {
     /**
      * Caches flags that are needed by Activities that launch before the native library is loaded
      * and stores them in SharedPreferences. Because this function is called during launch after the
-     * library has loaded, they won't affect the next launch until Chrome is restarted.
+     * library has loaded, any flags that have already been accessed won't reflect the most recent
+     * server configuration state until the next launch after Chrome is restarted.
      */
     public void cacheNativeFlags() {
         if (mIsFinishedCachingNativeFlags) return;
@@ -93,9 +95,9 @@ public class ChromeCachedFlags {
         List<CachedFieldTrialParameter<?>> fieldTrialParamsToCache =
                 List.of(
                         AuthTabVerifier.VERIFICATION_TIMEOUT_MS,
-                        AuxiliarySearchProvider.USE_LARGE_FAVICON,
-                        AuxiliarySearchProvider.SCHEDULE_DELAY_TIME_MS,
-                        AuxiliarySearchProvider.ZERO_STATE_FAVICON_NUMBER,
+                        AuxiliarySearchUtils.USE_LARGE_FAVICON,
+                        AuxiliarySearchUtils.SCHEDULE_DELAY_TIME_MS,
+                        AuxiliarySearchUtils.ZERO_STATE_FAVICON_NUMBER,
                         ChimeFeatures.ALWAYS_REGISTER,
                         TabbedSystemUiCoordinator.NAV_BAR_COLOR_ANIMATION_DISABLED_CACHED_PARAM,
                         CustomTabIntentDataProvider.AUTO_TRANSLATE_ALLOW_ALL_FIRST_PARTIES,
@@ -115,6 +117,7 @@ public class ChromeCachedFlags {
                         EdgeToEdgeUtils.DISABLE_HUB_E2E,
                         EdgeToEdgeUtils.DISABLE_INCOGNITO_NTP_E2E,
                         EdgeToEdgeUtils.DISABLE_NTP_E2E,
+                        EdgeToEdgeUtils.DISABLE_RECENT_TABS_E2E,
                         EdgeToEdgeUtils.E2E_FIELD_TRIAL_OEM_LIST,
                         EdgeToEdgeUtils.E2E_FIELD_TRIAL_OEM_MIN_VERSIONS,
                         HubFieldTrial.ALTERNATIVE_FAB_COLOR,
@@ -135,6 +138,7 @@ public class ChromeCachedFlags {
                         SuggestionsNavigationDelegate.MOST_VISITED_TILES_RESELECT_LAX_SCHEME_HOST,
                         StartupLatencyInjector.CLANK_STARTUP_LATENCY_PARAM_MS,
                         TabManagementFieldTrial.DELAY_TEMP_STRIP_TIMEOUT_MS,
+                        ToolbarPhone.REMOVE_REDUNDANT_ANIM_CALL,
                         HomeModulesMetricsUtils.HOME_MODULES_SHOW_ALL_MODULES,
                         HomeModulesMetricsUtils.TAB_RESUMPTION_COMBINE_TABS,
                         TabGroupFeatureUtils.SHOW_TAB_GROUP_CREATION_DIALOG_SETTING,

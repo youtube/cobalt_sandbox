@@ -120,8 +120,7 @@ std::unique_ptr<FormStructure> BuildFormStructure(
   auto form_structure = std::make_unique<FormStructure>(form);
   // Identifies the sections based on the heuristics types.
   if (run_heuristics) {
-    form_structure->DetermineHeuristicTypes(GeoIpCountryCode(""), nullptr,
-                                            nullptr);
+    form_structure->DetermineHeuristicTypes(GeoIpCountryCode(""), nullptr);
   } else {
     for (size_t i = 0; i < fields.size(); ++i) {
       form_structure->field(i)->set_heuristic_type(GetActiveHeuristicSource(),
@@ -131,7 +130,7 @@ std::unique_ptr<FormStructure> BuildFormStructure(
   // Calls RationalizeFieldTypePredictions.
   ParseServerPredictionsQueryResponse(
       response_string, {form_structure.get()},
-      test::GetEncodedSignatures({form_structure.get()}), nullptr, nullptr);
+      test::GetEncodedSignatures({form_structure.get()}), nullptr);
   return form_structure;
 }
 
@@ -309,7 +308,8 @@ TEST_F(FormStructureRationalizerTest, RationalizePhoneNumberTrunkTypes) {
 
 // Tests that a form that has only one address predicted as
 // ADDRESS_HOME_STREET_ADDRESS is not modified by the address rationalization.
-TEST_F(FormStructureRationalizerTest, RationalizeRepeatedFields_OneAddress) {
+TEST_F(FormStructureRationalizerTest,
+       RationalizeRepeatedStreetAddressFields_OneAddress) {
   std::unique_ptr<FormStructure> form_structure = BuildFormStructure(
       {
           {"Full Name", "fullName", NAME_FULL},
@@ -325,7 +325,8 @@ TEST_F(FormStructureRationalizerTest, RationalizeRepeatedFields_OneAddress) {
 // Tests that a form that has two address predicted as
 // ADDRESS_HOME_STREET_ADDRESS is modified by the address rationalization to be
 // ADDRESS_HOME_LINE1 and ADDRESS_HOME_LINE2 instead.
-TEST_F(FormStructureRationalizerTest, RationalizeRepreatedFields_TwoAddresses) {
+TEST_F(FormStructureRationalizerTest,
+       RationalizeRepeatedStreetAddressFields_TwoAddresses) {
   std::unique_ptr<FormStructure> form_structure = BuildFormStructure(
       {
           {"Full Name", "fullName", NAME_FULL},
@@ -343,7 +344,7 @@ TEST_F(FormStructureRationalizerTest, RationalizeRepreatedFields_TwoAddresses) {
 // ADDRESS_HOME_STREET_ADDRESS is modified by the address rationalization to be
 // ADDRESS_HOME_LINE1, ADDRESS_HOME_LINE2 and ADDRESS_HOME_LINE3 instead.
 TEST_F(FormStructureRationalizerTest,
-       RationalizeRepreatedFields_ThreeAddresses) {
+       RationalizeRepeatedStreetAddressFields_ThreeAddresses) {
   std::unique_ptr<FormStructure> form_structure = BuildFormStructure(
       {
           {"Full Name", "fullName", NAME_FULL},
@@ -363,7 +364,7 @@ TEST_F(FormStructureRationalizerTest,
 // This doesn't happen in real world, because four address lines mean multiple
 // sections according to the heuristics.
 TEST_F(FormStructureRationalizerTest,
-       RationalizeRepreatedFields_FourAddresses) {
+       RationalizeRepeatedStreetAddressFields_FourAddresses) {
   std::unique_ptr<FormStructure> form_structure = BuildFormStructure(
       {
           {"Full Name", "fullName", NAME_FULL},
@@ -384,7 +385,7 @@ TEST_F(FormStructureRationalizerTest,
 // Tests that a form that has only one address in each section predicted as
 // ADDRESS_HOME_STREET_ADDRESS is not modified by the address rationalization.
 TEST_F(FormStructureRationalizerTest,
-       RationalizeRepreatedFields_OneAddressEachSection) {
+       RationalizeRepeatedStreetAddressFields_OneAddressEachSection) {
   std::unique_ptr<FormStructure> form_structure = BuildFormStructure(
       {
           // Billing
@@ -411,7 +412,7 @@ TEST_F(FormStructureRationalizerTest,
 // heuristics, and is only made for testing.
 TEST_F(
     FormStructureRationalizerTest,
-    RationalizeRepreatedFields_SectionTwoAddress_SectionThreeAddress_SectionFourAddresses) {
+    RationalizeRepeatedStreetAddressFields_SectionTwoAddress_SectionThreeAddress_SectionFourAddresses) {
   std::unique_ptr<FormStructure> form_structure = BuildFormStructure(
       {
           // Shipping.
@@ -451,8 +452,9 @@ TEST_F(
 // Tests that a form that has only one address in each section predicted as
 // ADDRESS_HOME_STREET_ADDRESS is not modified by the address rationalization,
 // while the sections are previously determined by the heuristics.
-TEST_F(FormStructureRationalizerTest,
-       RationalizeRepreatedFields_MultipleSectionsByHeuristics_OneAddressEach) {
+TEST_F(
+    FormStructureRationalizerTest,
+    RationalizeRepeatedStreetAddressFields_MultipleSectionsByHeuristics_OneAddressEach) {
   std::unique_ptr<FormStructure> form_structure = BuildFormStructure(
       {
           // Billing.
@@ -478,7 +480,7 @@ TEST_F(FormStructureRationalizerTest,
 // identified by heuristics.
 TEST_F(
     FormStructureRationalizerTest,
-    RationalizeRepreatedFields_MultipleSectionsByHeuristics_TwoAddress_ThreeAddress) {
+    RationalizeRepeatedStreetAddressFields_MultipleSectionsByHeuristics_TwoAddress_ThreeAddress) {
   std::unique_ptr<FormStructure> form_structure = BuildFormStructure(
       {
           // Shipping
@@ -987,80 +989,41 @@ TEST_P(RationalizeAutocompleteTest, RationalizeAutocompleteAttribute) {
   EXPECT_THAT(GetTypes(*form_structure), GetParam().final_types);
 }
 
-struct RationalizationTypeRelationshipsTestParams {
-  FieldType server_type;
-  FieldType required_type;
-};
-class RationalizationFieldTypeFilterTest
-    : public testing::Test,
-      public testing::WithParamInterface<FieldType> {
-  test::AutofillUnitTestEnvironment autofill_test_environment_;
-};
-class RationalizationFieldTypeRelationshipsTest
-    : public testing::Test,
-      public testing::WithParamInterface<
-          RationalizationTypeRelationshipsTestParams> {
-  test::AutofillUnitTestEnvironment autofill_test_environment_;
-};
-
-INSTANTIATE_TEST_SUITE_P(FormStructureRationalizerTest,
-                         RationalizationFieldTypeFilterTest,
-                         testing::Values(PHONE_HOME_COUNTRY_CODE));
-
-INSTANTIATE_TEST_SUITE_P(FormStructureRationalizerTest,
-                         RationalizationFieldTypeRelationshipsTest,
-                         testing::Values(
-                             RationalizationTypeRelationshipsTestParams{
-                                 PHONE_HOME_COUNTRY_CODE, PHONE_HOME_NUMBER},
-                             RationalizationTypeRelationshipsTestParams{
-                                 PHONE_HOME_COUNTRY_CODE,
-                                 PHONE_HOME_CITY_AND_NUMBER}));
-
-// Tests that the rationalization logic will filter out fields of type |param|
-// when there is no other required type.
-TEST_P(RationalizationFieldTypeFilterTest, Rationalization_Rules_Filter_Out) {
-  FieldType filtered_off_field = GetParam();
-
-  // Just adding >=3 random fields to trigger rationalization.
+// Tests that PHONE_HOME_COUNTRY_CODE fields are rationalized to UNKNOWN_TYPE
+// if no other phone number fields are present.
+TEST_F(FormStructureRationalizerTest,
+       RationalizePhoneCountryCode_NoPhoneFields) {
   std::unique_ptr<FormStructure> form_structure = BuildFormStructure(
       {{"First Name", "firstName", NAME_FIRST},
        {"Last Name", "lastName", NAME_LAST},
        {"Address", "address", ADDRESS_HOME_LINE1},
-       {"Something under test", "tested-thing", filtered_off_field}},
+       {"misclassified field", "name", PHONE_HOME_COUNTRY_CODE}},
       /*run_heuristics=*/true);
   EXPECT_THAT(
       GetTypes(*form_structure),
-      ElementsAre(NAME_FIRST, NAME_LAST, ADDRESS_HOME_LINE1,
-                  // Last field's type should have been overwritten to expected.
-                  UNKNOWN_TYPE));
+      ElementsAre(NAME_FIRST, NAME_LAST, ADDRESS_HOME_LINE1, UNKNOWN_TYPE));
 }
 
-// Tests that the rationalization logic will not filter out fields of type
-// |param| when there is another field with a required type.
-TEST_P(RationalizationFieldTypeRelationshipsTest,
-       Rationalization_Rules_Relationships) {
-  RationalizationTypeRelationshipsTestParams test_params = GetParam();
-
-  // Just adding >=3 random fields to trigger rationalization.
-  std::unique_ptr<FormStructure> form_structure = BuildFormStructure(
-      {{"First Name", "firstName", NAME_FIRST},
-       {"Last Name", "lastName", NAME_LAST},
-       {"Some field with required type", "some-name",
-        test_params.required_type},
-       {"Something under test", "tested-thing", test_params.server_type}},
-      /*run_heuristics=*/true);
-  EXPECT_THAT(
-      GetTypes(*form_structure),
-      ElementsAre(NAME_FIRST, NAME_LAST, test_params.required_type,
-                  // Last field's type should have been overwritten to expected.
-                  test_params.server_type));
+// Tests that PHONE_HOME_COUNTRY_CODE fields are not rationalized to
+// UNKNOWN_TYPE when other phone number fields are present.
+TEST_F(FormStructureRationalizerTest, RationalizePhoneCountryCode_PhoneFields) {
+  std::unique_ptr<FormStructure> form_structure =
+      BuildFormStructure({{"First Name", "firstName", NAME_FIRST},
+                          {"Last Name", "lastName", NAME_LAST},
+                          {"Phone", "tel-country", PHONE_HOME_COUNTRY_CODE},
+                          {"Phone", "tel-national",
+                           PHONE_HOME_CITY_AND_NUMBER_WITHOUT_TRUNK_PREFIX}},
+                         /*run_heuristics=*/true);
+  EXPECT_THAT(GetTypes(*form_structure),
+              ElementsAre(NAME_FIRST, NAME_LAST, PHONE_HOME_COUNTRY_CODE,
+                          PHONE_HOME_CITY_AND_NUMBER_WITHOUT_TRUNK_PREFIX));
 }
 
-class RationalizePhoneNumberFieldsTest : public testing::Test {
+class RationalizePhoneNumbersForFillingTest : public testing::Test {
  public:
   struct FieldTemplate {
     // Description of the field passed to the rationalization.
-    autofill::FieldType type;
+    FieldType type;
     // Expectation of field after rationalization.
     bool only_fill_when_focused;
   };
@@ -1104,7 +1067,7 @@ class RationalizePhoneNumberFieldsTest : public testing::Test {
   }
 };
 
-TEST_F(RationalizePhoneNumberFieldsTest, PhoneNumber_FirstNumberIsWholeNumber) {
+TEST_F(RationalizePhoneNumbersForFillingTest, FirstNumberIsWholeNumber) {
   auto [fields, expected_only_fill_when_focused] =
       CreateTest({{NAME_FULL, false},
                   {ADDRESS_HOME_LINE1, false},
@@ -1116,8 +1079,7 @@ TEST_F(RationalizePhoneNumberFieldsTest, PhoneNumber_FirstNumberIsWholeNumber) {
               ::testing::Eq(expected_only_fill_when_focused));
 }
 
-TEST_F(RationalizePhoneNumberFieldsTest,
-       PhoneNumber_FirstNumberIsComponentized) {
+TEST_F(RationalizePhoneNumbersForFillingTest, FirstNumberIsComponentized) {
   auto [fields, expected_only_fill_when_focused] =
       CreateTest({{NAME_FULL, false},
                   {ADDRESS_HOME_LINE1, false},
@@ -1133,8 +1095,8 @@ TEST_F(RationalizePhoneNumberFieldsTest,
               ::testing::Eq(expected_only_fill_when_focused));
 }
 
-TEST_F(RationalizePhoneNumberFieldsTest,
-       PhoneNumber_BestEffortWhenNoCompleteNumberIsFound) {
+TEST_F(RationalizePhoneNumbersForFillingTest,
+       BestEffortWhenNoCompleteNumberIsFound) {
   auto [fields, expected_only_fill_when_focused] =
       CreateTest({{NAME_FULL, false},
                   {ADDRESS_HOME_LINE1, false},
@@ -1148,7 +1110,7 @@ TEST_F(RationalizePhoneNumberFieldsTest,
               ::testing::Eq(expected_only_fill_when_focused));
 }
 
-TEST_F(RationalizePhoneNumberFieldsTest, PhoneNumber_FillPhonePartsOnceOnly) {
+TEST_F(RationalizePhoneNumbersForFillingTest, FillPhonePartsOnceOnly) {
   auto [fields, expected_only_fill_when_focused] =
       CreateTest({{NAME_FULL, false},
                   {ADDRESS_HOME_LINE1, false},
@@ -1165,8 +1127,7 @@ TEST_F(RationalizePhoneNumberFieldsTest, PhoneNumber_FillPhonePartsOnceOnly) {
               ::testing::Eq(expected_only_fill_when_focused));
 }
 
-TEST_F(RationalizePhoneNumberFieldsTest,
-       PhoneNumber_SkipHiddenPhoneNumberFields) {
+TEST_F(RationalizePhoneNumbersForFillingTest, SkipHiddenPhoneNumberFields) {
   auto [fields, expected_only_fill_when_focused] =
       CreateTest({{NAME_FULL, false},
                   {ADDRESS_HOME_LINE1, false},
@@ -1184,8 +1145,7 @@ TEST_F(RationalizePhoneNumberFieldsTest,
               ::testing::Eq(expected_only_fill_when_focused));
 }
 
-TEST_F(RationalizePhoneNumberFieldsTest,
-       PhoneNumber_ProcessNumberPrefixAndSuffix) {
+TEST_F(RationalizePhoneNumbersForFillingTest, ProcessNumberPrefixAndSuffix) {
   auto [fields, expected_only_fill_when_focused] =
       CreateTest({{NAME_FULL, false},
                   {ADDRESS_HOME_LINE1, false},
@@ -1202,7 +1162,7 @@ TEST_F(RationalizePhoneNumberFieldsTest,
               ::testing::Eq(expected_only_fill_when_focused));
 }
 
-TEST_F(RationalizePhoneNumberFieldsTest, PhoneNumber_IncorrectPrefix) {
+TEST_F(RationalizePhoneNumbersForFillingTest, IncorrectPrefix) {
   auto [fields, expected_only_fill_when_focused] =
       CreateTest({{NAME_FULL, false},
                   {ADDRESS_HOME_LINE1, false},
@@ -1219,7 +1179,7 @@ TEST_F(RationalizePhoneNumberFieldsTest, PhoneNumber_IncorrectPrefix) {
               ::testing::Eq(expected_only_fill_when_focused));
 }
 
-TEST_F(RationalizePhoneNumberFieldsTest, PhoneNumber_IncorrectSuffix) {
+TEST_F(RationalizePhoneNumbersForFillingTest, IncorrectSuffix) {
   auto [fields, expected_only_fill_when_focused] =
       CreateTest({{NAME_FULL, false},
                   {ADDRESS_HOME_LINE1, false},

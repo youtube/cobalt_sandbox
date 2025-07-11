@@ -267,7 +267,7 @@ class StyleBuilderConverter {
                                                  const CSSValue&);
   static LengthSize ConvertRadius(StyleResolverState&, const CSSValue&);
   static EPaintOrder ConvertPaintOrder(StyleResolverState&, const CSSValue&);
-  static GapColorDataList ConvertGapColorDataList(
+  static GapDataList<StyleColor> ConvertGapDecorationColorDataList(
       StyleResolverState&,
       const CSSValue&,
       bool for_visited_link = false);

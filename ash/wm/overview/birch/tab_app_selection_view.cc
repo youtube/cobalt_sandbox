@@ -32,6 +32,7 @@
 #include "ui/views/controls/separator.h"
 #include "ui/views/highlight_border.h"
 #include "ui/views/view_class_properties.h"
+#include "ui/views/view_utils.h"
 
 namespace ash {
 
@@ -289,7 +290,7 @@ BEGIN_METADATA(TabAppSelectionView, TabAppSelectionItemView)
 END_METADATA
 
 // -----------------------------------------------------------------------------
-// UserFeedbackView:
+// TabAppSelectionView::UserFeedbackView:
 // A view that allows users to give feedback via the thumb up and thumb down
 // buttons.
 //
@@ -305,7 +306,7 @@ END_METADATA
 //   `UserFeedbackView`
 // TODO(crbug.com/374117101): Add hover state for thumb up/down buttons.
 // TODO(crbug.com/374116829): Localization and proper accessibility names.
-class UserFeedbackView : public views::BoxLayoutView {
+class TabAppSelectionView::UserFeedbackView : public views::BoxLayoutView {
   METADATA_HEADER(UserFeedbackView, views::BoxLayoutView)
 
  public:
@@ -348,6 +349,7 @@ class UserFeedbackView : public views::BoxLayoutView {
     StyleUtil::SetUpInkDropForButton(thumb_up_button_, gfx::Insets(),
                                      /*highlight_on_hover=*/true,
                                      /*highlight_on_focus=*/false);
+    thumb_up_button_->SetID(TabAppSelectionView::ViewID::kThumbsUpID);
 
     thumb_down_button_ =
         thumb_buttons_container->AddChildView(std::make_unique<IconButton>(
@@ -362,6 +364,7 @@ class UserFeedbackView : public views::BoxLayoutView {
     StyleUtil::SetUpInkDropForButton(thumb_down_button_, gfx::Insets(),
                                      /*highlight_on_hover=*/true,
                                      /*highlight_on_focus=*/false);
+    thumb_down_button_->SetID(TabAppSelectionView::ViewID::kThumbsDownID);
   }
 
   UserFeedbackView(const UserFeedbackView&) = delete;
@@ -416,7 +419,7 @@ class UserFeedbackView : public views::BoxLayoutView {
   raw_ptr<IconButton> thumb_down_button_;
 };
 
-BEGIN_METADATA(UserFeedbackView)
+BEGIN_METADATA(TabAppSelectionView, UserFeedbackView)
 END_METADATA
 
 // -----------------------------------------------------------------------------
@@ -543,6 +546,16 @@ void TabAppSelectionView::ProcessKeyEvent(ui::KeyEvent* event) {
   }
 }
 
+void TabAppSelectionView::RemoveItemBySystem(std::string_view identifier) {
+  auto iter =
+      base::ranges::find_if(item_views_, [&identifier](const auto& item_view) {
+        return item_view->identifier() == identifier;
+      });
+  if (iter != item_views_.end()) {
+    RemoveItemView(iter->get());
+  }
+}
+
 void TabAppSelectionView::AdvanceSelection(bool reverse) {
   std::optional<size_t> selected_index;
   for (size_t i = 0; i < item_views_.size(); ++i) {
@@ -590,14 +603,18 @@ void TabAppSelectionView::OnCloseButtonPressed(
     TabAppSelectionItemView* sender) {
   BirchCoralProvider::Get()->RemoveItemFromGroup(group_id_,
                                                  sender->identifier());
-  TabAppSelectionItemView::InitParams::Type sender_type = sender->type();
-  std::erase(item_views_, sender);
-  scroll_view_->contents()->RemoveChildViewT(sender);
+  RemoveItemView(sender);
+}
+
+void TabAppSelectionView::RemoveItemView(TabAppSelectionItemView* item_view) {
+  TabAppSelectionItemView::InitParams::Type item_type = item_view->type();
+  std::erase(item_views_, item_view);
+  scroll_view_->contents()->RemoveChildViewT(item_view);
 
   // Remove the subtitle(s) if necessary.
   bool remove_subtitle = true;
   for (TabAppSelectionItemView* item : item_views_) {
-    if (sender_type == item->type()) {
+    if (item_type == item->type()) {
       remove_subtitle = false;
       break;
     }
@@ -605,7 +622,7 @@ void TabAppSelectionView::OnCloseButtonPressed(
 
   if (remove_subtitle) {
     std::optional<ViewID> id;
-    switch (sender_type) {
+    switch (item_type) {
       case TabAppSelectionItemView::InitParams::Type::kTab:
         id = kTabSubtitleID;
         break;

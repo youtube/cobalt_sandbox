@@ -44,7 +44,7 @@ coral::mojom::GroupPtr CreateTestGroup(const std::vector<TestEntity>& entities,
           coral::mojom::Entity::NewApp(coral::mojom::App::New(
               entity.title, std::get<std::string>(entity.id))));
     } else {
-      NOTREACHED_NORETURN();
+      NOTREACHED();
     }
   }
 
@@ -56,12 +56,14 @@ coral::mojom::GroupPtr CreateDefaultTestGroup() {
                           {"Figma", GURL("https://www.figma.com/")},
                           {"Notion", GURL("https://www.notion.so/")},
                           {"Settings", "odknhmnlageboeamepcngndbggdpaobj"},
-                          {"Files", "lgnggepjiihbfdbedefdhcffnmhcahbm"}},
+                          {"Files", "fkiggjmkendpmbegkagpmagjepfkpmeb"}},
                          "Coral Group");
 }
 
-void OverrideTestResponse(std::vector<coral::mojom::GroupPtr> test_groups) {
+void OverrideTestResponse(std::vector<coral::mojom::GroupPtr> test_groups,
+                          CoralSource source) {
   auto test_response = std::make_unique<CoralResponse>();
+  test_response->set_source(source);
   test_response->set_groups(std::move(test_groups));
   BirchCoralProvider::Get()->OverrideCoralResponseForTest(
       std::move(test_response));

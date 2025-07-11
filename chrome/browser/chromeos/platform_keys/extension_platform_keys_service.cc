@@ -43,20 +43,14 @@
 #include "net/cert/x509_certificate.h"
 
 using content::BrowserThread;
-using crosapi::keystore_service_util::MakeEcKeystoreSigningAlgorithm;
-using crosapi::keystore_service_util::MakeRsaKeystoreSigningAlgorithm;
+using crosapi::keystore_service_util::MakeEcdsaKeystoreAlgorithm;
+using crosapi::keystore_service_util::MakeRsassaPkcs1v15KeystoreAlgorithm;
 using crosapi::mojom::KeystoreBinaryResult;
 using crosapi::mojom::KeystoreBinaryResultPtr;
-using crosapi::mojom::KeystoreECDSAParams;
-using crosapi::mojom::KeystoreECDSAParamsPtr;
 using crosapi::mojom::KeystoreError;
-using crosapi::mojom::KeystorePKCS115Params;
-using crosapi::mojom::KeystorePKCS115ParamsPtr;
 using crosapi::mojom::KeystoreSelectClientCertificatesResult;
 using crosapi::mojom::KeystoreSelectClientCertificatesResultPtr;
 using crosapi::mojom::KeystoreService;
-using crosapi::mojom::KeystoreSigningAlgorithm;
-using crosapi::mojom::KeystoreSigningAlgorithmPtr;
 using crosapi::mojom::KeystoreSigningScheme;
 using crosapi::mojom::KeystoreType;
 
@@ -123,8 +117,7 @@ KeystoreSigningScheme GetKeystoreSigningScheme(
       }
     }
   }
-  NOTREACHED_IN_MIGRATION();
-  return KeystoreSigningScheme::kUnknown;
+  NOTREACHED();
 }
 
 // Returns appropriate KeystoreService for |browser_context|, which can be:
@@ -325,7 +318,7 @@ class ExtensionPlatformKeysService::GenerateRSAKeyTask
   void GenerateKey(KeystoreService::GenerateKeyCallback callback) override {
     service_->keystore_service_->GenerateKey(
         KeystoreTypeFromTokenId(token_id_),
-        MakeRsaKeystoreSigningAlgorithm(modulus_length_, sw_backed_),
+        MakeRsassaPkcs1v15KeystoreAlgorithm(modulus_length_, sw_backed_),
         std::move(callback));
   }
 
@@ -356,7 +349,7 @@ class ExtensionPlatformKeysService::GenerateECKeyTask : public GenerateKeyTask {
   void GenerateKey(KeystoreService::GenerateKeyCallback callback) override {
     service_->keystore_service_->GenerateKey(
         KeystoreTypeFromTokenId(token_id_),
-        MakeEcKeystoreSigningAlgorithm(named_curve_), std::move(callback));
+        MakeEcdsaKeystoreAlgorithm(named_curve_), std::move(callback));
   }
 
   const std::string named_curve_;

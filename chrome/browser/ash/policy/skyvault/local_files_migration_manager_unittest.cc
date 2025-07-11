@@ -13,6 +13,7 @@
 #include "base/test/metrics/histogram_tester.h"
 #include "base/test/test_future.h"
 #include "chrome/browser/ash/login/users/fake_chrome_user_manager.h"
+#include "chrome/browser/ash/policy/skyvault/local_files_migration_constants.h"
 #include "chrome/browser/ash/policy/skyvault/migration_notification_manager.h"
 #include "chrome/browser/ash/policy/skyvault/policy_utils.h"
 #include "chrome/browser/ash/policy/skyvault/test/skyvault_test_utils.h"
@@ -29,6 +30,7 @@
 #include "chromeos/ash/components/system/statistics_provider.h"
 #include "components/user_manager/scoped_user_manager.h"
 #include "content/public/test/browser_task_environment.h"
+#include "profile.h"
 #include "testing/gmock/include/gmock/gmock.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
@@ -75,6 +77,9 @@ class LocalFilesMigrationManagerTest : public testing::Test {
     ash::system::StatisticsProvider::SetTestProvider(&statistics_provider_);
 
     ash::UserDataAuthClient::OverrideGlobalInstanceForTesting(&userdataauth_);
+
+    drive::DriveIntegrationServiceFactory::GetForProfile(profile())->SetEnabled(
+        true);
   }
 
   void TearDown() override {
@@ -107,6 +112,11 @@ class LocalFilesMigrationManagerTest : public testing::Test {
   void SetLocalUserFilesAllowed(bool local_user_files_allowed) {
     scoped_testing_local_state_.Get()->SetBoolean(prefs::kLocalUserFilesAllowed,
                                                   local_user_files_allowed);
+  }
+
+  void SetRetryCount(int count) {
+    profile()->GetPrefs()->SetInteger(prefs::kSkyVaultMigrationRetryCount,
+                                      count);
   }
 
   base::HistogramTester histogram_tester_;
@@ -190,6 +200,44 @@ TEST_F(LocalFilesMigrationManagerTest, NoResetStateIfAlreadyDisabled) {
 
 TEST_F(LocalFilesMigrationManagerTest, HandlesMigrationFailures) {
   SetPrefs(State::kInProgress);
+  SetRetryCount(kMaxRetryCount);
+
+  std::unique_ptr<MockMigrationCoordinator> coordinator =
+      std::make_unique<MockMigrationCoordinator>(profile());
+  base::test::TestFuture<void> run_future;
+  MockMigrationCoordinator* coordinator_ptr = coordinator.get();
+  EXPECT_CALL(*coordinator_ptr, Run)
+      .WillOnce([&run_future](CloudProvider cloud_provider,
+                              std::vector<base::FilePath> file_paths,
+                              const std::string& upload_root,
+                              MigrationDoneCallback callback) {
+        std::move(callback).Run(
+            {
+                {base::FilePath("test.txt"), MigrationUploadError::kCopyFailed},
+            },
+            base::FilePath(),
+            base::FilePath(kErrorLogFileBasePath).Append(kErrorLogFileName));
+        run_future.SetValue();
+      });
+
+  std::unique_ptr<MockMigrationNotificationManager> notification_manager =
+      std::make_unique<MockMigrationNotificationManager>(profile());
+
+  LocalFilesMigrationManager manager(profile());
+  manager.SetNotificationManagerForTesting(notification_manager.get());
+  manager.SetCoordinatorForTesting(std::move(coordinator));
+  manager.SetSkipEmptyCheckForTesting(/*skip=*/true);
+  manager.Initialize();
+  ASSERT_TRUE(run_future.Wait());
+
+  histogram_tester_.ExpectBucketCount(
+      "Enterprise.SkyVault.Migration.GoogleDrive.Failed", true, 1);
+}
+
+// TODO(crbug.com/377696464): Fix this flaky test.
+TEST_F(LocalFilesMigrationManagerTest, DISABLED_RetriesIfAllowed) {
+  SetPrefs(State::kInProgress);
+  SetRetryCount(2);
 
   std::unique_ptr<MockMigrationCoordinator> coordinator =
       std::make_unique<MockMigrationCoordinator>(profile());
@@ -205,6 +253,52 @@ TEST_F(LocalFilesMigrationManagerTest, HandlesMigrationFailures) {
                 {base::FilePath("test.txt"), MigrationUploadError::kCopyFailed},
             },
             base::FilePath(), base::FilePath());
+        run_future.SetValue();
+      })
+      .WillOnce([&run_future](CloudProvider cloud_provider,
+                              std::vector<base::FilePath> file_paths,
+                              const std::string& upload_root,
+                              MigrationDoneCallback callback) {
+        std::move(callback).Run({}, base::FilePath(), base::FilePath());
+        run_future.SetValue();
+      });
+
+  std::unique_ptr<MockMigrationNotificationManager> notification_manager =
+      std::make_unique<MockMigrationNotificationManager>(profile());
+
+  LocalFilesMigrationManager manager(profile());
+  manager.SetNotificationManagerForTesting(notification_manager.get());
+  manager.SetCoordinatorForTesting(std::move(coordinator));
+  manager.SetSkipEmptyCheckForTesting(/*skip=*/true);
+  manager.Initialize();
+  ASSERT_TRUE(run_future.WaitAndClear());
+
+  histogram_tester_.ExpectUniqueSample("Enterprise.SkyVault.Migration.Retry",
+                                       /*sample=*/3.0,
+                                       /*expected_bucket_count=*/1);
+  ASSERT_TRUE(run_future.Wait());
+}
+
+TEST_F(LocalFilesMigrationManagerTest, DoesNotRetryWhenFatal) {
+  SetPrefs(State::kInProgress);
+  SetRetryCount(2);
+
+  std::unique_ptr<MockMigrationCoordinator> coordinator =
+      std::make_unique<MockMigrationCoordinator>(profile());
+  base::test::TestFuture<void> run_future;
+  MockMigrationCoordinator* coordinator_ptr = coordinator.get();
+  EXPECT_CALL(*coordinator_ptr, Run)
+      .WillOnce([&run_future](CloudProvider cloud_provider,
+                              std::vector<base::FilePath> file_paths,
+                              const std::string& upload_root,
+                              MigrationDoneCallback callback) {
+        std::move(callback).Run(
+            {
+                {base::FilePath("test.txt"),
+                 MigrationUploadError::kCloudQuotaFull},
+            },
+            base::FilePath(),
+            base::FilePath(kErrorLogFileBasePath).Append(kErrorLogFileName));
         run_future.SetValue();
       });
 
@@ -249,7 +343,7 @@ TEST_F(LocalFilesMigrationManagerTest, StopsWhenLocalStorageAllowed) {
   std::unique_ptr<MockMigrationCoordinator> coordinator =
       std::make_unique<MockMigrationCoordinator>(profile());
   base::test::TestFuture<void> run_future;
-  coordinator->SetRunCallback(run_future.GetCallback());
+  coordinator->SetRunCallback(run_future.GetRepeatingCallback());
   MockMigrationCoordinator* coordinator_ptr = coordinator.get();
   EXPECT_CALL(*coordinator_ptr, Run).Times(1);
   EXPECT_CALL(*coordinator_ptr, Cancel).Times(1);
@@ -286,7 +380,7 @@ TEST_P(LocalFilesMigrationManagerStateTest, InitializeFromState) {
   std::unique_ptr<MockMigrationCoordinator> coordinator =
       std::make_unique<MockMigrationCoordinator>(profile());
   base::test::TestFuture<void> run_future;
-  coordinator->SetRunCallback(run_future.GetCallback());
+  coordinator->SetRunCallback(run_future.GetRepeatingCallback());
   MockMigrationCoordinator* coordinator_ptr = coordinator.get();
 
   EXPECT_CALL(*notification_manager.get(), ShowMigrationInfoDialog)

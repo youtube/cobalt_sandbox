@@ -97,6 +97,12 @@ class ASH_EXPORT MahiUiController : public SessionObserver {
   // Notifies delegates that there is a content refresh availability change.
   void NotifyRefreshAvailabilityChanged(bool available);
 
+  // Notifies delegates that the panel bounds have changed.
+  // Some delegates (like the summary and Q&A views) have a maximum width on
+  // their child view based on the panel bounds. Because of this, we cannot rely
+  // on OnBoundsChanged in those views and must notify them directly.
+  void NotifyPanelBoundsChanged(const gfx::Rect& panel_bounds);
+
   // Updates the content icon and title, calls `UpdateSummaryAndOutlines` and
   // navigates to the summary view.
   void RefreshContents();
@@ -138,6 +144,10 @@ class ASH_EXPORT MahiUiController : public SessionObserver {
   void OnActiveUserSessionChanged(const AccountId& account_id) override;
 
   views::Widget* mahi_panel_widget() { return mahi_panel_widget_.get(); }
+
+  void set_elucidation_in_use_for_testing(bool elucidation_in_use) {
+    elucidation_in_use_ = elucidation_in_use;
+  }
 
  private:
   void HandleError(const MahiUiError& error);

@@ -295,7 +295,7 @@ void SetSearchBarText(UISearchBar* searchBar, NSString* text) {
 
   if (@available(iOS 17, *)) {
     [self registerForTraitChanges:TraitCollectionSetForTraits(
-                                      @[ UITraitUserInterfaceStyle.self ])
+                                      @[ UITraitUserInterfaceStyle.class ])
                        withAction:@selector(userInterfaceStyleDidChange)];
   }
 }
@@ -367,12 +367,12 @@ void SetSearchBarText(UISearchBar* searchBar, NSString* text) {
 - (void)updateEditableItems {
   NSMutableSet<NSString*>* editableItems = [NSMutableSet set];
   for (DriveFilePickerItem* primaryItem in _primaryItems) {
-    if (primaryItem.type == DriveItemType::kFile && primaryItem.enabled) {
+    if (primaryItem.type == DriveItemType::kFile) {
       [editableItems addObject:primaryItem.identifier];
     }
   }
   for (DriveFilePickerItem* secondaryItem in _secondaryItems) {
-    if (secondaryItem.type == DriveItemType::kFile && secondaryItem.enabled) {
+    if (secondaryItem.type == DriveItemType::kFile) {
       [editableItems addObject:secondaryItem.identifier];
     }
   }
@@ -928,7 +928,6 @@ void SetSearchBarText(UISearchBar* searchBar, NSString* text) {
   }
   NSDiffableDataSourceSnapshot* snapshot = _diffableDataSource.snapshot;
   [snapshot reconfigureItemsWithIdentifiers:identifiersToReconfigure];
-  [self updateEditableItems];
   [_diffableDataSource applySnapshot:snapshot animatingDifferences:YES];
 }
 
@@ -1018,8 +1017,8 @@ void SetSearchBarText(UISearchBar* searchBar, NSString* text) {
   for (NSString* selectedIdentifier in newSelectedIdentifiers) {
     NSIndexPath* selectedIndexPath =
         [_diffableDataSource indexPathForItemIdentifier:selectedIdentifier];
-    if (![self.tableView.indexPathsForSelectedRows
-            containsObject:selectedIndexPath]) {
+    if (selectedIndexPath && ![self.tableView.indexPathsForSelectedRows
+                                 containsObject:selectedIndexPath]) {
       [self.tableView selectRowAtIndexPath:selectedIndexPath
                                   animated:YES
                             scrollPosition:UITableViewScrollPositionNone];
@@ -1092,10 +1091,11 @@ void SetSearchBarText(UISearchBar* searchBar, NSString* text) {
   }
 }
 
-- (void)showDownloadFailureAlertWithRetryBlock:(ProceduralBlock)retryBlock
-                                   cancelBlock:(ProceduralBlock)cancelBlock {
+- (void)showDownloadFailureAlertForFileName:(NSString*)fileName
+                                 retryBlock:(ProceduralBlock)retryBlock
+                                cancelBlock:(ProceduralBlock)cancelBlock {
   UIAlertController* failureAlert =
-      FailAlertController(retryBlock, cancelBlock);
+      FailAlertController(fileName, retryBlock, cancelBlock);
   [self presentViewController:failureAlert animated:YES completion:nil];
 }
 

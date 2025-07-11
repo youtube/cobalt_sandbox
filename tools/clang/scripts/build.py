@@ -746,7 +746,7 @@ def main():
   if not args.skip_checkout:
     CheckoutGitRepo('LLVM monorepo', LLVM_GIT_URL, checkout_revision, LLVM_DIR)
 
-    if sys.platform == 'win32':
+    if sys.platform == 'win32' and not args.llvm_force_head_revision:
       # Apply https://github.com/zmodem/llvm-project/commit/802b816836f1 which
       # adds printfs to the win/asan runtime which get printed at high verbosity
       # level or on errors such as CHECK failure.
@@ -1309,6 +1309,8 @@ def main():
             'DARWIN_ios_ARCHS=arm64',
             'DARWIN_iossim_ARCHS=arm64;x86_64',
             'DARWIN_osx_ARCHS=arm64;x86_64',
+            'DARWIN_watchos_BUILTIN_ARCHS=arm64',
+            'DARWIN_watchossim_BUILTIN_ARCHS=arm64;x86_64',
         ],
         "sanitizers":
         True,

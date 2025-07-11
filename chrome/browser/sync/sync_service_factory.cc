@@ -220,10 +220,7 @@ syncer::DataTypeController::TypeVector CreateCommonControllers(
   builder.SetDataTypeStoreService(
       DataTypeStoreServiceFactory::GetForProfile(profile));
 #if !BUILDFLAG(IS_ANDROID)
-  builder.SetPasskeyModel(
-      base::FeatureList::IsEnabled(syncer::kSyncWebauthnCredentials)
-          ? PasskeyModelFactory::GetForProfile(profile)
-          : nullptr);
+  builder.SetPasskeyModel(PasskeyModelFactory::GetForProfile(profile));
 #endif  // !BUILDFLAG(IS_ANDROID)
   builder.SetPasswordReceiverService(
       PasswordReceiverServiceFactory::GetForProfile(profile));
@@ -324,6 +321,7 @@ syncer::DataTypeController::TypeVector CreateChromeControllers(
           ? ash::floating_sso::FloatingSsoServiceFactory::GetForProfile(profile)
           : nullptr);
   builder.SetOsPrefServiceSyncable(PrefServiceSyncableFromProfile(profile));
+  builder.SetPrefService(profile->GetPrefs());
   builder.SetSyncedPrintersManager(
       ash::SyncedPrintersManagerFactory::GetForBrowserContext(profile));
   builder.SetWifiConfigurationSyncService(

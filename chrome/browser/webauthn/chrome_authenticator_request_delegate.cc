@@ -70,7 +70,6 @@
 #include "components/prefs/pref_service.h"
 #include "components/signin/public/base/consent_level.h"
 #include "components/signin/public/identity_manager/identity_manager.h"
-#include "components/sync/base/features.h"
 #include "components/sync/base/user_selectable_type.h"
 #include "components/sync/protocol/webauthn_credential_specifics.pb.h"
 #include "components/sync/service/sync_service.h"
@@ -135,7 +134,6 @@
 #if BUILDFLAG(IS_WIN)
 #include "chrome/browser/webauthn/local_credential_management_win.h"
 #include "device/fido/win/authenticator.h"
-#include "device/fido/win/webauthn_api.h"
 #endif
 
 #if BUILDFLAG(IS_CHROMEOS)
@@ -542,10 +540,6 @@ bool ChromeWebAuthenticationDelegate::SupportsResidentKeys(
   return true;
 }
 
-bool ChromeWebAuthenticationDelegate::SupportsPasskeyMetadataSyncing() {
-  return base::FeatureList::IsEnabled(syncer::kSyncWebauthnCredentials);
-}
-
 bool ChromeWebAuthenticationDelegate::IsFocused(
     content::WebContents* web_contents) {
   return web_contents->GetVisibility() == content::Visibility::VISIBLE;
@@ -950,9 +944,14 @@ void ChromeAuthenticatorRequestDelegate::SetRelyingPartyId(
   dialog_model_->relying_party_id = rp_id;
 }
 
+void ChromeAuthenticatorRequestDelegate::SetUIPresentation(
+    UIPresentation ui_presentation) {
+  dialog_controller_->set_ui_presentation(ui_presentation);
+}
+
 bool ChromeAuthenticatorRequestDelegate::DoesBlockRequestOnFailure(
     InterestingFailureReason reason) {
-  if (!IsWebAuthnUIEnabled()) {
+  if (!webauthn_ui_enabled()) {
     return false;
   }
 
@@ -1091,7 +1090,7 @@ void ChromeAuthenticatorRequestDelegate::ConfigureDiscoveries(
 
   // Without the UI enabled, discoveries like caBLE, Android AOA, iCloud
   // keychain, and the enclave, don't make sense.
-  if (disable_ui_) {
+  if (!webauthn_ui_enabled()) {
     return;
   }
 
@@ -1100,8 +1099,10 @@ void ChromeAuthenticatorRequestDelegate::ConfigureDiscoveries(
     // Creating credentials in GPM can be disabled by policy, but get() is
     // always allowed.
     if (request_type == device::FidoRequestType::kGetAssertion ||
-        profile->GetPrefs()->GetBoolean(
-            password_manager::prefs::kCredentialsEnableService)) {
+        (profile->GetPrefs()->GetBoolean(
+             password_manager::prefs::kCredentialsEnableService) &&
+         profile->GetPrefs()->GetBoolean(
+             password_manager::prefs::kCredentialsEnablePasskeys))) {
       auto* const identity_manager =
           IdentityManagerFactory::GetForProfile(profile->GetOriginalProfile());
       const auto consent = signin::ConsentLevel::kSignin;
@@ -1188,20 +1189,7 @@ void ChromeAuthenticatorRequestDelegate::ConfigureDiscoveries(
     }
   }
 
-#if BUILDFLAG(IS_WIN)
-  device::WinWebAuthnApi* const webauthn_api =
-      device::WinWebAuthnApi::GetDefault();
-  const bool system_handles_cable =
-      webauthn_api && webauthn_api->SupportsHybrid() &&
-      // For now, Chrome handles hybrid even if Windows supports it for synced
-      // GPM passkeys.
-      !base::FeatureList::IsEnabled(syncer::kSyncWebauthnCredentials);
-#else
-  constexpr bool system_handles_cable = false;
-#endif
-
   const bool non_extension_cablev2_enabled =
-      !system_handles_cable &&
       (!cable_extension_permitted ||
        (!cable_extension_provided &&
         request_type == device::FidoRequestType::kGetAssertion) ||
@@ -1285,7 +1273,7 @@ void ChromeAuthenticatorRequestDelegate::SelectAccount(
     std::vector<device::AuthenticatorGetAssertionResponse> responses,
     base::OnceCallback<void(device::AuthenticatorGetAssertionResponse)>
         callback) {
-  if (disable_ui_) {
+  if (!webauthn_ui_enabled()) {
     // Requests with UI disabled should never reach account selection.
     DCHECK(IsVirtualEnvironmentEnabled());
 
@@ -1306,23 +1294,8 @@ void ChromeAuthenticatorRequestDelegate::SelectAccount(
   dialog_controller_->SelectAccount(std::move(responses), std::move(callback));
 }
 
-void ChromeAuthenticatorRequestDelegate::DisableUI() {
-  disable_ui_ = true;
-}
-
-bool ChromeAuthenticatorRequestDelegate::IsWebAuthnUIEnabled() {
-  // The UI is fully disabled for the entire request duration if either:
-  // 1) The UI was temporarily hidden, e.g. while showing the native Windows
-  // WebAuthn UI. But in those cases the UI is still enabled and can be shown
-  // e.g. for an attestation consent prompt.
-  // 2) A specialized UI is replacing the default WebAuthn UI, such as Secure
-  // Payment Confirmation or Autofill.
-  return !disable_ui_;
-}
-
-void ChromeAuthenticatorRequestDelegate::SetConditionalRequest(
-    bool is_conditional) {
-  is_conditional_ = is_conditional;
+bool ChromeAuthenticatorRequestDelegate::webauthn_ui_enabled() const {
+  return dialog_controller_->ui_presentation() != UIPresentation::kDisabled;
 }
 
 void ChromeAuthenticatorRequestDelegate::SetAmbientCredentialTypes(
@@ -1342,25 +1315,12 @@ void ChromeAuthenticatorRequestDelegate::SetUserEntityForMakeCredentialRequest(
 
 void ChromeAuthenticatorRequestDelegate::OnTransportAvailabilityEnumerated(
     device::FidoRequestHandlerBase::TransportAvailabilityInfo data) {
-  if (disable_ui_) {
+  if (!webauthn_ui_enabled()) {
     return;
   }
-
-  if (base::FeatureList::IsEnabled(syncer::kSyncWebauthnCredentials) &&
-      (can_use_synced_phone_passkeys_ ||
-       (enclave_controller_ && enclave_controller_->is_active()))) {
-    GetPhoneContactableGpmPasskeysForRpId(&data.recognized_credentials);
-  }
-  FilterRecognizedCredentials(&data);
 
   if (g_observer) {
-    g_observer->OnTransportAvailabilityEnumerated(this, &data);
-  }
-
-  if (dialog_model_->step() !=
-      AuthenticatorRequestDialogModel::Step::kNotStarted) {
-    dialog_controller_->OnTransportAvailabilityChanged(std::move(data));
-    return;
+    g_observer->OnPreTransportAvailabilityEnumerated(this);
   }
 
   const bool delay_ui_for_gpm =
@@ -1383,7 +1343,7 @@ bool ChromeAuthenticatorRequestDelegate::EmbedderControlsAuthenticatorDispatch(
   // request to an authenticator immediately after it has been
   // discovered, or whether the embedder/UI takes charge of that by
   // invoking its RequestCallback.
-  if (!IsWebAuthnUIEnabled()) {
+  if (!webauthn_ui_enabled()) {
     // There is no UI to handle request dispatch.
     return false;
   }
@@ -1391,9 +1351,9 @@ bool ChromeAuthenticatorRequestDelegate::EmbedderControlsAuthenticatorDispatch(
     return false;
   }
 
-  if (is_conditional_ &&
+  if (dialog_controller_->ui_presentation() == UIPresentation::kAutofill &&
       (dialog_model_->step() ==
-           AuthenticatorRequestDialogModel::Step::kConditionalMediation ||
+           AuthenticatorRequestDialogModel::Step::kPasskeyAutofill ||
        dialog_model_->step() ==
            AuthenticatorRequestDialogModel::Step::kNotStarted)) {
     // There is an active conditional request that is not showing any UI. The UI
@@ -1408,7 +1368,7 @@ bool ChromeAuthenticatorRequestDelegate::EmbedderControlsAuthenticatorDispatch(
 
 void ChromeAuthenticatorRequestDelegate::FidoAuthenticatorAdded(
     const device::FidoAuthenticator& authenticator) {
-  if (!IsWebAuthnUIEnabled()) {
+  if (!webauthn_ui_enabled()) {
     return;
   }
 
@@ -1417,7 +1377,7 @@ void ChromeAuthenticatorRequestDelegate::FidoAuthenticatorAdded(
 
 void ChromeAuthenticatorRequestDelegate::FidoAuthenticatorRemoved(
     std::string_view authenticator_id) {
-  if (!IsWebAuthnUIEnabled()) {
+  if (!webauthn_ui_enabled()) {
     return;
   }
 
@@ -1518,6 +1478,22 @@ content::BrowserContext* ChromeAuthenticatorRequestDelegate::GetBrowserContext()
 
 void ChromeAuthenticatorRequestDelegate::ShowUI(
     device::FidoRequestHandlerBase::TransportAvailabilityInfo tai) {
+  if (can_use_synced_phone_passkeys_ ||
+      (enclave_controller_ && enclave_controller_->is_active())) {
+    GetPhoneContactableGpmPasskeysForRpId(&tai.recognized_credentials);
+  }
+  FilterRecognizedCredentials(&tai);
+
+  if (g_observer) {
+    g_observer->OnTransportAvailabilityEnumerated(this, &tai);
+  }
+
+  if (dialog_model_->step() !=
+      AuthenticatorRequestDialogModel::Step::kNotStarted) {
+    dialog_controller_->OnTransportAvailabilityChanged(std::move(tai));
+    return;
+  }
+
   // At the time of writing we don't support GPM passkeys on iOS, so we want to
   // avoid defaulting to GPM for macOS users who likely have an iPhone. But on
   // all other platforms, GPM should be the default.
@@ -1526,7 +1502,7 @@ void ChromeAuthenticatorRequestDelegate::ShowUI(
 
   dialog_controller_->set_ambient_credential_types(ambient_credential_types_);
 
-  dialog_controller_->StartFlow(std::move(tai), is_conditional_);
+  dialog_controller_->StartFlow(std::move(tai));
 
   if (g_observer) {
     g_observer->UIShown(this);

@@ -42,6 +42,7 @@ constexpr int kSaltByteSize = 16;
 
 // PIN auto submit backfill only for 6 digits PINs.
 constexpr int kPinAutosubmitBackfillLength = 6;
+constexpr int kPinAutosubmitMinPinLength = 6;
 constexpr int kPinAutosubmitMaxPinLength = 12;
 
 QuickUnlockStorage* GetPrefsBackend(const AccountId& account_id) {
@@ -225,6 +226,62 @@ void PinBackend::Set(const AccountId& account_id,
     storage->MarkStrongAuth();
     UpdatePinAutosubmitOnSet(account_id, pin.length());
     PostResponse(std::move(did_set), true);
+  }
+}
+
+void PinBackend::UpdateCryptohomePin(const AccountId& account_id,
+                                     const std::string& token,
+                                     const std::string& pin,
+                                     BoolCallback did_update) {
+  if (resolving_backend_) {
+    on_cryptohome_support_received_.push_back(
+        base::BindOnce(&PinBackend::UpdateCryptohomePin, base::Unretained(this),
+                       account_id, token, pin, std::move(did_update)));
+    return;
+  }
+
+  if (!ash::AuthSessionStorage::Get()->IsValid(token)) {
+    PostResponse(std::move(did_update), false);
+    return;
+  }
+  ash::AuthSessionStorage::Get()->BorrowAsync(
+      FROM_HERE, token,
+      base::BindOnce(&PinBackend::UpdateCryptohomePinWithContext,
+                     base::Unretained(this), account_id, token, pin,
+                     std::move(did_update)));
+}
+
+// This method is used by the recovery path and therefore can only rely on
+// data that is available before the profile is loaded.
+void PinBackend::UpdateCryptohomePinWithContext(
+    const AccountId& account_id,
+    const std::string& token,
+    const std::string& pin,
+    BoolCallback did_set,
+    std::unique_ptr<UserContext> user_context) {
+  if (!user_context) {
+    PostResponse(std::move(did_set), false);
+    return;
+  }
+
+  cryptohome_backend_->SetPin(
+      std::move(user_context), pin, std::nullopt,
+      base::BindOnce(&PinBackend::OnAuthOperation, token, std::move(did_set)));
+
+  // Update autosubmit length if it exists. PIN autosubmit is only intended for
+  // PINs that are 6-12 digits long. When the user has autosubmit enabled, the
+  // stored value in local state is != 0.
+  user_manager::KnownUser known_user(g_browser_process->local_state());
+  const int previous_pin_length = known_user.GetUserPinLength(account_id);
+  const int new_pin_length = pin.length();
+  if (previous_pin_length != 0) {
+    // User had autosubmit enabled before.
+    if (new_pin_length >= kPinAutosubmitMinPinLength &&
+        new_pin_length <= kPinAutosubmitMaxPinLength) {
+      known_user.SetUserPinLength(account_id, new_pin_length);
+    } else {
+      known_user.SetUserPinLength(account_id, 0);
+    }
   }
 }
 

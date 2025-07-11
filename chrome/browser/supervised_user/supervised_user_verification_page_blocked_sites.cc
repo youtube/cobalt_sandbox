@@ -105,24 +105,9 @@ void SupervisedUserVerificationPageForBlockedSites::RecordReauthStatusMetrics(
     return;
   }
 
-  auto state =
-      FamilyLinkUserReauthenticationInterstitialState::kInterstitialShown;
-  switch (status) {
-    case Status::SHOWN:
-      break;
-    case Status::REAUTH_STARTED:
-      state = FamilyLinkUserReauthenticationInterstitialState::
-          kReauthenticationStarted;
-      break;
-    case Status::REAUTH_COMPLETED:
-      state = FamilyLinkUserReauthenticationInterstitialState::
-          kReauthenticationCompleted;
-      break;
-    default:
-      NOTREACHED();
-  }
   base::UmaHistogramEnumeration(
-      kBlockedSiteVerifyItsYouInterstitialStateHistogramName, state);
+      kBlockedSiteVerifyItsYouInterstitialStateHistogramName,
+      GetReauthenticationInterstitialStateFromStatus(status));
 }
 
 void SupervisedUserVerificationPageForBlockedSites::RecordSignInTabUmaMetrics(
@@ -149,6 +134,6 @@ int SupervisedUserVerificationPageForBlockedSites::GetBlockMessageReasonId() {
                  ? IDS_CHILD_BLOCK_MESSAGE_MANUAL_MULTI_PARENT
                  : IDS_CHILD_BLOCK_MESSAGE_MANUAL_SINGLE_PARENT;
     default:
-      NOTREACHED_NORETURN();
+      NOTREACHED();
   }
 }

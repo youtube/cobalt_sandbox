@@ -112,6 +112,9 @@ class RecorderAppUI
   ModelState GetSodaState(const speech::LanguageCode& language_code);
 
   // recorder_app::mojom::PageHandler:
+  void GetModelInfo(on_device_model::mojom::FormatFeature feature,
+                    GetModelInfoCallback callback) override;
+
   void LoadModel(
       const base::Uuid& model_id,
       mojo::PendingReceiver<on_device_model::mojom::OnDeviceModel> model,
@@ -199,6 +202,8 @@ class RecorderAppUI
   base::flat_set<speech::LanguageCode> available_languages_;
 
   base::flat_set<speech::LanguageCode> gen_ai_supported_languages_;
+
+  base::flat_set<speech::LanguageCode> speaker_label_supported_languages_;
 
   std::map<base::Uuid, mojo::RemoteSet<recorder_app::mojom::ModelStateMonitor>>
       model_monitors_;

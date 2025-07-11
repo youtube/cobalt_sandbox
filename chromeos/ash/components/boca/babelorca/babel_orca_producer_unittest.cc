@@ -58,6 +58,7 @@ class MockLiveCaptionControllerWrapper : public LiveCaptionControllerWrapper {
               (override));
   MOCK_METHOD(void, ToggleLiveCaptionForBabelOrca, (bool), (override));
   MOCK_METHOD(void, OnAudioStreamEnd, (), (override));
+  MOCK_METHOD(void, RestartCaptions, (), (override));
 };
 
 class BabelOrcaProducerTest : public testing::Test {
@@ -104,6 +105,9 @@ TEST_F(BabelOrcaProducerTest, EnableLocalCaptionsOutOfSession) {
       std::move(caption_controller_wrapper_), std::move(authed_client_),
       &request_data_provider_);
 
+  EXPECT_CALL(*caption_controller_wrapper_ptr,
+              ToggleLiveCaptionForBabelOrca(true))
+      .Times(1);
   EXPECT_CALL(*speech_recognizer_ptr, ObserveTranscriptionResult)
       .WillOnce(
           [&transcript_cb](TranscriptionResultCallback transcript_cb_param) {
@@ -115,9 +119,12 @@ TEST_F(BabelOrcaProducerTest, EnableLocalCaptionsOutOfSession) {
   ASSERT_TRUE(transcript_cb);
   EXPECT_CALL(*caption_controller_wrapper_ptr,
               DispatchTranscription(transcript))
-      .Times(1);
+      .WillOnce(testing::Return(true));
   transcript_cb.Run(transcript, kLanguage);
 
+  EXPECT_CALL(*caption_controller_wrapper_ptr,
+              ToggleLiveCaptionForBabelOrca(false))
+      .Times(1);
   EXPECT_CALL(*speech_recognizer_ptr, RemoveTranscriptionResultObservation)
       .Times(1);
   EXPECT_CALL(*speech_recognizer_ptr, Stop).Times(1);
@@ -142,7 +149,8 @@ TEST_F(BabelOrcaProducerTest, EnableSessionCaptionsOutOfSession) {
 
   EXPECT_CALL(*speech_recognizer_ptr, ObserveTranscriptionResult).Times(0);
   EXPECT_CALL(*speech_recognizer_ptr, Start).Times(0);
-  producer.OnSessionCaptionConfigUpdated(/*session_captions_enabled=*/true);
+  producer.OnSessionCaptionConfigUpdated(/*session_captions_enabled=*/true,
+                                         /*translations_enabled=*/false);
 }
 
 TEST_F(BabelOrcaProducerTest, EnableSessionCaptionsThenLocalCaptionsInSession) {
@@ -162,7 +170,8 @@ TEST_F(BabelOrcaProducerTest, EnableSessionCaptionsThenLocalCaptionsInSession) {
                              std::move(authed_client_), &data_provider);
 
   producer.OnSessionStarted();
-  producer.OnSessionCaptionConfigUpdated(/*session_captions_enabled=*/true);
+  producer.OnSessionCaptionConfigUpdated(/*session_captions_enabled=*/true,
+                                         /*translations_enabled=*/false);
   base::OnceCallback<void(bool)> signin_cb = data_provider.TakeSigninCb();
   ASSERT_FALSE(signin_cb.is_null());
   EXPECT_CALL(*speech_recognizer_ptr, ObserveTranscriptionResult)
@@ -185,23 +194,30 @@ TEST_F(BabelOrcaProducerTest, EnableSessionCaptionsThenLocalCaptionsInSession) {
       GetTranscriptFromRequest(authed_client_ptr->GetRequestString());
   EXPECT_EQ(sent_transcript1, transcript1);
 
+  EXPECT_CALL(*caption_controller_wrapper_ptr,
+              ToggleLiveCaptionForBabelOrca(true))
+      .Times(1);
   producer.OnLocalCaptionConfigUpdated(/*local_captions_enabled=*/true);
   EXPECT_CALL(*caption_controller_wrapper_ptr,
               DispatchTranscription(transcript2))
-      .Times(1);
+      .WillOnce(testing::Return(true));
   transcript_cb.Run(transcript2, kLanguage);
   authed_client_ptr->WaitForRequest();
   media::SpeechRecognitionResult sent_transcript2 =
       GetTranscriptFromRequest(authed_client_ptr->GetRequestString());
   EXPECT_EQ(sent_transcript2, transcript2);
 
+  EXPECT_CALL(*caption_controller_wrapper_ptr,
+              ToggleLiveCaptionForBabelOrca(false))
+      .Times(1);
   producer.OnLocalCaptionConfigUpdated(/*local_captions_enabled=*/false);
   // 2 Times, one on enabled set to false and one on destruction.
   EXPECT_CALL(*speech_recognizer_ptr, RemoveTranscriptionResultObservation)
       .Times(2);
   EXPECT_CALL(*speech_recognizer_ptr, Stop).Times(2);
   EXPECT_CALL(*caption_controller_wrapper_ptr, OnAudioStreamEnd).Times(2);
-  producer.OnSessionCaptionConfigUpdated(/*session_captions_enabled=*/false);
+  producer.OnSessionCaptionConfigUpdated(/*session_captions_enabled=*/false,
+                                         /*translations_enabled=*/false);
 }
 
 TEST_F(BabelOrcaProducerTest, EnableLocalCaptionsThenSessionCaptionsInSession) {
@@ -221,6 +237,10 @@ TEST_F(BabelOrcaProducerTest, EnableLocalCaptionsThenSessionCaptionsInSession) {
                              std::move(authed_client_), &data_provider);
 
   producer.OnSessionStarted();
+
+  EXPECT_CALL(*caption_controller_wrapper_ptr,
+              ToggleLiveCaptionForBabelOrca(true))
+      .Times(1);
   EXPECT_CALL(*speech_recognizer_ptr, ObserveTranscriptionResult)
       .WillOnce(
           [&transcript_cb](TranscriptionResultCallback transcript_cb_param) {
@@ -232,24 +252,30 @@ TEST_F(BabelOrcaProducerTest, EnableLocalCaptionsThenSessionCaptionsInSession) {
   ASSERT_TRUE(transcript_cb);
   EXPECT_CALL(*caption_controller_wrapper_ptr,
               DispatchTranscription(transcript1))
-      .Times(1);
+      .WillOnce(testing::Return(true));
   transcript_cb.Run(transcript1, kLanguage);
 
-  producer.OnSessionCaptionConfigUpdated(/*session_captions_enabled=*/true);
+  producer.OnSessionCaptionConfigUpdated(/*session_captions_enabled=*/true,
+                                         /*translations_enabled=*/false);
   base::OnceCallback<void(bool)> signin_cb = data_provider.TakeSigninCb();
   ASSERT_FALSE(signin_cb.is_null());
   data_provider.set_tachyon_token("tachyon_token");
   std::move(signin_cb).Run(true);
   EXPECT_CALL(*caption_controller_wrapper_ptr,
               DispatchTranscription(transcript2))
-      .Times(1);
+      .WillOnce(testing::Return(true));
   transcript_cb.Run(transcript2, kLanguage);
   authed_client_ptr->WaitForRequest();
   media::SpeechRecognitionResult sent_transcript2 =
       GetTranscriptFromRequest(authed_client_ptr->GetRequestString());
   EXPECT_EQ(sent_transcript2, transcript2);
 
-  producer.OnSessionCaptionConfigUpdated(/*session_captions_enabled=*/false);
+  producer.OnSessionCaptionConfigUpdated(/*session_captions_enabled=*/false,
+                                         /*translations_enabled=*/false);
+
+  EXPECT_CALL(*caption_controller_wrapper_ptr,
+              ToggleLiveCaptionForBabelOrca(false))
+      .Times(1);
   // 2 Times, one on enabled set to false and one on destruction.
   EXPECT_CALL(*speech_recognizer_ptr, RemoveTranscriptionResultObservation)
       .Times(2);
@@ -272,7 +298,8 @@ TEST_F(BabelOrcaProducerTest, NoSigninIfTachyonTokenIsSet) {
 
   EXPECT_CALL(*speech_recognizer_ptr, ObserveTranscriptionResult).Times(1);
   EXPECT_CALL(*speech_recognizer_ptr, Start).Times(1);
-  producer.OnSessionCaptionConfigUpdated(/*session_captions_enabled=*/true);
+  producer.OnSessionCaptionConfigUpdated(/*session_captions_enabled=*/true,
+                                         /*translations_enabled=*/false);
 
   base::OnceCallback<void(bool)> signin_cb = data_provider.TakeSigninCb();
   ASSERT_TRUE(signin_cb.is_null());
@@ -290,7 +317,8 @@ TEST_F(BabelOrcaProducerTest, FailedSignWillNotStartCaptions) {
                              std::move(authed_client_), &data_provider);
 
   producer.OnSessionStarted();
-  producer.OnSessionCaptionConfigUpdated(/*session_captions_enabled=*/true);
+  producer.OnSessionCaptionConfigUpdated(/*session_captions_enabled=*/true,
+                                         /*translations_enabled=*/false);
 
   EXPECT_CALL(*speech_recognizer_ptr, ObserveTranscriptionResult).Times(0);
   EXPECT_CALL(*speech_recognizer_ptr, Start).Times(0);
@@ -311,9 +339,11 @@ TEST_F(BabelOrcaProducerTest, DisableSessionCaptionWhileSigninInFlight) {
                              std::move(authed_client_), &data_provider);
 
   producer.OnSessionStarted();
-  producer.OnSessionCaptionConfigUpdated(/*session_captions_enabled=*/true);
+  producer.OnSessionCaptionConfigUpdated(/*session_captions_enabled=*/true,
+                                         /*translations_enabled=*/false);
 
-  producer.OnSessionCaptionConfigUpdated(/*session_captions_enabled=*/false);
+  producer.OnSessionCaptionConfigUpdated(/*session_captions_enabled=*/false,
+                                         /*translations_enabled=*/false);
   EXPECT_CALL(*speech_recognizer_ptr, ObserveTranscriptionResult).Times(0);
   EXPECT_CALL(*speech_recognizer_ptr, Start).Times(0);
   base::OnceCallback<void(bool)> signin_cb = data_provider.TakeSigninCb();
@@ -334,7 +364,8 @@ TEST_F(BabelOrcaProducerTest, SessionEndedWhileSigninInFlight) {
                              std::move(authed_client_), &data_provider);
 
   producer.OnSessionStarted();
-  producer.OnSessionCaptionConfigUpdated(/*session_captions_enabled=*/true);
+  producer.OnSessionCaptionConfigUpdated(/*session_captions_enabled=*/true,
+                                         /*translations_enabled=*/false);
 
   producer.OnSessionEnded();
   EXPECT_CALL(*speech_recognizer_ptr, ObserveTranscriptionResult).Times(0);
@@ -360,7 +391,8 @@ TEST_F(BabelOrcaProducerTest, SessionEndLocalCaptionsDisabled) {
   producer.OnSessionStarted();
   EXPECT_CALL(*speech_recognizer_ptr, ObserveTranscriptionResult).Times(1);
   EXPECT_CALL(*speech_recognizer_ptr, Start).Times(1);
-  producer.OnSessionCaptionConfigUpdated(/*session_captions_enabled=*/true);
+  producer.OnSessionCaptionConfigUpdated(/*session_captions_enabled=*/true,
+                                         /*translations_enabled=*/false);
 
   // 2 Times, one on `OnSessionEnded` and one on destruction.
   EXPECT_CALL(*speech_recognizer_ptr, RemoveTranscriptionResultObservation)
@@ -413,6 +445,10 @@ TEST_F(BabelOrcaProducerTest, DisableLocalWhileSessionCaptionsEnabled) {
                              std::move(authed_client_), &data_provider);
 
   producer.OnSessionStarted();
+
+  EXPECT_CALL(*caption_controller_wrapper_ptr,
+              ToggleLiveCaptionForBabelOrca(true))
+      .Times(1);
   EXPECT_CALL(*speech_recognizer_ptr, ObserveTranscriptionResult)
       .WillOnce(
           [&transcript_cb](TranscriptionResultCallback transcript_cb_param) {
@@ -420,8 +456,12 @@ TEST_F(BabelOrcaProducerTest, DisableLocalWhileSessionCaptionsEnabled) {
           });
   EXPECT_CALL(*speech_recognizer_ptr, Start).Times(1);
   producer.OnLocalCaptionConfigUpdated(/*local_captions_enabled=*/true);
-  producer.OnSessionCaptionConfigUpdated(/*session_captions_enabled=*/true);
+  producer.OnSessionCaptionConfigUpdated(/*session_captions_enabled=*/true,
+                                         /*translations_enabled=*/false);
 
+  EXPECT_CALL(*caption_controller_wrapper_ptr,
+              ToggleLiveCaptionForBabelOrca(false))
+      .Times(1);
   EXPECT_CALL(*caption_controller_wrapper_ptr, OnAudioStreamEnd).Times(1);
   producer.OnLocalCaptionConfigUpdated(/*local_captions_enabled=*/false);
 
@@ -438,6 +478,33 @@ TEST_F(BabelOrcaProducerTest, DisableLocalWhileSessionCaptionsEnabled) {
 
   // Called on destruction.
   EXPECT_CALL(*caption_controller_wrapper_ptr, OnAudioStreamEnd).Times(1);
+}
+
+TEST_F(BabelOrcaProducerTest, RestartCaptionsIfDispatchFailed) {
+  media::SpeechRecognitionResult transcript("transcript", /*is_final=*/true);
+  MockLiveCaptionControllerWrapper* caption_controller_wrapper_ptr =
+      caption_controller_wrapper_.get();
+  MockSpeechRecognizer* speech_recognizer_ptr = speech_recognizer_.get();
+  TranscriptionResultCallback transcript_cb;
+  BabelOrcaProducer producer(
+      url_loader_factory_.GetSafeWeakWrapper(), std::move(speech_recognizer_),
+      std::move(caption_controller_wrapper_), std::move(authed_client_),
+      &request_data_provider_);
+
+  EXPECT_CALL(*speech_recognizer_ptr, ObserveTranscriptionResult)
+      .WillOnce(
+          [&transcript_cb](TranscriptionResultCallback transcript_cb_param) {
+            transcript_cb = std::move(transcript_cb_param);
+          });
+  producer.OnLocalCaptionConfigUpdated(/*local_captions_enabled=*/true);
+
+  ASSERT_TRUE(transcript_cb);
+  EXPECT_CALL(*caption_controller_wrapper_ptr,
+              DispatchTranscription(transcript))
+      .WillOnce(testing::Return(false))
+      .WillOnce(testing::Return(true));
+  EXPECT_CALL(*caption_controller_wrapper_ptr, RestartCaptions).Times(1);
+  transcript_cb.Run(transcript, kLanguage);
 }
 
 }  // namespace

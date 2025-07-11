@@ -78,10 +78,8 @@
 <translation id="228293613124499805">De fleste af de websites, du besøger, gemmer sandsynligvis data på din enhed, ofte for at forbedre din brugeroplevelse ved at gemme de præferencer eller oplysninger, du deler med websitet. Vi anbefaler, at denne indstilling forbliver aktiveret.</translation>
 <translation id="2289270750774289114">Spørg, når et website vil søge efter Bluetooth-enheder i nærheden (anbefalet)</translation>
 <translation id="2315043854645842844">Klientens certifikatvalg understøttes ikke af operativsystemet.</translation>
-<translation id="2321958826496381788">Træk i skyderen, indtil du kan nemt læse dette. Teksten som minimum have denne størrelse, når du har trykket to gange på et afsnit.</translation>
 <translation id="2359808026110333948">Fortsæt</translation>
 <translation id="2379925928934107488">Anvend Mørkt tema på websites, når Chrome anvender Mørkt tema (når det er muligt)</translation>
-<translation id="2387895666653383613">Tekststørrelse</translation>
 <translation id="2390272837142897736">Zoom in</translation>
 <translation id="2402980924095424747"><ph name="MEGABYTES" /> MB</translation>
 <translation id="2404630663942400771">{PERMISSIONS_SUMMARY_ALLOWED,plural, =1{<ph name="PERMISSION_1" />, <ph name="PERMISSION_2" /> og <ph name="NUM_MORE" /> mere er tilladt}one{<ph name="PERMISSION_1" />, <ph name="PERMISSION_2" />, and <ph name="NUM_MORE" /> more allowed}other{<ph name="PERMISSION_1" />, <ph name="PERMISSION_2" /> og <ph name="NUM_MORE" /> mere er tilladt}}</translation>
@@ -106,7 +104,6 @@
 <translation id="2621115761605608342">Tillad JavaScript for et bestemt website.</translation>
 <translation id="2653659639078652383">Send</translation>
 <translation id="2677748264148917807">Forlad</translation>
-<translation id="2678468611080193228">Prøv midlertidigt at tillade tredjepartscookies, hvilket vil betyde mindre beskyttelse, men større sandsynlighed for, at websitefunktionerne fungerer</translation>
 <translation id="2682367912565197520">Slet gemt zoomniveau</translation>
 <translation id="2683434792633810741">Vil du slette og gendanne?</translation>
 <translation id="2713106313042589954">Slå kamera fra</translation>
@@ -158,7 +155,6 @@
 <translation id="3403537308306431953"><ph name="ZOOM_LEVEL" /> %%</translation>
 <translation id="344449859752187052">Tredjepartscookies er blokeret</translation>
 <translation id="3448554387819310837">Når dette er slået til, kan websites anmode om at anvende dit kamera. Når dette er slået fra, kan websites ikke anvende dit kamera.</translation>
-<translation id="3465378418721443318">{DAYS,plural, =1{I morgen blokerer Chrome cookies igen}one{Chrome blokerer cookies igen om # dag}other{Chrome blokerer cookies igen om # dage}}</translation>
 <translation id="3521663503435878242">Websites på <ph name="DOMAIN" /></translation>
 <translation id="3523447078673133727">Tillad ikke, at websites registrerer dine hænder</translation>
 <translation id="3536227077203206203">Der er givet adgang denne gang</translation>
@@ -174,6 +170,7 @@
 <translation id="3669841141196828854">{COUNT,plural, =1{Der er <ph name="RWS_MEMBERS_COUNT" /> website i gruppen af websites, der tilhører <ph name="RWS_OWNER" />, som kan se din aktivitet i gruppen}one{Der er <ph name="RWS_MEMBERS_COUNT" /> website i gruppen af websites, der tilhører <ph name="RWS_OWNER" />, som kan se din aktivitet i gruppen}other{Der er <ph name="RWS_MEMBERS_COUNT" /> websites i gruppen af websites, der tilhører <ph name="RWS_OWNER" />, som kan se din aktivitet i gruppen}}</translation>
 <translation id="3697164069658504920">Når dette er slået til, kan websites anmode om tilladelse til at bruge USB-enheder. Når dette er slået fra, kan websites ikke anvende USB-enheder.</translation>
 <translation id="3707034683772193706">Et website, du besøger, kan gemme en lille mængde oplysninger i Chrome, primært for at tjekke, at du ikke er en bot</translation>
+<translation id="3709818294139939629">Websitets adgang til filen er fjernet</translation>
 <translation id="3721953990244350188">Afvis, og vis næste tilgængelige handling</translation>
 <translation id="3744111561329211289">Synkronisering i baggrunden</translation>
 <translation id="3763247130972274048">Tryk to gange i videoens venstre eller højre side for at springe ti sekunder frem eller tilbage</translation>
@@ -436,6 +433,7 @@
 <translation id="7425915948813553151">Mørkt tema på websites</translation>
 <translation id="7521387064766892559">JavaScript</translation>
 <translation id="7547989957535180761">Når dette er slået til, kan websites vise loginmeddelelser. Når dette er slået fra, kan websites ikke vise loginmeddelelser.</translation>
+<translation id="7553211568594248088">Afslut søgehub</translation>
 <translation id="7554752735887601236">Et website anvender din mikrofon</translation>
 <translation id="7561196759112975576">Altid</translation>
 <translation id="757524316907819857">Bloker afspilning af beskyttet indhold på websites</translation>
@@ -444,7 +442,6 @@
 <translation id="7649070708921625228">Hjælp</translation>
 <translation id="7658239707568436148">Annuller</translation>
 <translation id="7667547420449112975">Den vidunderlige troldmand fra Oz</translation>
-<translation id="7684642910516280563">Tillad ikke, at et website bruger tredjepartscookies</translation>
 <translation id="7688240020069572972">Skjul kort med Chrome-tip</translation>
 <translation id="7719367874908701697">Sidezoom</translation>
 <translation id="7759147511335618829">Styring/omprogrammering af MIDI</translation>
@@ -478,6 +475,7 @@
 <translation id="813082847718468539">Se websiteoplysninger</translation>
 <translation id="8131740175452115882">Bekræft</translation>
 <translation id="8168435359814927499">Indhold</translation>
+<translation id="818487310457576362">Træk fra siden af skærmen for at afslutte fuld skærm.</translation>
 <translation id="8186479265534291036">Fungerer websitet ikke? Tredjepartscookies er blokeret</translation>
 <translation id="8197286292360124385"><ph name="PERMISSION_1" /> blev tilladt</translation>
 <translation id="8200772114523450471">Genoptag</translation>
@@ -520,7 +518,7 @@
 <translation id="8719283222052720129">Aktivér tilladelse for <ph name="APP_NAME" /> i <ph name="BEGIN_LINK" />Android-indstillingerne<ph name="END_LINK" />.</translation>
 <translation id="8721719390026067591">Når dette er slået til, kan websites anmode om tilladelse til at søge efter Bluetooth-enheder. Når dette er slået fra, kan websites ikke søge efter Bluetooth-enheder.</translation>
 <translation id="8725066075913043281">Forsøg igen</translation>
-<translation id="8730621377337864115">Udfør</translation>
+<translation id="8730621377337864115">Udført</translation>
 <translation id="8737426583868847403">Websites, du har gemt et tilpasset zoomniveau for, vises her</translation>
 <translation id="8751914237388039244">Vælg et billede</translation>
 <translation id="8800034312320686233">Fungerer websitet ikke?</translation>

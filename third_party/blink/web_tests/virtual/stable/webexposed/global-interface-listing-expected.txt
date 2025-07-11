@@ -442,6 +442,7 @@ interface BrowserCaptureMediaStreamTrack : MediaStreamTrack
     attribute @@toStringTag
     method constructor
     method cropTo
+    method restrictTo
 interface ByteLengthQueuingStrategy
     attribute @@toStringTag
     getter highWaterMark
@@ -2754,6 +2755,7 @@ interface GPUComputePipeline
     setter label
 interface GPUDevice : EventTarget
     attribute @@toStringTag
+    getter adapterInfo
     getter features
     getter label
     getter limits
@@ -4958,6 +4960,7 @@ interface IdentityCredentialError : DOMException
 interface IdentityProvider
     static method close
     static method getUserInfo
+    static method resolve
     attribute @@toStringTag
     method constructor
 interface IdleDeadline
@@ -6030,6 +6033,7 @@ interface Navigator
     method getBattery
     method getGamepads
     method getInstalledRelatedApps
+    method getInterestGroupAdAuctionData
     method getUserMedia
     method javaEnabled
     method joinAdInterestGroup
@@ -7326,6 +7330,10 @@ interface Response
     method formData
     method json
     method text
+interface RestrictionTarget
+    static method fromElement
+    attribute @@toStringTag
+    method constructor
 interface SVGAElement : SVGGraphicsElement
     attribute @@toStringTag
     getter href

@@ -4,7 +4,9 @@
 
 #include "net/websockets/websocket_chunk_assembler.h"
 
+#include "base/compiler_specific.h"
 #include "base/containers/extend.h"
+#include "base/containers/span.h"
 #include "base/types/expected.h"
 #include "net/base/net_errors.h"
 #include "net/websockets/websocket_errors.h"
@@ -21,10 +23,15 @@ constexpr uint64_t kMaxControlFramePayload = 125;
 // Utility function to create a WebSocketFrame
 std::unique_ptr<WebSocketFrame> MakeWebSocketFrame(
     const WebSocketFrameHeader& header,
-    const char* payload) {
+    base::span<uint8_t> payload) {
   auto frame = std::make_unique<WebSocketFrame>(header.opcode);
   frame->header.CopyFrom(header);
+
+  if (header.masked) {
+    MaskWebSocketFramePayload(header.masking_key, 0, payload);
+  }
   frame->payload = payload;
+
   return frame;
 }
 
@@ -87,8 +94,8 @@ WebSocketChunkAssembler::HandleChunk(
   if (is_single_chunk_frame) {
     CHECK_EQ(current_frame_header_->payload_length, chunk->payload.size());
 
-    auto frame =
-        MakeWebSocketFrame(*current_frame_header_, chunk->payload.data());
+    auto frame = MakeWebSocketFrame(*current_frame_header_,
+                                    base::as_writable_bytes(chunk->payload));
     state_ = AssemblyState::kMessageFinished;
     return frame;
   }
@@ -96,8 +103,8 @@ WebSocketChunkAssembler::HandleChunk(
   // For data frames, process each chunk separately without accumulating all
   // in memory (streaming to render process)
   if (is_data_frame) {
-    auto frame =
-        MakeWebSocketFrame(*current_frame_header_, chunk->payload.data());
+    auto frame = MakeWebSocketFrame(*current_frame_header_,
+                                    base::as_writable_bytes(chunk->payload));
 
     // Since we are synthesizing a frame that the origin server didn't send,
     // we need to comply with the requirement ourselves.
@@ -136,7 +143,8 @@ WebSocketChunkAssembler::HandleChunk(
 
   CHECK_EQ(current_frame_header_->payload_length, chunk_buffer_.size());
 
-  auto frame = MakeWebSocketFrame(*current_frame_header_, chunk_buffer_.data());
+  auto frame = MakeWebSocketFrame(*current_frame_header_,
+                                  base::as_writable_byte_span(chunk_buffer_));
 
   state_ = AssemblyState::kMessageFinished;
   return frame;

@@ -178,7 +178,7 @@ Pour commencer, voici des exemples de ce que vous pouvez me demander.</translati
 <translation id="1550523713251050646">Cliquez pour obtenir plus d'options.</translation>
 <translation id="1555130319947370107">Bleu</translation>
 <translation id="1557622599341396706">Afficher le nom du bureau</translation>
-<translation id="1567138500090284106">Bouton "Touches pour la souris"</translation>
+<translation id="1567138500090284106">Bouton des touches pour la souris</translation>
 <translation id="1569384531973824928">L'accès est accordé à l'ensemble des applis et sites Web ayant l'autorisation d'accéder à l'appareil photo et au micro. Vous devrez peut-être actualiser la page Web ou redémarrer l'appli.</translation>
 <translation id="1571697193564730395">Activer/Désactiver Ne pas déranger. <ph name="STATE_TEXT" /></translation>
 <translation id="1576623706766186887">Faire un zoom arrière lorsque la loupe est activée</translation>
@@ -630,7 +630,6 @@ Sinon, le pavé tactile intégré sera réactivé dans <ph name="TIMEOUT_SECONDS
 <translation id="3208321278970793882">Application</translation>
 <translation id="3213571860604332401">Enregistrer le lien dans les favoris</translation>
 <translation id="3217205077783620295">Le son est activé et peut être coupé lorsque vous cliquez sur le bouton de volume.</translation>
-<translation id="3218561536255328229">Appuyez cinq fois sur Échap pour activer le pavé tactile</translation>
 <translation id="3226991577105957773">+ <ph name="COUNT" /> autres</translation>
 <translation id="3227137524299004712">Micro</translation>
 <translation id="3233611303007751344">Économiseur de batterie désactivé</translation>
@@ -831,7 +830,7 @@ Branchez votre appareil sur une source d'alimentation.</translation>
 <translation id="3870197372373144624">Essayez d'éteindre votre appareil.</translation>
 <translation id="3886872229787704059">Ouvert aujourd'hui</translation>
 <translation id="3891340733213178823">Appuyez deux fois sur Ctrl + Maj + Q pour vous déconnecter.</translation>
-<translation id="3893630138897523026">ChromeVox (commentaires audio)</translation>
+<translation id="3893630138897523026">ChromeVox (lecture vocale)</translation>
 <translation id="3897533311200664389">Soumettre une requête textuelle</translation>
 <translation id="3898464793473355515">Faire pivoter l'écran de 90 degrés dans le sens des aiguilles d'une montre</translation>
 <translation id="3899995891769452915">Saisie vocale</translation>
@@ -868,7 +867,7 @@ Branchez votre appareil sur une source d'alimentation.</translation>
 <translation id="4002066346123236978">Titre</translation>
 <translation id="40062176907008878">Écriture manuscrite</translation>
 <translation id="4011112806063830608">Ne pas déranger activé.</translation>
-<translation id="4015144849380506405">Suspendre/Réactiver les boutons de la souris</translation>
+<translation id="4015144849380506405">Suspendre/Réactiver les touches pour la souris</translation>
 <translation id="4017989525502048489">Pointeur laser</translation>
 <translation id="401993194061514265">Marqueur non disponible. Rouvrez l'Enregistreur d'écran.</translation>
 <translation id="4021716437419160885">Faire défiler vers le bas</translation>
@@ -1258,7 +1257,7 @@ Vous pouvez aussi utiliser le raccourci clavier. Mettez d'abord le texte en surb
 <translation id="5265391159779542051">Résultats chargés</translation>
 <translation id="5270547718570958938">Google Agenda</translation>
 <translation id="5277869901083657836">Activer/Désactiver les outils de stylet</translation>
-<translation id="5278086053818066789">Activer/Désactiver ChromeVox (commentaires audio)</translation>
+<translation id="5278086053818066789">Activer/Désactiver ChromeVox (lecture vocale)</translation>
 <translation id="5283099933536931082"><ph name="APP_ITEM_TITLE" /> requiert votre attention.</translation>
 <translation id="5283198616748585639">Ajouter une minute</translation>
 <translation id="528468243742722775">Fin</translation>
@@ -1305,6 +1304,7 @@ Aucun appareil connecté.</translation>
 <translation id="5393156353051693207">Appuyez de manière prolongée n'importe où pour réorganiser les applis</translation>
 <translation id="5395308026110844773"><ph name="DRAGGED_APP_NAME" /> sur <ph name="IN_PLACE_APP" />. Relâcher pour créer un dossier.</translation>
 <translation id="5397578532367286026">Le gestionnaire (<ph name="MANAGER_EMAIL" />) peut consulter les actions effectuées cet utilisateur, ainsi que son historique, sur chrome.com.</translation>
+<translation id="540338817371815859">Paysage</translation>
 <translation id="540713187982329711">Activer/Désactiver le point d'accès. Le point d'accès est activé, aucun appareil n'est connecté.</translation>
 <translation id="5409208741270395213">Marquer une tâche comme terminée</translation>
 <translation id="5413656666631274079">Page de paramètres</translation>
@@ -1366,7 +1366,7 @@ Aucun appareil connecté.</translation>
 <translation id="5596627076506792578">Plus d'options</translation>
 <translation id="5599242528220103262">Le raccourci clavier est désactivé</translation>
 <translation id="5600415762228455511">Le mode Sans distractions est activé pour la tâche <ph name="TASK_NAME" />. Il reste <ph name="REMAINING_TIME" />.</translation>
-<translation id="5600837773213129531">Appuyez sur Ctrl+Alt+Z pour désactiver les commentaires audio.</translation>
+<translation id="5600837773213129531">Appuyez sur Ctrl+Alt+Z pour désactiver la lecture vocale.</translation>
 <translation id="5601503069213153581">Code d'accès</translation>
 <translation id="5618148318840095371">Nous vous avons connecté à un meilleur réseau</translation>
 <translation id="5619862035903135339">Une règle définie par l'administrateur a désactivé la capture d'écran</translation>
@@ -1385,7 +1385,7 @@ Aucun appareil connecté.</translation>
 <translation id="5672890847723042801">Utilitaires</translation>
 <translation id="5673434351075758678">La langue utilisée est passée de "<ph name="FROM_LOCALE" />" à "<ph name="TO_LOCALE" />" après la synchronisation de vos paramètres.</translation>
 <translation id="5675363643668471212">Élément d'étagère</translation>
-<translation id="5677928146339483299">Bloqués</translation>
+<translation id="5677928146339483299">Bloqué</translation>
 <translation id="5678564054339031017">Afficher la semaine suivante</translation>
 <translation id="5679050765726761783">Adaptateur basse consommation branché</translation>
 <translation id="5682642926269496722">L'Assistant Google n'est pas disponible pour le compte utilisateur actuel.</translation>
@@ -1667,7 +1667,7 @@ Nouvelle installation</translation>
 <translation id="6593850935013518327"><ph name="PRIMARY_TEXT" />, <ph name="SECONDARY_TEXT" /></translation>
 <translation id="6597278316891651699">Appareil photo aligné sur l'angle inférieur gauche. Conflit avec la surface du système.</translation>
 <translation id="6605415194043280389">Le mode Sans distractions est activé</translation>
-<translation id="660846213831377756">Boutons de la souris</translation>
+<translation id="660846213831377756">Touches pour la souris</translation>
 <translation id="661203523074512333"><ph name="SECURITY_STATUS" />, force du signal : <ph name="SIGNAL_STRENGTH" />, géré par votre administrateur</translation>
 <translation id="6612802754306526077">Mode d'enregistreur d'écran sélectionné</translation>
 <translation id="6612889377159412215">tâche secondaire</translation>
@@ -1767,6 +1767,7 @@ Nouvelle installation</translation>
 <translation id="6921427376813842559">Mettre à jour l'appareil</translation>
 <translation id="6929081673585394903">Afficher les commandes</translation>
 <translation id="6931576957638141829">Enregistrer sous</translation>
+<translation id="6935857786205183008">Portrait</translation>
 <translation id="6942518653766415536">Menu du format d'enregistrement</translation>
 <translation id="6945221475159498467">Sélectionner</translation>
 <translation id="6945922087561257829">Votre téléphone utilise un réseau mobile. Assurez-vous que votre téléphone et votre Chromebook sont connectés au même réseau Wi-Fi, puis réessayez. <ph name="LEARN_MORE" /></translation>
@@ -1961,7 +1962,7 @@ Pour éteindre l'appareil, appuyez à nouveau de manière prolongée sur le bout
 <translation id="7645176681409127223"><ph name="USER_NAME" /> (propriétaire)</translation>
 <translation id="7647488630410863958">Déverrouiller l'appareil pour consulter vos notifications</translation>
 <translation id="7649070708921625228">Aide</translation>
-<translation id="7654687942625752712">Appuyez pendant cinq secondes sur les deux touches de volume pour désactiver les commentaires audio.</translation>
+<translation id="7654687942625752712">Appuyez pendant cinq secondes sur les deux touches de volume pour désactiver la lecture vocale.</translation>
 <translation id="7654916369822103315">La résolution de <ph name="DISPLAY_NAME" /> a été passée en <ph name="FALLBACK_RESOLUTION" /> (<ph name="FALLBACK_REFRESH_RATE" /> Hz). En raison de limitations de bande passante du port, votre écran n'est pas compatible avec une résolution de <ph name="SPECIFIED_RESOLUTION" /> (<ph name="SPECIFIED_REFRESH_RATE" /> Hz). Si vous ne confirmez pas, les paramètres précédents seront restaurés dans <ph name="TIMEOUT_SECONDS" />.</translation>
 <translation id="7658239707568436148">Annuler</translation>
 <translation id="7659861092419699379">Le bureau et les fenêtres ont été fermés</translation>
@@ -2429,12 +2430,13 @@ Pour éteindre l'appareil, appuyez à nouveau de manière prolongée sur le bout
 <translation id="954052413789300507">Espace insuffisant pour <ph name="FILENAME" />. Libérez de l'espace.</translation>
 <translation id="954520015070501466">30 min</translation>
 <translation id="956452277966142925">Paramètres du tableau de bord Jeux</translation>
-<translation id="961856697154696964">Supprimer données navigation</translation>
+<translation id="961856697154696964">Supprimer les données de navigation</translation>
 <translation id="974545358917229949">Affichage de <ph name="RESULT_COUNT" /> résultats pour <ph name="QUERY" /></translation>
 <translation id="981011780479609956">Aucune date limite</translation>
 <translation id="98120814841227350">Accéder à la fin du document</translation>
 <translation id="987589956647469042">Les données mobiles sont activées</translation>
 <translation id="989374776391122812">Commandes audio et de la caméra</translation>
+<translation id="990263227494928142">Appuyez cinq fois sur Maj pour activer le pavé tactile</translation>
 <translation id="990277280839877440">Fenêtre <ph name="WINDOW_TITILE" /> fermée.</translation>
 <translation id="993398562350683614">Étape <ph name="STEP" /> sur <ph name="TOTAL_STEPS" /> de la visite. Utilisez des applis pour tout ce dont vous avez besoin sur votre <ph name="PRODUCT_NAME" />. Vous trouverez vos applis dans le Lanceur d'applications. Appuyez sur Alt+Maj+L pour sélectionner le bouton du Lanceur d'applications.</translation>
 <translation id="994354411665877646"><ph name="NETWORK_NAME" />, <ph name="SUBTEXT" /></translation>

@@ -140,10 +140,10 @@ void CertificateManagerPageHandler::ImportAndBindCertificate(
 
 void CertificateManagerPageHandler::DeleteCertificate(
     certificate_manager_v2::mojom::CertificateSource source_id,
-    const std::string& sha256hash_hex,
     const std::string& display_name,
+    const std::string& sha256hash_hex,
     DeleteCertificateCallback callback) {
-  GetCertSource(source_id).DeleteCertificate(sha256hash_hex, display_name,
+  GetCertSource(source_id).DeleteCertificate(display_name, sha256hash_hex,
                                              std::move(callback));
 }
 
@@ -257,6 +257,13 @@ void CertificateManagerPageHandler::SetIncludeSystemTrustStore(bool include) {
 }
 #endif
 
+void CertificateManagerPageHandler::RegisterProfilePrefs(
+    user_prefs::PrefRegistrySyncable* registry) {
+  registry->RegisterIntegerPref(
+      prefs::kCACertificateManagementAllowed,
+      static_cast<int>(CACertificateManagementPermission::kAll));
+}
+
 void CertificateManagerPageHandler::CertSource::ImportCertificate(
     base::WeakPtr<content::WebContents> web_contents,
     CertificateManagerPageHandler::ImportCertificateCallback callback) {
@@ -272,8 +279,8 @@ void CertificateManagerPageHandler::CertSource::ImportAndBindCertificate(
 }
 
 void CertificateManagerPageHandler::CertSource::DeleteCertificate(
-    const std::string& sha256hash_hex,
     const std::string& display_name,
+    const std::string& sha256hash_hex,
     CertificateManagerPageHandler::DeleteCertificateCallback callback) {
   std::move(callback).Run(
       certificate_manager_v2::mojom::ActionResult::NewError("not implemented"));

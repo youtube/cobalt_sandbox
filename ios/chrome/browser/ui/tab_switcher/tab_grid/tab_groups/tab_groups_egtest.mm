@@ -21,6 +21,7 @@
 #import "ios/chrome/test/earl_grey/chrome_matchers.h"
 #import "ios/chrome/test/earl_grey/chrome_matchers_app_interface.h"
 #import "ios/chrome/test/earl_grey/chrome_test_case.h"
+#import "ios/chrome/test/earl_grey/chrome_xcui_actions.h"
 #import "ios/chrome/test/earl_grey/web_http_server_chrome_test_case.h"
 #import "ios/testing/earl_grey/app_launch_manager.h"
 #import "ios/testing/earl_grey/earl_grey_test.h"
@@ -226,6 +227,11 @@ id<GREYMatcher> GetMatcherForPinnedCellWithTitle(NSString* title) {
   return grey_allOf(
       grey_accessibilityLabel([NSString stringWithFormat:@"Pinned, %@", title]),
       grey_kindOfClassName(@"PinnedCell"), grey_sufficientlyVisible(), nil);
+}
+
+// Identifier for the cell at the given `index` in the grid.
+NSString* IdentifierForGridCellAtIndex(unsigned int index) {
+  return [NSString stringWithFormat:@"%@%u", kGridCellIdentifierPrefix, index];
 }
 
 }  // namespace
@@ -1105,6 +1111,36 @@ id<GREYMatcher> GetMatcherForPinnedCellWithTitle(NSString* title) {
       performAction:grey_tap()];
 }
 
+// Tests drag and drop the last tab from a group to another window.
+- (void)testDragAndDropLastTabToOtherWindow {
+  if (![ChromeEarlGrey areMultipleWindowsSupported]) {
+    EARL_GREY_TEST_SKIPPED(@"Multiple windows can't be opened.");
+  }
+
+  // Create a group and open it.
+  [ChromeEarlGreyUI openTabGrid];
+  OpenTabGroupCreationViewUsingLongPressForCellAtIndex(0);
+  SetTabGroupCreationName(kGroup1Name);
+  [[EarlGrey selectElementWithMatcher:CreateTabGroupCreateButton()]
+      performAction:grey_tap()];
+  [ChromeEarlGrey
+      waitForUIElementToDisappearWithMatcher:TabGroupCreationView()];
+  [[EarlGrey selectElementWithMatcher:TabGridGroupCellWithName(kGroup1Name, 1)]
+      performAction:grey_tap()];
+
+  // Open tab grid on second window.
+  [ChromeEarlGrey openNewWindow];
+  [ChromeEarlGrey waitUntilReadyWindowWithNumber:1];
+  [ChromeEarlGrey waitForForegroundWindowCount:2];
+  [EarlGrey setRootMatcherForSubsequentInteractions:WindowWithNumber(1)];
+  [ChromeEarlGreyUI openTabGrid];
+
+  GREYAssert(chrome_test_util::LongPressCellAndDragToOffsetOf(
+                 IdentifierForGridCellAtIndex(0), 0,
+                 IdentifierForGridCellAtIndex(0), 1, CGVectorMake(0.5, 0.5)),
+             @"Failed to DND cell on window");
+}
+
 // Tests re-opening a group from Search in another window.
 - (void)testReopenGroupFromAnotherWindow {
   if (![ChromeEarlGrey areMultipleWindowsSupported]) {
@@ -1584,6 +1620,41 @@ id<GREYMatcher> GetMatcherForPinnedCellWithTitle(NSString* title) {
 
   // Make sure that the tab grid is empty.
   [ChromeEarlGrey waitForMainTabCount:0 inWindowWithNumber:0];
+}
+
+// Tests renaming a group from the overflow menu in the group view.
+- (void)testRenamingGroupFromGroupView {
+  // Create a tab cell with `Tab 1` as its title.
+  [ChromeEarlGrey loadURL:GetQueryTitleURL(self.testServer, kTab1Title)];
+  [ChromeEarlGreyUI openTabGrid];
+
+  CreateDefaultFirstGroupFromTabCellAtIndex(0);
+
+  // Open the group view.
+  OpenTabGroupAtIndex(0);
+
+  // Display the tab group overflow menu.
+  [[EarlGrey selectElementWithMatcher:TabGroupOverflowMenuButton()]
+      performAction:grey_tap()];
+
+  // Tap the rename group button.
+  [[EarlGrey selectElementWithMatcher:RenameGroupButton()]
+      performAction:grey_tap()];
+
+  // Rename the group.
+  [ChromeEarlGrey waitForUIElementToAppearWithMatcher:TabGroupCreationView()];
+  [ChromeEarlGrey simulatePhysicalKeyboardEvent:kGroup1Name flags:0];
+  [ChromeEarlGrey
+      waitForUIElementToAppearWithMatcher:grey_textFieldValue(kGroup1Name)];
+  [[EarlGrey selectElementWithMatcher:CreateTabGroupCreateButton()]
+      performAction:grey_tap()];
+  [ChromeEarlGrey
+      waitForUIElementToDisappearWithMatcher:TabGroupCreationView()];
+
+  // Check that the group name has been updated.
+  [[EarlGrey selectElementWithMatcher:grey_accessibilityID(
+                                          kTabGroupViewTitleIdentifier)]
+      assertWithMatcher:grey_accessibilityLabel(kGroup1Name)];
 }
 
 @end

@@ -5276,6 +5276,26 @@ class ChromeDriverTestLegacy(ChromeDriverBaseTestWithWebServer):
     self._driver.MouseClick()
     self.assertEqual(1, len(self._driver.FindElements('tag name', 'br')))
 
+  def testScriptMouseClick(self):
+    """ Regression test for crbug.com/379584343. """
+    self._driver.Load(self.GetHttpUrlForFile('/chromedriver/empty.html'))
+    div = self._driver.ExecuteScript(
+        'document.body.innerHTML = "<div>old</div>";'
+        'var div = document.getElementsByTagName("div")[0];'
+        'div.style["width"] = "100px";'
+        'div.style["height"] = "100px";'
+        'div.addEventListener("click", function() {'
+        '  var div = document.getElementsByTagName("div")[0];'
+        '  div.innerHTML="new<br>";'
+        '});'
+        'return div;')
+    elem = {
+        'element-6066-11e4-a52e-4f735466cecf': div._id,
+        'ELEMENT': div._id
+    }
+    self._driver.ExecuteScript('arguments[0].click()', elem)
+    self.assertEqual(1, len(self._driver.FindElements('tag name', 'br')))
+
   def testMouseDoubleClick(self):
     self._driver.Load(self.GetHttpUrlForFile('/chromedriver/empty.html'))
     div = self._driver.ExecuteScript(
@@ -6878,7 +6898,32 @@ class MobileEmulationCapabilityTest(ChromeDriverBaseTestWithWebServer):
     self.assertEqual(expected_ua, actual_ua)
 
 
-class ChromeDriverLogTest(ChromeDriverBaseTest):
+class CustomChromeDriverInstanceTest(ChromeDriverBaseTest):
+  """Tests that need to create a temporary ChromeDriver instance
+
+  This class makes sure that the temporary instances are shut down in the
+  tearDown.
+  See crbug.com/375974725.
+  """
+
+  def setUp(self):
+    self._chromedriver_servers = []
+
+  def tearDown(self):
+    for server in self._chromedriver_servers:
+      try:
+        server.Kill()
+      except:
+        pass
+    self._chromedriver_servers = []
+
+  def CreateChromeDriverServer(self, exe_path, **kwargs):
+    chromedriver_server = server.Server(exe_path, **kwargs)
+    self._chromedriver_servers.append(chromedriver_server)
+    return chromedriver_server
+
+
+class ChromeDriverLogTest(CustomChromeDriverInstanceTest):
   """Tests that chromedriver produces the expected log file."""
 
   UNEXPECTED_CHROMEOPTION_CAP = 'unexpected_chromeoption_capability'
@@ -6886,7 +6931,7 @@ class ChromeDriverLogTest(ChromeDriverBaseTest):
 
   def testChromeDriverLog(self):
     _, tmp_log_path = tempfile.mkstemp(prefix='chromedriver_log_')
-    chromedriver_server = server.Server(
+    chromedriver_server = self.CreateChromeDriverServer(
         _CHROMEDRIVER_BINARY, log_path=tmp_log_path)
     try:
       driver = chromedriver.ChromeDriver(
@@ -6904,7 +6949,7 @@ class ChromeDriverLogTest(ChromeDriverBaseTest):
 
   def testDisablingDriverLogsSuppressesChromeDriverLog(self):
     _, tmp_log_path = tempfile.mkstemp(prefix='chromedriver_log_')
-    chromedriver_server = server.Server(
+    chromedriver_server = self.CreateChromeDriverServer(
         _CHROMEDRIVER_BINARY, log_path=tmp_log_path, verbose=False)
     try:
       driver = self.CreateDriver(
@@ -8201,13 +8246,13 @@ class BidiTest(ChromeDriverBaseTestWithWebServer):
     self.assertEqual(driver.GetTitle(), '')
 
 
-class CustomBidiMapperTest(ChromeDriverBaseTest):
+class CustomBidiMapperTest(CustomChromeDriverInstanceTest):
   """Base class for testing chromedriver with a custom bidi mapper path."""
 
   def CreateDriver(self, bidi_mapper_path=None, **kwargs):
     log_path = os.path.join(_MINIDUMP_PATH, self.id() + '.chromedriver.log')
 
-    chromedriver_server = server.Server(
+    chromedriver_server = self.CreateChromeDriverServer(
         _CHROMEDRIVER_BINARY,
         log_path=log_path,
         bidi_mapper_path=bidi_mapper_path)

@@ -301,8 +301,8 @@ ShoppingService::ShoppingService(
         CanLoadProductSpecificationsFullPageUi(account_checker_.get())) {
       cluster_manager_ = std::make_unique<ClusterManager>(
           product_specifications_service_,
-          std::make_unique<ClusterServerProxy>(identity_manager,
-                                               url_loader_factory),
+          std::make_unique<ClusterServerProxy>(
+              identity_manager, url_loader_factory, account_checker_.get()),
           base::BindRepeating(&ShoppingService::GetProductInfoForUrl,
                               weak_ptr_factory_.GetWeakPtr()),
           base::BindRepeating(&ShoppingService::GetUrlInfosForActiveWebWrappers,
@@ -1107,8 +1107,16 @@ std::unique_ptr<ProductInfo> ShoppingService::OptGuideResultToProductInfo(
     info->category_data = buyable_product.category_data();
   }
 
-  for (int i = 0; i < buyable_product.price_summary_size(); ++i) {
-    info->price_summary.push_back(buyable_product.price_summary(i));
+  // TODO(376128060): Remove the feature check after M132.
+  if (CanLoadProductSpecificationsFullPageUi(account_checker_.get())) {
+    for (int i = 0; i < buyable_product.price_summary_size(); ++i) {
+      info->price_summary.push_back(buyable_product.price_summary(i));
+    }
+
+    if (buyable_product.has_price_display_recommendation()) {
+      info->price_display_recommendation =
+          buyable_product.price_display_recommendation();
+    }
   }
 
   return info;

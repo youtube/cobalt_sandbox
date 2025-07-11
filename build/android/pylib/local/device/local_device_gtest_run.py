@@ -298,9 +298,12 @@ class _ApkDelegate:
         logging.exception('gtest shard timed out.')
         exception_recorder.register(
             test_exception.StartInstrumentationTimeoutError(e))
-      except device_errors.DeviceUnreachableError:
+      except device_errors.DeviceUnreachableError as e:
+        exception_recorder.register(e)
         logging.exception('gtest shard device unreachable.')
       except Exception:
+        exception_recorder.register(
+            test_exception.StartInstrumentationError(e))
         device.ForceStop(self._package)
         raise
       finally:
@@ -318,7 +321,9 @@ class _ApkDelegate:
         stdout_file_content = device.ReadFile(stdout_file_path,
                                               as_root=self._env.force_main_user)
       except device_errors.AdbCommandFailedError as e:
-        raise test_exception.StartInstrumentationStdoutError(e) from None
+        exception_recorder.register(
+            test_exception.StartInstrumentationStdoutError(e))
+        raise
 
       return stdout_file_content.splitlines()
 

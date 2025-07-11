@@ -273,10 +273,15 @@ const ui::CocoaActionList& GetCocoaActionListForTesting() {
 
   dispatch_once(&onceToken, ^{
     dict = @{
+      @"accessibilityColumnIndexRange" :
+          NSAccessibilityColumnIndexRangeAttribute,
       @"accessibilityDisclosedByRow" : NSAccessibilityDisclosedByRowAttribute,
       @"accessibilityDisclosedRows" : NSAccessibilityDisclosedRowsAttribute,
       @"accessibilityDisclosureLevel" : NSAccessibilityDisclosureLevelAttribute,
+      @"accessibilityRowIndexRange" : NSAccessibilityRowIndexRangeAttribute,
+      @"accessibilitySortDirection" : NSAccessibilitySortDirectionAttribute,
       @"isAccessibilityDisclosed" : NSAccessibilityDisclosingAttribute,
+      @"isAccessibilityExpanded" : NSAccessibilityExpandedAttribute,
       @"isAccessibilityFocused" : NSAccessibilityFocusedAttribute,
     };
   });
@@ -1506,6 +1511,13 @@ const ui::CocoaActionList& GetCocoaActionListForTesting() {
   if (!_node)
     return nil;  // Return nil when detached. Even for ax::mojom::Role.
 
+  if ([[self class] isAttributeAvailableThroughNewAccessibilityAPI:attribute]) {
+    // TODO(crbug.com/376723178): We should be able to add a NOTREACHED()
+    // here, but at the moment, test infrastructure still directly calls this
+    // api endpoint.
+    return nil;
+  }
+
   SEL selector = NSSelectorFromString(attribute);
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Warc-performSelector-leaks"
@@ -1952,6 +1964,14 @@ const ui::CocoaActionList& GetCocoaActionListForTesting() {
 - (NSNumber*)AXEnabled {
   return
       @(_node->GetData().GetRestriction() != ax::mojom::Restriction::kDisabled);
+}
+
+- (BOOL)isAccessibilityExpanded {
+  // Keep logic consistent with `-[BrowserAccessibilityCocoa expanded]`
+  if (![self instanceActive]) {
+    return NO;
+  }
+  return _node->HasState(ax::mojom::State::kExpanded);
 }
 
 - (NSNumber*)AXFocused {
@@ -2598,6 +2618,42 @@ const ui::CocoaActionList& GetCocoaActionListForTesting() {
   return nil;
 }
 
+- (NSAccessibilitySortDirection)accessibilitySortDirection {
+  // Keep logic consistent with `-[BrowserAccessibilityCocoa sortDirection]`
+  if (![self instanceActive]) {
+    return NSAccessibilitySortDirectionUnknown;
+  }
+
+  // If this object should not support `accessibilitySortDirection`, treat
+  // the sort direction as unknown regardless of what's in the `AXNodeData`.
+  if ([self internalRole] != ax::mojom::Role::kRowHeader &&
+      [self internalRole] != ax::mojom::Role::kColumnHeader) {
+    return NSAccessibilitySortDirectionUnknown;
+  }
+
+  // The Core-AAM states that `aria-sort=none` is "not mapped".
+  int sortDirection;
+  if (!_node->GetIntAttribute(ax::mojom::IntAttribute::kSortDirection,
+                              &sortDirection) ||
+      static_cast<ax::mojom::SortDirection>(sortDirection) ==
+          ax::mojom::SortDirection::kUnsorted) {
+    return NSAccessibilitySortDirectionUnknown;
+  }
+
+  switch (static_cast<ax::mojom::SortDirection>(sortDirection)) {
+    case ax::mojom::SortDirection::kAscending:
+      return NSAccessibilitySortDirectionAscending;
+    case ax::mojom::SortDirection::kDescending:
+      return NSAccessibilitySortDirectionDescending;
+    case ax::mojom::SortDirection::kOther:
+      return NSAccessibilitySortDirectionUnknown;
+    default:
+      NOTREACHED_IN_MIGRATION();
+  }
+
+  return NSAccessibilitySortDirectionUnknown;
+}
+
 // NSAccessibility: Setting the Focus.
 - (void)setAccessibilityFocused:(BOOL)isFocused {
   if (!_node)
@@ -2770,6 +2826,32 @@ const ui::CocoaActionList& GetCocoaActionListForTesting() {
     return nil;
 
   return [self titleUIElement];
+}
+
+- (NSRange)accessibilityColumnIndexRange {
+  if (![self instanceActive] || ![self nodeDelegate]) {
+    return NSMakeRange(0, 0);
+  }
+
+  std::optional<int> column = [self nodeDelegate]->GetTableCellColIndex();
+  std::optional<int> columnSpan = [self nodeDelegate]->GetTableCellColSpan();
+  if (column && columnSpan) {
+    return NSMakeRange(*column, *columnSpan);
+  }
+  return NSMakeRange(0, 0);
+}
+
+- (NSRange)accessibilityRowIndexRange {
+  if (![self instanceActive] || ![self nodeDelegate]) {
+    return NSMakeRange(0, 0);
+  }
+
+  std::optional<int> row = [self nodeDelegate]->GetTableCellRowIndex();
+  std::optional<int> rowSpan = [self nodeDelegate]->GetTableCellRowSpan();
+  if (row && rowSpan) {
+    return NSMakeRange(*row, *rowSpan);
+  }
+  return NSMakeRange(0, 0);
 }
 
 //

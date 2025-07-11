@@ -422,6 +422,7 @@
 <translation id="4387004326333427325">遠端已拒絕驗證憑證</translation>
 <translation id="4394214039309501350">外部連結</translation>
 <translation id="4394980935660306080">本週較早前</translation>
+<translation id="4397435965699247285">OneDrive 無法離線使用</translation>
 <translation id="4398096759193130964">您可還原這些項目，或將這些項目拖曳至垃圾桶以外的新資料夾</translation>
 <translation id="4401287888955153199">解壓縮全部</translation>
 <translation id="4410695710508688828">擷取操作失敗：<ph name="ERROR_MESSAGE" /></translation>
@@ -582,7 +583,6 @@
 <translation id="5447680084201416734">儲存空間不足。</translation>
 <translation id="5449551289610225147">密碼無效</translation>
 <translation id="5459064203055649751">名稱為「<ph name="FILENAME" />」的檔案已經存在。要用正在移動的檔案取代這個檔案嗎？</translation>
-<translation id="5462378611565326489">OneDrive 無法離線使用。</translation>
 <translation id="5463231940765244860">輸入</translation>
 <translation id="5469868506864199649">意大利文</translation>
 <translation id="5473333559083690127">重新輸入新的 PIN</translation>

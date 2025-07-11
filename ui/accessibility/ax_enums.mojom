@@ -357,7 +357,10 @@ enum Role {
   kWindow = 184,
 };
 
-// Next value: 19
+// Bitfield value. Each state can either be true or false.
+//
+// Next version: 2
+// Next value: 20
 [Extensible, Stable, Uuid="35e7123a-f31f-4de7-94a4-3412dcb6bd5a"]
 enum State {
   [Default]kNone = 0,
@@ -382,6 +385,7 @@ enum State {
   // Grows vertically, e.g. menu or combo box.
   kVertical = 17,
   kVisited = 18,
+  [MinVersion=1] kHasActions = 19,
 };
 
 // An action to be taken on an accessibility node.
@@ -575,8 +579,8 @@ enum Mutation {
   kSubtreeUpdateEnd,
 };
 
-// Next version: 8
-// Next value: 42
+// Next version: 9
+// Next value: 43
 [Extensible, Stable, Uuid="e5a4cd0c-3152-4427-93d5-35ff7d0f1ae8"]
 enum StringAttribute {
   [Default]kNone = 0,
@@ -610,6 +614,7 @@ enum StringAttribute {
   kFontFamily = 13,
   [MinVersion=5] kHtmlId = 38,
   kHtmlTag = 14,
+  [MinVersion=8] kHtmlInputName = 42,
   // Stores an automatic image annotation if one is available. Only valid on
   // ax::mojom::Role::kImage. See kImageAnnotationStatus, too.
   kImageAnnotation = 15,

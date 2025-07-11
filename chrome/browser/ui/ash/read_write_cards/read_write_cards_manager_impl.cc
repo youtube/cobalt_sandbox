@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "ash/constants/ash_features.h"
 #include "base/command_line.h"
 #include "base/functional/callback.h"
 #include "base/hash/sha1.h"

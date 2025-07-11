@@ -65,6 +65,8 @@ source_set("web_applications") {
     "commands/web_app_icon_diagnostic_command.h",
     "commands/web_app_uninstall_command.cc",
     "commands/web_app_uninstall_command.h",
+    "commands/web_install_from_url_command.cc",
+    "commands/web_install_from_url_command.h",
     "daily_metrics_helper.cc",
     "daily_metrics_helper.h",
     "extension_status_utils.h",
@@ -216,12 +218,8 @@ source_set("web_applications") {
     "manifest_update_manager.h",
     "manifest_update_utils.cc",
     "manifest_update_utils.h",
-    "navigation_capturing_information_forwarder.cc",
-    "navigation_capturing_information_forwarder.h",
     "navigation_capturing_log.cc",
     "navigation_capturing_log.h",
-    "navigation_capturing_navigation_handle_user_data.cc",
-    "navigation_capturing_navigation_handle_user_data.h",
     "os_integration/file_handling_sub_manager.cc",
     "os_integration/file_handling_sub_manager.h",
     "os_integration/os_integration_manager.cc",
@@ -902,6 +900,7 @@ source_set("web_applications_unit_tests") {
     sources += [
       "os_integration/mac/app_shim_registry_unittest.cc",
       "os_integration/mac/icns_encoder_unittest.cc",
+      "os_integration/mac/icon_utils_unittest.mm",
       "os_integration/mac/shortcuts_versioning_mac_unittest.cc",
       "os_integration/mac/web_app_run_on_os_login_mac_unittest.mm",
       "os_integration/mac/web_app_shortcut_creator_unittest.mm",
@@ -922,6 +921,7 @@ source_set("web_applications_unit_tests") {
 
   if (is_chromeos) {
     sources += [
+      "chromeos_web_app_experiments_unittest.cc",
       "isolated_web_apps/policy/isolated_web_app_external_install_options_unittest.cc",
       "isolated_web_apps/policy/isolated_web_app_policy_manager_unittest.cc",
       "os_integration/web_app_run_on_os_login_chromeos_unittest.cc",
@@ -1035,6 +1035,7 @@ source_set("web_applications_browser_tests") {
     "commands/launch_web_app_command_browsertest.cc",
     "commands/navigate_and_trigger_install_dialog_command_browsertest.cc",
     "commands/update_protocol_handler_approval_command_browsertest.cc",
+    "commands/web_install_from_url_command_browsertest.cc",
     "isolated_web_apps/garbage_collect_storage_partitions_command_browsertest.cc",
     "isolated_web_apps/get_isolated_web_app_browsing_data_command_browsertest.cc",
     "isolated_web_apps/install_isolated_web_app_from_command_line_browsertest.cc",
@@ -1054,6 +1055,7 @@ source_set("web_applications_browser_tests") {
     "policy/web_app_policy_manager_browsertest.cc",
     "preinstalled_web_app_manager_browsertest.cc",
     "preinstalled_web_apps_browsertest.cc",
+    "sampling_metrics_provider_browsertest.cc",
     "user_uninstalled_preinstalled_web_app_prefs_browsertest.cc",
     "web_app_audio_focus_browsertest.cc",
     "web_app_icon_manager_browsertest.cc",
@@ -1099,6 +1101,7 @@ source_set("web_applications_browser_tests") {
 
   deps = [
     ":web_applications",
+    ":web_applications_metrics",
     ":web_applications_test_support",
     "//base",
     "//chrome/app:command_ids",

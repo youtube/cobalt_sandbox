@@ -5,7 +5,6 @@
 import("//build/util/process_version.gni")
 import("//chrome/enterprise_companion/branding.gni")
 import("//chrome/updater/zip.gni")
-import("//components/crx_file/crx3.gni")
 import("//testing/test.gni")
 
 process_version("version_header") {
@@ -96,6 +95,7 @@ source_set("base") {
     "//base",
     "//chrome/enterprise_companion/device_management_storage",
     "//chrome/enterprise_companion/proto",
+    "//chrome/enterprise_companion/telemetry_logger/proto",
     "//chrome/updater:public_sources",
     "//chrome/updater/protos:omaha_proto",
     "//components/named_mojo_ipc_server",
@@ -265,6 +265,7 @@ test("enterprise_companion_integration_tests") {
     "//base/test:test_support",
     "//chrome/enterprise_companion/device_management_storage",
     "//chrome/enterprise_companion/proto",
+    "//chrome/enterprise_companion/telemetry_logger/proto",
     "//chrome/updater:constants_test",
     "//chrome/updater:public_sources",
     "//chrome/updater/protos:omaha_proto",
@@ -277,7 +278,7 @@ test("enterprise_companion_integration_tests") {
     "//testing/gtest",
   ]
   data = [ "//testing/scripts/run_telemetry_as_googletest.py" ]
-  data_deps = [ ":enterprise_companion_test" ]
+  data_deps = []
 
   # The MacOS integration tests require the pkg installer to be built, which is
   # only possible on MacOS hosts.
@@ -286,8 +287,13 @@ test("enterprise_companion_integration_tests") {
     data_deps += [ "//chrome/enterprise_companion/mac:enterprise_companion_installer_unsigned" ]
   }
 
-  if (is_win) {
+  if (is_mac) {
+    data_deps +=
+        [ "//chrome/enterprise_companion/mac:enterprise_companion_bundle_test" ]
+  } else if (is_win) {
     sources += [ "test/integration_tests_win.cc" ]
+    data_deps += [ ":enterprise_companion_test" ]
+  } else if (is_linux) {
     data_deps += [ ":enterprise_companion_test" ]
   }
 

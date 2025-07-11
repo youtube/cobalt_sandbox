@@ -38,6 +38,7 @@
 #include "components/omnibox/browser/omnibox_feature_configs.h"
 #include "components/omnibox/browser/omnibox_field_trial.h"
 #include "components/omnibox/common/omnibox_features.h"
+#include "components/search_engines/default_search_manager.h"
 #include "components/search_engines/search_engine_type.h"
 #include "components/search_engines/search_engine_utils.h"
 #include "components/search_engines/template_url.h"
@@ -187,7 +188,11 @@ size_t ACMatchKeyHash<Args...>::operator()(
 // declaration here.
 template struct ACMatchKeyHash<std::u16string,
                                std::string>;  // base_search_provider
-template struct ACMatchKeyHash<std::string, bool, bool>;  // autocomplete_result
+// Deduplication key hash for AutocompleteResult.
+template struct ACMatchKeyHash<std::string,  // URL
+                               bool,         // Is Calculator type?
+                               bool,         // Is Verbatim Match?
+                               bool>;        // Is Answer card?
 
 // RichAutocompletionParams ---------------------------------------------------
 
@@ -815,8 +820,7 @@ ACMatchClassifications AutocompleteMatch::ClassificationsFromString(
     int classification_style = ACMatchClassification::NONE;
     if (!base::StringToInt(tokens[i], &classification_offset) ||
         !base::StringToInt(tokens[i + 1], &classification_style)) {
-      NOTREACHED_IN_MIGRATION();
-      return classifications;
+      NOTREACHED();
     }
     classifications.push_back(
         ACMatchClassification(classification_offset, classification_style));
@@ -1140,8 +1144,31 @@ void AutocompleteMatch::LogSearchEngineUsed(
             search_engine_type, SEARCH_ENGINE_MAX);
         break;
 
+      case TemplateURLData::CreatedByPolicy::kSearchAggregator:
+        UMA_HISTOGRAM_ENUMERATION(
+            "Omnibox.SearchEngineType.SetByEnterprisePolicy."
+            "EnterpriseSearchAggregatorSettings",
+            search_engine_type, SEARCH_ENGINE_MAX);
+        break;
+
       default:
-        NOTREACHED_IN_MIGRATION();
+        NOTREACHED();
+    }
+  } else if (template_url->type() == TemplateURL::NORMAL) {
+    if (template_url_service->GetDefaultSearchProvider() == template_url) {
+      DefaultSearchManager::Source source =
+          template_url_service->default_search_provider_source();
+      if (source == DefaultSearchManager::FROM_USER) {
+        UMA_HISTOGRAM_ENUMERATION(
+            "Omnibox.SearchEngineType.SetByUser."
+            "DefaultSearchProvider",
+            search_engine_type, SEARCH_ENGINE_MAX);
+      } else if (source == DefaultSearchManager::FROM_FALLBACK) {
+        UMA_HISTOGRAM_ENUMERATION(
+            "Omnibox.SearchEngineType.Fallback."
+            "DefaultSearchProvider",
+            search_engine_type, SEARCH_ENGINE_MAX);
+      }
     }
   } else if (template_url->type() ==
              TemplateURL::NORMAL_CONTROLLED_BY_EXTENSION) {
@@ -1383,8 +1410,7 @@ AutocompleteMatch::GetOmniboxEventResultType(int action_index) const {
         break;
       case OmniboxActionId::UNKNOWN:
       case OmniboxActionId::LAST:
-        NOTREACHED_IN_MIGRATION();
-        break;
+        NOTREACHED();
     }
   }
 

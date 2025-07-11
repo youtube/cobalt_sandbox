@@ -11,8 +11,13 @@
 #include "base/functional/callback_forward.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
+#include "base/metrics/metrics_hashes.h"
 #include "base/run_loop.h"
+#include "base/test/metrics/histogram_tester.h"
+#include "base/test/metrics/user_action_tester.h"
 #include "base/test/task_environment.h"
+#include "chromeos/ash/components/boca/babelorca/fakes/fake_translation_dispatcher.h"
+#include "chromeos/ash/components/boca/boca_metrics_util.h"
 #include "testing/gmock/include/gmock/gmock.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
@@ -29,33 +34,6 @@ constexpr char kTranscriptionPartial[] =
     "The red fox jumped over the lazy brown dog.";
 constexpr char kTranscriptionFullFinal[] =
     "The red fox jumped over the lazy brown dog. Hello there! ";
-
-class FakeBabelOrcaTranslationDispatcher
-    : public BabelOrcaTranslationDipsatcher {
- public:
-  FakeBabelOrcaTranslationDispatcher() = default;
-  ~FakeBabelOrcaTranslationDispatcher() override = default;
-
-  void GetTranslation(const std::string& result,
-                      std::string source_language,
-                      std::string target_language,
-                      captions::OnTranslateEventCallback callback) override {
-    ++num_translation_calls_;
-    std::move(callback).Run(result);
-  }
-
-  int GetNumGetTranslationCalls() { return num_translation_calls_; }
-
-  base::WeakPtr<FakeBabelOrcaTranslationDispatcher> GetWeakPtr() {
-    return weak_ptr_factory_.GetWeakPtr();
-  }
-
- private:
-  int num_translation_calls_;
-  base::WeakPtrFactory<FakeBabelOrcaTranslationDispatcher> weak_ptr_factory_{
-      this};
-};
-
 }  // namespace
 
 class BabelOrcaCaptionTranslatorTest : public testing::Test {
@@ -132,6 +110,8 @@ TEST_F(BabelOrcaCaptionTranslatorTest, NoCallbackNoOp) {
 }
 
 TEST_F(BabelOrcaCaptionTranslatorTest, ReturnsNullOptImmediately) {
+  base::UserActionTester actions;
+  base::HistogramTester histograms;
   base::RunLoop run_loop;
   caption_translator_->InitTranslationAndSetCallback(
       base::BindRepeating(&BabelOrcaCaptionTranslatorTest::NulloptCallback,
@@ -140,10 +120,19 @@ TEST_F(BabelOrcaCaptionTranslatorTest, ReturnsNullOptImmediately) {
       kDefaultSourceName, kDefaultTargetName);
   caption_translator_->Translate(std::nullopt);
   run_loop.Run();
+
+  histograms.ExpectTotalCount(boca::kBocaBabelorcaTargetLanguage, 1);
+  histograms.ExpectBucketCount(boca::kBocaBabelorcaTargetLanguage,
+                               base::HashMetricName(kDefaultTargetName), 1);
+  EXPECT_EQ(
+      actions.GetActionCount(boca::kBocaBabelorcaActionOfStudentSwitchLanguage),
+      1);
 }
 
 TEST_F(BabelOrcaCaptionTranslatorTest,
        ReturnsTranscriptionIfSourceAndTargetAreTheSame) {
+  base::UserActionTester actions;
+  base::HistogramTester histograms;
   base::RunLoop run_loop;
   caption_translator_->InitTranslationAndSetCallback(
       base::BindRepeating(
@@ -154,10 +143,16 @@ TEST_F(BabelOrcaCaptionTranslatorTest,
       media::SpeechRecognitionResult(kTranscriptionFull, false));
   run_loop.Run();
 
+  histograms.ExpectTotalCount(boca::kBocaBabelorcaTargetLanguage, 0);
+  EXPECT_EQ(
+      actions.GetActionCount(boca::kBocaBabelorcaActionOfStudentSwitchLanguage),
+      0);
   EXPECT_EQ(translation_dispatcher_->GetNumGetTranslationCalls(), 0);
 }
 
 TEST_F(BabelOrcaCaptionTranslatorTest, NoCacheTranslationNotFinal) {
+  base::UserActionTester actions;
+  base::HistogramTester histograms;
   base::RunLoop run_loop;
   caption_translator_->InitTranslationAndSetCallback(
       base::BindRepeating(
@@ -167,9 +162,18 @@ TEST_F(BabelOrcaCaptionTranslatorTest, NoCacheTranslationNotFinal) {
   caption_translator_->Translate(
       media::SpeechRecognitionResult(kTranscriptionFull, false));
   run_loop.Run();
+
+  histograms.ExpectTotalCount(boca::kBocaBabelorcaTargetLanguage, 1);
+  histograms.ExpectBucketCount(boca::kBocaBabelorcaTargetLanguage,
+                               base::HashMetricName(kDefaultTargetName), 1);
+  EXPECT_EQ(
+      actions.GetActionCount(boca::kBocaBabelorcaActionOfStudentSwitchLanguage),
+      1);
 }
 
 TEST_F(BabelOrcaCaptionTranslatorTest, NoCacheTranslationFinal) {
+  base::UserActionTester actions;
+  base::HistogramTester histograms;
   base::RunLoop run_loop;
   caption_translator_->InitTranslationAndSetCallback(
       base::BindRepeating(
@@ -179,9 +183,18 @@ TEST_F(BabelOrcaCaptionTranslatorTest, NoCacheTranslationFinal) {
   caption_translator_->Translate(
       media::SpeechRecognitionResult(kTranscriptionFull, true));
   run_loop.Run();
+
+  histograms.ExpectTotalCount(boca::kBocaBabelorcaTargetLanguage, 1);
+  histograms.ExpectBucketCount(boca::kBocaBabelorcaTargetLanguage,
+                               base::HashMetricName(kDefaultTargetName), 1);
+  EXPECT_EQ(
+      actions.GetActionCount(boca::kBocaBabelorcaActionOfStudentSwitchLanguage),
+      1);
 }
 
 TEST_F(BabelOrcaCaptionTranslatorTest, CachingTranslationNoWorkNeeded) {
+  base::UserActionTester actions;
+  base::HistogramTester histograms;
   base::RunLoop run_loop;
   caption_translator_->InitTranslationAndSetCallback(
       base::BindRepeating(
@@ -197,10 +210,18 @@ TEST_F(BabelOrcaCaptionTranslatorTest, CachingTranslationNoWorkNeeded) {
       media::SpeechRecognitionResult(kTranscriptionPartial, true));
   run_loop.Run();
 
+  histograms.ExpectTotalCount(boca::kBocaBabelorcaTargetLanguage, 1);
+  histograms.ExpectBucketCount(boca::kBocaBabelorcaTargetLanguage,
+                               base::HashMetricName(kIdeographicLanguage), 1);
+  EXPECT_EQ(
+      actions.GetActionCount(boca::kBocaBabelorcaActionOfStudentSwitchLanguage),
+      1);
   EXPECT_EQ(translation_dispatcher_->GetNumGetTranslationCalls(), 1);
 }
 
 TEST_F(BabelOrcaCaptionTranslatorTest, CachingTranslationClearsCache) {
+  base::UserActionTester actions;
+  base::HistogramTester histograms;
   base::RunLoop run_loop;
   caption_translator_->InitTranslationAndSetCallback(
       base::BindRepeating(
@@ -216,6 +237,12 @@ TEST_F(BabelOrcaCaptionTranslatorTest, CachingTranslationClearsCache) {
       media::SpeechRecognitionResult(kTranscriptionPartial, true));
   run_loop.Run();
 
+  histograms.ExpectTotalCount(boca::kBocaBabelorcaTargetLanguage, 1);
+  histograms.ExpectBucketCount(boca::kBocaBabelorcaTargetLanguage,
+                               base::HashMetricName(kIdeographicLanguage), 1);
+  EXPECT_EQ(
+      actions.GetActionCount(boca::kBocaBabelorcaActionOfStudentSwitchLanguage),
+      1);
   EXPECT_EQ(translation_dispatcher_->GetNumGetTranslationCalls(), 2);
 }
 

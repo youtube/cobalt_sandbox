@@ -10,6 +10,7 @@
  * #css_wrapper_metadata_end */
 
 cr-icon-button {
+  --cr-icon-button-fill-color: var(--color-tab-search-secondary-foreground);
   --cr-icon-button-icon-size: 16px;
   --cr-icon-button-margin-end: 0;
   --cr-icon-button-margin-start: 0;
@@ -17,7 +18,7 @@ cr-icon-button {
 }
 
 tab-search-item {
-  --tab-search-item-icon-margin: 8px;
+  --tab-search-item-icon-margin: 16px;
   --tab-search-favicon-background: var(--color-tab-search-background);
   align-items: center;
   display: flex;
@@ -49,6 +50,9 @@ tab-search-item {
   --non-scroll-border: solid 1px transparent;
   border-bottom: var(--non-scroll-border);
   border-top: var(--non-scroll-border);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   /* Render the scroll bar and scroll borders at the edge of the dialog */
   margin: 0 calc(-1 * var(--external-margin));
   overflow-y: auto;

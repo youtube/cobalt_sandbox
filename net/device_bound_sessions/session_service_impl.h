@@ -6,6 +6,7 @@
 #define NET_DEVICE_BOUND_SESSIONS_SESSION_SERVICE_IMPL_H_
 
 #include <map>
+#include <memory>
 #include <optional>
 
 #include "base/memory/weak_ptr.h"
@@ -13,6 +14,7 @@
 #include "net/device_bound_sessions/registration_fetcher.h"
 #include "net/device_bound_sessions/registration_fetcher_param.h"
 #include "net/device_bound_sessions/session.h"
+#include "net/device_bound_sessions/session_key.h"
 #include "net/device_bound_sessions/session_service.h"
 
 namespace net {
@@ -40,7 +42,8 @@ class NET_EXPORT SessionServiceImpl : public SessionService {
   // during construction. Otherwise, it is a no-op.
   void LoadSessionsAsync();
 
-  void RegisterBoundSession(RegistrationFetcherParam registration_params,
+  void RegisterBoundSession(OnAccessCallback on_access_callback,
+                            RegistrationFetcherParam registration_params,
                             const IsolationInfo& isolation_info) override;
 
   std::optional<Session::Id> GetAnySessionRequiringDeferral(
@@ -52,7 +55,8 @@ class NET_EXPORT SessionServiceImpl : public SessionService {
       RefreshCompleteCallback restart_callback,
       RefreshCompleteCallback continue_callback) override;
 
-  void SetChallengeForBoundSession(const GURL& request_url,
+  void SetChallengeForBoundSession(OnAccessCallback on_access_callback,
+                                   const GURL& request_url,
                                    const SessionChallengeParam& param) override;
 
   Session* GetSessionForTesting(const SchemefulSite& site,
@@ -67,12 +71,28 @@ class NET_EXPORT SessionServiceImpl : public SessionService {
   void OnLoadSessionsComplete(SessionsMap sessions);
 
   void OnRegistrationComplete(
+      OnAccessCallback on_access_callback,
       std::optional<RegistrationFetcher::RegistrationCompleteParams> params);
+
+  void StartSessionRefresh(
+      const Session& session,
+      const IsolationInfo& isolation_info,
+      // TODO(crbug.com/353764893): Replace this callback placeholder.
+      OnAccessCallback on_access_callback);
+  void AddSession(const SchemefulSite& site, std::unique_ptr<Session> session);
+  void ClearSession(const SchemefulSite& site, const Session::Id& id);
 
   // Get all the unexpired sessions for a given site. This also removes
   // expired sessions for the site and extends the TTL of used sessions.
   std::pair<SessionsMap::iterator, SessionsMap::iterator> GetSessionsForSite(
       const SchemefulSite& site);
+
+  // Remove a session from the session map. It also clears the session from
+  // `session_store_` and any BFCache entries.
+  // Return the iterator to the next session in the map.
+  [[nodiscard]] SessionsMap::iterator ClearSessionInternal(
+      const SchemefulSite& site,
+      SessionsMap::iterator it);
 
   const raw_ref<unexportable_keys::UnexportableKeyService> key_service_;
   raw_ptr<const URLRequestContext> context_;

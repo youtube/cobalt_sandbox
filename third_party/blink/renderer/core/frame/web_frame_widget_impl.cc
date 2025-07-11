@@ -1258,7 +1258,7 @@ WebInputEventResult WebFrameWidgetImpl::HandleGestureEvent(
           frame->GetEventHandler().HandleGestureEvent(targeted_event);
       break;
     default:
-      NOTREACHED_IN_MIGRATION();
+      NOTREACHED();
   }
   DidHandleGestureEvent(event);
   return event_result;
@@ -1472,6 +1472,21 @@ void WebFrameWidgetImpl::SendEndOfScrollEvents(
   }
 }
 
+void WebFrameWidgetImpl::HandleScrollMarkerUpdates(
+    const cc::CompositorCommitData& commit_data) {
+  for (const auto& scroll : commit_data.scrolls) {
+    Node* node =
+        View()->FindNodeFromScrollableCompositorElementId(scroll.element_id);
+    if (!node) {
+      continue;
+    }
+    if (ScrollableArea* scrollable_area =
+            ScrollableArea::GetForScrolling(node->GetLayoutBox())) {
+      scrollable_area->UpdateScrollMarkers(scrollable_area->GetScrollOffset());
+    }
+  }
+}
+
 void WebFrameWidgetImpl::SendScrollSnapChangingEventIfNeeded(
     const cc::CompositorCommitData& commit_data) {
   Node* target_node = View()->FindNodeFromScrollableCompositorElementId(
@@ -1505,6 +1520,8 @@ void WebFrameWidgetImpl::UpdateCompositorScrollState(
                                       commit_data.scroll_latched_element_id);
     }
   }
+
+  HandleScrollMarkerUpdates(commit_data);
 
   // TODO(bokan): If a scroll ended and a new one began in the same Blink frame
   // (e.g. during a long running main thread task), this will erroneously
@@ -2219,7 +2236,7 @@ void WebFrameWidgetImpl::PointerLockMouseEvent(
       // because pointer lost messaging happens on separate mojo channel.
       return;
     default:
-      NOTREACHED_IN_MIGRATION() << input_event.GetType();
+      NOTREACHED() << input_event.GetType();
   }
 
   if (GetPage()) {
@@ -3164,7 +3181,7 @@ WebInputEventResult WebFrameWidgetImpl::HandleCapturedMouseEvent(
       event_type = event_type_names::kMouseup;
       break;
     default:
-      NOTREACHED_IN_MIGRATION();
+      NOTREACHED();
   }
 
   WebMouseEvent transformed_event =

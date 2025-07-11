@@ -34,6 +34,9 @@ QuickInsertTextResult::QuickInsertTextResult(const QuickInsertTextResult&) =
     default;
 QuickInsertTextResult& QuickInsertTextResult::operator=(
     const QuickInsertTextResult&) = default;
+QuickInsertTextResult::QuickInsertTextResult(QuickInsertTextResult&&) = default;
+QuickInsertTextResult& QuickInsertTextResult::operator=(
+    QuickInsertTextResult&&) = default;
 QuickInsertTextResult::~QuickInsertTextResult() = default;
 
 bool QuickInsertTextResult::operator==(const QuickInsertTextResult&) const =
@@ -51,6 +54,10 @@ QuickInsertSearchRequestResult::QuickInsertSearchRequestResult(
     const QuickInsertSearchRequestResult&) = default;
 QuickInsertSearchRequestResult& QuickInsertSearchRequestResult::operator=(
     const QuickInsertSearchRequestResult&) = default;
+QuickInsertSearchRequestResult::QuickInsertSearchRequestResult(
+    QuickInsertSearchRequestResult&&) = default;
+QuickInsertSearchRequestResult& QuickInsertSearchRequestResult::operator=(
+    QuickInsertSearchRequestResult&&) = default;
 QuickInsertSearchRequestResult::~QuickInsertSearchRequestResult() = default;
 
 bool QuickInsertSearchRequestResult::operator==(
@@ -81,6 +88,10 @@ QuickInsertEmojiResult::QuickInsertEmojiResult(const QuickInsertEmojiResult&) =
     default;
 QuickInsertEmojiResult& QuickInsertEmojiResult::operator=(
     const QuickInsertEmojiResult&) = default;
+QuickInsertEmojiResult::QuickInsertEmojiResult(QuickInsertEmojiResult&&) =
+    default;
+QuickInsertEmojiResult& QuickInsertEmojiResult::operator=(
+    QuickInsertEmojiResult&&) = default;
 QuickInsertEmojiResult::~QuickInsertEmojiResult() = default;
 
 bool QuickInsertEmojiResult::operator==(const QuickInsertEmojiResult&) const =
@@ -104,6 +115,11 @@ QuickInsertGifResult::QuickInsertGifResult(const QuickInsertGifResult&) =
 
 QuickInsertGifResult& QuickInsertGifResult::operator=(
     const QuickInsertGifResult&) = default;
+
+QuickInsertGifResult::QuickInsertGifResult(QuickInsertGifResult&&) = default;
+
+QuickInsertGifResult& QuickInsertGifResult::operator=(QuickInsertGifResult&&) =
+    default;
 
 QuickInsertGifResult::~QuickInsertGifResult() = default;
 
@@ -130,6 +146,12 @@ QuickInsertClipboardResult::QuickInsertClipboardResult(
 QuickInsertClipboardResult& QuickInsertClipboardResult::operator=(
     const QuickInsertClipboardResult&) = default;
 
+QuickInsertClipboardResult::QuickInsertClipboardResult(
+    QuickInsertClipboardResult&&) = default;
+
+QuickInsertClipboardResult& QuickInsertClipboardResult::operator=(
+    QuickInsertClipboardResult&&) = default;
+
 QuickInsertClipboardResult::~QuickInsertClipboardResult() = default;
 
 bool QuickInsertClipboardResult::operator==(
@@ -147,6 +169,12 @@ QuickInsertLocalFileResult::QuickInsertLocalFileResult(
 
 QuickInsertLocalFileResult& QuickInsertLocalFileResult::operator=(
     const QuickInsertLocalFileResult&) = default;
+
+QuickInsertLocalFileResult::QuickInsertLocalFileResult(
+    QuickInsertLocalFileResult&&) = default;
+
+QuickInsertLocalFileResult& QuickInsertLocalFileResult::operator=(
+    QuickInsertLocalFileResult&&) = default;
 
 QuickInsertLocalFileResult::~QuickInsertLocalFileResult() = default;
 
@@ -171,6 +199,12 @@ QuickInsertDriveFileResult::QuickInsertDriveFileResult(
 QuickInsertDriveFileResult& QuickInsertDriveFileResult::operator=(
     const QuickInsertDriveFileResult&) = default;
 
+QuickInsertDriveFileResult::QuickInsertDriveFileResult(
+    QuickInsertDriveFileResult&&) = default;
+
+QuickInsertDriveFileResult& QuickInsertDriveFileResult::operator=(
+    QuickInsertDriveFileResult&&) = default;
+
 QuickInsertDriveFileResult::~QuickInsertDriveFileResult() = default;
 
 bool QuickInsertDriveFileResult::operator==(
@@ -192,6 +226,12 @@ QuickInsertBrowsingHistoryResult::QuickInsertBrowsingHistoryResult(
 QuickInsertBrowsingHistoryResult& QuickInsertBrowsingHistoryResult::operator=(
     const QuickInsertBrowsingHistoryResult&) = default;
 
+QuickInsertBrowsingHistoryResult::QuickInsertBrowsingHistoryResult(
+    QuickInsertBrowsingHistoryResult&&) = default;
+
+QuickInsertBrowsingHistoryResult& QuickInsertBrowsingHistoryResult::operator=(
+    QuickInsertBrowsingHistoryResult&&) = default;
+
 QuickInsertBrowsingHistoryResult::~QuickInsertBrowsingHistoryResult() = default;
 
 bool QuickInsertBrowsingHistoryResult::operator==(
@@ -205,6 +245,10 @@ QuickInsertCategoryResult::QuickInsertCategoryResult(
     const QuickInsertCategoryResult&) = default;
 QuickInsertCategoryResult& QuickInsertCategoryResult::operator=(
     const QuickInsertCategoryResult&) = default;
+QuickInsertCategoryResult::QuickInsertCategoryResult(
+    QuickInsertCategoryResult&&) = default;
+QuickInsertCategoryResult& QuickInsertCategoryResult::operator=(
+    QuickInsertCategoryResult&&) = default;
 QuickInsertCategoryResult::~QuickInsertCategoryResult() = default;
 
 bool QuickInsertCategoryResult::operator==(
@@ -226,19 +270,32 @@ QuickInsertEditorResult::QuickInsertEditorResult(
 QuickInsertEditorResult& QuickInsertEditorResult::operator=(
     const QuickInsertEditorResult&) = default;
 
+QuickInsertEditorResult::QuickInsertEditorResult(QuickInsertEditorResult&&) =
+    default;
+
+QuickInsertEditorResult& QuickInsertEditorResult::operator=(
+    QuickInsertEditorResult&&) = default;
+
 QuickInsertEditorResult::~QuickInsertEditorResult() = default;
 
 bool QuickInsertEditorResult::operator==(const QuickInsertEditorResult&) const =
     default;
 
-QuickInsertLobsterResult::QuickInsertLobsterResult(std::u16string display_name)
-    : display_name(std::move(display_name)) {}
+QuickInsertLobsterResult::QuickInsertLobsterResult(Mode mode,
+                                                   std::u16string display_name)
+    : mode(mode), display_name(std::move(display_name)) {}
 
 QuickInsertLobsterResult::QuickInsertLobsterResult(
     const QuickInsertLobsterResult&) = default;
 
 QuickInsertLobsterResult& QuickInsertLobsterResult::operator=(
     const QuickInsertLobsterResult&) = default;
+
+QuickInsertLobsterResult::QuickInsertLobsterResult(QuickInsertLobsterResult&&) =
+    default;
+
+QuickInsertLobsterResult& QuickInsertLobsterResult::operator=(
+    QuickInsertLobsterResult&&) = default;
 
 QuickInsertLobsterResult::~QuickInsertLobsterResult() = default;
 
@@ -252,6 +309,10 @@ QuickInsertNewWindowResult::QuickInsertNewWindowResult(
     const QuickInsertNewWindowResult&) = default;
 QuickInsertNewWindowResult& QuickInsertNewWindowResult::operator=(
     const QuickInsertNewWindowResult&) = default;
+QuickInsertNewWindowResult::QuickInsertNewWindowResult(
+    QuickInsertNewWindowResult&&) = default;
+QuickInsertNewWindowResult& QuickInsertNewWindowResult::operator=(
+    QuickInsertNewWindowResult&&) = default;
 QuickInsertNewWindowResult::~QuickInsertNewWindowResult() = default;
 
 bool QuickInsertNewWindowResult::operator==(
@@ -266,6 +327,10 @@ QuickInsertCapsLockResult::QuickInsertCapsLockResult(
     const QuickInsertCapsLockResult&) = default;
 QuickInsertCapsLockResult& QuickInsertCapsLockResult::operator=(
     const QuickInsertCapsLockResult&) = default;
+QuickInsertCapsLockResult::QuickInsertCapsLockResult(
+    QuickInsertCapsLockResult&&) = default;
+QuickInsertCapsLockResult& QuickInsertCapsLockResult::operator=(
+    QuickInsertCapsLockResult&&) = default;
 QuickInsertCapsLockResult::~QuickInsertCapsLockResult() = default;
 
 bool QuickInsertCapsLockResult::operator==(
@@ -278,6 +343,10 @@ QuickInsertCaseTransformResult::QuickInsertCaseTransformResult(
     const QuickInsertCaseTransformResult&) = default;
 QuickInsertCaseTransformResult& QuickInsertCaseTransformResult::operator=(
     const QuickInsertCaseTransformResult&) = default;
+QuickInsertCaseTransformResult::QuickInsertCaseTransformResult(
+    QuickInsertCaseTransformResult&&) = default;
+QuickInsertCaseTransformResult& QuickInsertCaseTransformResult::operator=(
+    QuickInsertCaseTransformResult&&) = default;
 QuickInsertCaseTransformResult::~QuickInsertCaseTransformResult() = default;
 
 bool QuickInsertCaseTransformResult::operator==(

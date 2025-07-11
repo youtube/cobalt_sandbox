@@ -630,7 +630,6 @@
 <translation id="3208321278970793882">ऐप्लिकेशन</translation>
 <translation id="3213571860604332401">लिंक को बुकमार्क के तौर पर सेव करें</translation>
 <translation id="3217205077783620295">आवाज़ चालू है, टॉगल करने से ऑडियो बंद हो जाएगा.</translation>
-<translation id="3218561536255328229">टचपैड को चालू करने के लिए, Esc को पांच बार दबाएं</translation>
 <translation id="3226991577105957773">+<ph name="COUNT" /> और</translation>
 <translation id="3227137524299004712">माइक्रोफ़ोन</translation>
 <translation id="3233611303007751344">बैटरी सेवर बंद कर दिया गया है</translation>
@@ -1306,6 +1305,7 @@
 <translation id="5393156353051693207">अपने ऐप्लिकेशन का क्रम बदलने के लिए, स्क्रीन के किसी भी हिस्से को दबाकर रखें</translation>
 <translation id="5395308026110844773"><ph name="IN_PLACE_APP" /> पर<ph name="DRAGGED_APP_NAME" /> को खींचकर लाया जा रहा है, फ़ोल्डर बनाने के लिए इसे छोड़ें.</translation>
 <translation id="5397578532367286026">chrome.com पर इस उपयोगकर्ता के उपयोग और इतिहास से जुड़ी जानकारी की मैनेजर (<ph name="MANAGER_EMAIL" />) समीक्षा कर सकता है.</translation>
+<translation id="540338817371815859">लैंडस्केप</translation>
 <translation id="540713187982329711">हॉटस्पॉट का बटन टॉगल करें. हॉटस्पॉट चालू है, लेकिन कोई डिवाइस कनेक्ट नहीं है.</translation>
 <translation id="5409208741270395213">टास्क को 'पूरा हुआ' के तौर पर मार्क करें</translation>
 <translation id="5413656666631274079">सेटिंग पेज</translation>
@@ -1768,6 +1768,7 @@
 <translation id="6921427376813842559">डिवाइस को अपडेट करें</translation>
 <translation id="6929081673585394903">कंट्रोल दिखाएं</translation>
 <translation id="6931576957638141829">यहां सेव करें</translation>
+<translation id="6935857786205183008">पोर्ट्रेट</translation>
 <translation id="6942518653766415536">रिकॉर्डिंग के फ़ॉर्मैट का मेन्यू</translation>
 <translation id="6945221475159498467">चुनें</translation>
 <translation id="6945922087561257829">आपका फ़ोन, मोबाइल नेटवर्क से कनेक्ट है. पक्का करें कि आपका फ़ोन और Chromebook एक ही वाई-फ़ाई नेटवर्क से कनेक्ट हों. इसके बाद, फिर से कोशिश करें. <ph name="LEARN_MORE" /></translation>
@@ -2436,6 +2437,7 @@
 <translation id="98120814841227350">दस्तावेज़ के आखिर में जाएं</translation>
 <translation id="987589956647469042">मोबाइल डेटा चालू है</translation>
 <translation id="989374776391122812">कैमरा और ऑडियो कंट्रोल</translation>
+<translation id="990263227494928142">टचपैड को चालू करने के लिए, Shift को पांच बार दबाएं</translation>
 <translation id="990277280839877440"><ph name="WINDOW_TITILE" /> विंडो बंद है.</translation>
 <translation id="993398562350683614"><ph name="TOTAL_STEPS" /> में से <ph name="STEP" /> चरण. अपने <ph name="PRODUCT_NAME" /> पर ज़रूरत के मुताबिक हर काम करने के लिए, ऐप्लिकेशन इस्तेमाल करें. अपने ऐप्लिकेशन, लॉन्चर में खोजे जा सकते हैं. लॉन्चर बटन पर फ़ोकस करने के लिए, Alt + Shift + L दबाएं.</translation>
 <translation id="994354411665877646"><ph name="NETWORK_NAME" />, <ph name="SUBTEXT" /></translation>

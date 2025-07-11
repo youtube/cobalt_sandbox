@@ -15,6 +15,7 @@
 #include "components/permissions/features.h"
 #include "components/permissions/permission_hats_trigger_helper.h"
 #include "components/plus_addresses/features.h"
+#include "components/plus_addresses/plus_address_hats_utils.h"
 #include "components/privacy_sandbox/privacy_sandbox_features.h"
 
 #if !BUILDFLAG(IS_ANDROID)
@@ -72,8 +73,6 @@ constexpr char kHatsSurveyTriggerPerformanceControlsMemorySaverOptOut[] =
     "performance-high-efficiency-opt-out";
 constexpr char kHatsSurveyTriggerPerformanceControlsBatterySaverOptOut[] =
     "performance-battery-saver-opt-out";
-constexpr char kHatsSurveyTriggerPlusAddressAcceptedFirstTimeCreate[] =
-    "plus-address-accepted-first-time-create";
 // The permission prompt trigger permits configuring multiple triggers
 // simultaneously. Each trigger increments a counter at the end -->
 // "permission-prompt0", "permission-prompt1", ...
@@ -123,6 +122,8 @@ constexpr char kHatsSurveyTriggerAndroidStartupSurvey[] = "startup_survey";
 constexpr char kHatsSurveyTriggerQuickDelete[] = "quick_delete_survey";
 constexpr char kHatsSurveyTriggerSafetyHubAndroid[] =
     "safety_hub_android_survey";
+constexpr char kHatsSurveyOrganicTriggerSafetyHubAndroid[] =
+    "safety_hub_android_organic_survey";
 #endif  // #if !BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(ENABLE_COMPOSE)
@@ -138,6 +139,12 @@ constexpr char kHatsNextSurveyTriggerIDTesting[] =
     "HLpeYy5Av0ugnJ3q1cK0XzzA8UHv";
 
 constexpr char kHatsSurveyTriggerPermissionsPrompt[] = "permissions-prompt";
+constexpr char kHatsSurveyTriggerPlusAddressAcceptedFirstTimeCreate[] =
+    "plus-address-accepted-first-time-create";
+constexpr char kHatsSurveyTriggerPlusAddressCreatedMultiplePlusAddresses[] =
+    "plus-address-created-multiple-plus_addresses";
+constexpr char kHatsSurveyTriggerPlusAddressDeclinedFirstTimeCreate[] =
+    "plus-address-declined-first-time-create";
 constexpr char kHatsSurveyTriggerPrivacySandboxSentimentSurvey[] =
     "privacy-sandbox-sentiment-survey";
 
@@ -274,7 +281,7 @@ std::vector<hats::SurveyConfig> GetAllSurveyConfigs() {
       kHatsSurveyTriggerHistoryEmbeddings,
       /*presupplied_trigger_id=*/std::nullopt,
       std::vector<std::string>{"non empty results",
-                               "best matches result clicked", "result_clicked",
+                               "best matches result clicked", "result clicked",
                                "answer shown", "answer citation clicked"},
       std::vector<std::string>{"query word count"});
 
@@ -486,7 +493,26 @@ std::vector<hats::SurveyConfig> GetAllSurveyConfigs() {
       kHatsSurveyTriggerPerformanceControlsBatterySaverOptOut);
   survey_configs.emplace_back(
       &plus_addresses::features::kPlusAddressAcceptedFirstTimeCreateSurvey,
-      kHatsSurveyTriggerPlusAddressAcceptedFirstTimeCreate);
+      kHatsSurveyTriggerPlusAddressAcceptedFirstTimeCreate,
+      /*presupplied_trigger_id=*/std::nullopt, std::vector<std::string>{},
+      std::vector<std::string>{
+          plus_addresses::hats::kFirstPlusAddressCreationTime,
+          plus_addresses::hats::kLastPlusAddressFillingTime});
+  survey_configs.emplace_back(
+      &plus_addresses::features::kPlusAddressDeclinedFirstTimeCreateSurvey,
+      kHatsSurveyTriggerPlusAddressDeclinedFirstTimeCreate,
+      /*presupplied_trigger_id=*/std::nullopt, std::vector<std::string>{},
+      std::vector<std::string>{
+          plus_addresses::hats::kFirstPlusAddressCreationTime,
+          plus_addresses::hats::kLastPlusAddressFillingTime});
+  survey_configs.emplace_back(
+      &plus_addresses::features::
+          kPlusAddressUserCreatedMultiplePlusAddressesSurvey,
+      kHatsSurveyTriggerPlusAddressCreatedMultiplePlusAddresses,
+      /*presupplied_trigger_id=*/std::nullopt, std::vector<std::string>{},
+      std::vector<std::string>{
+          plus_addresses::hats::kFirstPlusAddressCreationTime,
+          plus_addresses::hats::kLastPlusAddressFillingTime});
 
   // Red Warning surveys.
   survey_configs.emplace_back(
@@ -580,11 +606,19 @@ std::vector<hats::SurveyConfig> GetAllSurveyConfigs() {
       kHatsSurveyTriggerQuickDelete,
       chrome::android::kQuickDeleteAndroidSurveyTriggerId.Get());
 
+  std::vector<std::string> product_specific_bits_data_fields =
+      std::vector<std::string>{"Tapped card", "Has visited"};
+  std::vector<std::string> product_specific_string_data =
+      std::vector<std::string>{"Notification module type", "Global state"};
   survey_configs.emplace_back(
       &features::kSafetyHubAndroidSurvey, kHatsSurveyTriggerSafetyHubAndroid,
       features::kSafetyHubAndroidTriggerId.Get(),
-      /*product_specific_bits_data_fields=*/std::vector<std::string>{},
-      std::vector<std::string>{"Notification module type"});
+      product_specific_bits_data_fields, product_specific_string_data);
+  survey_configs.emplace_back(&features::kSafetyHubAndroidOrganicSurvey,
+                              kHatsSurveyOrganicTriggerSafetyHubAndroid,
+                              features::kSafetyHubAndroidOrganicTriggerId.Get(),
+                              product_specific_bits_data_fields,
+                              product_specific_string_data);
 #endif  // #if !BUILDFLAG(IS_ANDROID)
 
   return survey_configs;

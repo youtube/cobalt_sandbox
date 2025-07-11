@@ -295,6 +295,11 @@ inline constexpr char kHasHotspotUsedBefore[] = "ash.hotspot.has_used_before";
 inline constexpr char kInputVoiceIsolationEnabled[] =
     "ash.input_voice_isolation_enabled";
 
+// An integer pref which indicates the preferred mode for voice isolation.
+// This maps to cras::AudioEffectType.
+inline constexpr char kInputVoiceIsolationPreferredEffect[] =
+    "ash.input_voice_isolation_preferred_effect";
+
 // A boolean pref that controls whether input noise cancellation is enabled.
 inline constexpr char kInputNoiseCancellationEnabled[] =
     "ash.input_noise_cancellation_enabled";
@@ -438,6 +443,20 @@ inline constexpr char kAccessibilityLargeCursorEnabled[] =
 // An integer pref that specifies the size of large cursor for accessibility.
 inline constexpr char kAccessibilityLargeCursorDipSize[] =
     "settings.a11y.large_cursor_dip_size";
+// A boolean pref which determines whether the bounce keys feature is enabled.
+inline constexpr char kAccessibilityBounceKeysEnabled[] =
+    "settings.a11y.bounce_keys_enabled";
+// A TimeDelta pref which specifies the delay before accepting subsequent key
+// presses for the bounce keys feature.
+inline constexpr char kAccessibilityBounceKeysDelay[] =
+    "settings.a11y.bounce_keys_delay";
+// A boolean pref which determines whether the slow keys feature is enabled.
+inline constexpr char kAccessibilitySlowKeysEnabled[] =
+    "settings.a11y.slow_keys_enabled";
+// A TimeDelta pref which specifies the delay before accepting a held key press
+// for the slow keys feature.
+inline constexpr char kAccessibilitySlowKeysDelay[] =
+    "settings.a11y.slow_keys_delay";
 // A boolean pref which determines whether the sticky keys feature is enabled.
 inline constexpr char kAccessibilityStickyKeysEnabled[] =
     "settings.a11y.sticky_keys_enabled";
@@ -553,10 +572,16 @@ inline constexpr char kAccessibilityChromeVoxVoiceName[] =
     "settings.a11y.chromevox.voice_name";
 // A boolean pref which determines whether the disable touchpad feature is
 // enabled.
+// NOTE: all instances of `trackpad` have been replaced with `touchpad`
+// but since the pref was originally `trackpad` we've left the pref
+// name as such.
 inline constexpr char kAccessibilityDisableTrackpadEnabled[] =
     "settings.a11y.disable_trackpad_enabled";
 // An integer pref which determines the mode of the disabled internal
-// trackpad. Values are from the ash::kDisableTouchpadMode enum.
+// touhchpad. Values are from the ash::kDisableTouchpadMode enum.
+// NOTE: all instances of `trackpad` have been replaced with `touchpad`
+// but since the pref was originally `trackpad` we've left the pref
+// name as such.
 inline constexpr char kAccessibilityDisableTrackpadMode[] =
     "settings.a11y.disable_trackpad_mode";
 // A boolean pref which determines whether high contrast is enabled.
@@ -879,6 +904,14 @@ inline constexpr char kFaceGazeDlcFailureNotificationHasBeenShown[] =
 // threshold.
 inline constexpr char kAccessibilityFaceGazeVelocityThreshold[] =
     "settings.a11y.face_gaze.velocity_threshold";
+// A boolean pref which indicates whether or not FaceGaze should perform a
+// precision click.
+inline constexpr char kAccessibilityFaceGazePrecisionClick[] =
+    "settings.a11y.face_gaze.precision_click";
+// An integer pref which indicates the percentage that the FaceGaze mouse speed
+// should be dampened by during a precision click.
+inline constexpr char kAccessibilityFaceGazePrecisionClickSpeedFactor[] =
+    "settings.a11y.face_gaze.precision_click_speed_factor";
 
 // A boolean pref which determines whether the accessibility menu shows
 // regardless of the state of a11y features.
@@ -2379,6 +2412,10 @@ inline constexpr char kCaptureModeEducationLastShown[] =
 // recommends a custom path to save screen captures.
 inline constexpr char kCaptureModePolicySavePath[] =
     "ash.capture_mode.policy_save_path";
+
+// A boolean pref that records whether the Sunfish feature has been enabled or
+// not.
+inline constexpr char kSunfishEnabled[] = "ash.capture_mode.sunfish_enabled";
 
 // A dictionary that stores app icons' light vibrant colors.
 inline constexpr char kAshAppIconLightVibrantColorCache[] =

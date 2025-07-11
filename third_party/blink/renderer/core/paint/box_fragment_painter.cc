@@ -277,7 +277,7 @@ Vector<PhysicalRect> BuildBackplate(InlineCursor* descendants,
       }
       continue;
     }
-    NOTREACHED_IN_MIGRATION();
+    NOTREACHED();
   }
 
   if (!backplates.current_backplate.IsEmpty())
@@ -1414,8 +1414,9 @@ void BoxFragmentPainter::PaintBoxDecorationBackgroundForBlockInInline(
         children->MoveToNextSkippingChildren();
         continue;
       }
-      if (fragment->IsBlockInInline())
+      if (fragment->IsBlockInInline() && !fragment->IsHiddenForPaint()) {
         PaintBoxItem(*item, *fragment, *children, paint_info, paint_offset);
+      }
     }
     children->MoveToNext();
   }
@@ -1651,9 +1652,7 @@ void BoxFragmentPainter::PaintInlineItems(const PaintInfo& paint_info,
     if (item->IsLayoutObjectDestroyedOrMoved()) [[unlikely]] {
       // TODO(crbug.com/1099613): This should not happen, as long as it is
       // really layout-clean.
-      NOTREACHED_IN_MIGRATION();
-      cursor->MoveToNextSkippingChildren();
-      continue;
+      NOTREACHED();
     }
     switch (item->Type()) {
       case FragmentItem::kText:
@@ -1779,7 +1778,7 @@ void BoxFragmentPainter::PaintLineBoxChildItems(
       }
     }
 
-    NOTREACHED_IN_MIGRATION();
+    NOTREACHED();
   }
 }
 
@@ -2567,9 +2566,7 @@ bool BoxFragmentPainter::HitTestItemsChildren(
     if (item->IsLayoutObjectDestroyedOrMoved()) [[unlikely]] {
       // TODO(crbug.com/1099613): This should not happen, as long as it is
       // really layout-clean.
-      NOTREACHED_IN_MIGRATION();
-      cursor.MoveToPreviousSibling();
-      continue;
+      NOTREACHED();
     }
 
     if (item->HasSelfPaintingLayer()) {
@@ -2599,7 +2596,7 @@ bool BoxFragmentPainter::HitTestItemsChildren(
       if (HitTestChildBoxItem(hit_test, container, *item, cursor))
         return true;
     } else {
-      NOTREACHED_IN_MIGRATION();
+      NOTREACHED();
     }
 
     cursor.MoveToPreviousSibling();

@@ -422,6 +422,7 @@
 <translation id="4387004326333427325">Gwrthodwyd tystysgrif ddilysu o bell</translation>
 <translation id="4394214039309501350">Dolen allanol</translation>
 <translation id="4394980935660306080">Yn gynharach yr wythnos hon</translation>
+<translation id="4397435965699247285">Nid yw OneDrive ar gael tra all-lein</translation>
 <translation id="4398096759193130964">Adferwch yr eitemau neu llusgwch nhw i ffolder newydd y tu allan i'r bin sbwriel</translation>
 <translation id="4401287888955153199">Echdynnu popeth</translation>
 <translation id="4410695710508688828">Gwnaeth y gweithrediad echdynnu fethu. <ph name="ERROR_MESSAGE" /></translation>
@@ -582,7 +583,6 @@
 <translation id="5447680084201416734">Dim digon o le storio.</translation>
 <translation id="5449551289610225147">Cyfrinair annilys</translation>
 <translation id="5459064203055649751">Mae ffeil o'r enw "<ph name="FILENAME" />" eisoes yn bodoli. Ydych chi am ei disodli gyda'r un rydych chi'n ei symud?</translation>
-<translation id="5462378611565326489">Nid yw OneDrive ar gael tra all-lein.</translation>
 <translation id="5463231940765244860">Rhowch</translation>
 <translation id="5469868506864199649">Eidaleg</translation>
 <translation id="5473333559083690127">Rhowch y PIN newydd eto</translation>

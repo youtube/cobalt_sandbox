@@ -48,11 +48,8 @@ WTF::Vector<std::pair<String, FeatureVal>> MakeFeatureStatusVector(
       String("reportingTimeout"),
       FeatureVal(RuntimeEnabledFeatures::FledgeReportingTimeoutEnabled(
           execution_context)));
-  feature_status.emplace_back(
-      String("permitCrossOriginTrustedSignals"),
-      FeatureVal(
-          RuntimeEnabledFeatures::FledgePermitCrossOriginTrustedSignalsEnabled(
-              execution_context)));
+  feature_status.emplace_back(String("permitCrossOriginTrustedSignals"),
+                              FeatureVal(true));
   feature_status.emplace_back(
       String("realTimeReporting"),
       FeatureVal(RuntimeEnabledFeatures::FledgeRealTimeReportingEnabled(
@@ -79,9 +76,7 @@ ProtectedAudience::ProtectedAudience(ExecutionContext* execution_context)
 
 ScriptValue ProtectedAudience::queryFeatureSupport(ScriptState* script_state,
                                                    const String& feature_name) {
-  if (feature_name == "*" &&
-      RuntimeEnabledFeatures::FledgeFeatureDetectAllEnabled(
-          ExecutionContext::From(script_state))) {
+  if (feature_name == "*") {
     // Return all registered features if asked for '*'
     V8ObjectBuilder features_obj(script_state);
     for (const auto& kv : feature_status_) {

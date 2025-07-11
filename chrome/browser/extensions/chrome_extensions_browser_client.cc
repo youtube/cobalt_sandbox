@@ -247,8 +247,7 @@ bool ChromeExtensionsBrowserClient::IsValidContext(void* context) {
   DCHECK(context);
   if (!g_browser_process) {
     LOG(ERROR) << "Unexpected null g_browser_process";
-    NOTREACHED_IN_MIGRATION();
-    return false;
+    NOTREACHED() << "Unexpected null g_browser_process";
   }
   return g_browser_process->profile_manager() &&
          g_browser_process->profile_manager()->IsValidProfile(context);
@@ -635,8 +634,7 @@ void ChromeExtensionsBrowserClient::AttachExtensionTaskManagerTag(
       return;
 
     case mojom::ViewType::kInvalid:
-      NOTREACHED_IN_MIGRATION();
-      return;
+      NOTREACHED();
   }
 }
 
@@ -694,12 +692,8 @@ KioskDelegate* ChromeExtensionsBrowserClient::GetKioskDelegate() {
 
 bool ChromeExtensionsBrowserClient::IsLockScreenContext(
     content::BrowserContext* context) {
-#if BUILDFLAG(IS_CHROMEOS)
-  return ash::ProfileHelper::IsLockScreenAppProfile(
-      Profile::FromBrowserContext(context));
-#else
+  // TODO(crbug.com/376354347): Remove this method.
   return false;
-#endif
 }
 
 std::string ChromeExtensionsBrowserClient::GetApplicationLocale() {

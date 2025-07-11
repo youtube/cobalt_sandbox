@@ -134,7 +134,7 @@ class DevToolsAgent::IOAgent : public mojom::blink::DevToolsAgent {
 
   void InspectElement(const gfx::Point& point) override {
     // InspectElement on a worker doesn't make sense.
-    NOTREACHED_IN_MIGRATION();
+    NOTREACHED();
   }
 
   void ReportChildTargets(bool report,
@@ -189,6 +189,7 @@ DevToolsAgent::DevToolsAgent(
 DevToolsAgent::~DevToolsAgent() = default;
 
 void DevToolsAgent::Trace(Visitor* visitor) const {
+  visitor->Trace(client_);
   visitor->Trace(associated_receiver_);
   visitor->Trace(host_remote_);
   visitor->Trace(associated_host_remote_);
@@ -323,7 +324,7 @@ void DevToolsAgent::InspectElement(const gfx::Point& point) {
     client_->InspectElement(point);
   } else {
     // InspectElement on a worker doesn't make sense.
-    NOTREACHED_IN_MIGRATION();
+    NOTREACHED();
   }
 }
 

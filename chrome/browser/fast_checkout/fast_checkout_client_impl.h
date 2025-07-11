@@ -204,14 +204,13 @@ class FastCheckoutClientImpl
 
   // Returns a pointer to the credit card corresponding to
   // `selected_credit_card_id_`. Stops the run if it's a `nullptr`.
-  autofill::CreditCard* GetSelectedCreditCard();
+  const autofill::CreditCard* GetSelectedCreditCard();
 
   // Fills credit card form via the `autofill_manager_` and handles internal
   // state.
   void FillCreditCardForm(const autofill::FormStructure& form,
                           const autofill::FieldGlobalId& field_id,
-                          const autofill::CreditCard& credit_card,
-                          const std::u16string& cvc);
+                          const autofill::CreditCard& credit_card);
 
   // Same as Stop() but does not require `IsShowing() == true` for
   // `allow_further_runs == false` to have any effect. The `IsShowing()` guard

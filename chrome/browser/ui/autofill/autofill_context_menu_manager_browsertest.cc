@@ -14,6 +14,7 @@
 #include "base/functional/bind.h"
 #include "base/notreached.h"
 #include "base/test/metrics/histogram_tester.h"
+#include "base/test/metrics/user_action_tester.h"
 #include "base/test/run_until.h"
 #include "base/test/scoped_feature_list.h"
 #include "chrome/app/chrome_command_ids.h"
@@ -152,7 +153,7 @@ MATCHER(OnlyAddressFallbackAdded, "") {
 
 // Checks if the context menu model contains the prediction improvement
 // entry with correct UI strings. `arg` must be of type `ui::SimpleMenuModel`.
-MATCHER(ContainsPredictionImprovementsEntry, "") {
+MATCHER(ContainsAutofillAiEntry, "") {
   for (size_t i = 0; i < arg->GetItemCount(); i++) {
     if (arg->GetCommandIdAt(i) ==
             IDC_CONTENT_CONTEXT_AUTOFILL_PREDICTION_IMPROVEMENTS &&
@@ -274,41 +275,31 @@ MATCHER_P3(OnlyPasswordsFallbackAdded,
               IDS_CONTENT_CONTEXT_AUTOFILL_FALLBACK_PASSWORDS_USE_PASSKEY_FROM_ANOTHER_DEVICE));
     }
   } else if (add_import_passwords_submenu_option) {
-    if (is_password_generation_enabled_for_current_field &&
-        is_passkey_from_another_device_in_context_menu) {
-      EXPECT_EQ(submenu->GetItemCount(), 3u);
-      EXPECT_EQ(
-          submenu->GetLabelAt(1),
-          l10n_util::GetStringUTF16(
-              IDS_CONTENT_CONTEXT_AUTOFILL_FALLBACK_PASSWORDS_SUGGEST_PASSWORD));
-      EXPECT_EQ(
-          submenu->GetLabelAt(2),
-          l10n_util::GetStringUTF16(
-              IDS_CONTENT_CONTEXT_AUTOFILL_FALLBACK_PASSWORDS_USE_PASSKEY_FROM_ANOTHER_DEVICE));
-    } else if (is_password_generation_enabled_for_current_field) {
-      EXPECT_EQ(submenu->GetItemCount(), 3u);
-      EXPECT_EQ(
-          submenu->GetLabelAt(2),
-          l10n_util::GetStringUTF16(
-              IDS_CONTENT_CONTEXT_AUTOFILL_FALLBACK_PASSWORDS_SUGGEST_PASSWORD));
-    } else if (is_passkey_from_another_device_in_context_menu) {
-      EXPECT_EQ(submenu->GetItemCount(), 2u);
-      EXPECT_EQ(
-          submenu->GetLabelAt(1),
-          l10n_util::GetStringUTF16(
-              IDS_CONTENT_CONTEXT_AUTOFILL_FALLBACK_PASSWORDS_USE_PASSKEY_FROM_ANOTHER_DEVICE));
-    } else {
-      EXPECT_EQ(submenu->GetItemCount(), 2u);
-    }
-
-    size_t import_index =
-        is_passkey_from_another_device_in_context_menu ? 0 : 1;
-    if (!is_passkey_from_another_device_in_context_menu) {
+    size_t expected_count = 2;
+    if (is_password_generation_enabled_for_current_field) {
+      expected_count += 1;
       EXPECT_EQ(
           submenu->GetLabelAt(0),
           l10n_util::GetStringUTF16(
+              IDS_CONTENT_CONTEXT_AUTOFILL_FALLBACK_PASSWORDS_SUGGEST_PASSWORD));
+    }
+    if (is_passkey_from_another_device_in_context_menu) {
+      EXPECT_EQ(
+          submenu->GetLabelAt(expected_count - 1),
+          l10n_util::GetStringUTF16(
+              IDS_CONTENT_CONTEXT_AUTOFILL_FALLBACK_PASSWORDS_USE_PASSKEY_FROM_ANOTHER_DEVICE));
+    }
+    EXPECT_EQ(submenu->GetItemCount(), expected_count);
+
+    size_t import_index = is_password_generation_enabled_for_current_field +
+                          !is_passkey_from_another_device_in_context_menu;
+    if (!is_passkey_from_another_device_in_context_menu) {
+      EXPECT_EQ(
+          submenu->GetLabelAt(is_password_generation_enabled_for_current_field),
+          l10n_util::GetStringUTF16(
               IDS_CONTENT_CONTEXT_AUTOFILL_FALLBACK_PASSWORDS_NO_SAVED_PASSWORDS));
-      EXPECT_EQ(submenu->IsEnabledAt(0), false);
+      EXPECT_FALSE(submenu->IsEnabledAt(
+          is_password_generation_enabled_for_current_field));
     }
     EXPECT_EQ(
         submenu->GetLabelAt(import_index),
@@ -789,37 +780,36 @@ IN_PROC_BROWSER_TEST_F(UnclassifiedFieldsTest,
 }
 
 // Tests if the prediction improvements entry is not added based on
-// `ShouldProvidePredictionImprovements()` returning `false`.
+// `IsEligibleForAutofillAi()` returning `false`.
 class AutofillAiDisabledTest : public BaseAutofillContextMenuManagerTest {
  public:
   void SetUpOnMainThread() override {
     BaseAutofillContextMenuManagerTest::SetUpOnMainThread();
     ON_CALL(*autofill_client()->GetAutofillAiDelegate(),
-            ShouldProvidePredictionImprovements)
+            IsEligibleForAutofillAi)
         .WillByDefault(::testing::Return(false));
   }
 };
 
 // Tests that when triggering the context menu on any form field, the improved
 // predictions fallback is not added when the feature is disabled.
-IN_PROC_BROWSER_TEST_F(AutofillAiDisabledTest,
-                       PredictionImprovementsEntryNotAdded) {
+IN_PROC_BROWSER_TEST_F(AutofillAiDisabledTest, AutofillAiEntryNotAdded) {
   FormData form = CreateAndAttachUnclassifiedForm();
   autofill_context_menu_manager()->set_params_for_testing(
       CreateContextMenuParams(form.renderer_id(),
                               form.fields()[0].renderer_id()));
   autofill_context_menu_manager()->AppendItems();
-  EXPECT_THAT(menu_model(), Not(ContainsPredictionImprovementsEntry()));
+  EXPECT_THAT(menu_model(), Not(ContainsAutofillAiEntry()));
 }
 
 // Tests if the prediction improvements entry is added based on
-// `ShouldProvidePredictionImprovements()` returning `true`.
+// `IsEligibleForAutofillAi()` returning `true`.
 class AutofillAiEnabledTest : public BaseAutofillContextMenuManagerTest {
  public:
   void SetUpOnMainThread() override {
     BaseAutofillContextMenuManagerTest::SetUpOnMainThread();
     ON_CALL(*autofill_client()->GetAutofillAiDelegate(),
-            ShouldProvidePredictionImprovements)
+            IsEligibleForAutofillAi)
         .WillByDefault(::testing::Return(true));
   }
 };
@@ -827,14 +817,13 @@ class AutofillAiEnabledTest : public BaseAutofillContextMenuManagerTest {
 // Tests that when triggering the context menu on any form field, the improved
 // prediction entry point is added.
 // TODO(crbug.com/372158654): Implement suitable criteria or remove the entry.
-IN_PROC_BROWSER_TEST_F(AutofillAiEnabledTest,
-                       PredictionImprovementsEntryAdded) {
+IN_PROC_BROWSER_TEST_F(AutofillAiEnabledTest, AutofillAiEntryAdded) {
   FormData form = CreateAndAttachUnclassifiedForm();
   autofill_context_menu_manager()->set_params_for_testing(
       CreateContextMenuParams(form.renderer_id(),
                               form.fields()[0].renderer_id()));
   autofill_context_menu_manager()->AppendItems();
-  EXPECT_THAT(menu_model(), Not(ContainsPredictionImprovementsEntry()));
+  EXPECT_THAT(menu_model(), Not(ContainsAutofillAiEntry()));
 }
 
 // Tests that selecting the improved predictions triggers the right command.
@@ -1753,6 +1742,8 @@ class PlusAddressContextMenuManagerTest
  public:
   static constexpr char kExcludedDomainRegex[] = "muh\\.mah$";
   static constexpr char kExcludedDomainUrl[] = "https://muh.mah";
+  static constexpr char kUserActionPlusAddressesFallbackSelected[] =
+      "PlusAddresses.ManualFallbackDesktopContextManualFallbackSelected";
 
   PlusAddressContextMenuManagerTest() {
     // TODO(crbug.com/327562692): Create and use a `PlusAddressTestEnvironment`.
@@ -1777,6 +1768,8 @@ class PlusAddressContextMenuManagerTest
         web_contents()->GetBrowserContext());
   }
 
+  base::UserActionTester user_action_tester_;
+
  private:
   base::test::ScopedFeatureList feature_list_;
 };
@@ -1790,6 +1783,9 @@ IN_PROC_BROWSER_TEST_F(PlusAddressContextMenuManagerTest, UnclassifiedForm) {
   autofill_context_menu_manager()->AppendItems();
 
   EXPECT_THAT(menu_model(), PlusAddressFallbackAdded());
+  EXPECT_EQ(user_action_tester_.GetActionCount(
+                kUserActionPlusAddressesFallbackSelected),
+            0);
 }
 
 // Tests that Plus Address fallbacks are added to classified forms.
@@ -1801,6 +1797,9 @@ IN_PROC_BROWSER_TEST_F(PlusAddressContextMenuManagerTest, ClassifiedForm) {
   autofill_context_menu_manager()->AppendItems();
 
   EXPECT_THAT(menu_model(), PlusAddressFallbackAdded());
+  EXPECT_EQ(user_action_tester_.GetActionCount(
+                kUserActionPlusAddressesFallbackSelected),
+            0);
 }
 
 // Tests that no Plus Address fallbacks are shown on password fields.
@@ -1812,6 +1811,9 @@ IN_PROC_BROWSER_TEST_F(PlusAddressContextMenuManagerTest, PasswordForm) {
                               blink::mojom::FormControlType::kInputPassword));
   autofill_context_menu_manager()->AppendItems();
   EXPECT_THAT(menu_model(), Not(ContainsAnyPlusAddressFallbackEntries()));
+  EXPECT_EQ(user_action_tester_.GetActionCount(
+                kUserActionPlusAddressesFallbackSelected),
+            0);
 }
 
 // Tests that Plus Address fallbacks are not added in incognito mode if the user
@@ -1826,6 +1828,9 @@ IN_PROC_BROWSER_TEST_F(PlusAddressContextMenuManagerTest,
   autofill_context_menu_manager()->AppendItems();
 
   EXPECT_THAT(menu_model(), Not(ContainsAnyPlusAddressFallbackEntries()));
+  EXPECT_EQ(user_action_tester_.GetActionCount(
+                kUserActionPlusAddressesFallbackSelected),
+            0);
 }
 
 // Tests that Plus Address fallbacks are added in incognito mode if the user
@@ -1845,6 +1850,9 @@ IN_PROC_BROWSER_TEST_F(PlusAddressContextMenuManagerTest,
   autofill_context_menu_manager()->AppendItems();
 
   EXPECT_THAT(menu_model(), PlusAddressFallbackAdded());
+  EXPECT_EQ(user_action_tester_.GetActionCount(
+                kUserActionPlusAddressesFallbackSelected),
+            0);
 }
 
 // Tests that no Plus Address fallbacks are added on excluded domains.
@@ -1870,6 +1878,9 @@ IN_PROC_BROWSER_TEST_F(PlusAddressContextMenuManagerTest, ExcludedDomain) {
       GURL(kExcludedDomainUrl).Resolve("sub/index.html"));
   autofill_context_menu_manager()->AppendItems();
   EXPECT_THAT(menu_model(), Not(ContainsAnyPlusAddressFallbackEntries()));
+  EXPECT_EQ(user_action_tester_.GetActionCount(
+                kUserActionPlusAddressesFallbackSelected),
+            0);
 }
 
 // Tests that Plus Address fallbacks are added on non-excluded domains.
@@ -1884,6 +1895,9 @@ IN_PROC_BROWSER_TEST_F(PlusAddressContextMenuManagerTest, NonExcludedDomain) {
       GURL("https://non-excluded-site.com"));
   autofill_context_menu_manager()->AppendItems();
   EXPECT_THAT(menu_model(), PlusAddressFallbackAdded());
+  EXPECT_EQ(user_action_tester_.GetActionCount(
+                kUserActionPlusAddressesFallbackSelected),
+            0);
 }
 
 // Tests that selecting the Plus Address manual fallback entry results in
@@ -1905,6 +1919,9 @@ IN_PROC_BROWSER_TEST_F(PlusAddressContextMenuManagerTest,
 
   autofill_context_menu_manager()->ExecuteCommand(
       IDC_CONTENT_CONTEXT_AUTOFILL_FALLBACK_PLUS_ADDRESS);
+  EXPECT_EQ(user_action_tester_.GetActionCount(
+                kUserActionPlusAddressesFallbackSelected),
+            1);
 }
 
 }  // namespace

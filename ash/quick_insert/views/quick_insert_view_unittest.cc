@@ -166,7 +166,7 @@ INSTANTIATE_TEST_SUITE_P(,
                          testing::ValuesIn({QuickInsertCategory::kEmojisGifs,
                                             QuickInsertCategory::kEmojis}));
 
-class FakePickerViewDelegate : public PickerViewDelegate {
+class FakeQuickInsertViewDelegate : public QuickInsertViewDelegate {
  public:
   using FakeSearchFunction =
       base::RepeatingCallback<void(std::u16string_view query,
@@ -186,8 +186,8 @@ class FakePickerViewDelegate : public PickerViewDelegate {
     PickerModeType mode = PickerModeType::kNoSelection;
   };
 
-  FakePickerViewDelegate() = default;
-  explicit FakePickerViewDelegate(Options options) : options_(options) {}
+  FakeQuickInsertViewDelegate() = default;
+  explicit FakeQuickInsertViewDelegate(Options options) : options_(options) {}
 
   std::vector<QuickInsertCategory> GetAvailableCategories() override {
     if (options_.available_categories.empty()) {
@@ -312,14 +312,15 @@ class FakePickerViewDelegate : public PickerViewDelegate {
   bool showed_lobster_ = false;
 };
 
-PickerView* GetPickerViewFromWidget(views::Widget& widget) {
-  return views::AsViewClass<PickerView>(
+QuickInsertView* GetQuickInsertViewFromWidget(views::Widget& widget) {
+  return views::AsViewClass<QuickInsertView>(
       widget.non_client_view()->client_view()->children().front());
 }
 
 // Gets the first category item view that can be clicked to select a category.
-QuickInsertItemView* GetFirstCategoryItemView(PickerView* picker_view) {
-  return picker_view->zero_state_view_for_testing()
+QuickInsertItemView* GetFirstCategoryItemView(
+    QuickInsertView* quick_insert_view) {
+  return quick_insert_view->zero_state_view_for_testing()
       .category_section_views_for_testing()
       .begin()
       ->second->item_views_for_testing()[0];
@@ -327,62 +328,62 @@ QuickInsertItemView* GetFirstCategoryItemView(PickerView* picker_view) {
 
 TEST_P(QuickInsertViewEmojiTest,
        SizeIsLessThanMaxWhenNoContentWithoutEmojiBar) {
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .available_categories = {GetParam()},
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
-  PickerView* view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* view = GetQuickInsertViewFromWidget(*widget);
 
-  EXPECT_EQ(view->size().width(), kPickerViewWidth);
+  EXPECT_EQ(view->size().width(), kQuickInsertViewWidth);
   EXPECT_LT(view->size().height(), 300);
 }
 
 TEST_P(QuickInsertViewEmojiTest, SizeIsLessThanMaxWhenNoContentWithEmojiBar) {
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .available_categories = {GetParam()},
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
-  PickerView* view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* view = GetQuickInsertViewFromWidget(*widget);
 
-  EXPECT_EQ(view->size().width(), kPickerViewWidth);
+  EXPECT_EQ(view->size().width(), kQuickInsertViewWidth);
   EXPECT_LT(view->size().height(), 356);
 }
 
 TEST_F(QuickInsertViewTest, SizeIsMaxWhenLotsOfContentWithoutEmojiBar) {
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .available_categories = {QuickInsertCategory::kLinks},
       .zero_state_suggested_results = std::vector<QuickInsertSearchResult>(
           10, QuickInsertTextResult(u"abc")),
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
-  PickerView* view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* view = GetQuickInsertViewFromWidget(*widget);
 
-  EXPECT_EQ(view->size(), gfx::Size(kPickerViewWidth, 300));
+  EXPECT_EQ(view->size(), gfx::Size(kQuickInsertViewWidth, 300));
 }
 
 TEST_P(QuickInsertViewEmojiTest, SizeIsMaxWhenLotsOfContentWithEmojiBar) {
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .available_categories = {GetParam()},
       .zero_state_suggested_results = std::vector<QuickInsertSearchResult>(
           10, QuickInsertTextResult(u"abc")),
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
-  PickerView* view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* view = GetQuickInsertViewFromWidget(*widget);
 
-  EXPECT_EQ(view->size(), gfx::Size(kPickerViewWidth, 356));
+  EXPECT_EQ(view->size(), gfx::Size(kQuickInsertViewWidth, 356));
 }
 
 TEST_F(QuickInsertViewTest, ShowsZeroStateView) {
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .available_categories = {QuickInsertCategory::kLinks},
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
-  PickerView* view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* view = GetQuickInsertViewFromWidget(*widget);
 
   EXPECT_THAT(view->search_field_view_for_testing(),
               Property(&views::View::GetVisible, true));
@@ -394,14 +395,14 @@ TEST_F(QuickInsertViewTest, ShowsZeroStateView) {
 
 #if BUILDFLAG(GOOGLE_CHROME_BRANDING)
 TEST_F(QuickInsertViewTest, SearchPlaceholderMatchesUnfocusedMode) {
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .mode = PickerModeType::kUnfocused,
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
 
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
-  EXPECT_EQ(picker_view->search_field_view_for_testing()
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
+  EXPECT_EQ(quick_insert_view->search_field_view_for_testing()
                 .textfield_for_testing()
                 .GetPlaceholderText(),
             l10n_util::GetStringUTF16(
@@ -409,16 +410,16 @@ TEST_F(QuickInsertViewTest, SearchPlaceholderMatchesUnfocusedMode) {
 }
 
 TEST_F(QuickInsertViewTest, SearchPlaceholderMatchesNoSelectionModeWithEditor) {
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .available_categories = {QuickInsertCategory::kEditorWrite},
       .mode = PickerModeType::kNoSelection,
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
 
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
   EXPECT_EQ(
-      picker_view->search_field_view_for_testing()
+      quick_insert_view->search_field_view_for_testing()
           .textfield_for_testing()
           .GetPlaceholderText(),
       l10n_util::GetStringUTF16(
@@ -427,14 +428,14 @@ TEST_F(QuickInsertViewTest, SearchPlaceholderMatchesNoSelectionModeWithEditor) {
 
 TEST_F(QuickInsertViewTest,
        SearchPlaceholderMatchesNoSelectionModeWithoutEditor) {
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .mode = PickerModeType::kNoSelection,
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
 
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
-  EXPECT_EQ(picker_view->search_field_view_for_testing()
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
+  EXPECT_EQ(quick_insert_view->search_field_view_for_testing()
                 .textfield_for_testing()
                 .GetPlaceholderText(),
             l10n_util::GetStringUTF16(
@@ -443,16 +444,16 @@ TEST_F(QuickInsertViewTest,
 
 TEST_F(QuickInsertViewTest,
        SearchPlaceholderMatchesHasSelectionModeWithEditor) {
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .available_categories = {QuickInsertCategory::kEditorRewrite},
       .mode = PickerModeType::kHasSelection,
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
 
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
   EXPECT_EQ(
-      picker_view->search_field_view_for_testing()
+      quick_insert_view->search_field_view_for_testing()
           .textfield_for_testing()
           .GetPlaceholderText(),
       l10n_util::GetStringUTF16(
@@ -461,14 +462,14 @@ TEST_F(QuickInsertViewTest,
 
 TEST_F(QuickInsertViewTest,
        SearchPlaceholderMatchesHasSelectionModeWithoutEditor) {
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .mode = PickerModeType::kHasSelection,
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
 
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
-  EXPECT_EQ(picker_view->search_field_view_for_testing()
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
+  EXPECT_EQ(quick_insert_view->search_field_view_for_testing()
                 .textfield_for_testing()
                 .GetPlaceholderText(),
             l10n_util::GetStringUTF16(
@@ -478,10 +479,10 @@ TEST_F(QuickInsertViewTest,
 
 TEST_F(QuickInsertViewTest,
        NonEmptySearchFieldContentsSwitchesToSearchResultsView) {
-  FakePickerViewDelegate delegate;
+  FakeQuickInsertViewDelegate delegate;
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
-  PickerView* view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* view = GetQuickInsertViewFromWidget(*widget);
 
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
 
@@ -492,10 +493,10 @@ TEST_F(QuickInsertViewTest,
 }
 
 TEST_F(QuickInsertViewTest, EmptySearchFieldContentsSwitchesToZeroStateView) {
-  FakePickerViewDelegate delegate;
+  FakeQuickInsertViewDelegate delegate;
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
-  PickerView* view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* view = GetQuickInsertViewFromWidget(*widget);
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
 
   PressAndReleaseKey(ui::KeyboardCode::VKEY_BACK, ui::EF_NONE);
@@ -509,10 +510,10 @@ TEST_F(QuickInsertViewTest, EmptySearchFieldContentsSwitchesToZeroStateView) {
 TEST_F(QuickInsertViewTest, LeftClickSearchResultInsertsResult) {
   {
     base::test::TestFuture<void> future;
-    FakePickerViewDelegate delegate({
+    FakeQuickInsertViewDelegate delegate({
         .search_function = base::BindLambdaForTesting(
             [&](std::u16string_view query,
-                FakePickerViewDelegate::SearchResultsCallback callback) {
+                FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
               future.SetValue();
               callback.Run({
                   QuickInsertSearchResultsSection(
@@ -525,7 +526,7 @@ TEST_F(QuickInsertViewTest, LeftClickSearchResultInsertsResult) {
     });
     auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
     widget->Show();
-    PickerView* view = GetPickerViewFromWidget(*widget);
+    QuickInsertView* view = GetQuickInsertViewFromWidget(*widget);
     PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
     ASSERT_TRUE(future.Wait());
     ASSERT_THAT(
@@ -562,7 +563,7 @@ TEST_F(QuickInsertViewTest, LeftClickSearchResultInsertsResult) {
 TEST_F(QuickInsertViewTest, LeftClickZeroStateSuggestedResultInsertsResult) {
   {
     base::test::TestFuture<void> future;
-    FakePickerViewDelegate delegate({
+    FakeQuickInsertViewDelegate delegate({
         .available_categories = {QuickInsertCategory::kLinks},
         .zero_state_suggested_results = std::vector<QuickInsertSearchResult>(
             10, QuickInsertTextResult(u"abc")),
@@ -570,7 +571,7 @@ TEST_F(QuickInsertViewTest, LeftClickZeroStateSuggestedResultInsertsResult) {
     });
     auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
     widget->Show();
-    PickerView* view = GetPickerViewFromWidget(*widget);
+    QuickInsertView* view = GetQuickInsertViewFromWidget(*widget);
     QuickInsertItemView* result_view = view->zero_state_view_for_testing()
                                            .primary_section_view_for_testing()
                                            ->item_views_for_testing()[0];
@@ -596,10 +597,10 @@ TEST_F(QuickInsertViewTest, LeftClickZeroStateSuggestedResultInsertsResult) {
 
 TEST_F(QuickInsertViewTest, LeftClickSearchResultOpensResult) {
   base::test::TestFuture<void> future;
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .search_function = base::BindLambdaForTesting(
           [&](std::u16string_view query,
-              FakePickerViewDelegate::SearchResultsCallback callback) {
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             future.SetValue();
             callback.Run({
                 QuickInsertSearchResultsSection(
@@ -612,7 +613,7 @@ TEST_F(QuickInsertViewTest, LeftClickSearchResultOpensResult) {
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
-  PickerView* view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* view = GetQuickInsertViewFromWidget(*widget);
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
   ASSERT_TRUE(future.Wait());
   ASSERT_THAT(
@@ -636,22 +637,25 @@ TEST_F(QuickInsertViewTest, LeftClickSearchResultOpensResult) {
 
 TEST_F(QuickInsertViewTest, SwitchesToCategoryView) {
   {
-    FakePickerViewDelegate delegate({
+    FakeQuickInsertViewDelegate delegate({
         .available_categories = {QuickInsertCategory::kLinks},
     });
     auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
     widget->Show();
 
-    PickerView* picker_view = GetPickerViewFromWidget(*widget);
-    views::View* category_item_view = GetFirstCategoryItemView(picker_view);
+    QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
+    views::View* category_item_view =
+        GetFirstCategoryItemView(quick_insert_view);
 
     category_item_view->ScrollViewToVisible();
     ViewDrawnWaiter().Wait(category_item_view);
     LeftClickOn(category_item_view);
 
-    EXPECT_TRUE(picker_view->category_results_view_for_testing().GetVisible());
-    EXPECT_FALSE(picker_view->zero_state_view_for_testing().GetVisible());
-    EXPECT_FALSE(picker_view->search_results_view_for_testing().GetVisible());
+    EXPECT_TRUE(
+        quick_insert_view->category_results_view_for_testing().GetVisible());
+    EXPECT_FALSE(quick_insert_view->zero_state_view_for_testing().GetVisible());
+    EXPECT_FALSE(
+        quick_insert_view->search_results_view_for_testing().GetVisible());
   }
 
   cros_events::Picker_FinishSession expected_event;
@@ -667,11 +671,11 @@ TEST_F(QuickInsertViewTest, SwitchesToCategoryView) {
 
 TEST_F(QuickInsertViewTest, ClickingCategoryResultsSwitchesToCategoryView) {
   base::test::TestFuture<void> search_called;
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .available_categories = {QuickInsertCategory::kLinks},
       .search_function = base::BindLambdaForTesting(
           [&](std::u16string_view query,
-              FakePickerViewDelegate::SearchResultsCallback callback) {
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             search_called.SetValue();
             callback.Run({
                 QuickInsertSearchResultsSection(
@@ -686,35 +690,37 @@ TEST_F(QuickInsertViewTest, ClickingCategoryResultsSwitchesToCategoryView) {
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
   ASSERT_TRUE(search_called.Wait());
 
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
   views::View* category_result_item_view =
-      picker_view->search_results_view_for_testing()
+      quick_insert_view->search_results_view_for_testing()
           .section_views_for_testing()[0]
           ->item_views_for_testing()[0];
   ViewDrawnWaiter().Wait(category_result_item_view);
   LeftClickOn(category_result_item_view);
 
-  EXPECT_TRUE(picker_view->category_results_view_for_testing().GetVisible());
-  EXPECT_FALSE(picker_view->zero_state_view_for_testing().GetVisible());
-  EXPECT_FALSE(picker_view->search_results_view_for_testing().GetVisible());
+  EXPECT_TRUE(
+      quick_insert_view->category_results_view_for_testing().GetVisible());
+  EXPECT_FALSE(quick_insert_view->zero_state_view_for_testing().GetVisible());
+  EXPECT_FALSE(
+      quick_insert_view->search_results_view_for_testing().GetVisible());
 }
 
 TEST_F(QuickInsertViewTest,
        SelectingCategoryUpdatesSearchFieldPlaceholderText) {
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .available_categories = {QuickInsertCategory::kLinks},
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
 
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
-  views::View* category_item_view = GetFirstCategoryItemView(picker_view);
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
+  views::View* category_item_view = GetFirstCategoryItemView(quick_insert_view);
 
   category_item_view->ScrollViewToVisible();
   ViewDrawnWaiter().Wait(category_item_view);
   LeftClickOn(category_item_view);
 
-  EXPECT_EQ(picker_view->search_field_view_for_testing()
+  EXPECT_EQ(quick_insert_view->search_field_view_for_testing()
                 .textfield_for_testing()
                 .GetPlaceholderText(),
             l10n_util::GetStringUTF16(
@@ -722,27 +728,27 @@ TEST_F(QuickInsertViewTest,
 }
 
 TEST_F(QuickInsertViewTest, SelectingCategoryShowsBackButton) {
-  FakePickerViewDelegate delegate;
+  FakeQuickInsertViewDelegate delegate;
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
-  views::View* category_item_view = GetFirstCategoryItemView(picker_view);
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
+  views::View* category_item_view = GetFirstCategoryItemView(quick_insert_view);
   category_item_view->ScrollViewToVisible();
   ViewDrawnWaiter().Wait(category_item_view);
 
   LeftClickOn(category_item_view);
 
-  EXPECT_TRUE(picker_view->search_field_view_for_testing()
+  EXPECT_TRUE(quick_insert_view->search_field_view_for_testing()
                   .back_button_for_testing()
                   .GetVisible());
 }
 
 TEST_F(QuickInsertViewTest, SearchingWithCategoryKeepsShowingBackButton) {
-  FakePickerViewDelegate delegate;
+  FakeQuickInsertViewDelegate delegate;
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
-  views::View* category_item_view = GetFirstCategoryItemView(picker_view);
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
+  views::View* category_item_view = GetFirstCategoryItemView(quick_insert_view);
   category_item_view->ScrollViewToVisible();
   ViewDrawnWaiter().Wait(category_item_view);
   LeftClickOn(category_item_view);
@@ -750,55 +756,55 @@ TEST_F(QuickInsertViewTest, SearchingWithCategoryKeepsShowingBackButton) {
   // Type something into the search field.
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
 
-  EXPECT_TRUE(picker_view->search_field_view_for_testing()
+  EXPECT_TRUE(quick_insert_view->search_field_view_for_testing()
                   .back_button_for_testing()
                   .GetVisible());
 }
 
 TEST_P(QuickInsertViewEmojiTest, SelectingCategoryHidesEmojiBar) {
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .available_categories = {QuickInsertCategory::kLinks, GetParam()},
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
-  views::View* category_item_view = GetFirstCategoryItemView(picker_view);
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
+  views::View* category_item_view = GetFirstCategoryItemView(quick_insert_view);
   category_item_view->ScrollViewToVisible();
   ViewDrawnWaiter().Wait(category_item_view);
 
   LeftClickOn(category_item_view);
 
-  EXPECT_FALSE(picker_view->emoji_bar_view_for_testing()->GetVisible());
+  EXPECT_FALSE(quick_insert_view->emoji_bar_view_for_testing()->GetVisible());
 }
 
 TEST_P(QuickInsertViewEmojiTest,
        ReturningToZeroStateFromCategoryPageShowsEmojiBar) {
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .available_categories = {QuickInsertCategory::kLinks, GetParam()},
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
-  views::View* category_item_view = GetFirstCategoryItemView(picker_view);
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
+  views::View* category_item_view = GetFirstCategoryItemView(quick_insert_view);
   category_item_view->ScrollViewToVisible();
   ViewDrawnWaiter().Wait(category_item_view);
   LeftClickOn(category_item_view);
 
   PressAndReleaseKey(ui::KeyboardCode::VKEY_BROWSER_BACK, ui::EF_NONE);
 
-  EXPECT_TRUE(picker_view->emoji_bar_view_for_testing()->GetVisible());
+  EXPECT_TRUE(quick_insert_view->emoji_bar_view_for_testing()->GetVisible());
 }
 
 TEST_F(QuickInsertViewTest, SearchingWithCategorySwitchesToSearchResultsView) {
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .available_categories = {QuickInsertCategory::kLinks},
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
 
   // Switch to category view.
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
-  views::View* category_item_view = GetFirstCategoryItemView(picker_view);
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
+  views::View* category_item_view = GetFirstCategoryItemView(quick_insert_view);
 
   category_item_view->ScrollViewToVisible();
   ViewDrawnWaiter().Wait(category_item_view);
@@ -806,21 +812,23 @@ TEST_F(QuickInsertViewTest, SearchingWithCategorySwitchesToSearchResultsView) {
   // Type something into the search field.
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
 
-  EXPECT_FALSE(picker_view->category_results_view_for_testing().GetVisible());
-  EXPECT_FALSE(picker_view->zero_state_view_for_testing().GetVisible());
-  EXPECT_TRUE(picker_view->search_results_view_for_testing().GetVisible());
+  EXPECT_FALSE(
+      quick_insert_view->category_results_view_for_testing().GetVisible());
+  EXPECT_FALSE(quick_insert_view->zero_state_view_for_testing().GetVisible());
+  EXPECT_TRUE(
+      quick_insert_view->search_results_view_for_testing().GetVisible());
 }
 
 TEST_F(QuickInsertViewTest, EmptySearchFieldSwitchesBackToCategoryView) {
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .available_categories = {QuickInsertCategory::kLinks},
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
 
   // Switch to category view.
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
-  views::View* category_item_view = GetFirstCategoryItemView(picker_view);
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
+  views::View* category_item_view = GetFirstCategoryItemView(quick_insert_view);
 
   category_item_view->ScrollViewToVisible();
   ViewDrawnWaiter().Wait(category_item_view);
@@ -830,16 +838,18 @@ TEST_F(QuickInsertViewTest, EmptySearchFieldSwitchesBackToCategoryView) {
   // Clear the search field.
   PressAndReleaseKey(ui::KeyboardCode::VKEY_BACK, ui::EF_NONE);
 
-  EXPECT_TRUE(picker_view->category_results_view_for_testing().GetVisible());
-  EXPECT_FALSE(picker_view->zero_state_view_for_testing().GetVisible());
-  EXPECT_FALSE(picker_view->search_results_view_for_testing().GetVisible());
+  EXPECT_TRUE(
+      quick_insert_view->category_results_view_for_testing().GetVisible());
+  EXPECT_FALSE(quick_insert_view->zero_state_view_for_testing().GetVisible());
+  EXPECT_FALSE(
+      quick_insert_view->search_results_view_for_testing().GetVisible());
 }
 
 TEST_F(QuickInsertViewTest, EmptySearchFieldSwitchesToCategoryViewFromSeeMore) {
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .search_function = base::BindLambdaForTesting(
           [](std::u16string_view query,
-             FakePickerViewDelegate::SearchResultsCallback callback) {
+             FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             callback.Run({
                 QuickInsertSearchResultsSection(QuickInsertSectionType::kLinks,
                                                 {},
@@ -852,25 +862,28 @@ TEST_F(QuickInsertViewTest, EmptySearchFieldSwitchesToCategoryViewFromSeeMore) {
   // Type something into the search field.
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
   // See more results.
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
-  views::View* trailing_link = picker_view->search_results_view_for_testing()
-                                   .section_views_for_testing()[0]
-                                   ->title_trailing_link_for_testing();
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
+  views::View* trailing_link =
+      quick_insert_view->search_results_view_for_testing()
+          .section_views_for_testing()[0]
+          ->title_trailing_link_for_testing();
   ViewDrawnWaiter().Wait(trailing_link);
   LeftClickOn(trailing_link);
   // Clear the search field.
   PressAndReleaseKey(ui::KeyboardCode::VKEY_BACK, ui::EF_NONE);
 
-  EXPECT_TRUE(picker_view->category_results_view_for_testing().GetVisible());
-  EXPECT_FALSE(picker_view->zero_state_view_for_testing().GetVisible());
-  EXPECT_FALSE(picker_view->search_results_view_for_testing().GetVisible());
+  EXPECT_TRUE(
+      quick_insert_view->category_results_view_for_testing().GetVisible());
+  EXPECT_FALSE(quick_insert_view->zero_state_view_for_testing().GetVisible());
+  EXPECT_FALSE(
+      quick_insert_view->search_results_view_for_testing().GetVisible());
 }
 
 TEST_F(QuickInsertViewTest, CategoryViewFromSeeMoreHasResults) {
-  FakePickerViewDelegate delegate(
+  FakeQuickInsertViewDelegate delegate(
       {.search_function = base::BindLambdaForTesting(
            [&](std::u16string_view query,
-               FakePickerViewDelegate::SearchResultsCallback callback) {
+               FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
              callback.Run({
                  QuickInsertSearchResultsSection(QuickInsertSectionType::kLinks,
                                                  {},
@@ -878,7 +891,7 @@ TEST_F(QuickInsertViewTest, CategoryViewFromSeeMoreHasResults) {
              });
            }),
        .category_results_function = base::BindLambdaForTesting(
-           [&](FakePickerViewDelegate::SearchResultsCallback callback) {
+           [&](FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
              callback.Run({
                  QuickInsertSearchResultsSection(
                      QuickInsertSectionType::kLinks,
@@ -893,17 +906,19 @@ TEST_F(QuickInsertViewTest, CategoryViewFromSeeMoreHasResults) {
   // Type something into the search field.
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
   // See more results.
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
-  views::View* trailing_link = picker_view->search_results_view_for_testing()
-                                   .section_views_for_testing()[0]
-                                   ->title_trailing_link_for_testing();
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
+  views::View* trailing_link =
+      quick_insert_view->search_results_view_for_testing()
+          .section_views_for_testing()[0]
+          ->title_trailing_link_for_testing();
   ViewDrawnWaiter().Wait(trailing_link);
   LeftClickOn(trailing_link);
   // Clear the search field.
   PressAndReleaseKey(ui::KeyboardCode::VKEY_BACK, ui::EF_NONE);
 
-  ASSERT_TRUE(picker_view->category_results_view_for_testing().GetVisible());
-  EXPECT_THAT(picker_view->category_results_view_for_testing()
+  ASSERT_TRUE(
+      quick_insert_view->category_results_view_for_testing().GetVisible());
+  EXPECT_THAT(quick_insert_view->category_results_view_for_testing()
                   .section_views_for_testing(),
               ElementsAre(Pointee(Property(
                   "item views", &QuickInsertSectionView::item_views_for_testing,
@@ -914,10 +929,10 @@ TEST_F(QuickInsertViewTest, CategoryViewFromSeeMoreHasResults) {
 }
 
 TEST_F(QuickInsertViewTest, SearchingSpacesFromZeroStateDoesNotStartSearch) {
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .search_function = base::BindLambdaForTesting(
           [&](std::u16string_view query,
-              FakePickerViewDelegate::SearchResultsCallback callback) {
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             ADD_FAILURE()
                 << "Search function was unexpectedly called with query "
                 << query;
@@ -933,25 +948,27 @@ TEST_F(QuickInsertViewTest, SearchingSpacesFromZeroStateDoesNotStartSearch) {
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
 
   PressAndReleaseKey(ui::KeyboardCode::VKEY_SPACE, ui::EF_NONE);
-  task_environment()->FastForwardBy(PickerView::kClearResultsTimeout);
-  EXPECT_TRUE(picker_view->zero_state_view_for_testing().GetVisible());
-  EXPECT_FALSE(picker_view->search_results_view_for_testing().GetVisible());
+  task_environment()->FastForwardBy(QuickInsertView::kClearResultsTimeout);
+  EXPECT_TRUE(quick_insert_view->zero_state_view_for_testing().GetVisible());
+  EXPECT_FALSE(
+      quick_insert_view->search_results_view_for_testing().GetVisible());
 
   PressAndReleaseKey(ui::KeyboardCode::VKEY_SPACE, ui::EF_NONE);
-  task_environment()->FastForwardBy(PickerView::kClearResultsTimeout);
-  EXPECT_TRUE(picker_view->zero_state_view_for_testing().GetVisible());
-  EXPECT_FALSE(picker_view->search_results_view_for_testing().GetVisible());
+  task_environment()->FastForwardBy(QuickInsertView::kClearResultsTimeout);
+  EXPECT_TRUE(quick_insert_view->zero_state_view_for_testing().GetVisible());
+  EXPECT_FALSE(
+      quick_insert_view->search_results_view_for_testing().GetVisible());
 }
 
 TEST_F(QuickInsertViewTest, SearchTrimsLeftAndRightSpaces) {
   base::test::TestFuture<std::u16string> future;
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .search_function = base::BindLambdaForTesting(
           [&](std::u16string_view query,
-              FakePickerViewDelegate::SearchResultsCallback callback) {
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             // This will crash if it is run multiple times.
             future.SetValue(std::u16string(query));
             callback.Run({{QuickInsertSearchResultsSection(
@@ -964,7 +981,7 @@ TEST_F(QuickInsertViewTest, SearchTrimsLeftAndRightSpaces) {
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
 
   PressAndReleaseKey(ui::KeyboardCode::VKEY_SPACE, ui::EF_NONE);
   PressAndReleaseKey(ui::KeyboardCode::VKEY_SPACE, ui::EF_NONE);
@@ -977,22 +994,23 @@ TEST_F(QuickInsertViewTest, SearchTrimsLeftAndRightSpaces) {
   // [..|..]
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
   // [..a|..]
-  ASSERT_EQ(picker_view->search_field_view_for_testing()
+  ASSERT_EQ(quick_insert_view->search_field_view_for_testing()
                 .textfield_for_testing()
                 .GetText(),
             u"  a  ");
-  task_environment()->FastForwardBy(PickerView::kClearResultsTimeout);
-  EXPECT_FALSE(picker_view->zero_state_view_for_testing().GetVisible());
-  EXPECT_TRUE(picker_view->search_results_view_for_testing().GetVisible());
+  task_environment()->FastForwardBy(QuickInsertView::kClearResultsTimeout);
+  EXPECT_FALSE(quick_insert_view->zero_state_view_for_testing().GetVisible());
+  EXPECT_TRUE(
+      quick_insert_view->search_results_view_for_testing().GetVisible());
   EXPECT_EQ(future.Take(), u"a");
 }
 
 TEST_F(QuickInsertViewTest, SearchIsNotRerunIfSpacesAreAddedToEnds) {
   base::test::TestFuture<std::u16string> future;
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .search_function = base::BindLambdaForTesting(
           [&](std::u16string_view query,
-              FakePickerViewDelegate::SearchResultsCallback callback) {
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             // This will crash if it is run multiple times.
             future.SetValue(std::u16string(query));
             callback.Run({{QuickInsertSearchResultsSection(
@@ -1005,7 +1023,7 @@ TEST_F(QuickInsertViewTest, SearchIsNotRerunIfSpacesAreAddedToEnds) {
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
 
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
   EXPECT_EQ(future.Get(), u"a");
@@ -1018,7 +1036,7 @@ TEST_F(QuickInsertViewTest, SearchIsNotRerunIfSpacesAreAddedToEnds) {
   // [.|a..]
   PressAndReleaseKey(ui::KeyboardCode::VKEY_SPACE, ui::EF_NONE);
   // [..|a..]
-  ASSERT_EQ(picker_view->search_field_view_for_testing()
+  ASSERT_EQ(quick_insert_view->search_field_view_for_testing()
                 .textfield_for_testing()
                 .GetText(),
             u"  a  ");
@@ -1026,49 +1044,54 @@ TEST_F(QuickInsertViewTest, SearchIsNotRerunIfSpacesAreAddedToEnds) {
 
 TEST_F(QuickInsertViewTest,
        SearchingFromZeroStateDoesNotImmediatelySwitchToResults) {
-  base::test::TestFuture<FakePickerViewDelegate::SearchResultsCallback> future;
-  FakePickerViewDelegate delegate({
+  base::test::TestFuture<FakeQuickInsertViewDelegate::SearchResultsCallback>
+      future;
+  FakeQuickInsertViewDelegate delegate({
       .search_function = base::BindLambdaForTesting(
           [&](std::u16string_view query,
-              FakePickerViewDelegate::SearchResultsCallback callback) {
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             future.SetValue(std::move(callback));
           }),
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
 
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
-  FakePickerViewDelegate::SearchResultsCallback callback = future.Take();
+  FakeQuickInsertViewDelegate::SearchResultsCallback callback = future.Take();
 
-  EXPECT_FALSE(picker_view->search_results_view_for_testing().GetVisible());
+  EXPECT_FALSE(
+      quick_insert_view->search_results_view_for_testing().GetVisible());
   callback.Run({{QuickInsertSearchResultsSection(
       QuickInsertSectionType::kClipboard, {{QuickInsertTextResult(u"result")}},
       /*has_more_results=*/false)}});
-  EXPECT_TRUE(picker_view->search_results_view_for_testing().GetVisible());
+  EXPECT_TRUE(
+      quick_insert_view->search_results_view_for_testing().GetVisible());
 }
 
 TEST_F(QuickInsertViewTest,
        SearchingFromZeroStateSwitchesToEmptyResultsAfterTimeout) {
   base::test::TestFuture<void> search_called;
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .search_function = base::BindLambdaForTesting(
           [&](std::u16string_view query,
-              FakePickerViewDelegate::SearchResultsCallback callback) {
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             search_called.SetValue();
           }),
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
 
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
   ASSERT_TRUE(search_called.Wait());
 
-  EXPECT_FALSE(picker_view->search_results_view_for_testing().GetVisible());
-  task_environment()->FastForwardBy(PickerView::kClearResultsTimeout);
-  EXPECT_TRUE(picker_view->search_results_view_for_testing().GetVisible());
-  EXPECT_THAT(picker_view->search_results_view_for_testing()
+  EXPECT_FALSE(
+      quick_insert_view->search_results_view_for_testing().GetVisible());
+  task_environment()->FastForwardBy(QuickInsertView::kClearResultsTimeout);
+  EXPECT_TRUE(
+      quick_insert_view->search_results_view_for_testing().GetVisible());
+  EXPECT_THAT(quick_insert_view->search_results_view_for_testing()
                   .section_list_view_for_testing()
                   ->children(),
               IsEmpty());
@@ -1076,71 +1099,80 @@ TEST_F(QuickInsertViewTest,
 
 TEST_F(QuickInsertViewTest,
        SearchingFromCategoryDoesNotImmediatelySwitchToResults) {
-  base::test::TestFuture<FakePickerViewDelegate::SearchResultsCallback> future;
-  FakePickerViewDelegate delegate({
+  base::test::TestFuture<FakeQuickInsertViewDelegate::SearchResultsCallback>
+      future;
+  FakeQuickInsertViewDelegate delegate({
       .available_categories = {QuickInsertCategory::kLinks},
       .search_function = base::BindLambdaForTesting(
           [&](std::u16string_view query,
-              FakePickerViewDelegate::SearchResultsCallback callback) {
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             future.SetValue(std::move(callback));
           }),
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
 
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
-  views::View* category_item_view = GetFirstCategoryItemView(picker_view);
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
+  views::View* category_item_view = GetFirstCategoryItemView(quick_insert_view);
 
   category_item_view->ScrollViewToVisible();
   ViewDrawnWaiter().Wait(category_item_view);
   LeftClickOn(category_item_view);
 
-  ASSERT_TRUE(picker_view->category_results_view_for_testing().GetVisible());
-  ASSERT_FALSE(picker_view->zero_state_view_for_testing().GetVisible());
-  ASSERT_FALSE(picker_view->search_results_view_for_testing().GetVisible());
+  ASSERT_TRUE(
+      quick_insert_view->category_results_view_for_testing().GetVisible());
+  ASSERT_FALSE(quick_insert_view->zero_state_view_for_testing().GetVisible());
+  ASSERT_FALSE(
+      quick_insert_view->search_results_view_for_testing().GetVisible());
 
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
-  FakePickerViewDelegate::SearchResultsCallback callback = future.Take();
+  FakeQuickInsertViewDelegate::SearchResultsCallback callback = future.Take();
 
-  EXPECT_FALSE(picker_view->search_results_view_for_testing().GetVisible());
+  EXPECT_FALSE(
+      quick_insert_view->search_results_view_for_testing().GetVisible());
   callback.Run({{QuickInsertSearchResultsSection(
       QuickInsertSectionType::kLinks, {{QuickInsertTextResult(u"result")}},
       /*has_more_results=*/false)}});
-  EXPECT_TRUE(picker_view->search_results_view_for_testing().GetVisible());
+  EXPECT_TRUE(
+      quick_insert_view->search_results_view_for_testing().GetVisible());
 }
 
 TEST_F(QuickInsertViewTest,
        SearchingFromCategorySwitchesToEmptyResultsAfterTimeout) {
   base::test::TestFuture<void> search_called;
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .available_categories = {QuickInsertCategory::kLinks},
       .search_function = base::BindLambdaForTesting(
           [&](std::u16string_view query,
-              FakePickerViewDelegate::SearchResultsCallback callback) {
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             search_called.SetValue();
           }),
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
 
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
-  views::View* category_item_view = GetFirstCategoryItemView(picker_view);
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
+  views::View* category_item_view = GetFirstCategoryItemView(quick_insert_view);
 
   category_item_view->ScrollViewToVisible();
   ViewDrawnWaiter().Wait(category_item_view);
   LeftClickOn(category_item_view);
 
-  ASSERT_TRUE(picker_view->category_results_view_for_testing().GetVisible());
-  ASSERT_FALSE(picker_view->zero_state_view_for_testing().GetVisible());
-  ASSERT_FALSE(picker_view->search_results_view_for_testing().GetVisible());
+  ASSERT_TRUE(
+      quick_insert_view->category_results_view_for_testing().GetVisible());
+  ASSERT_FALSE(quick_insert_view->zero_state_view_for_testing().GetVisible());
+  ASSERT_FALSE(
+      quick_insert_view->search_results_view_for_testing().GetVisible());
 
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
   ASSERT_TRUE(search_called.Wait());
 
-  EXPECT_FALSE(picker_view->search_results_view_for_testing().GetVisible());
-  task_environment()->FastForwardBy(PickerView::kClearResultsTimeout);
-  EXPECT_TRUE(picker_view->search_results_view_for_testing().GetVisible());
-  EXPECT_THAT(picker_view->search_results_view_for_testing()
+  EXPECT_FALSE(
+      quick_insert_view->search_results_view_for_testing().GetVisible());
+  task_environment()->FastForwardBy(QuickInsertView::kClearResultsTimeout);
+  EXPECT_TRUE(
+      quick_insert_view->search_results_view_for_testing().GetVisible());
+  EXPECT_THAT(quick_insert_view->search_results_view_for_testing()
                   .section_list_view_for_testing()
                   ->children(),
               IsEmpty());
@@ -1149,11 +1181,11 @@ TEST_F(QuickInsertViewTest,
 TEST_F(QuickInsertViewTest,
        SearchingShowResultsWhenResultsArriveAsynchronously) {
   base::test::TestFuture<void> search_called;
-  FakePickerViewDelegate::SearchResultsCallback search_callback;
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate::SearchResultsCallback search_callback;
+  FakeQuickInsertViewDelegate delegate({
       .search_function = base::BindLambdaForTesting(
           [&](std::u16string_view query,
-              FakePickerViewDelegate::SearchResultsCallback callback) {
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             search_callback = std::move(callback);
             search_called.SetValue();
           }),
@@ -1161,7 +1193,7 @@ TEST_F(QuickInsertViewTest,
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
 
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
   ASSERT_TRUE(search_called.Wait());
 
@@ -1170,8 +1202,9 @@ TEST_F(QuickInsertViewTest,
                                       /*has_more_results=*/false),
   });
 
-  EXPECT_TRUE(picker_view->search_results_view_for_testing().GetVisible());
-  EXPECT_THAT(picker_view->search_results_view_for_testing()
+  EXPECT_TRUE(
+      quick_insert_view->search_results_view_for_testing().GetVisible());
+  EXPECT_THAT(quick_insert_view->search_results_view_for_testing()
                   .section_views_for_testing(),
               ElementsAre(Pointee(Property(
                   "title", &QuickInsertSectionView::title_label_for_testing,
@@ -1183,10 +1216,10 @@ TEST_F(QuickInsertViewTest,
 TEST_F(QuickInsertViewTest, SearchingKeepsOldResultsUntilNewResultsArrive) {
   base::test::TestFuture<void> search1_called;
   base::test::TestFuture<void> search2_called;
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .search_function = base::BindLambdaForTesting(
           [&](std::u16string_view query,
-              FakePickerViewDelegate::SearchResultsCallback callback) {
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             if (!search1_called.IsReady()) {
               callback.Run({
                   QuickInsertSearchResultsSection(
@@ -1202,7 +1235,7 @@ TEST_F(QuickInsertViewTest, SearchingKeepsOldResultsUntilNewResultsArrive) {
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
 
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
   // Go to the results page.
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
   ASSERT_TRUE(search1_called.Wait());
@@ -1211,8 +1244,9 @@ TEST_F(QuickInsertViewTest, SearchingKeepsOldResultsUntilNewResultsArrive) {
   ASSERT_TRUE(search2_called.Wait());
 
   // Results page should keep old results until new results arrive.
-  EXPECT_TRUE(picker_view->search_results_view_for_testing().GetVisible());
-  EXPECT_THAT(picker_view->search_results_view_for_testing()
+  EXPECT_TRUE(
+      quick_insert_view->search_results_view_for_testing().GetVisible());
+  EXPECT_THAT(quick_insert_view->search_results_view_for_testing()
                   .section_views_for_testing(),
               ElementsAre(Pointee(Property(
                   "title", &QuickInsertSectionView::title_label_for_testing,
@@ -1224,11 +1258,11 @@ TEST_F(QuickInsertViewTest, SearchingKeepsOldResultsUntilNewResultsArrive) {
 TEST_F(QuickInsertViewTest, SearchingReplacesOldResultsWithNewResults) {
   base::test::TestFuture<void> search1_called;
   base::test::TestFuture<void> search2_called;
-  FakePickerViewDelegate::SearchResultsCallback search2_callback;
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate::SearchResultsCallback search2_callback;
+  FakeQuickInsertViewDelegate delegate({
       .search_function = base::BindLambdaForTesting(
           [&](std::u16string_view query,
-              FakePickerViewDelegate::SearchResultsCallback callback) {
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             if (!search1_called.IsReady()) {
               callback.Run({
                   QuickInsertSearchResultsSection(
@@ -1245,7 +1279,7 @@ TEST_F(QuickInsertViewTest, SearchingReplacesOldResultsWithNewResults) {
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
 
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
   // Go to the results page.
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
   ASSERT_TRUE(search1_called.Wait());
@@ -1258,8 +1292,9 @@ TEST_F(QuickInsertViewTest, SearchingReplacesOldResultsWithNewResults) {
   });
 
   // Results page should show the new results.
-  EXPECT_TRUE(picker_view->search_results_view_for_testing().GetVisible());
-  EXPECT_THAT(picker_view->search_results_view_for_testing()
+  EXPECT_TRUE(
+      quick_insert_view->search_results_view_for_testing().GetVisible());
+  EXPECT_THAT(quick_insert_view->search_results_view_for_testing()
                   .section_views_for_testing(),
               ElementsAre(Pointee(Property(
                   "title", &QuickInsertSectionView::title_label_for_testing,
@@ -1269,108 +1304,114 @@ TEST_F(QuickInsertViewTest, SearchingReplacesOldResultsWithNewResults) {
 }
 
 TEST_F(QuickInsertViewTest, ShowsNoResultsBeforeTimeout) {
-  base::test::TestFuture<FakePickerViewDelegate::SearchResultsCallback> future;
-  FakePickerViewDelegate delegate({
+  base::test::TestFuture<FakeQuickInsertViewDelegate::SearchResultsCallback>
+      future;
+  FakeQuickInsertViewDelegate delegate({
       .search_function = base::BindLambdaForTesting(
           [&](std::u16string_view query,
-              FakePickerViewDelegate::SearchResultsCallback callback) {
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             future.SetValue(std::move(callback));
           }),
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
 
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
-  task_environment()->FastForwardBy(PickerView::kClearResultsTimeout -
+  task_environment()->FastForwardBy(QuickInsertView::kClearResultsTimeout -
                                     base::Milliseconds(1));
   future.Take().Run({});
 
-  EXPECT_TRUE(picker_view->search_results_view_for_testing()
+  EXPECT_TRUE(quick_insert_view->search_results_view_for_testing()
                   .no_results_view_for_testing()
                   ->GetVisible());
 }
 
 TEST_F(QuickInsertViewTest, ShowsNoResultsAfterTimeout) {
-  base::test::TestFuture<FakePickerViewDelegate::SearchResultsCallback> future;
-  FakePickerViewDelegate delegate({
+  base::test::TestFuture<FakeQuickInsertViewDelegate::SearchResultsCallback>
+      future;
+  FakeQuickInsertViewDelegate delegate({
       .search_function = base::BindLambdaForTesting(
           [&](std::u16string_view query,
-              FakePickerViewDelegate::SearchResultsCallback callback) {
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             future.SetValue(std::move(callback));
           }),
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
 
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
-  task_environment()->FastForwardBy(PickerView::kClearResultsTimeout);
+  task_environment()->FastForwardBy(QuickInsertView::kClearResultsTimeout);
   future.Take().Run({});
 
-  EXPECT_TRUE(picker_view->search_results_view_for_testing()
+  EXPECT_TRUE(quick_insert_view->search_results_view_for_testing()
                   .no_results_view_for_testing()
                   ->GetVisible());
 }
 
 TEST_F(QuickInsertViewTest, ShowsNoResultsWithNoIllustration) {
-  base::test::TestFuture<FakePickerViewDelegate::SearchResultsCallback> future;
-  FakePickerViewDelegate delegate({
+  base::test::TestFuture<FakeQuickInsertViewDelegate::SearchResultsCallback>
+      future;
+  FakeQuickInsertViewDelegate delegate({
       .search_function = base::BindLambdaForTesting(
           [&](std::u16string_view query,
-              FakePickerViewDelegate::SearchResultsCallback callback) {
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             future.SetValue(std::move(callback));
           }),
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
 
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
-  task_environment()->FastForwardBy(PickerView::kClearResultsTimeout);
+  task_environment()->FastForwardBy(QuickInsertView::kClearResultsTimeout);
   future.Take().Run({});
 
-  EXPECT_TRUE(picker_view->search_results_view_for_testing()
+  EXPECT_TRUE(quick_insert_view->search_results_view_for_testing()
                   .no_results_view_for_testing()
                   ->GetVisible());
-  EXPECT_FALSE(picker_view->search_results_view_for_testing()
+  EXPECT_FALSE(quick_insert_view->search_results_view_for_testing()
                    .no_results_illustration_for_testing()
                    .GetVisible());
-  EXPECT_EQ(picker_view->search_results_view_for_testing()
+  EXPECT_EQ(quick_insert_view->search_results_view_for_testing()
                 .no_results_label_for_testing()
                 .GetText(),
             l10n_util::GetStringUTF16(IDS_PICKER_NO_RESULTS_TEXT));
 }
 
 TEST_F(QuickInsertViewTest, NoMainResultsAndNoEmojisIsAnnounced) {
-  base::test::TestFuture<FakePickerViewDelegate::SearchResultsCallback> future;
-  FakePickerViewDelegate delegate({
+  base::test::TestFuture<FakeQuickInsertViewDelegate::SearchResultsCallback>
+      future;
+  FakeQuickInsertViewDelegate delegate({
       .search_function = base::BindLambdaForTesting(
           [&](std::u16string_view query,
-              FakePickerViewDelegate::SearchResultsCallback callback) {
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             future.SetValue(std::move(callback));
           }),
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
 
   views::test::AXEventCounter counter(views::AXEventManager::Get());
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
   future.Take().Run({});
 
-  EXPECT_EQ(picker_view->search_results_view_for_testing().GetAccessibleName(),
-            l10n_util::GetStringUTF16(IDS_PICKER_NO_RESULTS_TEXT));
+  EXPECT_EQ(
+      quick_insert_view->search_results_view_for_testing().GetAccessibleName(),
+      l10n_util::GetStringUTF16(IDS_PICKER_NO_RESULTS_TEXT));
   EXPECT_EQ(counter.GetCount(ax::mojom::Event::kLiveRegionChanged), 1);
 }
 
 TEST_P(QuickInsertViewEmojiTest, NoMainResultsAndSomeEmojisIsAnnounced) {
-  base::test::TestFuture<FakePickerViewDelegate::SearchResultsCallback> future;
-  FakePickerViewDelegate delegate({
+  base::test::TestFuture<FakeQuickInsertViewDelegate::SearchResultsCallback>
+      future;
+  FakeQuickInsertViewDelegate delegate({
       .available_categories = {GetParam()},
       .search_function = base::BindLambdaForTesting(
           [&](std::u16string_view query,
-              FakePickerViewDelegate::SearchResultsCallback callback) {
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             future.SetValue(std::move(callback));
           }),
       .emoji_results = {QuickInsertEmojiResult::Emoji(u"😊"),
@@ -1378,158 +1419,169 @@ TEST_P(QuickInsertViewEmojiTest, NoMainResultsAndSomeEmojisIsAnnounced) {
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
 
   views::test::AXEventCounter counter(views::AXEventManager::Get());
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
   future.Take().Run({});
 
-  EXPECT_EQ(picker_view->search_results_view_for_testing().GetAccessibleName(),
-            u"2 emojis. No other results.");
+  EXPECT_EQ(
+      quick_insert_view->search_results_view_for_testing().GetAccessibleName(),
+      u"2 emojis. No other results.");
   EXPECT_EQ(counter.GetCount(ax::mojom::Event::kLiveRegionChanged), 1);
 }
 
 TEST_F(QuickInsertViewTest, DoesNotClearResultsBeforeTimeout) {
-  base::test::TestFuture<FakePickerViewDelegate::SearchResultsCallback> future;
-  FakePickerViewDelegate delegate({
+  base::test::TestFuture<FakeQuickInsertViewDelegate::SearchResultsCallback>
+      future;
+  FakeQuickInsertViewDelegate delegate({
       .search_function = base::BindLambdaForTesting(
           [&](std::u16string_view query,
-              FakePickerViewDelegate::SearchResultsCallback callback) {
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             future.SetValue(std::move(callback));
           }),
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
 
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
-  FakePickerViewDelegate::SearchResultsCallback first_callback = future.Take();
+  FakeQuickInsertViewDelegate::SearchResultsCallback first_callback =
+      future.Take();
   first_callback.Run({{QuickInsertSearchResultsSection(
       QuickInsertSectionType::kClipboard, {{QuickInsertTextResult(u"result")}},
       /*has_more_results=*/false)}});
-  task_environment()->FastForwardBy(PickerView::kClearResultsTimeout);
-  ASSERT_FALSE(picker_view->search_results_view_for_testing()
+  task_environment()->FastForwardBy(QuickInsertView::kClearResultsTimeout);
+  ASSERT_FALSE(quick_insert_view->search_results_view_for_testing()
                    .section_views_for_testing()
                    .empty());
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
   ASSERT_TRUE(future.Wait());
   future.Clear();
-  task_environment()->FastForwardBy(PickerView::kClearResultsTimeout -
+  task_environment()->FastForwardBy(QuickInsertView::kClearResultsTimeout -
                                     base::Milliseconds(1));
 
-  EXPECT_FALSE(picker_view->search_results_view_for_testing()
+  EXPECT_FALSE(quick_insert_view->search_results_view_for_testing()
                    .section_views_for_testing()
                    .empty());
 }
 
 TEST_F(QuickInsertViewTest, ClearsResultsAfterTimeout) {
-  base::test::TestFuture<FakePickerViewDelegate::SearchResultsCallback> future;
-  FakePickerViewDelegate delegate({
+  base::test::TestFuture<FakeQuickInsertViewDelegate::SearchResultsCallback>
+      future;
+  FakeQuickInsertViewDelegate delegate({
       .search_function = base::BindLambdaForTesting(
           [&](std::u16string_view query,
-              FakePickerViewDelegate::SearchResultsCallback callback) {
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             future.SetValue(std::move(callback));
           }),
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
 
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
-  FakePickerViewDelegate::SearchResultsCallback first_callback = future.Take();
+  FakeQuickInsertViewDelegate::SearchResultsCallback first_callback =
+      future.Take();
   first_callback.Run({{QuickInsertSearchResultsSection(
       QuickInsertSectionType::kClipboard, {{QuickInsertTextResult(u"result")}},
       /*has_more_results=*/false)}});
-  task_environment()->FastForwardBy(PickerView::kClearResultsTimeout);
-  ASSERT_FALSE(picker_view->search_results_view_for_testing()
+  task_environment()->FastForwardBy(QuickInsertView::kClearResultsTimeout);
+  ASSERT_FALSE(quick_insert_view->search_results_view_for_testing()
                    .section_views_for_testing()
                    .empty());
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
   ASSERT_TRUE(future.Wait());
   future.Clear();
-  task_environment()->FastForwardBy(PickerView::kClearResultsTimeout);
+  task_environment()->FastForwardBy(QuickInsertView::kClearResultsTimeout);
 
-  EXPECT_TRUE(picker_view->search_results_view_for_testing()
+  EXPECT_TRUE(quick_insert_view->search_results_view_for_testing()
                   .section_views_for_testing()
                   .empty());
 }
 
 TEST_F(QuickInsertViewTest, ClearsResultsWhenQueryClearedNoCategory) {
-  base::test::TestFuture<FakePickerViewDelegate::SearchResultsCallback> future;
-  FakePickerViewDelegate delegate({
+  base::test::TestFuture<FakeQuickInsertViewDelegate::SearchResultsCallback>
+      future;
+  FakeQuickInsertViewDelegate delegate({
       .search_function = base::BindLambdaForTesting(
           [&](std::u16string_view query,
-              FakePickerViewDelegate::SearchResultsCallback callback) {
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             future.SetValue(std::move(callback));
           }),
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
 
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
-  FakePickerViewDelegate::SearchResultsCallback callback = future.Take();
+  FakeQuickInsertViewDelegate::SearchResultsCallback callback = future.Take();
   callback.Run({{QuickInsertSearchResultsSection(
       QuickInsertSectionType::kClipboard, {{QuickInsertTextResult(u"result")}},
       /*has_more_results=*/false)}});
-  ASSERT_FALSE(picker_view->search_results_view_for_testing()
+  ASSERT_FALSE(quick_insert_view->search_results_view_for_testing()
                    .section_views_for_testing()
                    .empty());
   PressAndReleaseKey(ui::KeyboardCode::VKEY_BACK, ui::EF_NONE);
 
-  EXPECT_TRUE(picker_view->search_results_view_for_testing()
+  EXPECT_TRUE(quick_insert_view->search_results_view_for_testing()
                   .section_views_for_testing()
                   .empty());
 }
 
 TEST_F(QuickInsertViewTest, ClearsResultsWhenQueryClearedWithCategory) {
-  base::test::TestFuture<FakePickerViewDelegate::SearchResultsCallback> future;
-  FakePickerViewDelegate delegate({
+  base::test::TestFuture<FakeQuickInsertViewDelegate::SearchResultsCallback>
+      future;
+  FakeQuickInsertViewDelegate delegate({
       .available_categories = {QuickInsertCategory::kLinks},
       .search_function = base::BindLambdaForTesting(
           [&](std::u16string_view query,
-              FakePickerViewDelegate::SearchResultsCallback callback) {
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             future.SetValue(std::move(callback));
           }),
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
 
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
-  views::View* category_item_view = GetFirstCategoryItemView(picker_view);
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
+  views::View* category_item_view = GetFirstCategoryItemView(quick_insert_view);
 
   category_item_view->ScrollViewToVisible();
   ViewDrawnWaiter().Wait(category_item_view);
   LeftClickOn(category_item_view);
 
-  ASSERT_TRUE(picker_view->category_results_view_for_testing().GetVisible());
-  ASSERT_FALSE(picker_view->zero_state_view_for_testing().GetVisible());
-  ASSERT_FALSE(picker_view->search_results_view_for_testing().GetVisible());
+  ASSERT_TRUE(
+      quick_insert_view->category_results_view_for_testing().GetVisible());
+  ASSERT_FALSE(quick_insert_view->zero_state_view_for_testing().GetVisible());
+  ASSERT_FALSE(
+      quick_insert_view->search_results_view_for_testing().GetVisible());
 
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
-  FakePickerViewDelegate::SearchResultsCallback callback = future.Take();
+  FakeQuickInsertViewDelegate::SearchResultsCallback callback = future.Take();
   callback.Run({{QuickInsertSearchResultsSection(
       QuickInsertSectionType::kLinks, {{QuickInsertTextResult(u"result")}},
       /*has_more_results=*/false)}});
-  ASSERT_FALSE(picker_view->search_results_view_for_testing()
+  ASSERT_FALSE(quick_insert_view->search_results_view_for_testing()
                    .section_views_for_testing()
                    .empty());
   PressAndReleaseKey(ui::KeyboardCode::VKEY_BACK, ui::EF_NONE);
-  EXPECT_TRUE(picker_view->search_results_view_for_testing()
+  EXPECT_TRUE(quick_insert_view->search_results_view_for_testing()
                   .section_views_for_testing()
                   .empty());
-  EXPECT_TRUE(picker_view->category_results_view_for_testing().GetVisible());
-  EXPECT_FALSE(picker_view->zero_state_view_for_testing().GetVisible());
-  EXPECT_FALSE(picker_view->search_results_view_for_testing().GetVisible());
+  EXPECT_TRUE(
+      quick_insert_view->category_results_view_for_testing().GetVisible());
+  EXPECT_FALSE(quick_insert_view->zero_state_view_for_testing().GetVisible());
+  EXPECT_FALSE(
+      quick_insert_view->search_results_view_for_testing().GetVisible());
 }
 
 TEST_F(QuickInsertViewTest, StopsSearchWhenQueryClearedNoCategory) {
   base::test::TestFuture<void> search_future;
   base::test::TestFuture<void> stop_search_future;
-  FakePickerViewDelegate delegate(
+  FakeQuickInsertViewDelegate delegate(
       {.search_function = base::BindLambdaForTesting(
            [&](std::u16string_view query,
-               FakePickerViewDelegate::SearchResultsCallback callback) {
+               FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
              search_future.SetValue();
            }),
        .stop_search_function = stop_search_future.GetRepeatingCallback()});
@@ -1546,19 +1598,19 @@ TEST_F(QuickInsertViewTest, StopsSearchWhenQueryClearedNoCategory) {
 TEST_F(QuickInsertViewTest, StopsSearchWhenQueryClearedWithCategory) {
   base::test::TestFuture<void> search_future;
   base::test::TestFuture<void> stop_search_future;
-  FakePickerViewDelegate delegate(
+  FakeQuickInsertViewDelegate delegate(
       {.available_categories = {QuickInsertCategory::kLinks},
        .search_function = base::BindLambdaForTesting(
            [&](std::u16string_view query,
-               FakePickerViewDelegate::SearchResultsCallback callback) {
+               FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
              search_future.SetValue();
            }),
        .stop_search_function = stop_search_future.GetRepeatingCallback()});
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
 
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
-  views::View* category_item_view = GetFirstCategoryItemView(picker_view);
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
+  views::View* category_item_view = GetFirstCategoryItemView(quick_insert_view);
 
   category_item_view->ScrollViewToVisible();
   ViewDrawnWaiter().Wait(category_item_view);
@@ -1567,36 +1619,40 @@ TEST_F(QuickInsertViewTest, StopsSearchWhenQueryClearedWithCategory) {
   // search.
   ASSERT_TRUE(stop_search_future.WaitAndClear());
 
-  ASSERT_TRUE(picker_view->category_results_view_for_testing().GetVisible());
-  ASSERT_FALSE(picker_view->zero_state_view_for_testing().GetVisible());
-  ASSERT_FALSE(picker_view->search_results_view_for_testing().GetVisible());
+  ASSERT_TRUE(
+      quick_insert_view->category_results_view_for_testing().GetVisible());
+  ASSERT_FALSE(quick_insert_view->zero_state_view_for_testing().GetVisible());
+  ASSERT_FALSE(
+      quick_insert_view->search_results_view_for_testing().GetVisible());
 
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
   ASSERT_TRUE(search_future.Wait());
   EXPECT_FALSE(stop_search_future.IsReady());
   PressAndReleaseKey(ui::KeyboardCode::VKEY_BACK, ui::EF_NONE);
   EXPECT_TRUE(stop_search_future.Wait());
-  EXPECT_TRUE(picker_view->category_results_view_for_testing().GetVisible());
-  EXPECT_FALSE(picker_view->zero_state_view_for_testing().GetVisible());
-  EXPECT_FALSE(picker_view->search_results_view_for_testing().GetVisible());
+  EXPECT_TRUE(
+      quick_insert_view->category_results_view_for_testing().GetVisible());
+  EXPECT_FALSE(quick_insert_view->zero_state_view_for_testing().GetVisible());
+  EXPECT_FALSE(
+      quick_insert_view->search_results_view_for_testing().GetVisible());
 }
 
 TEST_F(QuickInsertViewTest, StopsSearchWhenBackButtonPressed) {
   base::test::TestFuture<void> search_future;
   base::test::TestFuture<void> stop_search_future;
-  FakePickerViewDelegate delegate(
+  FakeQuickInsertViewDelegate delegate(
       {.available_categories = {QuickInsertCategory::kLinks},
        .search_function = base::BindLambdaForTesting(
            [&](std::u16string_view query,
-               FakePickerViewDelegate::SearchResultsCallback callback) {
+               FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
              search_future.SetValue();
            }),
        .stop_search_function = stop_search_future.GetRepeatingCallback()});
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
 
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
-  views::View* category_item_view = GetFirstCategoryItemView(picker_view);
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
+  views::View* category_item_view = GetFirstCategoryItemView(quick_insert_view);
 
   category_item_view->ScrollViewToVisible();
   ViewDrawnWaiter().Wait(category_item_view);
@@ -1605,16 +1661,18 @@ TEST_F(QuickInsertViewTest, StopsSearchWhenBackButtonPressed) {
   // search.
   ASSERT_TRUE(stop_search_future.WaitAndClear());
 
-  ASSERT_TRUE(picker_view->category_results_view_for_testing().GetVisible());
-  ASSERT_FALSE(picker_view->zero_state_view_for_testing().GetVisible());
-  ASSERT_FALSE(picker_view->search_results_view_for_testing().GetVisible());
+  ASSERT_TRUE(
+      quick_insert_view->category_results_view_for_testing().GetVisible());
+  ASSERT_FALSE(quick_insert_view->zero_state_view_for_testing().GetVisible());
+  ASSERT_FALSE(
+      quick_insert_view->search_results_view_for_testing().GetVisible());
 
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
   ASSERT_TRUE(search_future.Wait());
   ASSERT_FALSE(stop_search_future.IsReady());
 
-  PickerSearchFieldView& search_field_view =
-      picker_view->search_field_view_for_testing();
+  QuickInsertSearchFieldView& search_field_view =
+      quick_insert_view->search_field_view_for_testing();
   ViewDrawnWaiter().Wait(&search_field_view.back_button_for_testing());
   LeftClickOn(&search_field_view.back_button_for_testing());
 
@@ -1625,27 +1683,29 @@ TEST_F(QuickInsertViewTest,
        StopsSearchWhenCategorySelectedOnZeroStateDuringSearch) {
   base::test::TestFuture<void> search_future;
   base::test::TestFuture<void> stop_search_future;
-  FakePickerViewDelegate delegate(
+  FakeQuickInsertViewDelegate delegate(
       {.available_categories = {QuickInsertCategory::kLinks},
        .search_function = base::BindLambdaForTesting(
            [&](std::u16string_view query,
-               FakePickerViewDelegate::SearchResultsCallback callback) {
+               FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
              search_future.SetValue();
            }),
        .stop_search_function = stop_search_future.GetRepeatingCallback()});
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
 
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
-  views::View* category_item_view = GetFirstCategoryItemView(picker_view);
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
+  views::View* category_item_view = GetFirstCategoryItemView(quick_insert_view);
 
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
   ASSERT_TRUE(search_future.Wait());
   ASSERT_FALSE(stop_search_future.IsReady());
 
-  ASSERT_FALSE(picker_view->category_results_view_for_testing().GetVisible());
-  ASSERT_TRUE(picker_view->zero_state_view_for_testing().GetVisible());
-  ASSERT_FALSE(picker_view->search_results_view_for_testing().GetVisible());
+  ASSERT_FALSE(
+      quick_insert_view->category_results_view_for_testing().GetVisible());
+  ASSERT_TRUE(quick_insert_view->zero_state_view_for_testing().GetVisible());
+  ASSERT_FALSE(
+      quick_insert_view->search_results_view_for_testing().GetVisible());
 
   category_item_view->ScrollViewToVisible();
   ViewDrawnWaiter().Wait(category_item_view);
@@ -1655,13 +1715,13 @@ TEST_F(QuickInsertViewTest,
 }
 
 TEST_F(QuickInsertViewTest, StopsSearchWhenCategorySelectedInSearchResults) {
-  base::test::TestFuture<FakePickerViewDelegate::SearchResultsCallback>
+  base::test::TestFuture<FakeQuickInsertViewDelegate::SearchResultsCallback>
       search_future;
   base::test::TestFuture<void> stop_search_future;
-  FakePickerViewDelegate delegate(
+  FakeQuickInsertViewDelegate delegate(
       {.search_function = base::BindLambdaForTesting(
            [&](std::u16string_view query,
-               FakePickerViewDelegate::SearchResultsCallback callback) {
+               FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
              search_future.SetValue(std::move(callback));
            }),
        .stop_search_function = stop_search_future.GetRepeatingCallback()});
@@ -1669,7 +1729,8 @@ TEST_F(QuickInsertViewTest, StopsSearchWhenCategorySelectedInSearchResults) {
   widget->Show();
 
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
-  FakePickerViewDelegate::SearchResultsCallback callback = search_future.Take();
+  FakeQuickInsertViewDelegate::SearchResultsCallback callback =
+      search_future.Take();
   callback.Run({
       QuickInsertSearchResultsSection(
           QuickInsertSectionType::kNone,
@@ -1677,7 +1738,7 @@ TEST_F(QuickInsertViewTest, StopsSearchWhenCategorySelectedInSearchResults) {
           /*has_more_results=*/false),
   });
 
-  PickerView* view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* view = GetQuickInsertViewFromWidget(*widget);
   views::View* category_result = view->search_results_view_for_testing()
                                      .section_list_view_for_testing()
                                      ->GetTopItem();
@@ -1693,7 +1754,7 @@ TEST_F(QuickInsertViewTest, StopsSearchWhenCategorySelectedInSearchResults) {
 }
 
 TEST_P(QuickInsertViewEmojiTest, SearchingShowsExpressionResultsInEmojiBar) {
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .available_categories = {GetParam()},
       .emoji_results = {QuickInsertEmojiResult::Emoji(u"😊"),
                         QuickInsertEmojiResult::Symbol(u"♬")},
@@ -1701,29 +1762,30 @@ TEST_P(QuickInsertViewEmojiTest, SearchingShowsExpressionResultsInEmojiBar) {
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
 
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
 
-  ASSERT_NE(picker_view->emoji_bar_view_for_testing(), nullptr);
-  EXPECT_TRUE(picker_view->emoji_bar_view_for_testing()->GetVisible());
-  EXPECT_THAT(picker_view->emoji_bar_view_for_testing()->GetItemsForTesting(),
-              ElementsAre(Truly(&views::IsViewClass<PickerEmojiItemView>),
-                          Truly(&views::IsViewClass<PickerEmojiItemView>)));
+  ASSERT_NE(quick_insert_view->emoji_bar_view_for_testing(), nullptr);
+  EXPECT_TRUE(quick_insert_view->emoji_bar_view_for_testing()->GetVisible());
+  EXPECT_THAT(
+      quick_insert_view->emoji_bar_view_for_testing()->GetItemsForTesting(),
+      ElementsAre(Truly(&views::IsViewClass<PickerEmojiItemView>),
+                  Truly(&views::IsViewClass<PickerEmojiItemView>)));
 }
 
 TEST_P(QuickInsertViewEmojiTest, InitiallyShowsSuggestedEmojis) {
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .available_categories = {GetParam()},
       .suggested_emojis = {"😊", "👍"},
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
 
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
-  ASSERT_NE(picker_view->emoji_bar_view_for_testing(), nullptr);
-  EXPECT_TRUE(picker_view->emoji_bar_view_for_testing()->GetVisible());
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
+  ASSERT_NE(quick_insert_view->emoji_bar_view_for_testing(), nullptr);
+  EXPECT_TRUE(quick_insert_view->emoji_bar_view_for_testing()->GetVisible());
   EXPECT_THAT(
-      picker_view->emoji_bar_view_for_testing()->GetItemsForTesting(),
+      quick_insert_view->emoji_bar_view_for_testing()->GetItemsForTesting(),
       ElementsAre(AsView<PickerEmojiItemView>(
                       Property(&PickerEmojiItemView::GetTextForTesting, u"😊")),
                   AsView<PickerEmojiItemView>(Property(
@@ -1731,20 +1793,20 @@ TEST_P(QuickInsertViewEmojiTest, InitiallyShowsSuggestedEmojis) {
 }
 
 TEST_F(QuickInsertViewTest, NoEmojiBarIfExpressionsCategoryNotAvailable) {
-  FakePickerViewDelegate delegate(
+  FakeQuickInsertViewDelegate delegate(
       {.available_categories = {QuickInsertCategory::kLinks}});
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
 
-  EXPECT_EQ(GetPickerViewFromWidget(*widget)->emoji_bar_view_for_testing(),
+  EXPECT_EQ(GetQuickInsertViewFromWidget(*widget)->emoji_bar_view_for_testing(),
             nullptr);
 }
 
 TEST_F(QuickInsertViewTest, ClearsResultsWhenGoingBackToZeroState) {
   base::test::TestFuture<void> search_called;
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .search_function = base::BindLambdaForTesting(
           [&](std::u16string_view query,
-              FakePickerViewDelegate::SearchResultsCallback callback) {
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             search_called.SetValue();
             callback.Run({
                 QuickInsertSearchResultsSection(
@@ -1757,22 +1819,23 @@ TEST_F(QuickInsertViewTest, ClearsResultsWhenGoingBackToZeroState) {
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
 
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
   // Go to the results page.
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
   ASSERT_TRUE(search_called.Wait());
   // Go back to the zero state page.
   PressAndReleaseKey(ui::KeyboardCode::VKEY_BACK, ui::EF_NONE);
 
-  EXPECT_FALSE(picker_view->search_results_view_for_testing().GetVisible());
-  EXPECT_THAT(picker_view->search_results_view_for_testing()
+  EXPECT_FALSE(
+      quick_insert_view->search_results_view_for_testing().GetVisible());
+  EXPECT_THAT(quick_insert_view->search_results_view_for_testing()
                   .section_list_view_for_testing()
                   ->children(),
               IsEmpty());
 }
 
 TEST_F(QuickInsertViewTest, PressingEscClosesQuickInsertWidget) {
-  FakePickerViewDelegate delegate;
+  FakeQuickInsertViewDelegate delegate;
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
 
@@ -1783,10 +1846,11 @@ TEST_F(QuickInsertViewTest, PressingEscClosesQuickInsertWidget) {
 
 TEST_F(QuickInsertViewTest, RecordsSearchLatencyAfterSearchFinished) {
   base::HistogramTester histogram;
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .search_function = base::BindLambdaForTesting(
-          [&, this](std::u16string_view query,
-                    FakePickerViewDelegate::SearchResultsCallback callback) {
+          [&, this](
+              std::u16string_view query,
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             // The search automatically publishes results after burn-in + 50ms,
             // so publish "burn in results" before that.
             task_environment()->FastForwardBy(
@@ -1816,11 +1880,13 @@ TEST_F(QuickInsertViewTest, RecordsSearchLatencyAfterSearchFinished) {
 TEST_F(QuickInsertViewTest,
        RecordsSearchLatencyWhenResultsAreAutomaticallyCleared) {
   base::HistogramTester histogram;
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .search_function = base::BindLambdaForTesting(
-          [&, this](std::u16string_view query,
-                    FakePickerViewDelegate::SearchResultsCallback callback) {
-            task_environment()->FastForwardBy(PickerView::kClearResultsTimeout);
+          [&, this](
+              std::u16string_view query,
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
+            task_environment()->FastForwardBy(
+                QuickInsertView::kClearResultsTimeout);
           }),
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
@@ -1829,15 +1895,15 @@ TEST_F(QuickInsertViewTest,
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
 
   histogram.ExpectUniqueTimeSample("Ash.Picker.Session.SearchLatency",
-                                   PickerView::kClearResultsTimeout, 1);
+                                   QuickInsertView::kClearResultsTimeout, 1);
 }
 
 TEST_F(QuickInsertViewTest, BoundsDefaultAlignedWithAnchor) {
-  FakePickerViewDelegate delegate;
+  FakeQuickInsertViewDelegate delegate;
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
 
-  PickerView* view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* view = GetQuickInsertViewFromWidget(*widget);
   // Should be entirely on screen.
   EXPECT_TRUE(display::Screen::GetScreen()
                   ->GetDisplayMatching(kDefaultAnchorBounds)
@@ -1854,7 +1920,7 @@ TEST_F(QuickInsertViewTest, BoundsDefaultAlignedWithAnchor) {
 }
 
 TEST_F(QuickInsertViewTest, BoundsAlignedWithAnchorNearTopLeftOfScreen) {
-  FakePickerViewDelegate delegate;
+  FakeQuickInsertViewDelegate delegate;
   const gfx::Rect screen_work_area =
       display::Screen::GetScreen()->GetPrimaryDisplay().work_area();
   gfx::Rect anchor_bounds(screen_work_area.origin(), {0, 10});
@@ -1863,7 +1929,7 @@ TEST_F(QuickInsertViewTest, BoundsAlignedWithAnchorNearTopLeftOfScreen) {
   auto widget = QuickInsertWidget::Create(&delegate, anchor_bounds);
   widget->Show();
 
-  PickerView* view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* view = GetQuickInsertViewFromWidget(*widget);
   // Should be entirely on screen.
   EXPECT_TRUE(screen_work_area.Contains(view->GetBoundsInScreen()));
   // Should be to the right of the anchor.
@@ -1877,7 +1943,7 @@ TEST_F(QuickInsertViewTest, BoundsAlignedWithAnchorNearTopLeftOfScreen) {
 }
 
 TEST_F(QuickInsertViewTest, BoundsAlignedWithAnchorNearBottomLeftOfScreen) {
-  FakePickerViewDelegate delegate;
+  FakeQuickInsertViewDelegate delegate;
   const gfx::Rect screen_work_area =
       display::Screen::GetScreen()->GetPrimaryDisplay().work_area();
   gfx::Rect anchor_bounds(screen_work_area.bottom_left(), {0, 10});
@@ -1886,7 +1952,7 @@ TEST_F(QuickInsertViewTest, BoundsAlignedWithAnchorNearBottomLeftOfScreen) {
   auto widget = QuickInsertWidget::Create(&delegate, anchor_bounds);
   widget->Show();
 
-  PickerView* view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* view = GetQuickInsertViewFromWidget(*widget);
   // Should be entirely on screen.
   EXPECT_TRUE(screen_work_area.Contains(view->GetBoundsInScreen()));
   // Should be to the right of the anchor.
@@ -1900,7 +1966,7 @@ TEST_F(QuickInsertViewTest, BoundsAlignedWithAnchorNearBottomLeftOfScreen) {
 }
 
 TEST_F(QuickInsertViewTest, BoundsBelowAnchorForAnchorNearTopRightOfScreen) {
-  FakePickerViewDelegate delegate;
+  FakeQuickInsertViewDelegate delegate;
   const gfx::Rect screen_work_area =
       display::Screen::GetScreen()->GetPrimaryDisplay().work_area();
   gfx::Rect anchor_bounds(screen_work_area.top_right(), {0, 10});
@@ -1909,7 +1975,7 @@ TEST_F(QuickInsertViewTest, BoundsBelowAnchorForAnchorNearTopRightOfScreen) {
   auto widget = QuickInsertWidget::Create(&delegate, anchor_bounds);
   widget->Show();
 
-  const PickerView* view = GetPickerViewFromWidget(*widget);
+  const QuickInsertView* view = GetQuickInsertViewFromWidget(*widget);
   // Should be entirely on screen.
   EXPECT_TRUE(screen_work_area.Contains(view->GetBoundsInScreen()));
   // Should be below the anchor.
@@ -1917,7 +1983,7 @@ TEST_F(QuickInsertViewTest, BoundsBelowAnchorForAnchorNearTopRightOfScreen) {
 }
 
 TEST_F(QuickInsertViewTest, BoundsAboveAnchorForAnchorNearBottomRightOfScreen) {
-  FakePickerViewDelegate delegate;
+  FakeQuickInsertViewDelegate delegate;
   const gfx::Rect screen_work_area =
       display::Screen::GetScreen()->GetPrimaryDisplay().work_area();
   gfx::Rect anchor_bounds(screen_work_area.bottom_right(), {0, 10});
@@ -1926,7 +1992,7 @@ TEST_F(QuickInsertViewTest, BoundsAboveAnchorForAnchorNearBottomRightOfScreen) {
   auto widget = QuickInsertWidget::Create(&delegate, anchor_bounds);
   widget->Show();
 
-  const PickerView* view = GetPickerViewFromWidget(*widget);
+  const QuickInsertView* view = GetQuickInsertViewFromWidget(*widget);
   // Should be entirely on screen.
   EXPECT_TRUE(screen_work_area.Contains(view->GetBoundsInScreen()));
   // Should be above the anchor.
@@ -1934,7 +2000,7 @@ TEST_F(QuickInsertViewTest, BoundsAboveAnchorForAnchorNearBottomRightOfScreen) {
 }
 
 TEST_F(QuickInsertViewTest, BoundsLeftAlignedBelowSelectionNearTopOfScreen) {
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .mode = PickerModeType::kHasSelection,
   });
   const gfx::Rect screen_work_area =
@@ -1944,14 +2010,14 @@ TEST_F(QuickInsertViewTest, BoundsLeftAlignedBelowSelectionNearTopOfScreen) {
   auto widget = QuickInsertWidget::Create(&delegate, anchor_bounds);
   widget->Show();
 
-  const PickerView* view = GetPickerViewFromWidget(*widget);
+  const QuickInsertView* view = GetQuickInsertViewFromWidget(*widget);
   EXPECT_TRUE(screen_work_area.Contains(view->GetBoundsInScreen()));
   EXPECT_EQ(view->GetBoundsInScreen().x(), anchor_bounds.x());
   EXPECT_GE(view->GetBoundsInScreen().y(), anchor_bounds.bottom());
 }
 
 TEST_F(QuickInsertViewTest, BoundsLeftAlignedAboveSelectionNearBottomOfScreen) {
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .mode = PickerModeType::kHasSelection,
   });
   const gfx::Rect screen_work_area =
@@ -1961,25 +2027,25 @@ TEST_F(QuickInsertViewTest, BoundsLeftAlignedAboveSelectionNearBottomOfScreen) {
   auto widget = QuickInsertWidget::Create(&delegate, anchor_bounds);
   widget->Show();
 
-  const PickerView* view = GetPickerViewFromWidget(*widget);
+  const QuickInsertView* view = GetQuickInsertViewFromWidget(*widget);
   EXPECT_TRUE(screen_work_area.Contains(view->GetBoundsInScreen()));
   EXPECT_EQ(view->GetBoundsInScreen().x(), anchor_bounds.x());
   EXPECT_LE(view->GetBoundsInScreen().bottom(), anchor_bounds.y());
 }
 
 TEST_F(QuickInsertViewTest, BoundsOnScreenForEmptyAnchorBounds) {
-  FakePickerViewDelegate delegate;
+  FakeQuickInsertViewDelegate delegate;
   auto widget = QuickInsertWidget::Create(&delegate, gfx::Rect());
   widget->Show();
 
-  const PickerView* view = GetPickerViewFromWidget(*widget);
+  const QuickInsertView* view = GetQuickInsertViewFromWidget(*widget);
   EXPECT_TRUE(
       display::Screen::GetScreen()->GetPrimaryDisplay().work_area().Contains(
           view->GetBoundsInScreen()));
 }
 
 TEST_F(QuickInsertViewTest, MainContentBelowSearchFieldNearTopOfScreen) {
-  FakePickerViewDelegate delegate;
+  FakeQuickInsertViewDelegate delegate;
   const gfx::Rect screen_work_area =
       display::Screen::GetScreen()->GetPrimaryDisplay().work_area();
   gfx::Rect anchor_bounds(screen_work_area.top_center(), {0, 10});
@@ -1988,13 +2054,13 @@ TEST_F(QuickInsertViewTest, MainContentBelowSearchFieldNearTopOfScreen) {
   auto widget = QuickInsertWidget::Create(&delegate, anchor_bounds);
   widget->Show();
 
-  PickerView* view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* view = GetQuickInsertViewFromWidget(*widget);
   EXPECT_GE(view->zero_state_view_for_testing().GetBoundsInScreen().y(),
             view->search_field_view_for_testing().GetBoundsInScreen().bottom());
 }
 
 TEST_F(QuickInsertViewTest, MainContentAboveSearchFieldNearBottomOfScreen) {
-  FakePickerViewDelegate delegate;
+  FakeQuickInsertViewDelegate delegate;
   const gfx::Rect screen_work_area =
       display::Screen::GetScreen()->GetPrimaryDisplay().work_area();
   gfx::Rect anchor_bounds(screen_work_area.bottom_center(), {0, 10});
@@ -2003,32 +2069,32 @@ TEST_F(QuickInsertViewTest, MainContentAboveSearchFieldNearBottomOfScreen) {
   auto widget = QuickInsertWidget::Create(&delegate, anchor_bounds);
   widget->Show();
 
-  PickerView* view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* view = GetQuickInsertViewFromWidget(*widget);
   EXPECT_LE(view->zero_state_view_for_testing().GetBoundsInScreen().bottom(),
             view->search_field_view_for_testing().GetBoundsInScreen().y());
 }
 
 TEST_P(QuickInsertViewEmojiTest, ShowsEmojiPickerWhenClickingOnExpressions) {
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .available_categories = {GetParam()},
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
 
-  LeftClickOn(GetFirstCategoryItemView(GetPickerViewFromWidget(*widget)));
+  LeftClickOn(GetFirstCategoryItemView(GetQuickInsertViewFromWidget(*widget)));
 
   EXPECT_TRUE(widget->IsClosed());
   EXPECT_THAT(delegate.emoji_picker_query(), Optional(Eq(u"")));
 }
 
 TEST_F(QuickInsertViewTest, ShowsEditorWhenClickingOnEditor) {
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .available_categories = {QuickInsertCategory::kEditorWrite},
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
 
-  LeftClickOn(GetFirstCategoryItemView(GetPickerViewFromWidget(*widget)));
+  LeftClickOn(GetFirstCategoryItemView(GetQuickInsertViewFromWidget(*widget)));
 
   EXPECT_TRUE(widget->IsClosed());
   EXPECT_TRUE(delegate.showed_editor());
@@ -2036,10 +2102,10 @@ TEST_F(QuickInsertViewTest, ShowsEditorWhenClickingOnEditor) {
 
 TEST_F(QuickInsertViewTest, PressingEnterDoesNothingOnEmptySearchResultsPage) {
   base::test::TestFuture<void> future;
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .search_function = base::BindLambdaForTesting(
           [&](std::u16string_view query,
-              FakePickerViewDelegate::SearchResultsCallback callback) {
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             future.SetValue();
             callback.Run({
                 QuickInsertSearchResultsSection(QuickInsertSectionType::kLinks,
@@ -2050,7 +2116,7 @@ TEST_F(QuickInsertViewTest, PressingEnterDoesNothingOnEmptySearchResultsPage) {
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
-  PickerView* view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* view = GetQuickInsertViewFromWidget(*widget);
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
   ASSERT_TRUE(future.Wait());
   PressAndReleaseKey(ui::KeyboardCode::VKEY_RETURN, ui::EF_NONE);
@@ -2061,10 +2127,10 @@ TEST_F(QuickInsertViewTest, PressingEnterDoesNothingOnEmptySearchResultsPage) {
 
 TEST_F(QuickInsertViewTest, PressingEnterDefaultSelectsFirstSearchResult) {
   base::test::TestFuture<void> future;
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .search_function = base::BindLambdaForTesting(
           [&](std::u16string_view query,
-              FakePickerViewDelegate::SearchResultsCallback callback) {
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             future.SetValue();
             callback.Run({
                 QuickInsertSearchResultsSection(
@@ -2086,7 +2152,7 @@ TEST_F(QuickInsertViewTest, PressingEnterDefaultSelectsFirstSearchResult) {
 }
 
 TEST_F(QuickInsertViewTest, ArrowKeysNavigateEmojiBar) {
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .available_categories = {QuickInsertCategory::kEmojisGifs},
       .emoji_results = {QuickInsertEmojiResult::Emoji(u"😊"),
                         QuickInsertEmojiResult::Symbol(u"♬")},
@@ -2095,7 +2161,7 @@ TEST_F(QuickInsertViewTest, ArrowKeysNavigateEmojiBar) {
   widget->Show();
 
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
-  ViewDrawnWaiter().Wait(GetPickerViewFromWidget(*widget)
+  ViewDrawnWaiter().Wait(GetQuickInsertViewFromWidget(*widget)
                              ->emoji_bar_view_for_testing()
                              ->GetTopItem());
   PressAndReleaseKey(ui::KeyboardCode::VKEY_UP, ui::EF_NONE);
@@ -2107,7 +2173,7 @@ TEST_F(QuickInsertViewTest, ArrowKeysNavigateEmojiBar) {
 }
 
 TEST_F(QuickInsertViewTest, CanTypeQueryWhileEmojiBarIsPseudoFocused) {
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .available_categories = {QuickInsertCategory::kEmojisGifs},
       .emoji_results = {QuickInsertEmojiResult::Emoji(u"😊"),
                         QuickInsertEmojiResult::Symbol(u"♬")},
@@ -2116,13 +2182,13 @@ TEST_F(QuickInsertViewTest, CanTypeQueryWhileEmojiBarIsPseudoFocused) {
   widget->Show();
 
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
-  ViewDrawnWaiter().Wait(GetPickerViewFromWidget(*widget)
+  ViewDrawnWaiter().Wait(GetQuickInsertViewFromWidget(*widget)
                              ->emoji_bar_view_for_testing()
                              ->GetTopItem());
   PressAndReleaseKey(ui::KeyboardCode::VKEY_UP, ui::EF_NONE);
   PressAndReleaseKey(ui::KeyboardCode::VKEY_B, ui::EF_NONE);
 
-  EXPECT_EQ(GetPickerViewFromWidget(*widget)
+  EXPECT_EQ(GetQuickInsertViewFromWidget(*widget)
                 ->search_field_view_for_testing()
                 .textfield_for_testing()
                 .GetText(),
@@ -2131,10 +2197,10 @@ TEST_F(QuickInsertViewTest, CanTypeQueryWhileEmojiBarIsPseudoFocused) {
 
 TEST_F(QuickInsertViewTest, DownArrowKeyNavigatesSearchResults) {
   base::test::TestFuture<void> future;
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .search_function = base::BindLambdaForTesting(
           [&](std::u16string_view query,
-              FakePickerViewDelegate::SearchResultsCallback callback) {
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             future.SetValue();
             callback.Run({
                 QuickInsertSearchResultsSection(
@@ -2160,7 +2226,7 @@ TEST_F(QuickInsertViewTest, DownArrowKeyNavigatesSearchResults) {
 }
 
 TEST_F(QuickInsertViewTest, RightArrowKeyShowsSubmenu) {
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .zero_state_suggested_results =
           {QuickInsertNewWindowResult(QuickInsertNewWindowResult::Type::kDoc),
            QuickInsertNewWindowResult(
@@ -2171,14 +2237,14 @@ TEST_F(QuickInsertViewTest, RightArrowKeyShowsSubmenu) {
 
   PressAndReleaseKey(ui::KeyboardCode::VKEY_RIGHT, ui::EF_NONE);
 
-  EXPECT_NE(GetPickerViewFromWidget(*widget)
+  EXPECT_NE(GetQuickInsertViewFromWidget(*widget)
                 ->submenu_controller_for_testing()
                 .GetSubmenuView(),
             nullptr);
 }
 
 TEST_F(QuickInsertViewTest, EnterKeyShowsSubmenu) {
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .zero_state_suggested_results =
           {QuickInsertNewWindowResult(QuickInsertNewWindowResult::Type::kDoc),
            QuickInsertNewWindowResult(
@@ -2189,14 +2255,14 @@ TEST_F(QuickInsertViewTest, EnterKeyShowsSubmenu) {
 
   PressAndReleaseKey(ui::KeyboardCode::VKEY_RETURN, ui::EF_NONE);
 
-  EXPECT_NE(GetPickerViewFromWidget(*widget)
+  EXPECT_NE(GetQuickInsertViewFromWidget(*widget)
                 ->submenu_controller_for_testing()
                 .GetSubmenuView(),
             nullptr);
 }
 
 TEST_F(QuickInsertViewTest, LeftArrowKeyClosesSubmenu) {
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .zero_state_suggested_results =
           {QuickInsertNewWindowResult(QuickInsertNewWindowResult::Type::kDoc),
            QuickInsertNewWindowResult(
@@ -2209,14 +2275,14 @@ TEST_F(QuickInsertViewTest, LeftArrowKeyClosesSubmenu) {
   PressAndReleaseKey(ui::KeyboardCode::VKEY_LEFT, ui::EF_NONE);
 
   PickerSubmenuController& submenu_controller =
-      GetPickerViewFromWidget(*widget)->submenu_controller_for_testing();
+      GetQuickInsertViewFromWidget(*widget)->submenu_controller_for_testing();
   views::test::WidgetDestroyedWaiter(submenu_controller.widget_for_testing())
       .Wait();
   EXPECT_EQ(submenu_controller.GetSubmenuView(), nullptr);
 }
 
 TEST_F(QuickInsertViewTest, PressingEscClosesSubmenuThenWidget) {
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .zero_state_suggested_results = {QuickInsertNewWindowResult(
           QuickInsertNewWindowResult::Type::kDoc)},
   });
@@ -2227,7 +2293,7 @@ TEST_F(QuickInsertViewTest, PressingEscClosesSubmenuThenWidget) {
   PressAndReleaseKey(ui::KeyboardCode::VKEY_ESCAPE, ui::EF_NONE);
 
   PickerSubmenuController& submenu_controller =
-      GetPickerViewFromWidget(*widget)->submenu_controller_for_testing();
+      GetQuickInsertViewFromWidget(*widget)->submenu_controller_for_testing();
   views::test::WidgetDestroyedWaiter(submenu_controller.widget_for_testing())
       .Wait();
   EXPECT_EQ(submenu_controller.GetSubmenuView(), nullptr);
@@ -2240,10 +2306,10 @@ TEST_F(QuickInsertViewTest, PressingEscClosesSubmenuThenWidget) {
 
 TEST_F(QuickInsertViewTest, PressingEscClosesPreviewThenWidget) {
   base::test::TestFuture<void> future;
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .search_function = base::BindLambdaForTesting(
           [&](std::u16string_view query,
-              FakePickerViewDelegate::SearchResultsCallback callback) {
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             future.SetValue();
             callback.Run({
                 QuickInsertSearchResultsSection(
@@ -2257,7 +2323,7 @@ TEST_F(QuickInsertViewTest, PressingEscClosesPreviewThenWidget) {
   widget->Show();
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
   PickerPreviewBubbleController& preview_controller =
-      GetPickerViewFromWidget(*widget)->preview_controller_for_testing();
+      GetQuickInsertViewFromWidget(*widget)->preview_controller_for_testing();
   PickerPreviewBubbleVisibleWaiter().Wait(&preview_controller);
   EXPECT_TRUE(preview_controller.IsBubbleVisible());
 
@@ -2273,10 +2339,10 @@ TEST_F(QuickInsertViewTest, PressingEscClosesPreviewThenWidget) {
 
 TEST_F(QuickInsertViewTest, TabKeyNavigatesItemWithPreview) {
   base::test::TestFuture<void> future;
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .search_function = base::BindLambdaForTesting(
           [&](std::u16string_view query,
-              FakePickerViewDelegate::SearchResultsCallback callback) {
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             future.SetValue();
             callback.Run({
                 QuickInsertSearchResultsSection(
@@ -2298,7 +2364,7 @@ TEST_F(QuickInsertViewTest, TabKeyNavigatesItemWithPreview) {
   // Should navigate to the file result and show the preview bubble.
   PressAndReleaseKey(ui::KeyboardCode::VKEY_TAB, ui::EF_NONE);
   PickerPreviewBubbleController& preview_controller =
-      GetPickerViewFromWidget(*widget)->preview_controller_for_testing();
+      GetQuickInsertViewFromWidget(*widget)->preview_controller_for_testing();
   PickerPreviewBubbleVisibleWaiter().Wait(&preview_controller);
 
   EXPECT_TRUE(preview_controller.IsBubbleVisible());
@@ -2316,7 +2382,7 @@ TEST_F(QuickInsertViewTest, TabKeyNavigatesItemWithPreview) {
 }
 
 TEST_F(QuickInsertViewTest, KeyEventsNavigateWithinSubmenu) {
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .zero_state_suggested_results =
           {QuickInsertNewWindowResult(QuickInsertNewWindowResult::Type::kDoc),
            QuickInsertNewWindowResult(
@@ -2328,7 +2394,7 @@ TEST_F(QuickInsertViewTest, KeyEventsNavigateWithinSubmenu) {
 
   // Open submenu, navigate down to next submenu item, then select the item.
   PressAndReleaseKey(ui::KeyboardCode::VKEY_RIGHT, ui::EF_NONE);
-  ViewDrawnWaiter().Wait(GetPickerViewFromWidget(*widget)
+  ViewDrawnWaiter().Wait(GetQuickInsertViewFromWidget(*widget)
                              ->submenu_controller_for_testing()
                              .GetSubmenuView());
   PressAndReleaseKey(ui::KeyboardCode::VKEY_DOWN, ui::EF_NONE);
@@ -2340,14 +2406,14 @@ TEST_F(QuickInsertViewTest, KeyEventsNavigateWithinSubmenu) {
 }
 
 TEST_F(QuickInsertViewTest, LeftArrowKeyNavigatesToBackButton) {
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .available_categories = {QuickInsertCategory::kLinks},
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
   // Select a category so that the back button is visible.
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
-  views::View* category_item_view = GetFirstCategoryItemView(picker_view);
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
+  views::View* category_item_view = GetFirstCategoryItemView(quick_insert_view);
   category_item_view->ScrollViewToVisible();
   ViewDrawnWaiter().Wait(category_item_view);
   LeftClickOn(category_item_view);
@@ -2356,16 +2422,16 @@ TEST_F(QuickInsertViewTest, LeftArrowKeyNavigatesToBackButton) {
   PressAndReleaseKey(ui::KeyboardCode::VKEY_LEFT, ui::EF_NONE);
   PressAndReleaseKey(ui::KeyboardCode::VKEY_RETURN, ui::EF_NONE);
 
-  EXPECT_TRUE(picker_view->zero_state_view_for_testing().GetVisible());
+  EXPECT_TRUE(quick_insert_view->zero_state_view_for_testing().GetVisible());
 }
 
 TEST_F(QuickInsertViewTest, RightArrowKeyNavigatesToClearButton) {
-  FakePickerViewDelegate delegate;
+  FakeQuickInsertViewDelegate delegate;
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
   // Type a query so that the clear button is visible.
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
-  const views::Textfield& textfield = GetPickerViewFromWidget(*widget)
+  const views::Textfield& textfield = GetQuickInsertViewFromWidget(*widget)
                                           ->search_field_view_for_testing()
                                           .textfield_for_testing();
   EXPECT_EQ(textfield.GetText(), u"a");
@@ -2379,10 +2445,10 @@ TEST_F(QuickInsertViewTest, RightArrowKeyNavigatesToClearButton) {
 
 TEST_F(QuickInsertViewTest, TabKeyNavigatesSearchResults) {
   base::test::TestFuture<void> future;
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .search_function = base::BindLambdaForTesting(
           [&](std::u16string_view query,
-              FakePickerViewDelegate::SearchResultsCallback callback) {
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             future.SetValue();
             callback.Run({
                 QuickInsertSearchResultsSection(
@@ -2397,7 +2463,7 @@ TEST_F(QuickInsertViewTest, TabKeyNavigatesSearchResults) {
   widget->Show();
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
   ASSERT_TRUE(future.Wait());
-  ViewDrawnWaiter().Wait(GetPickerViewFromWidget(*widget)
+  ViewDrawnWaiter().Wait(GetQuickInsertViewFromWidget(*widget)
                              ->search_results_view_for_testing()
                              .section_list_view_for_testing()
                              ->GetTopItem());
@@ -2411,11 +2477,11 @@ TEST_F(QuickInsertViewTest, TabKeyNavigatesSearchResults) {
 
 TEST_F(QuickInsertViewTest, ShiftTabKeyNavigatesSearchResultsWithEmojiBar) {
   base::test::TestFuture<void> future;
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .available_categories = {QuickInsertCategory::kEmojisGifs},
       .search_function = base::BindLambdaForTesting(
           [&](std::u16string_view query,
-              FakePickerViewDelegate::SearchResultsCallback callback) {
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             future.SetValue();
             callback.Run({
                 QuickInsertSearchResultsSection(
@@ -2431,7 +2497,7 @@ TEST_F(QuickInsertViewTest, ShiftTabKeyNavigatesSearchResultsWithEmojiBar) {
   widget->Show();
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
   ASSERT_TRUE(future.Wait());
-  ViewDrawnWaiter().Wait(GetPickerViewFromWidget(*widget)
+  ViewDrawnWaiter().Wait(GetQuickInsertViewFromWidget(*widget)
                              ->search_results_view_for_testing()
                              .section_list_view_for_testing()
                              ->GetTopItem());
@@ -2452,10 +2518,10 @@ TEST_F(QuickInsertViewTest, ShiftTabKeyNavigatesSearchResultsWithEmojiBar) {
 
 TEST_F(QuickInsertViewTest, ShiftTabKeyNavigatesSearchResultsWithoutEmojiBar) {
   base::test::TestFuture<void> future;
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .search_function = base::BindLambdaForTesting(
           [&](std::u16string_view query,
-              FakePickerViewDelegate::SearchResultsCallback callback) {
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             future.SetValue();
             callback.Run({
                 QuickInsertSearchResultsSection(
@@ -2470,7 +2536,7 @@ TEST_F(QuickInsertViewTest, ShiftTabKeyNavigatesSearchResultsWithoutEmojiBar) {
   widget->Show();
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
   ASSERT_TRUE(future.Wait());
-  ViewDrawnWaiter().Wait(GetPickerViewFromWidget(*widget)
+  ViewDrawnWaiter().Wait(GetQuickInsertViewFromWidget(*widget)
                              ->search_results_view_for_testing()
                              .section_list_view_for_testing()
                              ->GetTopItem());
@@ -2489,10 +2555,10 @@ TEST_F(QuickInsertViewTest, ShiftTabKeyNavigatesSearchResultsWithoutEmojiBar) {
 
 TEST_F(QuickInsertViewTest, ShiftTabNavigatesToClearButton) {
   base::test::TestFuture<void> future;
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .search_function = base::BindLambdaForTesting(
           [&](std::u16string_view query,
-              FakePickerViewDelegate::SearchResultsCallback callback) {
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             future.SetValue();
             callback.Run({
                 QuickInsertSearchResultsSection(
@@ -2507,7 +2573,7 @@ TEST_F(QuickInsertViewTest, ShiftTabNavigatesToClearButton) {
   widget->Show();
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
   ASSERT_TRUE(future.Wait());
-  ViewDrawnWaiter().Wait(GetPickerViewFromWidget(*widget)
+  ViewDrawnWaiter().Wait(GetQuickInsertViewFromWidget(*widget)
                              ->search_results_view_for_testing()
                              .section_list_view_for_testing()
                              ->GetTopItem());
@@ -2516,7 +2582,7 @@ TEST_F(QuickInsertViewTest, ShiftTabNavigatesToClearButton) {
   PressAndReleaseKey(ui::KeyboardCode::VKEY_TAB, ui::EF_SHIFT_DOWN);
   PressAndReleaseKey(ui::KeyboardCode::VKEY_RETURN, ui::EF_NONE);
 
-  EXPECT_EQ(GetPickerViewFromWidget(*widget)
+  EXPECT_EQ(GetQuickInsertViewFromWidget(*widget)
                 ->search_field_view_for_testing()
                 .textfield_for_testing()
                 .GetText(),
@@ -2526,10 +2592,10 @@ TEST_F(QuickInsertViewTest, ShiftTabNavigatesToClearButton) {
 TEST_F(QuickInsertViewTest,
        DownArrowKeyNavigatesFromClearButtonToSearchResults) {
   base::test::TestFuture<void> future;
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .search_function = base::BindLambdaForTesting(
           [&](std::u16string_view query,
-              FakePickerViewDelegate::SearchResultsCallback callback) {
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             future.SetValue();
             callback.Run({
                 QuickInsertSearchResultsSection(
@@ -2544,7 +2610,7 @@ TEST_F(QuickInsertViewTest,
   widget->Show();
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
   ASSERT_TRUE(future.Wait());
-  ViewDrawnWaiter().Wait(GetPickerViewFromWidget(*widget)
+  ViewDrawnWaiter().Wait(GetQuickInsertViewFromWidget(*widget)
                              ->search_results_view_for_testing()
                              .section_list_view_for_testing()
                              ->GetTopItem());
@@ -2560,7 +2626,7 @@ TEST_F(QuickInsertViewTest,
 }
 
 TEST_F(QuickInsertViewTest, ShowsSubmenuOnMouseHover) {
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .zero_state_suggested_results =
           {QuickInsertNewWindowResult(QuickInsertNewWindowResult::Type::kDoc),
            QuickInsertNewWindowResult(
@@ -2569,27 +2635,29 @@ TEST_F(QuickInsertViewTest, ShowsSubmenuOnMouseHover) {
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
 
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
-  GetEventGenerator()->MoveMouseTo(picker_view->zero_state_view_for_testing()
-                                       .primary_section_view_for_testing()
-                                       ->item_views_for_testing()[0]
-                                       ->GetBoundsInScreen()
-                                       .CenterPoint());
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
+  GetEventGenerator()->MoveMouseTo(
+      quick_insert_view->zero_state_view_for_testing()
+          .primary_section_view_for_testing()
+          ->item_views_for_testing()[0]
+          ->GetBoundsInScreen()
+          .CenterPoint());
 
   PickerSubmenuController& submenu_controller =
-      picker_view->submenu_controller_for_testing();
+      quick_insert_view->submenu_controller_for_testing();
   views::test::WidgetVisibleWaiter(submenu_controller.widget_for_testing())
       .Wait();
   EXPECT_NE(submenu_controller.GetSubmenuView(), nullptr);
 }
 
 // This is an edge case where the user can open a submenu with mouse hover while
-// they are using keyboard to navigate the main PickerView. Since the keyboard
-// selection can be separate to the mouse hover selection, we just close the
-// submenu if the user resumes keyboard navigation in the main PickerView.
+// they are using keyboard to navigate the main QuickInsertView. Since the
+// keyboard selection can be separate to the mouse hover selection, we just
+// close the submenu if the user resumes keyboard navigation in the main
+// QuickInsertView.
 TEST_F(QuickInsertViewTest,
        ClosesSubmenuWhenResumingKeyboardNavigationInMainView) {
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .available_categories = {QuickInsertCategory::kEmojisGifs},
       .zero_state_suggested_results =
           {QuickInsertNewWindowResult(QuickInsertNewWindowResult::Type::kDoc),
@@ -2604,14 +2672,15 @@ TEST_F(QuickInsertViewTest,
   // Start keyboard navigation.
   PressAndReleaseKey(ui::KeyboardCode::VKEY_UP, ui::EF_NONE);
   // Mouse hover over an item with a submenu to show a submenu.
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
-  GetEventGenerator()->MoveMouseTo(picker_view->zero_state_view_for_testing()
-                                       .primary_section_view_for_testing()
-                                       ->item_views_for_testing()[0]
-                                       ->GetBoundsInScreen()
-                                       .CenterPoint());
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
+  GetEventGenerator()->MoveMouseTo(
+      quick_insert_view->zero_state_view_for_testing()
+          .primary_section_view_for_testing()
+          ->item_views_for_testing()[0]
+          ->GetBoundsInScreen()
+          .CenterPoint());
   PickerSubmenuController& submenu_controller =
-      picker_view->submenu_controller_for_testing();
+      quick_insert_view->submenu_controller_for_testing();
   views::test::WidgetVisibleWaiter(submenu_controller.widget_for_testing())
       .Wait();
   // Resume keyboard navigation.
@@ -2624,10 +2693,10 @@ TEST_F(QuickInsertViewTest,
 
 TEST_F(QuickInsertViewTest, ClearsSearchWhenClickingOnCategoryResult) {
   base::test::TestFuture<void> future;
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .search_function = base::BindLambdaForTesting(
           [&](std::u16string_view query,
-              FakePickerViewDelegate::SearchResultsCallback callback) {
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             future.SetValue();
             callback.Run({
                 QuickInsertSearchResultsSection(
@@ -2641,7 +2710,7 @@ TEST_F(QuickInsertViewTest, ClearsSearchWhenClickingOnCategoryResult) {
   widget->Show();
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
   ASSERT_TRUE(future.Wait());
-  PickerView* view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* view = GetQuickInsertViewFromWidget(*widget);
   views::View* category_result = view->search_results_view_for_testing()
                                      .section_list_view_for_testing()
                                      ->GetTopItem();
@@ -2658,10 +2727,10 @@ TEST_F(QuickInsertViewTest, ClearsSearchWhenClickingOnCategoryResult) {
 TEST_F(QuickInsertViewTest,
        PerformsCategorySearchWhenClickingOnSeeMoreResults) {
   base::test::TestFuture<void> future;
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .search_function = base::BindLambdaForTesting(
           [&](std::u16string_view query,
-              FakePickerViewDelegate::SearchResultsCallback callback) {
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             future.SetValue();
             callback.Run({
                 QuickInsertSearchResultsSection(QuickInsertSectionType::kLinks,
@@ -2675,7 +2744,7 @@ TEST_F(QuickInsertViewTest,
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
   ASSERT_TRUE(future.Wait());
   future.Clear();
-  PickerView* view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* view = GetQuickInsertViewFromWidget(*widget);
   views::View* trailing_link = view->search_results_view_for_testing()
                                    .section_views_for_testing()[0]
                                    ->title_trailing_link_for_testing();
@@ -2690,10 +2759,10 @@ TEST_F(QuickInsertViewTest,
 
 TEST_F(QuickInsertViewTest, KeyNavigationToSeeMoreResults) {
   base::test::TestFuture<void> future;
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .search_function = base::BindLambdaForTesting(
           [&](std::u16string_view query,
-              FakePickerViewDelegate::SearchResultsCallback callback) {
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             future.SetValue();
             callback.Run({
                 QuickInsertSearchResultsSection(
@@ -2712,7 +2781,7 @@ TEST_F(QuickInsertViewTest, KeyNavigationToSeeMoreResults) {
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
   ASSERT_TRUE(future.Wait());
   future.Clear();
-  ViewDrawnWaiter().Wait(GetPickerViewFromWidget(*widget)
+  ViewDrawnWaiter().Wait(GetQuickInsertViewFromWidget(*widget)
                              ->search_results_view_for_testing()
                              .section_list_view_for_testing()
                              ->GetTopItem());
@@ -2723,20 +2792,20 @@ TEST_F(QuickInsertViewTest, KeyNavigationToSeeMoreResults) {
 
   // Should call search a second time.
   EXPECT_TRUE(future.Wait());
-  EXPECT_TRUE(GetPickerViewFromWidget(*widget)
+  EXPECT_TRUE(GetQuickInsertViewFromWidget(*widget)
                   ->search_results_view_for_testing()
                   .GetVisible());
 }
 
 TEST_P(QuickInsertViewEmojiTest,
        ClickingMoreEmojisButtonOpensEmojiPickerWithQuerySearch) {
-  FakePickerViewDelegate delegate({.available_categories = {GetParam()}});
+  FakeQuickInsertViewDelegate delegate({.available_categories = {GetParam()}});
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
 
   PickerEmojiBarView* emoji_bar =
-      GetPickerViewFromWidget(*widget)->emoji_bar_view_for_testing();
+      GetQuickInsertViewFromWidget(*widget)->emoji_bar_view_for_testing();
   ASSERT_NE(emoji_bar, nullptr);
   views::View* more_emojis_button = emoji_bar->more_emojis_button_for_testing();
   ViewDrawnWaiter().Wait(more_emojis_button);
@@ -2749,14 +2818,14 @@ TEST_P(QuickInsertViewEmojiTest,
 }
 
 TEST_F(QuickInsertViewTest, ClickingGifsButtonOpensGifPickerWithQuerySearch) {
-  FakePickerViewDelegate delegate(
+  FakeQuickInsertViewDelegate delegate(
       {.available_categories = {QuickInsertCategory::kEmojisGifs}});
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
 
   PickerEmojiBarView* emoji_bar =
-      GetPickerViewFromWidget(*widget)->emoji_bar_view_for_testing();
+      GetQuickInsertViewFromWidget(*widget)->emoji_bar_view_for_testing();
   ASSERT_NE(emoji_bar, nullptr);
   views::View* gifs_button = emoji_bar->gifs_button_for_testing();
   ViewDrawnWaiter().Wait(gifs_button);
@@ -2771,10 +2840,10 @@ TEST_F(QuickInsertViewTest, ClickingGifsButtonOpensGifPickerWithQuerySearch) {
 TEST_F(QuickInsertViewTest,
        KeepsSearchFieldQueryTextAndFocusWhenClickingOnSeeMoreResults) {
   base::test::TestFuture<void> future;
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .search_function = base::BindLambdaForTesting(
           [&](std::u16string_view query,
-              FakePickerViewDelegate::SearchResultsCallback callback) {
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             future.SetValue();
             callback.Run({
                 QuickInsertSearchResultsSection(QuickInsertSectionType::kLinks,
@@ -2788,7 +2857,7 @@ TEST_F(QuickInsertViewTest,
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
   ASSERT_TRUE(future.Wait());
   future.Clear();
-  PickerView* view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* view = GetQuickInsertViewFromWidget(*widget);
   views::View* trailing_link = view->search_results_view_for_testing()
                                    .section_views_for_testing()[0]
                                    ->title_trailing_link_for_testing();
@@ -2806,32 +2875,32 @@ TEST_F(QuickInsertViewTest,
 TEST_F(QuickInsertViewTest,
        CategoryOnlySearchShowsNoResultsPageWithNoIllustration) {
   base::test::TestFuture<void> future;
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .available_categories = {QuickInsertCategory::kLinks},
       .search_function = base::BindLambdaForTesting(
           [&](std::u16string_view query,
-              FakePickerViewDelegate::SearchResultsCallback callback) {
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             future.SetValue();
             callback.Run({});
           }),
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
-  views::View* category_item_view = GetFirstCategoryItemView(picker_view);
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
+  views::View* category_item_view = GetFirstCategoryItemView(quick_insert_view);
   ViewDrawnWaiter().Wait(category_item_view);
   LeftClickOn(category_item_view);
 
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
 
   ASSERT_TRUE(future.Wait());
-  EXPECT_TRUE(picker_view->search_results_view_for_testing()
+  EXPECT_TRUE(quick_insert_view->search_results_view_for_testing()
                   .no_results_view_for_testing()
                   ->GetVisible());
-  EXPECT_FALSE(picker_view->search_results_view_for_testing()
+  EXPECT_FALSE(quick_insert_view->search_results_view_for_testing()
                    .no_results_illustration_for_testing()
                    .GetVisible());
-  EXPECT_EQ(picker_view->search_results_view_for_testing()
+  EXPECT_EQ(quick_insert_view->search_results_view_for_testing()
                 .no_results_label_for_testing()
                 .GetText(),
             l10n_util::GetStringUTF16(IDS_PICKER_NO_RESULTS_TEXT));
@@ -2839,25 +2908,25 @@ TEST_F(QuickInsertViewTest,
 
 TEST_F(QuickInsertViewTest,
        CategoryZeroStateShowsNoResultsPageWithIllustration) {
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .available_categories = {QuickInsertCategory::kLinks},
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
-  views::View* category_item_view = GetFirstCategoryItemView(picker_view);
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
+  views::View* category_item_view = GetFirstCategoryItemView(quick_insert_view);
   ViewDrawnWaiter().Wait(category_item_view);
   LeftClickOn(category_item_view);
 
-  EXPECT_TRUE(picker_view->category_results_view_for_testing()
+  EXPECT_TRUE(quick_insert_view->category_results_view_for_testing()
                   .no_results_view_for_testing()
                   ->GetVisible());
 #if BUILDFLAG(GOOGLE_CHROME_BRANDING)
-  EXPECT_TRUE(picker_view->category_results_view_for_testing()
+  EXPECT_TRUE(quick_insert_view->category_results_view_for_testing()
                   .no_results_illustration_for_testing()
                   .GetVisible());
 #endif
-  EXPECT_EQ(picker_view->category_results_view_for_testing()
+  EXPECT_EQ(quick_insert_view->category_results_view_for_testing()
                 .no_results_label_for_testing()
                 .GetText(),
             l10n_util::GetStringUTF16(
@@ -2867,7 +2936,7 @@ TEST_F(QuickInsertViewTest,
 TEST_F(
     QuickInsertViewTest,
     ChangingPseudoFocusOnZeroStateNotifiesInitialActiveDescendantChangeAfterDelay) {
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .available_categories = {QuickInsertCategory::kClipboard,
                                QuickInsertCategory::kLinks},
   });
@@ -2880,7 +2949,7 @@ TEST_F(
   EXPECT_EQ(counter.GetCount(ax::mojom::Event::kActiveDescendantChanged), 0);
 
   task_environment()->FastForwardBy(
-      PickerSearchFieldView::kNotifyInitialActiveDescendantA11yDelay);
+      QuickInsertSearchFieldView::kNotifyInitialActiveDescendantA11yDelay);
 
   EXPECT_EQ(counter.GetCount(ax::mojom::Event::kActiveDescendantChanged), 1);
 }
@@ -2888,7 +2957,7 @@ TEST_F(
 TEST_F(
     QuickInsertViewTest,
     ChangingPseudoFocusOnZeroStateNotifiesActiveDescendantChangeImmediately) {
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .available_categories = {QuickInsertCategory::kClipboard,
                                QuickInsertCategory::kLinks},
   });
@@ -2898,21 +2967,21 @@ TEST_F(
 
   PressAndReleaseKey(ui::KeyboardCode::VKEY_DOWN, ui::EF_NONE);
   task_environment()->FastForwardBy(
-      PickerSearchFieldView::kNotifyInitialActiveDescendantA11yDelay);
+      QuickInsertSearchFieldView::kNotifyInitialActiveDescendantA11yDelay);
   PressAndReleaseKey(ui::KeyboardCode::VKEY_DOWN, ui::EF_NONE);
 
   EXPECT_EQ(counter.GetCount(ax::mojom::Event::kActiveDescendantChanged), 2);
 }
 
 TEST_F(QuickInsertViewTest, EnterOnZeroState) {
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .zero_state_suggested_results = {QuickInsertTextResult(u"zero state")},
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
   base::span<const raw_ptr<QuickInsertItemView>> zero_state_item_views =
-      picker_view->zero_state_view_for_testing()
+      quick_insert_view->zero_state_view_for_testing()
           .primary_section_view_for_testing()
           ->item_views_for_testing();
   QuickInsertListItemView* suggested_item_view;
@@ -2941,19 +3010,19 @@ TEST_F(QuickInsertViewTest, EnterOnZeroState) {
 // TODO: b/351920494 - Insert the first new result instead of doing nothing.
 TEST_F(QuickInsertViewTest, EnterDuringBurnInOnZeroState) {
   base::test::TestFuture<void> future;
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .zero_state_suggested_results = {QuickInsertTextResult(u"zero state")},
       .search_function = base::BindLambdaForTesting(
           [&](std::u16string_view query,
-              FakePickerViewDelegate::SearchResultsCallback callback) {
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             future.SetValue();
           }),
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
   base::span<const raw_ptr<QuickInsertItemView>> zero_state_item_views =
-      picker_view->zero_state_view_for_testing()
+      quick_insert_view->zero_state_view_for_testing()
           .primary_section_view_for_testing()
           ->item_views_for_testing();
   QuickInsertListItemView* suggested_item_view;
@@ -2981,25 +3050,27 @@ TEST_F(QuickInsertViewTest, EnterDuringBurnInOnZeroState) {
 }
 
 TEST_F(QuickInsertViewTest, EnterOnSearchResults) {
-  base::test::TestFuture<FakePickerViewDelegate::SearchResultsCallback> future;
-  FakePickerViewDelegate delegate({
+  base::test::TestFuture<FakeQuickInsertViewDelegate::SearchResultsCallback>
+      future;
+  FakeQuickInsertViewDelegate delegate({
       .search_function = base::BindLambdaForTesting(
           [&](std::u16string_view query,
-              FakePickerViewDelegate::SearchResultsCallback callback) {
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             future.SetValue(callback);
           }),
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
-  FakePickerViewDelegate::SearchResultsCallback first_callback = future.Take();
+  FakeQuickInsertViewDelegate::SearchResultsCallback first_callback =
+      future.Take();
   first_callback.Run(
       {QuickInsertSearchResultsSection(QuickInsertSectionType::kClipboard,
                                        {QuickInsertTextResult(u"first search")},
                                        /*has_more_results=*/false)});
   base::span<const raw_ptr<QuickInsertSectionView>> section_views =
-      picker_view->search_results_view_for_testing()
+      quick_insert_view->search_results_view_for_testing()
           .section_views_for_testing();
   QuickInsertListItemView* search_item_view;
   ASSERT_THAT(
@@ -3029,25 +3100,27 @@ TEST_F(QuickInsertViewTest, EnterOnSearchResults) {
 
 // TODO: b/351920494 - Insert the first new result instead of doing nothing.
 TEST_F(QuickInsertViewTest, EnterDuringBurnInOnSearchResults) {
-  base::test::TestFuture<FakePickerViewDelegate::SearchResultsCallback> future;
-  FakePickerViewDelegate delegate({
+  base::test::TestFuture<FakeQuickInsertViewDelegate::SearchResultsCallback>
+      future;
+  FakeQuickInsertViewDelegate delegate({
       .search_function = base::BindLambdaForTesting(
           [&](std::u16string_view query,
-              FakePickerViewDelegate::SearchResultsCallback callback) {
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             future.SetValue(callback);
           }),
   });
   auto widget = QuickInsertWidget::Create(&delegate, kDefaultAnchorBounds);
   widget->Show();
-  PickerView* picker_view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* quick_insert_view = GetQuickInsertViewFromWidget(*widget);
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
-  FakePickerViewDelegate::SearchResultsCallback first_callback = future.Take();
+  FakeQuickInsertViewDelegate::SearchResultsCallback first_callback =
+      future.Take();
   first_callback.Run(
       {QuickInsertSearchResultsSection(QuickInsertSectionType::kClipboard,
                                        {QuickInsertTextResult(u"first search")},
                                        /*has_more_results=*/false)});
   base::span<const raw_ptr<QuickInsertSectionView>> section_views =
-      picker_view->search_results_view_for_testing()
+      quick_insert_view->search_results_view_for_testing()
           .section_views_for_testing();
   QuickInsertListItemView* search_item_view;
   ASSERT_THAT(
@@ -3068,7 +3141,8 @@ TEST_F(QuickInsertViewTest, EnterDuringBurnInOnSearchResults) {
                   Property("is visible", &views::View::GetVisible,
                            true)))))))));
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
-  FakePickerViewDelegate::SearchResultsCallback second_callback = future.Take();
+  FakeQuickInsertViewDelegate::SearchResultsCallback second_callback =
+      future.Take();
   // The search item should still be visible.
   ASSERT_TRUE(search_item_view->GetVisible());
   PressAndReleaseKey(ui::KeyboardCode::VKEY_RETURN, ui::EF_NONE);
@@ -3078,10 +3152,10 @@ TEST_F(QuickInsertViewTest, EnterDuringBurnInOnSearchResults) {
 
 TEST_F(QuickInsertViewTest, ResetsToZeroStateWhenClickingOnBackButton) {
   base::test::TestFuture<void> future;
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .search_function = base::BindLambdaForTesting(
           [&](std::u16string_view query,
-              FakePickerViewDelegate::SearchResultsCallback callback) {
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             future.SetValue();
             callback.Run({
                 QuickInsertSearchResultsSection(
@@ -3095,7 +3169,7 @@ TEST_F(QuickInsertViewTest, ResetsToZeroStateWhenClickingOnBackButton) {
   widget->Show();
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
   ASSERT_TRUE(future.Wait());
-  PickerView* view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* view = GetQuickInsertViewFromWidget(*widget);
   views::View* category_result = view->search_results_view_for_testing()
                                      .section_list_view_for_testing()
                                      ->GetTopItem();
@@ -3103,7 +3177,7 @@ TEST_F(QuickInsertViewTest, ResetsToZeroStateWhenClickingOnBackButton) {
   ViewDrawnWaiter().Wait(category_result);
   LeftClickOn(category_result);
 
-  PickerSearchFieldView& search_field_view =
+  QuickInsertSearchFieldView& search_field_view =
       view->search_field_view_for_testing();
   ViewDrawnWaiter().Wait(&search_field_view.back_button_for_testing());
   LeftClickOn(&search_field_view.back_button_for_testing());
@@ -3115,10 +3189,10 @@ TEST_F(QuickInsertViewTest, ResetsToZeroStateWhenClickingOnBackButton) {
 
 TEST_F(QuickInsertViewTest, ResetsToZeroStateAfterPressingBrowserBack) {
   base::test::TestFuture<void> future;
-  FakePickerViewDelegate delegate({
+  FakeQuickInsertViewDelegate delegate({
       .search_function = base::BindLambdaForTesting(
           [&](std::u16string_view query,
-              FakePickerViewDelegate::SearchResultsCallback callback) {
+              FakeQuickInsertViewDelegate::SearchResultsCallback callback) {
             future.SetValue();
             callback.Run({
                 QuickInsertSearchResultsSection(
@@ -3132,7 +3206,7 @@ TEST_F(QuickInsertViewTest, ResetsToZeroStateAfterPressingBrowserBack) {
   widget->Show();
   PressAndReleaseKey(ui::KeyboardCode::VKEY_A, ui::EF_NONE);
   ASSERT_TRUE(future.Wait());
-  PickerView* view = GetPickerViewFromWidget(*widget);
+  QuickInsertView* view = GetQuickInsertViewFromWidget(*widget);
   views::View* category_result = view->search_results_view_for_testing()
                                      .section_list_view_for_testing()
                                      ->GetTopItem();

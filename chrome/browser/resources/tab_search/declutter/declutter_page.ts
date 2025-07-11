@@ -17,16 +17,13 @@ import type {Tab} from '../tab_search.mojom-webui.js';
 import {DeclutterCTREvent} from '../tab_search.mojom-webui.js';
 import type {TabSearchApiProxy} from '../tab_search_api_proxy.js';
 import {TabSearchApiProxyImpl} from '../tab_search_api_proxy.js';
+import {TabSearchItemElement} from '../tab_search_item.js';
 
 import {getCss} from './declutter_page.css.js';
 import {getHtml} from './declutter_page.html.js';
 
 const MINIMUM_SCROLLABLE_MAX_HEIGHT: number = 238;
 const NON_SCROLLABLE_VERTICAL_SPACING: number = 164;
-
-function getEventTargetIndex(e: Event): number {
-  return Number((e.currentTarget as HTMLElement).dataset['index']);
-}
 
 export class DeclutterPageElement extends CrLitElement {
   static get is() {
@@ -38,6 +35,7 @@ export class DeclutterPageElement extends CrLitElement {
       availableHeight: {type: Number},
       showBackButton: {type: Boolean},
       staleTabDatas_: {type: Array},
+      duplicateTabDatas_: {type: Object},
       dedupeEnabled_: {type: Boolean},
     };
   }
@@ -46,6 +44,7 @@ export class DeclutterPageElement extends CrLitElement {
   showBackButton: boolean = false;
 
   protected staleTabDatas_: TabData[] = [];
+  protected duplicateTabDatas_: Map<string, TabData[]> = new Map();
   protected dedupeEnabled_: boolean = loadTimeData.getBoolean('dedupeEnabled');
   private apiProxy_: TabSearchApiProxy = TabSearchApiProxyImpl.getInstance();
   private listenerIds_: number[] = [];
@@ -107,6 +106,15 @@ export class DeclutterPageElement extends CrLitElement {
     this.maybeAddScrollListener_();
   }
 
+  override focus() {
+    if (this.showBackButton) {
+      const backButton = this.shadowRoot!.querySelector('cr-icon-button')!;
+      backButton.focus();
+    } else {
+      super.focus();
+    }
+  }
+
   logCtrValue(event: DeclutterCTREvent) {
     chrome.metricsPrivate.recordEnumerationValue(
         'Tab.Organization.DeclutterCTR', event,
@@ -159,6 +167,10 @@ export class DeclutterPageElement extends CrLitElement {
         'declutterCloseTabAriaLabel', tabData.tab.title);
   }
 
+  protected getCloseButtonTooltip_(): string {
+    return loadTimeData.getString('declutterCloseTabTooltip');
+  }
+
   protected onBackClick_() {
     this.fire('back-click');
   }
@@ -170,16 +182,24 @@ export class DeclutterPageElement extends CrLitElement {
   }
 
   protected onTabFocus_(e: FocusEvent) {
-    if (e.target instanceof HTMLElement) {
-      e.target.classList.toggle('selected', true);
+    if (e.target instanceof TabSearchItemElement) {
+      const tabSearchItem: TabSearchItemElement = e.target;
+      tabSearchItem.classList.toggle('selected', true);
+      const closeButton =
+          tabSearchItem.shadowRoot!.querySelector('#closeButton')!;
+      closeButton.setAttribute('aria-selected', 'true');
     } else {
       throw new Error('Invalid onTabFocus_ target type: ' + typeof e.target);
     }
   }
 
   protected onTabBlur_(e: FocusEvent) {
-    if (e.target instanceof HTMLElement) {
-      e.target.classList.toggle('selected', false);
+    if (e.target instanceof TabSearchItemElement) {
+      const tabSearchItem: TabSearchItemElement = e.target;
+      tabSearchItem.classList.toggle('selected', false);
+      const closeButton =
+          tabSearchItem.shadowRoot!.querySelector('#closeButton')!;
+      closeButton.setAttribute('aria-selected', 'false');
     } else {
       throw new Error('Invalid onTabBlur_ target type: ' + typeof e.target);
     }
@@ -212,14 +232,36 @@ export class DeclutterPageElement extends CrLitElement {
     e.stopPropagation();
   }
 
-  protected onTabRemove_(e: Event) {
-    const index = getEventTargetIndex(e);
-    const tabData = this.staleTabDatas_[index]!;
+  protected onStaleTabRemove_(e: Event) {
+    const tabData = (e.currentTarget as TabSearchItemElement).data;
     this.apiProxy_.excludeFromStaleTabs(tabData.tab.tabId);
+  }
+
+  protected onDuplicateTabRemove_(_e: Event) {
+    // TODO(crbug.com/376739583): Implement this along with api proxy call
+  }
+
+  protected getDuplicateTabDataList_(this: DeclutterPageElement) {
+    const tabDatas: TabData[] = [];
+    this.duplicateTabDatas_.forEach((value: TabData[], key: string, _map) => {
+      const primaryTabData = structuredClone(value[0])!;
+      primaryTabData.tab.title = key;
+      primaryTabData.tab.lastActiveElapsedText = value.length.toString();
+      tabDatas.push(primaryTabData);
+    });
+    return tabDatas;
   }
 
   private setStaleTabs_(tabs: Tab[]): void {
     this.staleTabDatas_ = tabs.map((tab) => this.tabDataFromTab_(tab));
+    // TODO(crbug.com/376739583): Placeholder, replace with api proxy calls
+    if (this.dedupeEnabled_) {
+      this.duplicateTabDatas_ = new Map();
+      tabs.forEach((tab) => {
+        this.duplicateTabDatas_.set(
+            tab.url.url.toString(), [this.tabDataFromTab_(tab)]);
+      });
+    }
   }
 
   private tabDataFromTab_(tab: Tab): TabData {

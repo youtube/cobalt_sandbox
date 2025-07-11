@@ -119,6 +119,7 @@ using MakeCredentialCallback =
     blink::mojom::Authenticator::MakeCredentialCallback;
 using GetAssertionCallback = blink::mojom::Authenticator::GetAssertionCallback;
 using ReportCallback = blink::mojom::Authenticator::ReportCallback;
+using UIPresentation = AuthenticatorRequestClientDelegate::UIPresentation;
 
 namespace {
 
@@ -817,7 +818,7 @@ AuthenticatorCommonImpl::MaybeCreateRequestDelegate() {
   if (virtual_authenticator_manager) {
     delegate->SetVirtualEnvironment(true);
     if (!virtual_authenticator_manager->is_ui_enabled()) {
-      delegate->DisableUI();
+      DisableUI();
     }
   }
   return delegate;
@@ -832,7 +833,6 @@ void AuthenticatorCommonImpl::StartMakeCredentialRequest(
       &absl::get<device::CtapMakeCredentialRequest>(req_state_->ctap_request);
   auto* make_credential_options =
       &absl::get<device::MakeCredentialOptions>(req_state_->request_options);
-
   req_state_->request_delegate->ConfigureDiscoveries(
       req_state_->caller_origin, req_state_->relying_party_id, RequestSource(),
       device::FidoRequestType::kMakeCredential,
@@ -1205,10 +1205,9 @@ void AuthenticatorCommonImpl::ContinueMakeCredentialAfterRpIdCheck(
         {*cred_protect_request, options->enforce_protection_policy}};
   }
 
-  // Touch-to-Autofill should be proxied without UI.
-  if (disable_ui_) {
-    req_state_->request_delegate->DisableUI();
-  }
+  auto ui_presentation =
+      disable_ui_ ? UIPresentation::kDisabled : UIPresentation::kModal;
+  req_state_->request_delegate->SetUIPresentation(ui_presentation);
 
   // Assemble clientDataJSON.
   ClientDataJsonParams client_data_json_params(
@@ -1544,12 +1543,14 @@ void AuthenticatorCommonImpl::ContinueGetAssertionAfterRpIdCheck(
     return;
   }
 
+  auto ui_presentation = UIPresentation::kModal;
   if (disable_ui_) {
-    DCHECK(!options->is_conditional);
-    req_state_->request_delegate->DisableUI();
+    ui_presentation = UIPresentation::kDisabled;
+  } else if (options->is_conditional) {
+    ui_presentation = UIPresentation::kAutofill;
   }
+  req_state_->request_delegate->SetUIPresentation(ui_presentation);
 
-  req_state_->request_delegate->SetConditionalRequest(options->is_conditional);
   if (options->is_conditional) {
     req_state_->request_delegate->SetAmbientCredentialTypes(
         options->requested_credential_type_flags);
@@ -1823,21 +1824,8 @@ void AuthenticatorCommonImpl::
     std::move(callback).Run(false);
     return;
   }
-  // Passkeys from a phone can be discovered through conditional mediation. To
-  // avoid leaking bluetooth or sync status, advertise the feature as available.
-  if (GetWebAuthenticationDelegate()->SupportsPasskeyMetadataSyncing()) {
-    std::move(callback).Run(true);
-    return;
-  }
-
-#if BUILDFLAG(IS_MAC)
+  // Desktop Chrome can always show GPM passkeys through conditional mediation.
   std::move(callback).Run(true);
-#elif BUILDFLAG(IS_WIN)
-  device::WinWebAuthnApiAuthenticator::IsConditionalMediationAvailable(
-      device::WinWebAuthnApi::GetDefault(), std::move(callback));
-#else
-  std::move(callback).Run(false);
-#endif
 }
 
 void AuthenticatorCommonImpl::Report(
@@ -2834,6 +2822,9 @@ void AuthenticatorCommonImpl::Cleanup() {
 }
 
 void AuthenticatorCommonImpl::DisableUI() {
+  // DisableUI() must be invoked before the request delegate is created, because
+  // the delegate needs know what type of UI, if any, is shown for the request.
+  CHECK(!req_state_ || !req_state_->request_delegate);
   disable_ui_ = true;
 }
 

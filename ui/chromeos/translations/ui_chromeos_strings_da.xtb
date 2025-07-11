@@ -422,6 +422,7 @@
 <translation id="4387004326333427325">Godkendelsescertifikatet blev afvist eksternt</translation>
 <translation id="4394214039309501350">Eksternt link</translation>
 <translation id="4394980935660306080">Tidligere i denne uge</translation>
+<translation id="4397435965699247285">OneDrive er ikke tilgængelig, når du er offline</translation>
 <translation id="4398096759193130964">Gendan elementerne, eller træk dem til en ny mappe uden for papirkurven</translation>
 <translation id="4401287888955153199">Pak alt ud</translation>
 <translation id="4410695710508688828">Udpakningshandling mislykkedes. <ph name="ERROR_MESSAGE" /></translation>
@@ -582,7 +583,6 @@
 <translation id="5447680084201416734">Der er ikke nok lagerplads.</translation>
 <translation id="5449551289610225147">Ugyldig adgangskode</translation>
 <translation id="5459064203055649751">Der findes allerede en fil med navnet "<ph name="FILENAME" />". Vil du erstatte den med den, du er ved at flytte?</translation>
-<translation id="5462378611565326489">OneDrive er ikke tilgængelig, når du er offline.</translation>
 <translation id="5463231940765244860">Angiv</translation>
 <translation id="5469868506864199649">Italiensk</translation>
 <translation id="5473333559083690127">Angiv ny pinkode igen</translation>

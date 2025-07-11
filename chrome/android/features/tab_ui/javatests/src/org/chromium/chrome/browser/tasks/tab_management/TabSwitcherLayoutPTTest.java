@@ -33,6 +33,7 @@ import org.chromium.base.test.util.CommandLineFlags;
 import org.chromium.base.test.util.DisabledTest;
 import org.chromium.base.test.util.Feature;
 import org.chromium.base.test.util.Features.DisableFeatures;
+import org.chromium.base.test.util.Features.EnableFeatures;
 import org.chromium.base.test.util.RequiresRestart;
 import org.chromium.base.test.util.Restriction;
 import org.chromium.base.test.util.TestAnimations.EnableAnimations;
@@ -54,6 +55,7 @@ import org.chromium.chrome.test.transit.page.WebPageStation;
 import org.chromium.chrome.test.transit.tabmodel.TabThumbnailsCapturedCarryOn;
 import org.chromium.chrome.test.util.ChromeRenderTestRule;
 import org.chromium.components.embedder_support.util.UrlConstants;
+import org.chromium.components.omnibox.OmniboxFeatureList;
 import org.chromium.components.tab_groups.TabGroupColorId;
 import org.chromium.net.test.EmbeddedTestServer;
 
@@ -65,7 +67,8 @@ import java.util.concurrent.ExecutionException;
 @SuppressWarnings("ConstantConditions")
 @RunWith(ChromeJUnit4ClassRunner.class)
 @CommandLineFlags.Add({ChromeSwitches.DISABLE_FIRST_RUN_EXPERIENCE})
-@DisableFeatures({ChromeFeatureList.ANDROID_HUB_SEARCH})
+@DisableFeatures({OmniboxFeatureList.ANDROID_HUB_SEARCH})
+@EnableFeatures({ChromeFeatureList.TAB_GROUP_CREATION_DIALOG_ANDROID})
 @Restriction({Restriction.RESTRICTION_TYPE_NON_LOW_END_DEVICE})
 @Batch(Batch.PER_CLASS)
 public class TabSwitcherLayoutPTTest {
@@ -129,6 +132,9 @@ public class TabSwitcherLayoutPTTest {
     @Test
     @MediumTest
     @Feature({"RenderTest"})
+    @RequiresRestart(
+            "Flaky in arm64 (crbug.com/378137969 and crbug.com/378502216), affects flake rate of"
+                    + " other tests")
     public void testRenderGrid_10WebTabs() throws IOException {
         ChromeTabbedActivity cta = sActivityTestRule.getActivity();
         WebPageStation pageStation =
@@ -150,6 +156,9 @@ public class TabSwitcherLayoutPTTest {
     @Test
     @MediumTest
     @Feature({"RenderTest"})
+    @RequiresRestart(
+            "Flaky in arm64 (crbug.com/378137969 and crbug.com/378502216), affects flake rate of"
+                    + " other tests")
     public void testRenderGrid_10WebTabs_InitialScroll() throws IOException {
         ChromeTabbedActivity cta = sActivityTestRule.getActivity();
         WebPageStation pageStation =
@@ -220,8 +229,6 @@ public class TabSwitcherLayoutPTTest {
     @Test
     @MediumTest
     @Feature({"RenderTest"})
-    @DisabledTest(message = "Test is flaky due to thumbnails not being reliably captured")
-    @RequiresRestart("Disable batching while re-enabling other tests.")
     public void testRenderGrid_Incognito() throws IOException {
         ChromeTabbedActivity cta = sActivityTestRule.getActivity();
         // Prepare some incognito tabs and enter tab switcher.
@@ -249,8 +256,6 @@ public class TabSwitcherLayoutPTTest {
     @Test
     @MediumTest
     @Feature({"RenderTest"})
-    @DisabledTest(message = "Test is flaky due to thumbnails not being reliably captured")
-    @RequiresRestart("Disable batching while re-enabling other tests")
     public void testRenderGrid_1TabGroup_ColorIcon() throws IOException {
         ChromeTabbedActivity cta = sActivityTestRule.getActivity();
 

@@ -15,6 +15,7 @@ import static androidx.browser.customtabs.CustomTabsIntent.ACTIVITY_SIDE_SHEET_P
 import static androidx.browser.customtabs.CustomTabsIntent.COLOR_SCHEME_DARK;
 import static androidx.browser.customtabs.CustomTabsIntent.COLOR_SCHEME_LIGHT;
 import static androidx.browser.customtabs.CustomTabsIntent.EXTRA_ACTIVITY_HEIGHT_RESIZE_BEHAVIOR;
+import static androidx.browser.customtabs.CustomTabsIntent.EXTRA_TOOLBAR_CORNER_RADIUS_DP;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -35,6 +36,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.net.Network;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.ContextThemeWrapper;
@@ -62,6 +64,7 @@ import org.chromium.base.test.util.Features.DisableFeatures;
 import org.chromium.base.test.util.Features.EnableFeatures;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.IntentHandler;
+import org.chromium.chrome.browser.browserservices.intents.BrowserServicesIntentDataProvider.CustomTabsUiType;
 import org.chromium.chrome.browser.browserservices.intents.ColorProvider;
 import org.chromium.chrome.browser.browserservices.intents.CustomButtonParams;
 import org.chromium.chrome.browser.customtabs.CustomTabIntentDataProvider.BackgroundInteractBehavior;
@@ -779,6 +782,35 @@ public class CustomTabIntentDataProviderTest {
         assertTrue(
                 "The fixed height resize behavior should return true",
                 dataProvider.isPartialCustomTabFixedHeight());
+    }
+
+    @Test
+    public void partialCustomTabHeight_cornerRadius_defaultValue() {
+        Intent intent = new Intent();
+
+        CustomTabIntentDataProvider dataProvider =
+                new CustomTabIntentDataProvider(intent, mContext, COLOR_SCHEME_LIGHT);
+
+        int defaultRadius =
+                mContext.getResources()
+                        .getDimensionPixelSize(R.dimen.custom_tabs_default_corner_radius);
+        assertEquals(
+                "Intent without the extra should have the default value.",
+                defaultRadius,
+                dataProvider.getPartialTabToolbarCornerRadius());
+    }
+
+    @Test
+    public void partialCustomTabHeight_cornerRadius_intentExtra() {
+        Intent intent = new Intent().putExtra(EXTRA_TOOLBAR_CORNER_RADIUS_DP, 0);
+
+        CustomTabIntentDataProvider dataProvider =
+                new CustomTabIntentDataProvider(intent, mContext, COLOR_SCHEME_LIGHT);
+
+        assertEquals(
+                "The value from the extra should be returned.",
+                0,
+                dataProvider.getPartialTabToolbarCornerRadius());
     }
 
     @Test
@@ -1564,5 +1596,37 @@ public class CustomTabIntentDataProviderTest {
         Mockito.doReturn(new Intent()).when(mockActivity).getIntent();
         Mockito.doReturn(Uri.parse(referrer)).when(mockActivity).getReferrer();
         return mockActivity;
+    }
+
+    @Test
+    public void requestUiType_withTargetNetwork() {
+        CustomTabsConnection connection = Mockito.mock(CustomTabsConnection.class);
+        CustomTabsConnection.setInstanceForTesting(connection);
+        Network network = Mockito.mock(Network.class);
+
+        Intent intent = new CustomTabsIntent.Builder().build().intent;
+        intent.putExtra(
+                CustomTabIntentDataProvider.EXTRA_NETWORK,
+                network);
+        intent.putExtra(
+                CustomTabIntentDataProvider.EXTRA_UI_TYPE,
+                CustomTabsUiType.NETWORK_BOUND_TAB);
+
+        var dataProvider = new CustomTabIntentDataProvider(intent, mContext, COLOR_SCHEME_LIGHT);
+        assertEquals(CustomTabsUiType.NETWORK_BOUND_TAB, dataProvider.getUiType());
+    }
+
+    @Test
+    public void requestUiType_withoutTargetNetwork() {
+        CustomTabsConnection connection = Mockito.mock(CustomTabsConnection.class);
+        CustomTabsConnection.setInstanceForTesting(connection);
+
+        Intent intent = new CustomTabsIntent.Builder().build().intent;
+        intent.putExtra(
+                CustomTabIntentDataProvider.EXTRA_UI_TYPE,
+                CustomTabsUiType.NETWORK_BOUND_TAB);
+
+        var dataProvider = new CustomTabIntentDataProvider(intent, mContext, COLOR_SCHEME_LIGHT);
+        assertEquals(CustomTabsUiType.DEFAULT, dataProvider.getUiType());
     }
 }

@@ -19,6 +19,10 @@ const char kLowPriceParamGoodDealNow[] = "GoodDealNow";
 
 const char kLowPriceParamSeePriceHistory[] = "SeePriceHistory";
 
+bool IsPriceInsightsEnabled() {
+  return base::FeatureList::IsEnabled(commerce::kPriceInsightsIos);
+}
+
 bool IsPriceInsightsEnabled(ProfileIOS* profile) {
   if (!base::FeatureList::IsEnabled(commerce::kPriceInsightsIos)) {
     return false;
@@ -27,7 +31,8 @@ bool IsPriceInsightsEnabled(ProfileIOS* profile) {
   // Allow Lens overlay to disable price insights because the price insights
   // entrypoint trumps lens overlay in the location bar. This is only used for
   // experimentation in coordination with the price insight owner.
-  if (base::FeatureList::IsEnabled(kLensOverlayDisablePriceInsights)) {
+  if (base::FeatureList::IsEnabled(kLensOverlayDisablePriceInsights) &&
+      !base::FeatureList::IsEnabled(kLensOverlayPriceInsightsCounterfactual)) {
     return false;
   }
 

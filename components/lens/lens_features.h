@@ -71,6 +71,10 @@ BASE_DECLARE_FEATURE(kLensOverlayContextualSearchbox);
 COMPONENT_EXPORT(LENS_FEATURES)
 BASE_DECLARE_FEATURE(kLensOverlayLatencyOptimizations);
 
+// Enables the Lens overlay routing info optimizations.
+COMPONENT_EXPORT(LENS_FEATURES)
+BASE_DECLARE_FEATURE(kLensOverlayRoutingInfo);
+
 // Enables the Lens overlay HaTS survey.
 COMPONENT_EXPORT(LENS_FEATURES)
 BASE_DECLARE_FEATURE(kLensOverlaySurvey);
@@ -357,15 +361,6 @@ extern bool UseVideoContextForTextOnlyLensOverlayRequests();
 COMPONENT_EXPORT(LENS_FEATURES)
 extern bool UseVideoContextForMultimodalLensOverlayRequests();
 
-// Returns whether to use the new optimized request flow which makes a request
-// to get the cluster info prior to uploading any image or page content bytes.
-// This also decouples sending the images and page content bytes in the same
-// request.
-// TODO(crbug.com/373878302): Move this flag to LensOverlayLatencyOptimizations
-// feature.
-COMPONENT_EXPORT(LENS_FEATURES)
-extern bool UseOptimizedRequestFlow();
-
 // Returns the finch configured endpoint URL for the cluster info request.
 COMPONENT_EXPORT(LENS_FEATURES)
 extern std::string GetLensOverlayClusterInfoEndpointUrl();
@@ -391,6 +386,14 @@ extern bool GetLensOverlaySendLensVisualInteractionDataForLensSuggest();
 COMPONENT_EXPORT(LENS_FEATURES)
 extern uint32_t GetLensOverlayFileUploadLimitBytes();
 
+// Returns the number of characters to be retrieved from the PDF for generating
+// suggestions. This is a target and not a hard limit. The actual number of
+// characters returned may be more than this value since the characters are
+// rounded to the nearest page. The actual number of characters may also be
+// less than this value if the PDF is too small.
+COMPONENT_EXPORT(LENS_FEATURES)
+extern uint32_t GetLensOverlayPdfSuggestCharacterTarget();
+
 // Returns whether to use the &vit=pdf param for the search request.
 COMPONENT_EXPORT(LENS_FEATURES)
 extern bool UsePdfVitParam();
@@ -408,6 +411,12 @@ extern bool UsePdfInteractionType();
 COMPONENT_EXPORT(LENS_FEATURES)
 extern bool UseWebpageInteractionType();
 
+// Returns the number of characters that should be present per page if the PDF
+// is not scanned. This value is compared to the average number of characters
+// per page to determine if the PDF is scanned.
+COMPONENT_EXPORT(LENS_FEATURES)
+extern int GetScannedPdfCharacterPerPageHeuristic();
+
 // Returns whether to include PDFs from the underlying page in the request to be
 // used as page context.
 COMPONENT_EXPORT(LENS_FEATURES)
@@ -424,6 +433,10 @@ extern bool UseInnerTextAsContext();
 // enabled.
 COMPONENT_EXPORT(LENS_FEATURES)
 extern bool UseInnerHtmlAsContext();
+
+// Returns whether to include the page URL in the page content upload request.
+COMPONENT_EXPORT(LENS_FEATURES)
+extern bool SendPageUrlForContextualization();
 
 // The timeout set for page content upload requests in milliseconds.
 COMPONENT_EXPORT(LENS_FEATURES)
@@ -624,6 +637,13 @@ int GetLensOverlayImageContextMenuActionsTextReceivedTimeout();
 COMPONENT_EXPORT(LENS_FEATURES)
 extern bool IsLensOverlayContextualSearchboxEnabled();
 
+// Returns whether to use the new optimized request flow which makes a request
+// to get the cluster info prior to uploading any image or page content bytes.
+// This also decouples sending the images and page content bytes in the same
+// request.
+COMPONENT_EXPORT(LENS_FEATURES)
+extern bool IsLensOverlayClusterInfoOptimizationEnabled();
+
 // Whether to enable the early interaction optimization for the Lens Overlay.
 // This optimization allows the interaction request to be sent before the full
 // image response is received, if the cluster info is already available. This
@@ -631,17 +651,55 @@ extern bool IsLensOverlayContextualSearchboxEnabled();
 COMPONENT_EXPORT(LENS_FEATURES)
 extern bool IsLensOverlayEarlyInteractionOptimizationEnabled();
 
+// Whether to enable the early StartQueryFlow optimization for the Lens Overlay.
+// This optimization allows the full image request to be sent as soon as the
+// screenshotted image is ready instead of waiting for all client-side
+// initialization has completed.
+COMPONENT_EXPORT(LENS_FEATURES)
+extern bool IsLensOverlayEarlyStartQueryFlowOptimizationEnabled();
+
 // Time delay for the results trigger of the Lens Overlay HaTS survey.
 COMPONENT_EXPORT(LENS_FEATURES)
 extern base::TimeDelta GetLensOverlaySurveyResultsTime();
 
-// Time delay for the results trigger of the Lens Overlay HaTS survey.
+// Whether to enable a fetch to get the list of languages supported by the Lens
+// server.
+COMPONENT_EXPORT(LENS_FEATURES)
+extern bool IsLensOverlayTranslateLanguagesFetchEnabled();
+
+// The translate endpoint URL for fetching supported languages.
 COMPONENT_EXPORT(LENS_FEATURES)
 extern std::string GetLensOverlayTranslateEndpointURL();
 
 // Returns whether to show the ghost loader in the contextual searchbox.
 COMPONENT_EXPORT(LENS_FEATURES)
-extern bool ShowContextualSearchboxGhostLoader();
+extern bool ShowContextualSearchboxGhostLoaderLoadingState();
+
+// The list of source languages supported by Lens.
+COMPONENT_EXPORT(LENS_FEATURES)
+extern std::string GetLensOverlayTranslateSourceLanguages();
+
+// The list of additional target translate languages supported by Lens. To get
+// the full list of supported target languages, we add this value to the list of
+// source languages supported by Lens.
+COMPONENT_EXPORT(LENS_FEATURES)
+extern std::string GetLensOverlayTranslateTargetLanguages();
+
+// The timeout for resetting the cache of supported languages in the WebUI.
+COMPONENT_EXPORT(LENS_FEATURES)
+extern base::TimeDelta GetLensOverlaySupportedLanguagesCacheTimeoutMs();
+
+// Returns whether to show autocomplete search suggestions in the contextual
+// searchbox.
+COMPONENT_EXPORT(LENS_FEATURES)
+extern bool ShowContextualSearchboxSearchSuggest();
+
+// The amount of recent languages to show in the language pickers.
+COMPONENT_EXPORT(LENS_FEATURES)
+extern int GetLensOverlayTranslateRecentLanguagesAmount();
+
+COMPONENT_EXPORT(LENS_FEATURES)
+extern bool IsLensOverlayRoutingInfoEnabled();
 
 }  // namespace lens::features
 

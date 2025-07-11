@@ -9,17 +9,20 @@
 
 #include "ash/webui/recorder_app_ui/recorder_app_ui.h"
 
+#include <cstdint>
 #include <utility>
 #include <vector>
 
 #include "ash/constants/ash_features.h"
 #include "ash/webui/common/trusted_types_util.h"
 #include "ash/webui/metrics/structured_metrics_service_wrapper.h"
+#include "ash/webui/recorder_app_ui/model_constants.h"
 #include "ash/webui/recorder_app_ui/recorder_app_ui_delegate.h"
 #include "ash/webui/recorder_app_ui/resources.h"
 #include "ash/webui/recorder_app_ui/resources/grit/recorder_app_resources.h"
 #include "ash/webui/recorder_app_ui/resources/grit/recorder_app_resources_map.h"
 #include "ash/webui/recorder_app_ui/url_constants.h"
+#include "base/feature_list.h"
 #include "base/ranges/algorithm.h"
 #include "chromeos/ash/components/audio/cras_audio_handler.h"
 #include "chromeos/ash/components/mojo_service_manager/connection.h"
@@ -45,9 +48,6 @@
 namespace ash {
 
 namespace {
-
-constexpr speech::LanguageCode kDefaultLanguageCode =
-    speech::LanguageCode::kEnUs;
 
 std::string_view SodaInstallerErrorCodeToString(
     speech::SodaInstaller::ErrorCode error) {
@@ -150,10 +150,27 @@ RecorderAppUI::RecorderAppUI(content::WebUI* web_ui,
 
   if (speech::IsOnDeviceSpeechRecognitionSupported()) {
     speech::SodaInstaller::GetInstance()->AddObserver(this);
-    // TODO(hsuanling): Use `GetAvailableLanguages`.
-    available_languages_.insert(kDefaultLanguageCode);
-    // TODO(hsuanling): Set up feature flag to add ja-JP;
+    if (base::FeatureList::IsEnabled(
+            ash::features::kConchExpandTranscriptionLanguage)) {
+      auto language_list =
+          speech::SodaInstaller::GetInstance()->GetAvailableLanguages();
+      for (auto language : language_list) {
+        available_languages_.insert(speech::GetLanguageCode(language));
+      }
+    } else {
+      available_languages_.insert(kDefaultLanguageCode);
+    }
+
     gen_ai_supported_languages_.insert(kDefaultLanguageCode);
+    if (base::FeatureList::IsEnabled(ash::features::kConchLargeModel)) {
+      gen_ai_supported_languages_.insert(speech::LanguageCode::kJaJp);
+    }
+
+    if (base::FeatureList::IsEnabled(
+            speech::kFeatureManagementCrosSodaConchLanguages)) {
+      // Currently only en-US is supported.
+      speaker_label_supported_languages_.insert(kDefaultLanguageCode);
+    }
   }
 
   // Add salt translator
@@ -271,6 +288,34 @@ void RecorderAppUI::AddQuietModeMonitor(
 
   quiet_mode_monitors_.Add(std::move(monitor));
   std::move(callback).Run(in_quiet_mode_);
+}
+
+void RecorderAppUI::GetModelInfo(on_device_model::mojom::FormatFeature feature,
+                                 GetModelInfoCallback callback) {
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  CHECK(feature == on_device_model::mojom::FormatFeature::kAudioSummary ||
+        feature == on_device_model::mojom::FormatFeature::kAudioTitle);
+  recorder_app::mojom::ModelInfoPtr model_info =
+      recorder_app::mojom::ModelInfo::New();
+  model_info->input_token_limit = kInputTokenLimit;
+  if (feature == on_device_model::mojom::FormatFeature::kAudioSummary) {
+    if (base::FeatureList::IsEnabled(ash::features::kConchLargeModel)) {
+      model_info->model_id =
+          base::Uuid::ParseCaseInsensitive(kSummaryXsModelUuid);
+    } else {
+      model_info->model_id =
+          base::Uuid::ParseCaseInsensitive(kSummaryXxsModelUuid);
+    }
+  } else {
+    if (base::FeatureList::IsEnabled(ash::features::kConchLargeModel)) {
+      model_info->model_id =
+          base::Uuid::ParseCaseInsensitive(kTitleSuggestionXsModelUuid);
+    } else {
+      model_info->model_id =
+          base::Uuid::ParseCaseInsensitive(kTitleSuggestionXxsModelUuid);
+    }
+  }
+  std::move(callback).Run(std::move(model_info));
 }
 
 void RecorderAppUI::LoadModel(
@@ -451,6 +496,8 @@ void RecorderAppUI::GetAvailableLangPacks(
     lang_pack->display_name = delegate_->GetLanguageDisplayName(language_code);
     lang_pack->is_gen_ai_supported =
         gen_ai_supported_languages_.contains(language_code);
+    lang_pack->is_speaker_label_supported =
+        speaker_label_supported_languages_.contains(language_code);
     lang_packs.push_back(std::move(lang_pack));
   }
   std::move(callback).Run(std::move(lang_packs));

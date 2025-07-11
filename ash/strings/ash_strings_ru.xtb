@@ -630,7 +630,6 @@
 <translation id="3208321278970793882">Приложение</translation>
 <translation id="3213571860604332401">Добавить ссылку в закладки</translation>
 <translation id="3217205077783620295">Звук включен. Нажмите эту кнопку, чтобы отключить его.</translation>
-<translation id="3218561536255328229">Чтобы включить сенсорную панель, нажмите Esc 5 раз.</translation>
 <translation id="3226991577105957773">Ещё <ph name="COUNT" /></translation>
 <translation id="3227137524299004712">Микрофон</translation>
 <translation id="3233611303007751344">Режим энергосбережения отключен.</translation>
@@ -1305,6 +1304,7 @@
 <translation id="5393156353051693207">Чтобы упорядочить приложения, нажмите и удерживайте в любом месте</translation>
 <translation id="5395308026110844773">Вы поместили ярлык приложения "<ph name="DRAGGED_APP_NAME" />" над ярлыком приложения "<ph name="IN_PLACE_APP" />". Чтобы создать папку, отпустите палец.</translation>
 <translation id="5397578532367286026">Менеджер (<ph name="MANAGER_EMAIL" />) может просматривать данные об использовании и историю этого профиля на сайте chrome.com.</translation>
+<translation id="540338817371815859">Горизонтальное расположение</translation>
 <translation id="540713187982329711">Включить или отключить точку доступа. Сейчас она работает. К ней не подключено ни одно устройство.</translation>
 <translation id="5409208741270395213">Отметить задачу как выполненную</translation>
 <translation id="5413656666631274079">Страница настроек</translation>
@@ -1667,7 +1667,7 @@
 <translation id="6593850935013518327"><ph name="PRIMARY_TEXT" />, <ph name="SECONDARY_TEXT" /></translation>
 <translation id="6597278316891651699">Окно предварительного просмотра камеры привязано к левому нижнему углу, так как перекрывало элементы системного интерфейса</translation>
 <translation id="6605415194043280389">Режим концентрации внимания включен</translation>
-<translation id="660846213831377756">Кнопки мыши</translation>
+<translation id="660846213831377756">Клавиши управления указателем</translation>
 <translation id="661203523074512333">Статус защиты – "<ph name="SECURITY_STATUS" />", уровень сигнала – <ph name="SIGNAL_STRENGTH" />, под управлением администратора</translation>
 <translation id="6612802754306526077">Выбран режим записи видео с экрана</translation>
 <translation id="6612889377159412215">подзадача</translation>
@@ -1691,7 +1691,7 @@
 <translation id="6665545700722362599">Разрешать сайтам, приложениям и расширениям использовать геолокацию, микрофон, камеру и другие функции устройства.</translation>
 <translation id="6667908387435388584">Подключайте устройство к точке доступа на телефоне, отключайте звук телефона, определяйте его местоположение и просматривайте последние вкладки, открытые на нем.</translation>
 <translation id="6670153871843998651">Рабочий стол 3</translation>
-<translation id="6671495933530132209">Копировать изображение</translation>
+<translation id="6671495933530132209">Скопировать изображение</translation>
 <translation id="6671661918848783005">Не удалось разблокировать Chromebook.</translation>
 <translation id="6676552993057022464">Чтобы изменить размер разделенного экрана, используйте стрелки вверх и вниз</translation>
 <translation id="6682029141988159141">Вставить данные из буфера обмена</translation>
@@ -1758,7 +1758,7 @@
 <translation id="6884665277231944629">Вернуться к сегодняшней дате</translation>
 <translation id="6886172995547742638"><ph name="DEVICE_TYPE" /> может работать неэффективно. Используйте сертифицированный адаптер питания USB-C на <ph name="PREFERRED_MINIMUM_POWER" /> Вт или выше.</translation>
 <translation id="688631446150864480">Чтобы перейти к другому окну, нажмите клавишу со стрелкой вниз</translation>
-<translation id="6896758677409633944">Копировать</translation>
+<translation id="6896758677409633944">Скопировать</translation>
 <translation id="6912841030378044227">Перейти к адресной строке</translation>
 <translation id="6912901278692845878">Краткий обзор</translation>
 <translation id="6917259695595127329">Последнее изменение задач: <ph name="TIME" />.</translation>
@@ -1767,6 +1767,7 @@
 <translation id="6921427376813842559">Установите обновления</translation>
 <translation id="6929081673585394903">Показать элементы управления</translation>
 <translation id="6931576957638141829">Сохранить в</translation>
+<translation id="6935857786205183008">Вертикальное расположение</translation>
 <translation id="6942518653766415536">Меню форматов записи</translation>
 <translation id="6945221475159498467">Выбрать</translation>
 <translation id="6945922087561257829">Телефон использует мобильный интернет. Подключите его и Chromebook к одной сети Wi-Fi и повторите попытку. <ph name="LEARN_MORE" /></translation>
@@ -2182,7 +2183,7 @@
 <translation id="8375916635258623388"><ph name="DEVICE_NAME" /> и телефон будут подключены друг к другу автоматически</translation>
 <translation id="8380784334203145311">Доброй ночи!</translation>
 <translation id="8382715499079447151">Защита от чужих взглядов</translation>
-<translation id="8383614331548401927">С возвращением!</translation>
+<translation id="8383614331548401927">Двигаемся дальше?</translation>
 <translation id="838540623579162843">Подписка Music Premium</translation>
 <translation id="8388750414311082622">Удалить единственный рабочий стол нельзя.</translation>
 <translation id="8394567579869570560">Ваш родитель заблокировал это устройство.</translation>
@@ -2198,7 +2199,7 @@
 <translation id="8433186206711564395">Настройки сети</translation>
 <translation id="8433977262951327081">Быстрые клавиши для вызова всплывающего окна с параметрами ввода на панели запуска изменились. Используйте <ph name="NEW_SHORTCUT" /> вместо <ph name="OLD_SHORTCUT" />.</translation>
 <translation id="8437311513256731931">Открыть инструмент для отзывов</translation>
-<translation id="8443879455002739353">"Копировать"</translation>
+<translation id="8443879455002739353">"Скопировать"</translation>
 <translation id="8444246603146515890">Рабочий стол "<ph name="DESK_TITILE" />" активирован.</translation>
 <translation id="8446884382197647889">Подробнее...</translation>
 <translation id="8456543082656546101"><ph name="SHORTCUT_KEY_NAME" /> + V</translation>
@@ -2435,6 +2436,7 @@
 <translation id="98120814841227350">Перейти к концу документа</translation>
 <translation id="987589956647469042">Мобильный интернет включен.</translation>
 <translation id="989374776391122812">Настройки камеры и аудио</translation>
+<translation id="990263227494928142">Чтобы включить сенсорную панель, нажмите Shift 5 раз.</translation>
 <translation id="990277280839877440">Окно "<ph name="WINDOW_TITILE" />" закрыто.</translation>
 <translation id="993398562350683614">Шаг <ph name="STEP" /> из <ph name="TOTAL_STEPS" />. Для чего бы вы ни использовали <ph name="PRODUCT_NAME" />, выполнять все задачи вам помогут приложения. Вы найдете их на панели запуска. Чтобы перейти к ее кнопке, нажмите Alt + Shift + L.</translation>
 <translation id="994354411665877646"><ph name="NETWORK_NAME" />, <ph name="SUBTEXT" /></translation>

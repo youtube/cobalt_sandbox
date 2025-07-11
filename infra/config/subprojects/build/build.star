@@ -123,7 +123,7 @@ def ci_build_perf_builder(description_html, **kwargs):
         kwargs["siso_configs"] = ["builder", "remote-link"]
     return ci.builder(
         description_html = description_html + "<br>Build stats is show in http://shortn/_gaAdI3x6o6.",
-        siso_remote_jobs = siso.remote_jobs.HIGH_JOBS_FOR_CI,
+        siso_remote_jobs = siso.remote_jobs.DEFAULT,
         siso_project = siso.project.DEFAULT_TRUSTED,
         **kwargs
     )
@@ -352,6 +352,7 @@ ci_build_perf_builder(
     ),
     # TODO(333491525): enable no-fallback once OOM fallback mitigated.
     siso_experiments = [],
+    siso_limits = "fastlocal=0",
 )
 
 cq_build_perf_builder(

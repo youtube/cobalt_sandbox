@@ -29,14 +29,6 @@ inline constexpr char kExecutableName[] = "updater.exe";
 inline constexpr char kExecutableName[] = "updater";
 #endif
 
-// The name of the enterprise companion program image.
-#if BUILDFLAG(IS_WIN)
-inline constexpr char kCompanionAppExecutableName[] =
-    "enterprise_companion.exe";
-#else
-inline constexpr char kCompanionAppExecutableName[] = "enterprise_companion";
-#endif
-
 // Uninstall switch for the enterprise companion app.
 inline constexpr char kUninstallCompanionAppSwitch[] = "uninstall";
 
@@ -596,7 +588,7 @@ inline constexpr int kErrorFailedToMoveDownloadedFile = 5;
 // Error occurred during file writing.
 inline constexpr int kErrorFailedToWriteFile = 6;
 
-inline constexpr base::TimeDelta kInitialDelay = base::Minutes(1);
+inline constexpr base::TimeDelta kInitialDelay = base::Seconds(1);
 inline constexpr base::TimeDelta kServerKeepAliveTime = base::Seconds(10);
 
 inline constexpr base::TimeDelta kCecaConnectionTimeout = base::Seconds(30);

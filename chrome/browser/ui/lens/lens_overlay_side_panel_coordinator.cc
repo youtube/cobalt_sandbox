@@ -24,6 +24,7 @@
 #include "components/lens/lens_features.h"
 #include "components/lens/lens_overlay_dismissal_source.h"
 #include "components/lens/lens_overlay_invocation_source.h"
+#include "components/lens/lens_overlay_side_panel_result.h"
 #include "components/vector_icons/vector_icons.h"
 #include "content/public/browser/navigation_handle.h"
 #include "content/public/browser/render_frame_host.h"
@@ -132,7 +133,6 @@ void LensOverlaySidePanelCoordinator::WebViewClosing() {
   // state associated with the WebView.
   if (side_panel_web_view_) {
     lens_overlay_controller_->ResetSidePanelSearchboxHandler();
-    lens_overlay_controller_->RemoveGlueForWebView(side_panel_web_view_);
     side_panel_web_view_ = nullptr;
   }
 }
@@ -233,7 +233,7 @@ void LensOverlaySidePanelCoordinator::DidStartNavigation(
   // page and any feature-specific request headers.
   navigation_handle->SetRequestHeader(kChromeSideSearchVersionHeaderName,
                                       kChromeSideSearchVersionHeaderValue);
-  lens_overlay_controller_->SetSidePanelShowErrorPage(
+  lens_overlay_controller_->SetSidePanelIsOffline(
       net::NetworkChangeNotifier::IsOffline());
   lens_overlay_controller_->SetSidePanelIsLoadingResults(true);
 }
@@ -308,11 +308,6 @@ LensOverlaySidePanelCoordinator::CreateLensOverlayResultsView(
   side_panel_web_view_ = view.get();
   Observe(GetSidePanelWebContents());
 
-  // Important safety note: creating the SidePanelWebUIViewT can result in
-  // synchronous construction of the WebUIController. Until
-  // "CreateGlueForWebView" is called below, the WebUIController will not be
-  // able to access to LensOverlayController.
-  lens_overlay_controller_->CreateGlueForWebView(view.get());
   view->SetVisible(true);
   SidePanelUtil::GetSidePanelContentProxy(view.get())->SetAvailable(true);
   return view;
@@ -324,7 +319,7 @@ GURL LensOverlaySidePanelCoordinator::GetOpenInNewTabUrl() {
 
 base::RepeatingCallback<std::unique_ptr<ui::MenuModel>()>
 LensOverlaySidePanelCoordinator::GetMoreInfoCallback() {
-  if (lens::features::IsLensOverlaySearchBubbleEnabled()) {
+  if (lens::features::IsLensOverlayContextualSearchboxEnabled()) {
     return base::BindRepeating(
         &LensOverlaySidePanelCoordinator::GetMoreInfoMenuModel,
         base::Unretained(this));

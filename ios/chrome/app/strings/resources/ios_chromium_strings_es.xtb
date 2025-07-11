@@ -15,6 +15,7 @@
 <translation id="1383876407941801731">Buscar</translation>
 <translation id="1423007117030725713">Inicia una búsqueda en una nueva pestaña de Chromium.</translation>
 <translation id="1431818719585918472">Permite que Chromium bloquee tus pestañas de incógnito.</translation>
+<translation id="1451665391191990528">Ocultar las pestañas de Incógnito abiertas al salir de Chromium</translation>
 <translation id="146407871188825689">Usar Chromium en el iPad de forma predeterminada</translation>
 <translation id="1471084500615228555">Eliminar los datos de navegación en Chromium</translation>
 <translation id="1472013873724362412">Tu cuenta no funciona en Chromium. Ponte en contacto con el administrador del dominio o utiliza una cuenta de Google normal para iniciar sesión.</translation>
@@ -257,7 +258,7 @@ Solo las personas que tengan tu frase de contraseña podrán leer tus datos cifr
 <translation id="7747820849741499258">Buscar en Chromium</translation>
 <translation id="7762622637388462191">Bloquea tus pestañas de Incógnito al salir de Chromium o al cambiar de aplicación.</translation>
 <translation id="7763454117143368771">Usa Chromium como tu navegador predeterminado para protegerte de sitios peligrosos y mantener a salvo tus contraseñas</translation>
-<translation id="7784950022329154821">Bloquear las pestañas de incógnito al cerrar Chromium</translation>
+<translation id="7784950022329154821">Bloquear las pestañas de Incógnito al cerrar Chromium</translation>
 <translation id="78025249032851484">Tu Chromium no está actualizado.</translation>
 <translation id="7859018312476869945">Al escribir en la barra de direcciones o en el cuadro de búsqueda, Chromium envía lo que escribes al buscador predeterminado para que obtengas mejores sugerencias. Esta función está desactivada en el modo Incógnito.</translation>
 <translation id="7859432380288435856">Chromium detectará los números de seguimiento de envíos de los sitios que visites y te mostrará las novedades sobre los paquetes en la página Nueva pestaña. Tus datos se compartirán con Google para ofrecerte esta función y mejorar Shopping para todos.</translation>

@@ -8,13 +8,21 @@
 #include <string_view>
 #include <vector>
 
+#include "ash/constants/ash_features.h"
+#include "ash/public/cpp/lobster/lobster_system_state.h"
 #include "ash/public/cpp/new_window_delegate.h"
+#include "ash/shell.h"
 #include "ash/webui/settings/public/constants/routes.mojom.h"
 #include "ash/webui/settings/public/constants/setting.mojom.h"
+#include "base/feature_list.h"
 #include "base/strings/strcat.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "build/build_config.h"
+#include "build/chromeos_buildflags.h"
+#include "chrome/browser/ash/lobster/lobster_service.h"
+#include "chrome/browser/ash/lobster/lobster_service_provider.h"
+#include "chrome/browser/ash/lobster/lobster_system_state_provider.h"
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/ui/ash/editor_menu/editor_manager_factory.h"
 #include "chrome/browser/ui/ash/editor_menu/editor_menu_promo_card_view.h"
@@ -31,6 +39,8 @@
 namespace chromeos::editor_menu {
 
 namespace {
+
+constexpr char kLobsterPresetId[] = "LOBSTER";
 
 TextAndImageMode CalculateTextAndImageMode(EditorMenuMode editor_menu_mode,
                                            LobsterMenuMode lobster_menu_mode) {
@@ -53,6 +63,25 @@ TextAndImageMode CalculateTextAndImageMode(EditorMenuMode editor_menu_mode,
   return TextAndImageMode::kLobsterOnly;
 }
 
+std::unique_ptr<LobsterManager> CreateLobsterManager() {
+  ash::LobsterController* lobster_controller =
+      ash::Shell::Get()->lobster_controller();
+
+  if (!lobster_controller) {
+    return nullptr;
+  }
+
+  std::unique_ptr<ash::LobsterController::Trigger> lobster_trigger =
+      lobster_controller->CreateTrigger(ash::LobsterEntryPoint::kRightClickMenu,
+                                        true);
+
+  if (!lobster_trigger) {
+    return nullptr;
+  }
+
+  return std::make_unique<LobsterManager>(std::move(lobster_trigger));
+}
+
 }  // namespace
 
 EditorMenuControllerImpl::EditorMenuControllerImpl() = default;
@@ -65,13 +94,15 @@ void EditorMenuControllerImpl::OnTextAvailable(
     const gfx::Rect& anchor_bounds,
     const std::string& selected_text,
     const std::string& surrounding_text) {
-  if (!card_session_) {
+  if (!card_session_ || card_session_->editor_manager() == nullptr) {
     return;
   }
 
-  card_session_->manager().GetEditorPanelContext(base::BindOnce(
+  card_session_->editor_manager()->GetEditorPanelContext(base::BindOnce(
       &EditorMenuControllerImpl::OnGetAnchorBoundsAndEditorContext,
       weak_factory_.GetWeakPtr(), anchor_bounds));
+
+  card_session_->OnSelectedTextChanged(selected_text);
 }
 
 void EditorMenuControllerImpl::OnAnchorBoundsChanged(
@@ -97,18 +128,11 @@ void EditorMenuControllerImpl::OnDismiss(bool is_other_command_executed) {
 }
 
 void EditorMenuControllerImpl::OnSettingsButtonPressed() {
-  GURL setting_url = GURL(base::StrCat(
-      {"chrome://os-settings/",
-       chromeos::MagicBoostState::Get() &&
-               chromeos::MagicBoostState::Get()->IsMagicBoostAvailable()
-           ? chromeos::settings::mojom::kSystemPreferencesSectionPath
-           : chromeos::settings::mojom::kInputSubpagePath,
-       "?settingId=",
-       base::NumberToString(
-           static_cast<int>(chromeos::settings::mojom::Setting::kShowOrca))}));
-  ash::NewWindowDelegate::GetInstance()->OpenUrl(
-      setting_url, ash::NewWindowDelegate::OpenUrlFrom::kUserInteraction,
-      ash::NewWindowDelegate::Disposition::kNewForegroundTab);
+  if (!card_session_) {
+    return;
+  }
+
+  card_session_->OpenSettings();
 }
 
 void EditorMenuControllerImpl::OnChipButtonPressed(
@@ -118,48 +142,45 @@ void EditorMenuControllerImpl::OnChipButtonPressed(
   }
 
   DisableEditorMenu();
-  card_session_->manager().StartEditingFlowWithPreset(
-      std::string(text_query_id));
+  card_session_->StartFlowWithPreset(std::string(text_query_id));
 }
 
 void EditorMenuControllerImpl::OnTabSelected(int index) {
-  if (!card_session_) {
+  if (!card_session_ || card_session_->editor_manager() == nullptr) {
     return;
   }
-  card_session_->lobster_tab_selected = index == 1;
+
+  card_session_->current_tab = index == 1 ? EditorCardSession::Tab::kLobster
+                                          : EditorCardSession::Tab::kEditor;
 }
 
 void EditorMenuControllerImpl::OnTextfieldArrowButtonPressed(
     std::u16string_view text) {
-  if (text.empty() || !card_session_) {
+  if (text.empty() || !card_session_ ||
+      card_session_->editor_manager() == nullptr) {
     return;
   }
 
   DisableEditorMenu();
 
-  if (card_session_->lobster_tab_selected) {
-    // TODO: b/348280474 - Open Lobster dialog.
-  }
-
-  card_session_->manager().StartEditingFlowWithFreeform(
-      base::UTF16ToUTF8(text));
+  card_session_->StartFlowWithFreeformText(base::UTF16ToUTF8(text));
 }
 
 void EditorMenuControllerImpl::OnPromoCardWidgetClosed(
     views::Widget::ClosedReason closed_reason) {
-  if (!card_session_) {
+  if (!card_session_ || card_session_->editor_manager() == nullptr) {
     return;
   }
 
   switch (closed_reason) {
     case views::Widget::ClosedReason::kAcceptButtonClicked:
-      card_session_->manager().StartEditingFlow();
+      card_session_->editor_manager()->StartEditingFlow();
       break;
     case views::Widget::ClosedReason::kCloseButtonClicked:
-      card_session_->manager().OnPromoCardDeclined();
+      card_session_->editor_manager()->OnPromoCardDeclined();
       break;
     default:
-      card_session_->manager().OnPromoCardDismissed();
+      card_session_->editor_manager()->OnPromoCardDismissed();
       break;
   }
 
@@ -167,11 +188,11 @@ void EditorMenuControllerImpl::OnPromoCardWidgetClosed(
 }
 
 void EditorMenuControllerImpl::OnEditorMenuVisibilityChanged(bool visible) {
-  if (!card_session_) {
+  if (!card_session_ || card_session_->editor_manager() == nullptr) {
     return;
   }
 
-  card_session_->manager().OnEditorMenuVisibilityChanged(visible);
+  card_session_->editor_manager()->OnEditorMenuVisibilityChanged(visible);
 
   if (!visible) {
     OnEditorCardHidden();
@@ -181,10 +202,11 @@ void EditorMenuControllerImpl::OnEditorMenuVisibilityChanged(bool visible) {
 bool EditorMenuControllerImpl::SetBrowserContext(
     content::BrowserContext* context) {
   std::unique_ptr<EditorManager> editor_manager = CreateEditorManager(context);
+  std::unique_ptr<LobsterManager> lobster_manager = CreateLobsterManager();
 
-  if (editor_manager) {
-    card_session_ =
-        std::make_unique<EditorCardSession>(this, std::move(editor_manager));
+  if (editor_manager || lobster_manager) {
+    card_session_ = std::make_unique<EditorCardSession>(
+        this, std::move(editor_manager), std::move(lobster_manager));
     return true;
   }
   card_session_ = nullptr;
@@ -198,25 +220,25 @@ void EditorMenuControllerImpl::DismissCard() {
 }
 
 void EditorMenuControllerImpl::TryCreatingEditorSession() {
-  if (!card_session_) {
+  if (!card_session_ || card_session_->editor_manager() == nullptr) {
     return;
   }
-  card_session_->manager().RequestCacheContext();
+  card_session_->editor_manager()->RequestCacheContext();
 }
 
 void EditorMenuControllerImpl::LogEditorMode(const EditorMode& editor_mode) {
-  if (!card_session_) {
+  if (!card_session_ || card_session_->editor_manager() == nullptr) {
     return;
   }
-  card_session_->manager().LogEditorMode(editor_mode);
+  card_session_->editor_manager()->LogEditorMode(editor_mode);
 }
 
 void EditorMenuControllerImpl::GetEditorContext(
     base::OnceCallback<void(const EditorContext&)> callback) {
-  if (!card_session_) {
+  if (!card_session_ || card_session_->editor_manager() == nullptr) {
     return;
   }
-  card_session_->manager().GetEditorPanelContext(
+  card_session_->editor_manager()->GetEditorPanelContext(
       base::BindOnce(&EditorMenuControllerImpl::OnGetEditorContext,
                      weak_factory_.GetWeakPtr(), std::move(callback)));
 }
@@ -236,25 +258,27 @@ void EditorMenuControllerImpl::OnGetEditorContext(
 void EditorMenuControllerImpl::OnGetAnchorBoundsAndEditorContext(
     const gfx::Rect& anchor_bounds,
     const EditorContext& context) {
+  LobsterMenuMode lobster_menu_mode =
+      base::FeatureList::IsEnabled(ash::features::kLobsterRightClickMenu) &&
+              card_session_ != nullptr &&
+              card_session_->lobster_manager() != nullptr
+          ? LobsterMenuMode::kEnabled
+          : LobsterMenuMode::kBlocked;
+
   switch (context.mode) {
     case EditorMode::kHardBlocked:
     case EditorMode::kSoftBlocked:
       break;
     case EditorMode::kWrite:
-      // TODO: b:348280474 - Uses the correct Lobster mode once this card UI is
-      // connected with Backend.
       editor_menu_widget_ = EditorMenuView::CreateWidget(
-          CalculateTextAndImageMode(EditorMenuMode::kWrite,
-                                    LobsterMenuMode::kBlocked),
+          CalculateTextAndImageMode(EditorMenuMode::kWrite, lobster_menu_mode),
           PresetTextQueries(), anchor_bounds, this);
       editor_menu_widget_->ShowInactive();
       break;
     case EditorMode::kRewrite:
-      // TODO: b:348280474 - Uses the correct Lobster mode once this card UI is
-      // connected with Backend.
       editor_menu_widget_ = EditorMenuView::CreateWidget(
           CalculateTextAndImageMode(EditorMenuMode::kRewrite,
-                                    LobsterMenuMode::kBlocked),
+                                    lobster_menu_mode),
           context.preset_queries, anchor_bounds, this);
       editor_menu_widget_->ShowInactive();
       break;
@@ -264,9 +288,10 @@ void EditorMenuControllerImpl::OnGetAnchorBoundsAndEditorContext(
       editor_menu_widget_->ShowInactive();
       break;
   }
-  if (card_session_ != nullptr && context.mode != EditorMode::kSoftBlocked &&
+  if (card_session_ != nullptr && card_session_->editor_manager() != nullptr &&
+      context.mode != EditorMode::kSoftBlocked &&
       context.mode != EditorMode::kHardBlocked) {
-    card_session_->manager().LogEditorMode(context.mode);
+    card_session_->editor_manager()->LogEditorMode(context.mode);
   }
 }
 
@@ -291,13 +316,20 @@ base::WeakPtr<EditorMenuControllerImpl> EditorMenuControllerImpl::GetWeakPtr() {
 
 EditorMenuControllerImpl::EditorCardSession::EditorCardSession(
     EditorMenuControllerImpl* controller,
-    std::unique_ptr<EditorManager> editor_manager)
-    : controller_(controller), manager_(std::move(editor_manager)) {
-  manager_->AddObserver(this);
+    std::unique_ptr<EditorManager> editor_manager,
+    std::unique_ptr<LobsterManager> lobster_manager)
+    : controller_(controller),
+      editor_manager_(std::move(editor_manager)),
+      lobster_manager_(std::move(lobster_manager)) {
+  if (editor_manager_) {
+    editor_manager_->AddObserver(this);
+  }
 }
 
 EditorMenuControllerImpl::EditorCardSession::~EditorCardSession() {
-  manager_->RemoveObserver(this);
+  if (editor_manager_) {
+    editor_manager_->RemoveObserver(this);
+  }
 }
 
 void EditorMenuControllerImpl::EditorCardSession::OnEditorModeChanged(
@@ -307,8 +339,66 @@ void EditorMenuControllerImpl::EditorCardSession::OnEditorModeChanged(
   }
 }
 
-EditorManager& EditorMenuControllerImpl::EditorCardSession::manager() {
-  return *manager_;
+void EditorMenuControllerImpl::EditorCardSession::StartFlowWithFreeformText(
+    const std::string& freeform_text) {
+  switch (current_tab) {
+    case Tab::kEditor:
+      if (editor_manager_) {
+        editor_manager_->StartEditingFlowWithFreeform(freeform_text);
+      }
+      return;
+    case Tab::kLobster:
+      if (lobster_manager_) {
+        lobster_manager_->StartFlow(freeform_text);
+      }
+      return;
+  }
+}
+
+void EditorMenuControllerImpl::EditorCardSession::StartFlowWithPreset(
+    const std::string& preset_id) {
+  if (preset_id == kLobsterPresetId && lobster_manager_) {
+    lobster_manager_->StartFlow(selected_text_);
+    return;
+  }
+  if (editor_manager_) {
+    editor_manager_->StartEditingFlowWithPreset(preset_id);
+  }
+}
+
+void EditorMenuControllerImpl::EditorCardSession::OpenSettings() {
+  GURL setting_url;
+
+  switch (current_tab) {
+    case Tab::kEditor:
+      setting_url = GURL(base::StrCat(
+          {"chrome://os-settings/",
+           chromeos::MagicBoostState::Get() &&
+                   chromeos::MagicBoostState::Get()->IsMagicBoostAvailable()
+               ? chromeos::settings::mojom::kSystemPreferencesSectionPath
+               : chromeos::settings::mojom::kInputSubpagePath,
+           "?settingId=",
+           base::NumberToString(static_cast<int>(
+               chromeos::settings::mojom::Setting::kShowOrca))}));
+      break;
+    case Tab::kLobster:
+      setting_url = GURL(base::StrCat(
+          {"chrome://os-settings/",
+           chromeos::settings::mojom::kSystemPreferencesSectionPath,
+           "?settingId=",
+           base::NumberToString(static_cast<int>(
+               chromeos::settings::mojom::Setting::kLobsterOnOff))}));
+      break;
+  }
+
+  ash::NewWindowDelegate::GetInstance()->OpenUrl(
+      setting_url, ash::NewWindowDelegate::OpenUrlFrom::kUserInteraction,
+      ash::NewWindowDelegate::Disposition::kNewForegroundTab);
+}
+
+void EditorMenuControllerImpl::EditorCardSession::OnSelectedTextChanged(
+    const std::string& text) {
+  selected_text_ = text;
 }
 
 }  // namespace chromeos::editor_menu

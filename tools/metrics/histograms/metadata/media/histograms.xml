@@ -4475,6 +4475,21 @@ chromium-metrics-reviews@google.com.
   </summary>
 </histogram>
 
+<histogram name="Media.Midi.BackendType" enum="MidiBackendType"
+    expires_after="2025-06-01">
+  <owner>toyoshim@chromium.org</owner>
+  <owner>mjwilson@chromium.org</owner>
+  <owner>src/third_party/blink/renderer/modules/webaudio/OWNERS</owner>
+  <summary>
+    Reports the MidiManager backend type. This metric is recorded only on
+    Android to understand how many users still depend on the USB MIDI backend
+    that was originally used on pre-M Android devices, but potentially has been
+    used on M+ devices as the Android MIDI API support is optional, and vendors
+    can decide not to support the API. Emitted everytime a manager is created to
+    know the actual usages rather than supporting device ratio.
+  </summary>
+</histogram>
+
 <histogram name="Media.Midi.SendReceiveUsage" enum="MidiSendReceiveUsage"
     expires_after="2025-06-01">
   <owner>mjwilson@chromium.org</owner>
@@ -5298,16 +5313,6 @@ chromium-metrics-reviews@google.com.
   </summary>
 </histogram>
 
-<histogram name="Media.RTCVideoDecoderStream.Error.OnFrameReady"
-    enum="MediaStatusCode" expires_after="2021-08-15">
-  <owner>liberato@chromium.org</owner>
-  <owner>webrtc-video@google.com</owner>
-  <summary>
-    This records the media::StatusCode from the RTCVideoDecoderStreamAdapter. It
-    is emitted when the adapter encounters an error during decoding.
-  </summary>
-</histogram>
-
 <histogram name="Media.RTCVideoEncoder.Initialize" units="ms"
     expires_after="2024-09-30">
   <owner>hiroh@chromium.org</owner>
@@ -5994,7 +5999,7 @@ chromium-metrics-reviews@google.com.
 </histogram>
 
 <histogram name="Media.VideoCapture.Device.SupportedPixelFormat"
-    enum="VideoPixelFormatUnion" expires_after="2024-12-15">
+    enum="VideoPixelFormatUnion" expires_after="2025-12-15">
   <owner>eshr@google.com</owner>
   <owner>handellm@google.com</owner>
   <owner>bryantchandler@chromium.org</owner>
@@ -6003,7 +6008,7 @@ chromium-metrics-reviews@google.com.
     Counts each pixel format an enumerated video capture device supports. This
     is recorded during the first device enumeration per Capture process launch.
     (This is usually once per launch of Chrome unless the Capture process
-    crashes.) NOTE: This metric originally expired on 2023-03-19.
+    crashes.)
   </summary>
 </histogram>
 

@@ -127,6 +127,7 @@ public class ContentTextSelectionTest {
         public void modifyDefaultMenuItems(
                 List<SelectionMenuItem.Builder> menuItemBuilders,
                 boolean isSelectionPassword,
+                boolean isSelectionReadOnly,
                 String selectedText) {
             // No-op because we are testing default menu item ordering with no modifications.
         }
@@ -148,6 +149,11 @@ public class ContentTextSelectionTest {
         @Override
         public List<SelectionMenuItem> getAdditionalTextProcessingItems() {
             return new ArrayList<>();
+        }
+
+        @Override
+        public boolean canReuseCachedSelectionMenu() {
+            return true;
         }
 
         private ResolveInfo createResolveInfoWithActivityInfo(

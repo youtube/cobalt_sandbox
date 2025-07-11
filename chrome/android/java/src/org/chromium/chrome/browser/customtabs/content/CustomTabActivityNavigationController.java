@@ -10,6 +10,7 @@ import static org.chromium.chrome.browser.customtabs.content.CustomTabActivityNa
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Browser;
@@ -22,6 +23,7 @@ import androidx.core.app.ActivityOptionsCompat;
 
 import org.chromium.base.ContextUtils;
 import org.chromium.base.IntentUtils;
+import org.chromium.base.PackageManagerUtils;
 import org.chromium.base.metrics.RecordUserAction;
 import org.chromium.base.supplier.ObservableSupplier;
 import org.chromium.base.supplier.ObservableSupplierImpl;
@@ -31,6 +33,7 @@ import org.chromium.chrome.browser.back_press.BackPressManager;
 import org.chromium.chrome.browser.back_press.MinimizeAppAndCloseTabBackPressHandler;
 import org.chromium.chrome.browser.back_press.MinimizeAppAndCloseTabBackPressHandler.MinimizeAppAndCloseTabType;
 import org.chromium.chrome.browser.browserservices.intents.BrowserServicesIntentDataProvider;
+import org.chromium.chrome.browser.crash.ChromePureJavaExceptionReporter;
 import org.chromium.chrome.browser.customtabs.BaseCustomTabActivity;
 import org.chromium.chrome.browser.customtabs.CloseButtonNavigator;
 import org.chromium.chrome.browser.customtabs.CustomTabObserver;
@@ -98,21 +101,12 @@ public class CustomTabActivityNavigationController
         void onFinish(@FinishReason int reason, boolean warmupOnFinish);
     }
 
-    /** Interface which gets the package name of the default web browser on the device. */
-    public interface DefaultBrowserProvider {
-        /** Returns the package name for the default browser on the device as a string. */
-        @Nullable
-        String getDefaultBrowser();
-    }
-
     private final CustomTabActivityTabController mTabController;
     private final CustomTabActivityTabProvider mTabProvider;
     private final BrowserServicesIntentDataProvider mIntentDataProvider;
     private final CustomTabObserver mCustomTabObserver;
     private final CloseButtonNavigator mCloseButtonNavigator;
-    private final ChromeBrowserInitializer mChromeBrowserInitializer;
     private final Activity mActivity;
-    private final DefaultBrowserProvider mDefaultBrowserProvider;
     private final ObservableSupplierImpl<Boolean> mBackPressStateSupplier =
             new ObservableSupplierImpl<>(false);
 
@@ -144,7 +138,7 @@ public class CustomTabActivityNavigationController
 
                 private boolean shouldInterceptBackPress() {
                     return mTabProvider.getTab() != null
-                            && mChromeBrowserInitializer.isFullBrowserInitialized();
+                            && ChromeBrowserInitializer.getInstance().isFullBrowserInitialized();
                 }
             };
 
@@ -153,25 +147,22 @@ public class CustomTabActivityNavigationController
             CustomTabActivityTabController tabController,
             BrowserServicesIntentDataProvider intentDataProvider,
             CloseButtonNavigator closeButtonNavigator,
-            ChromeBrowserInitializer chromeBrowserInitializer,
             BaseCustomTabActivity activity,
-            ActivityLifecycleDispatcher lifecycleDispatcher,
-            DefaultBrowserProvider customTabsDefaultBrowserProvider) {
+            ActivityLifecycleDispatcher lifecycleDispatcher) {
         mTabController = tabController;
         mTabProvider = activity.getCustomTabActivityTabProvider();
         mIntentDataProvider = intentDataProvider;
         mCustomTabObserver = activity.getCustomTabObserver();
         mCloseButtonNavigator = closeButtonNavigator;
-        mChromeBrowserInitializer = chromeBrowserInitializer;
         mActivity = activity;
-        mDefaultBrowserProvider = customTabsDefaultBrowserProvider;
 
         lifecycleDispatcher.register(this);
         mTabProvider.addObserver(mTabObserver);
-        mChromeBrowserInitializer.runNowOrAfterFullBrowserStarted(
-                () -> {
-                    mBackPressStateSupplier.set(mTabProvider.getTab() != null);
-                });
+        ChromeBrowserInitializer.getInstance()
+                .runNowOrAfterFullBrowserStarted(
+                        () -> {
+                            mBackPressStateSupplier.set(mTabProvider.getTab() != null);
+                        });
     }
 
     /**
@@ -233,7 +224,7 @@ public class CustomTabActivityNavigationController
 
     /** Handles back button navigation. */
     public boolean navigateOnBack() {
-        if (!mChromeBrowserInitializer.isFullBrowserInitialized()) return false;
+        if (!ChromeBrowserInitializer.getInstance().isFullBrowserInitialized()) return false;
 
         boolean separateTask =
                 (mIntentDataProvider.getIntent().getFlags()
@@ -317,9 +308,9 @@ public class CustomTabActivityNavigationController
         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         intent.putExtra(IntentHandler.EXTRA_FROM_OPEN_IN_BROWSER, true);
-        String packageName = mDefaultBrowserProvider.getDefaultBrowser();
-        if (packageName != null) {
-            intent.setPackage(packageName);
+        ResolveInfo resolveInfo = PackageManagerUtils.resolveDefaultWebBrowserActivity();
+        if (resolveInfo != null) {
+            intent.setPackage(resolveInfo.activityInfo.packageName);
             // crbug.com/1265223
             if (intent.resolveActivity(mActivity.getPackageManager()) == null) {
                 intent.setPackage(null);
@@ -367,9 +358,20 @@ public class CustomTabActivityNavigationController
         } else {
             if (mIntentDataProvider.isInfoPage()) {
                 IntentHandler.startChromeLauncherActivityForTrustedIntent(intent);
-            } else {
+            } else if (PackageManagerUtils.canResolveActivity(intent)) {
                 mActivity.startActivity(intent, startActivityOptions);
                 finish(FinishReason.OPEN_IN_BROWSER);
+            } else {
+                // Silently crash to investigate https://crbug.com/384992232
+                boolean isPdf = tab.isNativePage() && tab.getNativePage().isPdf();
+                String logMessage =
+                        "This is not a crash. The intent to open the URL currently being"
+                                + " displayed in the Custom Tab in the regular browser can not be"
+                                + " resolved by any Activity on the system. intent.getPackage() = "
+                                + intent.getPackage()
+                                + " isPdf = "
+                                + isPdf;
+                ChromePureJavaExceptionReporter.reportJavaException(new Throwable(logMessage));
             }
         }
         return true;

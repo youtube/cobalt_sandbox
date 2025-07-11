@@ -108,8 +108,9 @@ const CGFloat kFakeLocationBarHeightMargin = 2;
 
     if (@available(iOS 17, *)) {
       NSArray<UITrait>* traits = TraitCollectionSetForTraits(@[
-        UITraitHorizontalSizeClass.self,
-        UITraitPreferredContentSizeCategory.self, UITraitUserInterfaceStyle.self
+        UITraitHorizontalSizeClass.class,
+        UITraitPreferredContentSizeCategory.class,
+        UITraitUserInterfaceStyle.class
       ]);
       __weak __typeof(self) weakSelf = self;
       UITraitChangeHandler handler = ^(id<UITraitEnvironment> traitEnvironment,
@@ -219,7 +220,7 @@ const CGFloat kFakeLocationBarHeightMargin = 2;
                     safeAreaInsets:(UIEdgeInsets)safeAreaInsets
             animateScrollAnimation:(BOOL)animateScrollAnimation {
   if (self.isShowing) {
-    if (IsTabGroupIndicatorEnabled()) {
+    if (IsTabGroupInGridEnabled()) {
       [self.headerView updateTabGroupIndicatorAvailabilityWithOffset:offset];
     }
     CGFloat progress =

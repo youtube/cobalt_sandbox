@@ -42,6 +42,7 @@
 #import "ios/chrome/browser/autofill/ui_bundled/manual_fill/manual_fill_password_coordinator.h"
 #import "ios/chrome/browser/autofill/ui_bundled/progress_dialog/autofill_progress_dialog_coordinator.h"
 #import "ios/chrome/browser/bookmarks/ui_bundled/home/bookmarks_coordinator.h"
+#import "ios/chrome/browser/browser_container/edit_menu_builder.h"
 #import "ios/chrome/browser/browser_view/ui_bundled/browser_coordinator+Testing.h"
 #import "ios/chrome/browser/browser_view/ui_bundled/browser_view_controller+private.h"
 #import "ios/chrome/browser/browser_view/ui_bundled/browser_view_controller.h"
@@ -309,6 +310,7 @@ enum class ToolbarKind {
     DefaultBrowserGenericPromoCommands,
     DefaultPromoNonModalPresentationDelegate,
     DriveFilePickerCommands,
+    EditMenuBuilder,
     EnterprisePromptCoordinatorDelegate,
     FormInputAccessoryCoordinatorNavigator,
     MiniMapCommands,
@@ -1609,6 +1611,7 @@ enum class ToolbarKind {
   tabLifecycleMediator.snapshotGeneratorDelegate = self;
   tabLifecycleMediator.overscrollActionsDelegate = self;
   tabLifecycleMediator.appLauncherBrowserPresentationProvider = self;
+  tabLifecycleMediator.editMenuBuilder = self;
 
   self.tabLifecycleMediator = tabLifecycleMediator;
 }
@@ -3256,6 +3259,13 @@ enum class ToolbarKind {
                                                    completion:completion];
 }
 
+#pragma mark - EditMenuBuilder
+
+- (void)buildEditMenuWithBuilder:(id<UIMenuBuilder>)builder {
+  return [self.browserContainerCoordinator.editMenuBuilder
+      buildEditMenuWithBuilder:builder];
+}
+
 #pragma mark - EnterprisePromptCoordinatorDelegate
 
 - (void)hideEnterprisePrompForLearnMore:(BOOL)learnMore {
@@ -3906,9 +3916,9 @@ enum class ToolbarKind {
 
   SceneState* sceneState = self.browser->GetSceneState();
   _quickDeleteCoordinator = [[QuickDeleteCoordinator alloc]
-          initWithBaseViewController:
-              top_view_controller::TopPresentedViewControllerFrom(
-                  sceneState.window.rootViewController)
+          initWithBaseViewController:top_view_controller::
+                                         TopPresentedViewControllerFrom(
+                                             sceneState.rootViewController)
                              browser:self.browser
       canPerformTabsClosureAnimation:canPerformTabsClosureAnimation];
   [_quickDeleteCoordinator start];
@@ -3931,16 +3941,17 @@ enum class ToolbarKind {
   // If BrowserViewController has not presented any view controller, then
   // trigger `completion` immediately.
   if (!self.viewController.presentedViewController) {
-    completion();
+    if (completion) {
+      completion();
+    }
     [self stopQuickDelete];
     return;
   }
 
   // If BrowserViewController has presented a view controller, then dismiss
   // every VC on top of it.
-  id<ApplicationCommands> applicationCommandsHandler =
-      HandlerForProtocol(self.dispatcher, ApplicationCommands);
   __weak __typeof(self) weakSelf = self;
+  __weak __typeof(self.dispatcher) weakDispatcher = self.dispatcher;
   ProceduralBlock dismissalCompletion = ^{
     if (completion) {
       completion();
@@ -3950,7 +3961,14 @@ enum class ToolbarKind {
     // by the scene controller. This should include Quick Delete, History and
     // the Privacy Settings.
     [weakSelf clearPresentedStateWithCompletion:nil dismissOmnibox:YES];
-    [applicationCommandsHandler dismissModalDialogsWithCompletion:nil];
+    // The protocol might not have a valid target when the shutdown of Quick
+    // Delete is happening at the same time the UI is being shutdown.
+    if ([weakDispatcher
+            dispatchingForProtocol:@protocol(ApplicationCommands)]) {
+      id<ApplicationCommands> applicationCommandsHandler =
+          HandlerForProtocol(weakDispatcher, ApplicationCommands);
+      [applicationCommandsHandler dismissModalDialogsWithCompletion:nil];
+    }
   };
   [self.viewController dismissViewControllerAnimated:YES
                                           completion:dismissalCompletion];

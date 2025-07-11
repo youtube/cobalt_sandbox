@@ -8,6 +8,7 @@
 #include "base/auto_reset.h"
 #include "base/component_export.h"
 #include "base/feature_list.h"
+#include "base/metrics/field_trial_params.h"
 #include "build/buildflag.h"
 
 // This file is only for the feature flags that are shared between ash-chrome
@@ -28,8 +29,6 @@ COMPONENT_EXPORT(CHROMEOS_CONSTANTS)
 BASE_DECLARE_FEATURE(kBluetoothPhoneFilter);
 COMPONENT_EXPORT(CHROMEOS_CONSTANTS)
 BASE_DECLARE_FEATURE(kBluetoothWifiQSPodRefresh);
-COMPONENT_EXPORT(CHROMEOS_CONSTANTS)
-BASE_DECLARE_FEATURE(kCaptivePortalPopupWindow);
 COMPONENT_EXPORT(CHROMEOS_CONSTANTS)
 BASE_DECLARE_FEATURE(kClipboardHistoryRefresh);
 COMPONENT_EXPORT(CHROMEOS_CONSTANTS) BASE_DECLARE_FEATURE(kCloudGamingDevice);
@@ -99,9 +98,14 @@ BASE_DECLARE_FEATURE(kNotificationWidthIncrease);
 COMPONENT_EXPORT(CHROMEOS_CONSTANTS)
 BASE_DECLARE_FEATURE(kOfficeNavigationCapturingReimpl);
 COMPONENT_EXPORT(CHROMEOS_CONSTANTS)
-BASE_DECLARE_FEATURE(kOverviewSessionInitOptimizations);
+BASE_DECLARE_FEATURE(kMicrosoft365ScopeExtensions);
 COMPONENT_EXPORT(CHROMEOS_CONSTANTS)
-BASE_DECLARE_FEATURE(kPreinstalledWebAppsCoreOnly);
+extern const base::FeatureParam<std::string> kMicrosoft365ScopeExtensionsURLs;
+COMPONENT_EXPORT(CHROMEOS_CONSTANTS)
+extern const base::FeatureParam<std::string>
+    kMicrosoft365ScopeExtensionsDomains;
+COMPONENT_EXPORT(CHROMEOS_CONSTANTS)
+BASE_DECLARE_FEATURE(kOverviewSessionInitOptimizations);
 COMPONENT_EXPORT(CHROMEOS_CONSTANTS)
 BASE_DECLARE_FEATURE(kQuickAnswersMaterialNextUI);
 COMPONENT_EXPORT(CHROMEOS_CONSTANTS)
@@ -129,8 +133,6 @@ COMPONENT_EXPORT(CHROMEOS_CONSTANTS)
 bool IsBatteryBadgeIconEnabled();
 COMPONENT_EXPORT(CHROMEOS_CONSTANTS)
 bool IsBluetoothWifiQSPodRefreshEnabled();
-COMPONENT_EXPORT(CHROMEOS_CONSTANTS)
-bool IsCaptivePortalPopupWindowEnabled();
 COMPONENT_EXPORT(CHROMEOS_CONSTANTS)
 bool IsClipboardHistoryRefreshEnabled();
 COMPONENT_EXPORT(CHROMEOS_CONSTANTS) bool IsCloudGamingDeviceEnabled();
@@ -190,6 +192,8 @@ COMPONENT_EXPORT(CHROMEOS_CONSTANTS)
 bool IsUploadOfficeToCloudEnabled();
 COMPONENT_EXPORT(CHROMEOS_CONSTANTS)
 bool IsUploadOfficeToCloudForEnterpriseEnabled();
+COMPONENT_EXPORT(CHROMEOS_CONSTANTS)
+bool IsMicrosoft365ScopeExtensionsEnabled();
 COMPONENT_EXPORT(CHROMEOS_CONSTANTS)
 bool IsMicrosoftOneDriveIntegrationForEnterpriseEnabled();
 COMPONENT_EXPORT(CHROMEOS_CONSTANTS)

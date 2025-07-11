@@ -6,6 +6,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include "base/debug/crash_logging.h"
 #include "base/debug/dump_without_crashing.h"
@@ -17,6 +18,7 @@
 #include "base/time/time.h"
 #include "base/trace_event/base_tracing.h"
 #include "base/trace_event/named_trigger.h"
+#include "components/crash/core/common/crash_key.h"
 #include "components/page_load_metrics/browser/navigation_handle_user_data.h"
 #include "components/page_load_metrics/browser/observers/core/largest_contentful_paint_handler.h"
 #include "components/page_load_metrics/browser/page_load_metrics_util.h"
@@ -25,14 +27,9 @@
 #include "components/page_load_metrics/google/browser/google_url_util.h"
 #include "components/page_load_metrics/google/browser/gws_abandoned_page_load_metrics_observer.h"
 #include "components/page_load_metrics/google/browser/histogram_suffixes.h"
-#include "components/policy/core/browser/url_blocklist_policy_handler.h"
-#include "components/policy/core/common/policy_pref_names.h"
-#include "components/prefs/pref_service.h"
-#include "components/user_prefs/user_prefs.h"
-#include "content/public/browser/browser_context.h"
+#include "components/policy/content/policy_blocklist_metrics.h"
 #include "content/public/browser/navigation_handle.h"
 #include "content/public/browser/site_instance.h"
-#include "content/public/browser/web_contents.h"
 #include "services/metrics/public/cpp/ukm_builders.h"
 #include "services/metrics/public/cpp/ukm_recorder.h"
 
@@ -41,6 +38,8 @@ using page_load_metrics::PageAbortReason;
 namespace internal {
 
 #define HISTOGRAM_PREFIX "PageLoad.Clients.GoogleSearch."
+#define FINEGRAINED_HISTOGRAM_PREFIX \
+  "PageLoad.Clients.GoogleSearch.FineGrained."
 
 const char kHistogramGWSNavigationStartToFinalRequestStart[] =
     HISTOGRAM_PREFIX "NavigationTiming.NavigationStartToFinalRequestStart";
@@ -84,6 +83,9 @@ const char kHistogramGWSFirstContentfulPaint[] =
     HISTOGRAM_PREFIX "PaintTiming.NavigationToFirstContentfulPaint";
 const char kHistogramGWSLargestContentfulPaint[] =
     HISTOGRAM_PREFIX "PaintTiming.NavigationToLargestContentfulPaint";
+const char kFineGrainedHistogramGWSLargestContentfulPaint[] =
+    FINEGRAINED_HISTOGRAM_PREFIX
+    "PaintTiming.NavigationToLargestContentfulPaint";
 const char kHistogramGWSParseStart[] =
     HISTOGRAM_PREFIX "ParseTiming.NavigationToParseStart";
 const char kHistogramGWSConnectStart[] =
@@ -115,9 +117,17 @@ const char kHistogramGWSIsFirstNavigationForGWS[] =
 const char kHistogramGWSConnectionReuseStatus[] =
     HISTOGRAM_PREFIX "ConnectionReuseStatus";
 
+const char kHistogramGWSAllHeadersExpected[] =
+    HISTOGRAM_PREFIX "SyntheticResponse.AllHeadersExpected";
+const char kHistogramGWSHeaderMismatchType[] =
+    HISTOGRAM_PREFIX "SyntheticResponse.HeaderMismatchType";
+
 }  // namespace internal
 
 namespace {
+
+constexpr char kSafeSitesFilterEnabledSuffix[] = ".SafeSitesFilterEnabled";
+constexpr char kSafeSitesFilterDisabledSuffix[] = ".SafeSitesFilterDisabled";
 
 // TODO(crbug.com/352578800): When this is enabled, the browser will log
 // response headers if those're unexpected to be in the navigation response.
@@ -159,14 +169,30 @@ GWSPageLoadMetricsObserver::NavigationSourceType GetBackgroundedState(
 void RecordPageLoadHistogramWithVariants(bool is_safesites_filter_enabled,
                                          std::string_view name,
                                          base::TimeDelta sample) {
-  constexpr char kSafeSitesFilterEnabledSuffix[] = ".SafeSitesFilterEnabled";
-  constexpr char kSafeSitesFilterDisabledSuffix[] = ".SafeSitesFilterDisabled";
   PAGE_LOAD_HISTOGRAM(name, sample);
   PAGE_LOAD_HISTOGRAM(
       base::StrCat({name, is_safesites_filter_enabled
                               ? kSafeSitesFilterEnabledSuffix
                               : kSafeSitesFilterDisabledSuffix}),
       sample);
+}
+
+void RecordFineGrainedPageLoadHistogramWithVariants(
+    bool is_safesites_filter_enabled,
+    std::string_view name,
+    base::TimeDelta sample) {
+  // Record variant metrics in a range from 10ms to 10s with 100 buckets.
+  // Current PAGE_LOAD_HISTOGRAM macro does it from 10ms to 10 minutes with 100
+  // buckets, but it would not be suitable to monitor much faster pages living
+  // in the real world today, as the bucket size for median value is about 50ms
+  // in the current config.
+  base::UmaHistogramCustomTimes(name, sample, base::Milliseconds(10),
+                                base::Seconds(10), 100);
+  base::UmaHistogramCustomTimes(
+      base::StrCat({name, is_safesites_filter_enabled
+                              ? kSafeSitesFilterEnabledSuffix
+                              : kSafeSitesFilterDisabledSuffix}),
+      sample, base::Milliseconds(10), base::Seconds(10), 100);
 }
 
 struct ExpectedHeaderInfo {
@@ -193,14 +219,10 @@ std::unordered_map<std::string, ExpectedHeaderInfo> GetExpectedHeaderInfo() {
                            ExpectedHeaderInfo({"private, max-age=0"}, false));
   expected_headers.emplace("content-encoding",
                            ExpectedHeaderInfo({"br"}, false));
-  expected_headers.emplace(
-      "content-security-policy",
-      ExpectedHeaderInfo(
-          {"object-src 'none';base-uri 'self';script-src "
-           "'nonce-732GkElp7qZBZj5NI2fQIQ' 'strict-dynamic' 'report-sample' "
-           "'unsafe-eval' 'unsafe-inline' https: http:;report-uri "
-           "https://csp.withgoogle.com/csp/gws/clkf"},
-          true));
+  // CSP value will be checked via
+  // `CheckContentSecurityPolicyHeaderConsistency()`.
+  expected_headers.emplace("content-security-policy",
+                           ExpectedHeaderInfo({}, true));
   expected_headers.emplace(
       "content-type", ExpectedHeaderInfo({"text/html; charset=UTF-8"}, false));
   expected_headers.emplace(
@@ -238,14 +260,113 @@ std::unordered_map<std::string, ExpectedHeaderInfo> GetExpectedHeaderInfo() {
   return expected_headers;
 }
 
-std::pair<base::debug::CrashKeyString*, base::debug::CrashKeyString*>
-AllocateCrashKeyString(const std::string& name) {
-  return std::make_pair(
-      base::debug::AllocateCrashKeyString(base::StrCat({name, "-name"}).c_str(),
-                                          base::debug::CrashKeySize::Size256),
-      base::debug::AllocateCrashKeyString(
-          base::StrCat({name, "-value"}).c_str(),
-          base::debug::CrashKeySize::Size256));
+// Check the Content-Security-Policy header is expected, except for the `nonce`.
+bool CheckContentSecurityPolicyHeaderConsistency(
+    const std::string header_value) {
+  const std::string first_half =
+      "object-src 'none';base-uri 'self';script-src 'nonce-";
+  const std::string second_half =
+      "' 'strict-dynamic' 'report-sample' 'unsafe-eval' 'unsafe-inline' https: "
+      "http:;report-uri https://csp.withgoogle.com/csp/gws/";
+  if (header_value.find(first_half) == std::string::npos) {
+    return false;
+  }
+  if (header_value.find(second_half) == std::string::npos) {
+    return false;
+  }
+  return true;
+}
+
+using ArrayItemKey = crash_reporter::CrashKeyString<256>;
+ArrayItemKey g_header_not_expected_keys_for_header_name[] = {
+    {"GWSHeaderNotExpected-Header-1", ArrayItemKey::Tag::kArray},
+    {"GWSHeaderNotExpected-Header-2", ArrayItemKey::Tag::kArray},
+    {"GWSHeaderNotExpected-Header-3", ArrayItemKey::Tag::kArray},
+    {"GWSHeaderNotExpected-Header-4", ArrayItemKey::Tag::kArray},
+    {"GWSHeaderNotExpected-Header-5", ArrayItemKey::Tag::kArray},
+};
+ArrayItemKey g_header_not_expected_keys_for_value[] = {
+    {"GWSHeaderNotExpected-Value-1", ArrayItemKey::Tag::kArray},
+    {"GWSHeaderNotExpected-Value-2", ArrayItemKey::Tag::kArray},
+    {"GWSHeaderNotExpected-Value-3", ArrayItemKey::Tag::kArray},
+    {"GWSHeaderNotExpected-Value-4", ArrayItemKey::Tag::kArray},
+    {"GWSHeaderNotExpected-Value-5", ArrayItemKey::Tag::kArray},
+};
+ArrayItemKey g_header_value_mismatched_keys_for_header_name[] = {
+    {"GWSHeaderValueMismatched-Header-1", ArrayItemKey::Tag::kArray},
+    {"GWSHeaderValueMismatched-Header-2", ArrayItemKey::Tag::kArray},
+    {"GWSHeaderValueMismatched-Header-3", ArrayItemKey::Tag::kArray},
+    {"GWSHeaderValueMismatched-Header-4", ArrayItemKey::Tag::kArray},
+    {"GWSHeaderValueMismatched-Header-5", ArrayItemKey::Tag::kArray},
+};
+ArrayItemKey g_header_value_mismatched_keys_for_value[] = {
+    {"GWSHeaderValueMismatched-Value-1", ArrayItemKey::Tag::kArray},
+    {"GWSHeaderValueMismatched-Value-2", ArrayItemKey::Tag::kArray},
+    {"GWSHeaderValueMismatched-Value-3", ArrayItemKey::Tag::kArray},
+    {"GWSHeaderValueMismatched-Value-4", ArrayItemKey::Tag::kArray},
+    {"GWSHeaderValueMismatched-Value-5", ArrayItemKey::Tag::kArray},
+};
+ArrayItemKey g_header_not_exist_keys_for_header_name[] = {
+    {"GWSHeaderNotActuallyExist-Header-1", ArrayItemKey::Tag::kArray},
+    {"GWSHeaderNotActuallyExist-Header-2", ArrayItemKey::Tag::kArray},
+    {"GWSHeaderNotActuallyExist-Header-3", ArrayItemKey::Tag::kArray},
+    {"GWSHeaderNotActuallyExist-Header-4", ArrayItemKey::Tag::kArray},
+    {"GWSHeaderNotActuallyExist-Header-5", ArrayItemKey::Tag::kArray},
+};
+
+struct HeaderInfo {
+  std::string header_name;
+  std::string value;
+};
+
+using ReportedHeaders = std::vector<HeaderInfo>;
+
+enum class HeaderMismatchType {
+  kHeaderNotExpected = 1 << 0,
+  kValueMismatched = 1 << 1,
+  kHeaderNotActuallyExist = 1 << 2,
+  kMaxValue = kHeaderNotActuallyExist,
+};
+
+void SetHeaderCrashKeys(const ReportedHeaders& reported_headers,
+                        HeaderMismatchType mismatch_type) {
+  auto it = reported_headers.begin();
+
+#define SetCrashKeyForUnexpectedHeader(headers, keys, is_header_name) \
+  it = headers.begin();                                               \
+  for (ArrayItemKey & key : keys) {                                   \
+    if (it == headers.end()) {                                        \
+      key.Clear();                                                    \
+    } else {                                                          \
+      key.Set(is_header_name ? it->header_name : it->value);          \
+      ++it;                                                           \
+    }                                                                 \
+  }
+
+  switch (mismatch_type) {
+    case HeaderMismatchType::kHeaderNotExpected:
+      SetCrashKeyForUnexpectedHeader(reported_headers,
+                                     g_header_not_expected_keys_for_header_name,
+                                     /*is_header_name=*/true);
+      SetCrashKeyForUnexpectedHeader(reported_headers,
+                                     g_header_not_expected_keys_for_value,
+                                     /*is_header_name=*/false);
+      break;
+    case HeaderMismatchType::kValueMismatched:
+      SetCrashKeyForUnexpectedHeader(
+          reported_headers, g_header_value_mismatched_keys_for_header_name,
+          /*is_header_name=*/true);
+      SetCrashKeyForUnexpectedHeader(reported_headers,
+                                     g_header_value_mismatched_keys_for_value,
+                                     /*is_header_name=*/false);
+      break;
+    case HeaderMismatchType::kHeaderNotActuallyExist:
+      SetCrashKeyForUnexpectedHeader(reported_headers,
+                                     g_header_not_exist_keys_for_header_name,
+                                     /*is_header_name=*/true);
+      break;
+  }
+#undef SetCrashKeyForUnexpectedHeader
 }
 }  // namespace
 
@@ -282,13 +403,6 @@ GWSPageLoadMetricsObserver::OnStart(
     source_type_ = GetBackgroundedState(source_type_);
   }
 
-  raw_ptr<PrefService> prefs = user_prefs::UserPrefs::Get(
-      navigation_handle->GetWebContents()->GetBrowserContext());
-  is_safesites_filter_enabled_ =
-      prefs && static_cast<policy::SafeSitesFilterBehavior>(prefs->GetInteger(
-                   policy::policy_prefs::kSafeSitesFilterBehavior)) ==
-                   policy::SafeSitesFilterBehavior::kSafeSitesFilterEnabled;
-
   return CONTINUE_OBSERVING;
 }
 
@@ -303,6 +417,29 @@ GWSPageLoadMetricsObserver::OnCommit(
   }
   if (!is_gws_url) {
     return STOP_OBSERVING;
+  }
+
+  if (const PolicyBlocklistMetrics* const metrics =
+      PolicyBlocklistMetrics::Get(*navigation_handle)) {
+    is_safesites_filter_enabled_ = true;
+    base::UmaHistogramCounts100(
+        "Navigation.Throttles.PolicyBlocklist.RedirectCount.GoogleSearch."
+        "SafeSitesFilterEnabled",
+        metrics->redirect_count);
+    base::UmaHistogramTimes(
+        "Navigation.Throttles.PolicyBlocklist.RequestToResponseTime2."
+        "GoogleSearch.SafeSitesFilterEnabled",
+        metrics->request_to_response_time);
+    base::UmaHistogramTimes(
+        "Navigation.Throttles.PolicyBlocklist.ResponseDeferDuration."
+        "GoogleSearch.SafeSitesFilterEnabled",
+        metrics->response_defer_duration);
+    if (metrics->cache_hit.has_value()) {
+      base::UmaHistogramBoolean(
+          "Navigation.Throttles.PolicyBlocklist.CacheHit.GoogleSearch."
+          "SafeSitesFilterEnabled",
+          *metrics->cache_hit);
+    }
   }
 
   navigation_handle_timing_ = navigation_handle->GetNavigationHandleTiming();
@@ -454,6 +591,10 @@ void GWSPageLoadMetricsObserver::LogMetricsOnComplete() {
   RecordPageLoadHistogramWithVariants(
       is_safesites_filter_enabled_,
       internal::kHistogramGWSLargestContentfulPaint,
+      all_frames_largest_contentful_paint.Time().value());
+  RecordFineGrainedPageLoadHistogramWithVariants(
+      is_safesites_filter_enabled_,
+      internal::kFineGrainedHistogramGWSLargestContentfulPaint,
       all_frames_largest_contentful_paint.Time().value());
 }
 
@@ -676,37 +817,34 @@ void GWSPageLoadMetricsObserver::RecordLatencyHitograms(
 
 void GWSPageLoadMetricsObserver::MaybeRecordUnexpectedHeaders(
     const net::HttpResponseHeaders* response_headers) {
-  if (!base::FeatureList::IsEnabled(kSyntheticResponseReportUnexpectedHeader)) {
-    return;
-  }
+  ReportedHeaders not_expected_headers;
+  ReportedHeaders value_mismatched_headers;
+  ReportedHeaders not_exist_headers;
 
   std::unordered_map<std::string, ExpectedHeaderInfo> expected_headers =
       GetExpectedHeaderInfo();
-  bool set_crash_key = false;
 
   size_t iter = 0;
   std::string name, value;
   while (response_headers->EnumerateHeaderLines(&iter, &name, &value)) {
     if (!expected_headers.contains(name)) {
       // GWSHeaderNotExpected: The header is not in the expected header list.
-      static const auto crash_keys =
-          AllocateCrashKeyString("GWSHeaderNotExpected");
-      base::debug::SetCrashKeyString(crash_keys.first, name);
-      base::debug::SetCrashKeyString(crash_keys.second, value);
-      set_crash_key = true;
+      not_expected_headers.emplace_back(name, value);
       continue;
+    }
+    if (name == "content-security-policy") {
+      // Check content-security-policy separately. The CSP value should be
+      // consistent except for the `nonce` value.
+      if (!CheckContentSecurityPolicyHeaderConsistency(value)) {
+        value_mismatched_headers.emplace_back(name, value);
+      }
     }
     auto* expected = &expected_headers[name];
     expected->found_in_actual_headers = true;
     if (!expected->allow_value_mismatch && !expected->values.contains(value)) {
       // GWSHeaderValueMismatched: The header is in the expected header list,
       // but the value is different or an inconsistent value is not allowed.
-      static const auto crash_keys =
-          AllocateCrashKeyString("GWSHeaderValueMismatched");
-      base::debug::SetCrashKeyString(crash_keys.first, name);
-      base::debug::SetCrashKeyString(crash_keys.second, value);
-      set_crash_key = true;
-      continue;
+      value_mismatched_headers.emplace_back(name, value);
     }
   }
 
@@ -716,13 +854,47 @@ void GWSPageLoadMetricsObserver::MaybeRecordUnexpectedHeaders(
     }
     // GWSHeaderNotActuallyExist: The expected header does not exist in the
     // actual headers.
-    static const auto crash_keys =
-        AllocateCrashKeyString("GWSHeaderNotActuallyExist");
-    base::debug::SetCrashKeyString(crash_keys.first, header.first);
-    set_crash_key = true;
+    not_exist_headers.emplace_back(header.first, "");
   }
 
+  bool all_headers_expected = not_expected_headers.empty() &&
+                              value_mismatched_headers.empty() &&
+                              not_exist_headers.empty();
+  bool set_crash_key =
+      !all_headers_expected &&
+      base::FeatureList::IsEnabled(kSyntheticResponseReportUnexpectedHeader);
+
+  // Potential hit rate of the synthetic response.
+  base::UmaHistogramBoolean(internal::kHistogramGWSAllHeadersExpected,
+                            all_headers_expected);
+
+  size_t mismatch_type = 0;
+  if (!not_expected_headers.empty()) {
+    mismatch_type |= static_cast<int>(HeaderMismatchType::kHeaderNotExpected);
+  }
+  if (!value_mismatched_headers.empty()) {
+    mismatch_type |= static_cast<int>(HeaderMismatchType::kValueMismatched);
+  }
+  if (!not_exist_headers.empty()) {
+    mismatch_type |=
+        static_cast<int>(HeaderMismatchType::kHeaderNotActuallyExist);
+  }
+  UMA_HISTOGRAM_COUNTS_100(internal::kHistogramGWSHeaderMismatchType,
+                           mismatch_type);
+
   if (set_crash_key) {
+    if (!not_expected_headers.empty()) {
+      SetHeaderCrashKeys(not_expected_headers,
+                         HeaderMismatchType::kHeaderNotExpected);
+    }
+    if (!value_mismatched_headers.empty()) {
+      SetHeaderCrashKeys(value_mismatched_headers,
+                         HeaderMismatchType::kValueMismatched);
+    }
+    if (!not_exist_headers.empty()) {
+      SetHeaderCrashKeys(not_exist_headers,
+                         HeaderMismatchType::kHeaderNotActuallyExist);
+    }
     base::debug::DumpWithoutCrashing();
   }
 }

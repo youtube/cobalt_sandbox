@@ -14,52 +14,76 @@ function createDropdown(): ViewerBottomToolbarDropdownElement {
   return dropdown;
 }
 
+function getMenu(dropdown: ViewerBottomToolbarDropdownElement) {
+  return dropdown.shadowRoot!.querySelector('slot[name="menu"]');
+}
+
 chrome.test.runTests([
   async function testButtonTogglesDropdown() {
     const dropdown = createDropdown();
 
-    chrome.test.assertTrue(!dropdown.shadowRoot!.querySelector('slot'));
+    chrome.test.assertTrue(!getMenu(dropdown));
 
     // Open the dropdown.
-    getRequiredElement(dropdown, 'cr-icon-button').click();
+    getRequiredElement(dropdown, 'cr-button').click();
     await microtasksFinished();
 
-    chrome.test.assertTrue(!!dropdown.shadowRoot!.querySelector('slot'));
+    chrome.test.assertTrue(!!getMenu(dropdown));
     chrome.test.succeed();
   },
 
-  async function testClickElsewhereClosesDropdown() {
+  async function testFocusOnMenuDoesNotCloseDropdown() {
     const dropdown = createDropdown();
 
     // Open the dropdown.
-    getRequiredElement(dropdown, 'cr-icon-button').click();
+    getRequiredElement(dropdown, 'cr-button').click();
     await microtasksFinished();
 
-    chrome.test.assertTrue(!!dropdown.shadowRoot!.querySelector('slot'));
+    const menu = getMenu(dropdown);
+    chrome.test.assertTrue(!!menu);
 
-    // Click a different element. The dropdown should not be visible.
-    document.body.click();
+    // Focus on the dropdown menu. The dropdown should stay visible.
+    dropdown.dispatchEvent(new FocusEvent('focusout', {relatedTarget: menu}));
     await microtasksFinished();
 
-    chrome.test.assertTrue(!dropdown.shadowRoot!.querySelector('slot'));
+    chrome.test.assertTrue(!!getMenu(dropdown));
     chrome.test.succeed();
   },
 
-  async function testFinishInkStrokeClosesDropdown() {
+  async function testFocusElsewhereClosesDropdown() {
     const dropdown = createDropdown();
 
     // Open the dropdown.
-    getRequiredElement(dropdown, 'cr-icon-button').click();
+    getRequiredElement(dropdown, 'cr-button').click();
     await microtasksFinished();
 
-    chrome.test.assertTrue(!!dropdown.shadowRoot!.querySelector('slot'));
+    chrome.test.assertTrue(!!getMenu(dropdown));
 
-    // Finish an ink stroke. The dropdown should not be visible.
+    // Focus on a different element. The dropdown should not be visible.
+    dropdown.dispatchEvent(
+        new FocusEvent('focusout', {relatedTarget: document.body}));
+    await microtasksFinished();
+
+    chrome.test.assertTrue(!getMenu(dropdown));
+    chrome.test.succeed();
+  },
+
+  async function testContentFocusedClosesDropdown() {
+    const dropdown = createDropdown();
+
+    // Open the dropdown.
+    getRequiredElement(dropdown, 'cr-button').click();
+    await microtasksFinished();
+
+    chrome.test.assertTrue(!!getMenu(dropdown));
+
+    // Mock a 'contentFocused' event from the PDF content. The dropdown should
+    // not be visible.
     PluginController.getInstance().getEventTarget().dispatchEvent(
-        new CustomEvent(PluginControllerEventType.FINISH_INK_STROKE));
+        new CustomEvent(PluginControllerEventType.CONTENT_FOCUSED));
     await microtasksFinished();
 
-    chrome.test.assertTrue(!dropdown.shadowRoot!.querySelector('slot'));
+    chrome.test.assertTrue(!getMenu(dropdown));
     chrome.test.succeed();
   },
 ]);

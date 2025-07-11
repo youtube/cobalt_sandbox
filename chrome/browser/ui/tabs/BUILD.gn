@@ -14,7 +14,10 @@ source_set("tabs_public") {
     "tab_network_state.h",
   ]
   sources = [ "tab_network_state.cc" ]
-  public_deps = [ "//base" ]
+  public_deps = [
+    "//base",
+    "//components/tab_groups:tab_groups",
+  ]
   deps = [ "//content/public/browser" ]
 }
 
@@ -127,6 +130,7 @@ if (!is_android) {
       ":tabs",
       ":tabs_public",
       "//base",
+      "//components/constrained_window",
       "//components/favicon/core",
       "//components/sessions",
       "//components/sync_sessions",
@@ -322,9 +326,11 @@ if (!is_android) {
       "//chrome/browser/ui/commerce",
       "//chrome/browser/ui/lens",
       "//chrome/browser/ui/views/side_panel",
+      "//chrome/browser/ui/webui:webui_util",
       "//chrome/browser/web_applications",
       "//components/browsing_topics",
       "//components/content_settings/core/browser",
+      "//components/favicon/content",
       "//components/favicon/core",
       "//components/fingerprinting_protection_filter/common:features",
       "//components/image_fetcher/core",
@@ -346,6 +352,7 @@ if (!is_android) {
     ]
     public_deps = [
       "//base",
+      "//chrome/browser/ui/tabs:tabs_public",
       "//components/sessions:session_id",
       "//components/tab_groups",
       "//ui/base",

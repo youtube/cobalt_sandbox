@@ -56,7 +56,6 @@
 #include "components/password_manager/core/browser/passkey_credential.h"
 #include "components/prefs/pref_service.h"
 #include "components/strings/grit/components_strings.h"
-#include "components/sync/base/features.h"
 #include "components/vector_icons/vector_icons.h"
 #include "components/webauthn/core/browser/passkey_model.h"
 #include "components/webauthn/core/browser/passkey_model_change.h"
@@ -102,6 +101,8 @@ using Mechanism = AuthenticatorRequestDialogModel::Mechanism;
 using Step = AuthenticatorRequestDialogModel::Step;
 using TransportAvailabilityInfo =
     device::FidoRequestHandlerBase::TransportAvailabilityInfo;
+using UIPresentation =
+    content::AuthenticatorRequestClientDelegate::UIPresentation;
 using device::AuthenticatorType;
 using device::FidoRequestType;
 
@@ -121,8 +122,7 @@ constexpr int GetMessageIdForTransportDescription(
     case AuthenticatorTransport::kDeprecatedAoa:
     case AuthenticatorTransport::kBluetoothLowEnergy:
     case AuthenticatorTransport::kNearFieldCommunication:
-      NOTREACHED_IN_MIGRATION();
-      return 0;
+      NOTREACHED();
   }
 }
 
@@ -146,8 +146,7 @@ constexpr int GetMessageIdForTransportShortDescription(
     case AuthenticatorTransport::kDeprecatedAoa:
     case AuthenticatorTransport::kBluetoothLowEnergy:
     case AuthenticatorTransport::kNearFieldCommunication:
-      NOTREACHED_IN_MIGRATION();
-      return 0;
+      NOTREACHED();
   }
 }
 
@@ -171,8 +170,7 @@ constexpr const gfx::VectorIcon& GetTransportIcon(
     case AuthenticatorTransport::kDeprecatedAoa:
     case AuthenticatorTransport::kBluetoothLowEnergy:
     case AuthenticatorTransport::kNearFieldCommunication:
-      NOTREACHED_IN_MIGRATION();
-      return gfx::kNoneIcon;
+      NOTREACHED();
   }
 }
 
@@ -427,14 +425,11 @@ AuthenticatorRequestDialogController::AuthenticatorRequestDialogController(
     content::RenderFrameHost* render_frame_host)
     : model_(model), frame_host_id_(render_frame_host->GetGlobalId()) {
   model_->observers.AddObserver(this);
-  if (base::FeatureList::IsEnabled(syncer::kSyncWebauthnCredentials)) {
-    webauthn::PasskeyModel* passkey_model =
-        PasskeyModelFactory::GetInstance()->GetForProfile(
-            Profile::FromBrowserContext(
-                render_frame_host->GetBrowserContext()));
-    if (passkey_model) {
-      passkey_model_observation_.Observe(passkey_model);
-    }
+  webauthn::PasskeyModel* passkey_model =
+      PasskeyModelFactory::GetInstance()->GetForProfile(
+          Profile::FromBrowserContext(render_frame_host->GetBrowserContext()));
+  if (passkey_model) {
+    passkey_model_observation_.Observe(passkey_model);
   }
 }
 
@@ -505,7 +500,7 @@ void AuthenticatorRequestDialogController::OnRecoverSecurityDomainClosed() {
   // dismissed the recovery window. This will ensure the users to have a backup
   // such as hybrid.
   if (transport_availability_.request_type == FidoRequestType::kGetAssertion &&
-      !use_conditional_mediation_ &&
+      ui_presentation_ == UIPresentation::kModal &&
       model_->step() == Step::kRecoverSecurityDomain) {
     model_->StartOver();
     return;
@@ -549,13 +544,13 @@ void AuthenticatorRequestDialogController::CancelAuthenticatorRequest() {
       model_->step() == Step::kGPMChangePin) {
     ChangePinControllerImpl::RecordHistogram(ChangePinEvent::kNewPinCancelled);
   }
-  if (use_conditional_mediation_) {
+  if (ui_presentation_ == UIPresentation::kAutofill) {
     // Conditional UI requests are never cancelled, they restart silently.
     ResetEphemeralState();
     for (auto& observer : model_->observers) {
       observer.OnStartOver();
     }
-    StartConditionalMediationRequest();
+    StartAutofillRequest();
     return;
   }
 
@@ -569,7 +564,7 @@ void AuthenticatorRequestDialogController::CancelAuthenticatorRequest() {
 }
 
 void AuthenticatorRequestDialogController::OnRequestComplete() {
-  if (use_conditional_mediation_) {
+  if (ui_presentation_ == UIPresentation::kAutofill) {
     auto* render_frame_host = GetRenderFrameHost();
     auto* web_contents =
         content::WebContents::FromRenderFrameHost(render_frame_host);
@@ -650,7 +645,7 @@ void AuthenticatorRequestDialogController::OnUserConfirmedPriorityMechanism() {
 
 void AuthenticatorRequestDialogController::OnPasskeysChanged(
     const std::vector<webauthn::PasskeyModelChange>& changes) {
-  if (model_->step() != Step::kConditionalMediation) {
+  if (model_->step() != Step::kPasskeyAutofill) {
     // Updating an in flight request is only supported for conditional UI.
     return;
   }
@@ -684,8 +679,7 @@ bool AuthenticatorRequestDialogController::is_request_complete() const {
 }
 
 void AuthenticatorRequestDialogController::StartFlow(
-    TransportAvailabilityInfo transport_availability,
-    bool use_conditional_mediation) {
+    TransportAvailabilityInfo transport_availability) {
   DCHECK(!started_);
   DCHECK_EQ(model_->step(), Step::kNotStarted);
   DCHECK_EQ(
@@ -695,7 +689,6 @@ void AuthenticatorRequestDialogController::StartFlow(
   started_ = true;
   transport_availability_ = std::move(transport_availability);
   UpdateModelForTransportAvailability();
-  use_conditional_mediation_ = use_conditional_mediation;
   // All recognised credentials that are "Chrome implemented" are from the
   // same source, i.e. a platform never has two Chrome implemented platform
   // authenticators.
@@ -719,16 +712,16 @@ void AuthenticatorRequestDialogController::StartFlow(
   PopulateMechanisms();
   model_->priority_mechanism_index = IndexOfPriorityMechanism();
 
-  if (use_conditional_mediation_) {
+  if (ui_presentation_ == UIPresentation::kAutofill) {
     // This is a conditional mediation request.
-    StartConditionalMediationRequest();
+    StartAutofillRequest();
   } else {
     StartGuidedFlowForMostLikelyTransportOrShowMechanismSelection();
   }
 }
 
 void AuthenticatorRequestDialogController::TransitionToModalWebAuthnRequest() {
-  DCHECK_EQ(model_->step(), Step::kConditionalMediation);
+  DCHECK_EQ(model_->step(), Step::kPasskeyAutofill);
 
   // Dispatch requests to any plugged in authenticators.
   for (auto& authenticator :
@@ -1004,15 +997,15 @@ void AuthenticatorRequestDialogController::
 
   ephemeral_state_.dispatched_platform_authenticator_type_ =
       platform_authenticator_it->type;
-  bool is_make_credential =
-      transport_availability_.request_type == FidoRequestType::kMakeCredential;
   if (platform_authenticator_it->type == AuthenticatorType::kICloudKeychain) {
-    webauthn::user_actions::RecordICloudShown(is_make_credential);
+    webauthn::user_actions::RecordICloudShown(
+        transport_availability_.request_type);
   } else if (platform_authenticator_it->type == AuthenticatorType::kTouchID) {
     webauthn::user_actions::RecordChromeProfileAuthenticatorShown(
-        is_make_credential);
+        transport_availability_.request_type);
   } else if (platform_authenticator_it->type == AuthenticatorType::kWinNative) {
-    webauthn::user_actions::RecordWindowsHelloShown(is_make_credential);
+    webauthn::user_actions::RecordWindowsHelloShown(
+        transport_availability_.request_type);
   }
 
   DispatchRequestAsync(&*platform_authenticator_it);
@@ -1020,7 +1013,7 @@ void AuthenticatorRequestDialogController::
 
 void AuthenticatorRequestDialogController::OnTransportAvailabilityChanged(
     TransportAvailabilityInfo transport_availability) {
-  if (model_->step() != Step::kConditionalMediation) {
+  if (model_->step() != Step::kPasskeyAutofill) {
     // Updating an in flight request is only supported for conditional UI.
     return;
   }
@@ -1030,7 +1023,7 @@ void AuthenticatorRequestDialogController::OnTransportAvailabilityChanged(
   model_->mechanisms.clear();
   PopulateMechanisms();
   model_->priority_mechanism_index = IndexOfPriorityMechanism();
-  StartConditionalMediationRequest();
+  StartAutofillRequest();
 }
 
 void AuthenticatorRequestDialogController::OnPhoneContactFailed(
@@ -1265,7 +1258,7 @@ void AuthenticatorRequestDialogController::OnAuthenticatorStorageFull() {
 }
 
 void AuthenticatorRequestDialogController::OnUserConsentDenied() {
-  if (use_conditional_mediation_) {
+  if (ui_presentation_ == UIPresentation::kAutofill) {
     // Do not show a page-modal retry error sheet if the user cancelled out of
     // their platform authenticator during a conditional UI request.
     // Instead, retry silently.
@@ -1313,7 +1306,7 @@ void AuthenticatorRequestDialogController::OnUserConsentDenied() {
 
 bool AuthenticatorRequestDialogController::OnWinUserCancelled() {
 #if BUILDFLAG(IS_WIN)
-  if (use_conditional_mediation_) {
+  if (ui_presentation_ == UIPresentation::kAutofill) {
     // Do not show a page-modal retry error sheet if the user cancelled out of
     // their platform authenticator during a conditional UI request.
     // Instead, retry silently.
@@ -1667,8 +1660,8 @@ void AuthenticatorRequestDialogController::RecordMacOsStartedHistogram() {
                     kStartedCreateForProfileAuthenticatorICloudDriveDisabled;
     }
   } else if (transport_availability_.request_type ==
-                 FidoRequestType::kGetAssertion &&
-             !use_conditional_mediation_) {
+                 device::FidoRequestType::kGetAssertion &&
+             ui_presentation_ == UIPresentation::kModal) {
     const bool profile =
         transport_availability_.has_platform_authenticator_credential ==
         device::FidoRequestHandlerBase::RecognizedCredential::
@@ -1748,6 +1741,16 @@ void AuthenticatorRequestDialogController::set_ambient_credential_types(
   ambient_credential_types_ = types;
 }
 
+content::AuthenticatorRequestClientDelegate::UIPresentation
+AuthenticatorRequestDialogController::ui_presentation() const {
+  return ui_presentation_;
+}
+
+void AuthenticatorRequestDialogController::set_ui_presentation(
+    UIPresentation modality) {
+  ui_presentation_ = modality;
+}
+
 base::WeakPtr<AuthenticatorRequestDialogController>
 AuthenticatorRequestDialogController::GetWeakPtr() {
   return weak_factory_.GetWeakPtr();
@@ -1772,7 +1775,7 @@ void AuthenticatorRequestDialogController::StartGuidedFlowForTransport(
   DCHECK(model_->step() == Step::kMechanismSelection ||
          model_->step() == Step::kUsbInsertAndActivate ||
          model_->step() == Step::kCableActivate ||
-         model_->step() == Step::kConditionalMediation ||
+         model_->step() == Step::kPasskeyAutofill ||
          model_->step() == Step::kCreatePasskey ||
          model_->step() == Step::kPreSelectAccount ||
          model_->step() == Step::kSelectPriorityMechanism ||
@@ -1888,7 +1891,7 @@ void AuthenticatorRequestDialogController::ContactPhoneAfterBleIsPowered(
   SetCurrentStep(Step::kCableActivate);
 }
 
-void AuthenticatorRequestDialogController::StartConditionalMediationRequest() {
+void AuthenticatorRequestDialogController::StartAutofillRequest() {
   model_->creds = transport_availability_.recognized_credentials;
 
   auto* render_frame_host = GetRenderFrameHost();
@@ -1972,7 +1975,7 @@ void AuthenticatorRequestDialogController::StartConditionalMediationRequest() {
         ChromeWebAuthnCredentialsDelegate::SecurityKeyOrHybridFlowAvailable(
             is_security_key_or_hybrid_flow_available));
   }
-  SetCurrentStep(Step::kConditionalMediation);
+  SetCurrentStep(Step::kPasskeyAutofill);
 }
 
 void AuthenticatorRequestDialogController::DispatchRequestAsync(
@@ -2080,13 +2083,11 @@ void AuthenticatorRequestDialogController::PopulateMechanisms() {
   const bool is_get_assertion =
       transport_availability_.request_type == FidoRequestType::kGetAssertion;
   SetPriorityPhoneIndex(GetIndexOfMostRecentlyUsedPhoneFromSync());
-  bool list_phone_passkeys =
-      is_get_assertion && priority_phone_index_ &&
-      base::FeatureList::IsEnabled(syncer::kSyncWebauthnCredentials);
+  bool list_phone_passkeys = is_get_assertion && priority_phone_index_;
   bool specific_phones_listed = false;
   bool specific_local_passkeys_listed = false;
   bool enclave_passkeys_shown = false;
-  if (is_get_assertion && !use_conditional_mediation_) {
+  if (is_get_assertion && ui_presentation_ == UIPresentation::kModal) {
     // List passkeys instead of mechanisms for platform & GPM authenticators.
     for (const auto& cred : transport_availability_.recognized_credentials) {
       if (cred.source == AuthenticatorType::kPhone && !list_phone_passkeys) {
@@ -2128,7 +2129,7 @@ void AuthenticatorRequestDialogController::PopulateMechanisms() {
   // platform credential directly. This is true for both conditional requests
   // and the new passkey selector UI.
   bool did_enumerate_local_passkeys = false;
-  if (use_conditional_mediation_) {
+  if (ui_presentation_ == UIPresentation::kAutofill) {
     did_enumerate_local_passkeys = true;
   } else if (is_get_assertion) {
     switch (transport_availability_.has_platform_authenticator_credential) {
@@ -2199,7 +2200,8 @@ void AuthenticatorRequestDialogController::PopulateMechanisms() {
   }
   if (enclave_enabled_status_ ==
           EnclaveEnabledStatus::kEnabledAndReauthNeeded &&
-      !use_conditional_mediation_ && model_->relying_party_id != "google.com") {
+      ui_presentation_ == UIPresentation::kModal &&
+      model_->relying_party_id != "google.com") {
     // Show a button that lets the user sign in again to restore sync. This
     // cancels the request, so we can't do it for conditional UI requests.
     // TODO(crbug.com/345413738): add support for conditional UI.
@@ -2275,7 +2277,8 @@ void AuthenticatorRequestDialogController::PopulateMechanisms() {
         transport_availability_.has_icloud_keychain_credential ==
             device::FidoRequestHandlerBase::RecognizedCredential::
                 kNoRecognizedCredential &&
-        paired_phones_.size() == 1 && !use_conditional_mediation_ &&
+        paired_phones_.size() == 1 &&
+        ui_presentation_ == UIPresentation::kModal &&
         transport_availability_.is_only_hybrid_or_internal;
     if (skip_to_phone_confirmation) {
       FIDO_LOG(EVENT)
@@ -2347,7 +2350,7 @@ AuthenticatorRequestDialogController::IndexOfPriorityMechanism() {
   // button.
   if (enclave_enabled_status_ ==
           EnclaveEnabledStatus::kEnabledAndReauthNeeded &&
-      !use_conditional_mediation_) {
+      ui_presentation_ == UIPresentation::kModal) {
     return std::nullopt;
   }
 

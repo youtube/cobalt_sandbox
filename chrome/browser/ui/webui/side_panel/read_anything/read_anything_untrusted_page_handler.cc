@@ -523,7 +523,7 @@ void ReadAnythingUntrustedPageHandler::GetVoicePackInfo(
       base::BindOnce(
           &OnGetPackStateResponse,
           base::BindOnce(&ReadAnythingUntrustedPageHandler::OnGetVoicePackInfo,
-                         weak_factory_.GetSafeRef())));
+                         weak_factory_.GetWeakPtr())));
 #else
   TtsController::GetInstance()->LanguageStatusRequest(
       profile_, language, string_constants::kReadingModeName,
@@ -539,11 +539,21 @@ void ReadAnythingUntrustedPageHandler::InstallVoicePack(
       base::BindOnce(
           &OnInstallPackResponse,
           base::BindOnce(&ReadAnythingUntrustedPageHandler::OnGetVoicePackInfo,
-                         weak_factory_.GetSafeRef())));
+                         weak_factory_.GetWeakPtr())));
 #else
   TtsController::GetInstance()->InstallLanguageRequest(
       profile_, language, string_constants::kReadingModeName,
       static_cast<int>(tts_engine_events::TtsClientSource::CHROMEFEATURE));
+#endif
+}
+
+void ReadAnythingUntrustedPageHandler::UninstallVoice(
+    const std::string& language) {
+#if !BUILDFLAG(IS_CHROMEOS_ASH)
+  TtsController::GetInstance()->UninstallLanguageRequest(
+      profile_, language, string_constants::kReadingModeName,
+      static_cast<int>(tts_engine_events::TtsClientSource::CHROMEFEATURE),
+      /*uninstall_immediately=*/false);
 #endif
 }
 

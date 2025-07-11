@@ -15,6 +15,7 @@
 #include "base/metrics/user_metrics.h"
 #include "base/no_destructor.h"
 #include "base/trace_event/trace_event.h"
+#include "components/guest_view/buildflags/buildflags.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/render_process_host.h"
@@ -41,7 +42,6 @@
 #include "extensions/browser/extension_registry.h"
 #include "extensions/browser/extensions_browser_client.h"
 #include "extensions/browser/process_map.h"
-#include "extensions/buildflags/buildflags.h"
 #include "extensions/common/api/web_request/web_request_activity_log_constants.h"
 #include "extensions/common/error_utils.h"
 #include "extensions/common/extension_id.h"
@@ -1594,6 +1594,19 @@ void WebRequestEventRouter::DispatchEventToListeners(
     cross_active_listeners = &cross_data.active_listeners[event_name];
     cross_inactive_listeners = &cross_data.inactive_listeners[event_name];
   }
+
+  UMA_HISTOGRAM_COUNTS_10000("Extensions.ListenersContainerSize.Global",
+                             listener_ids ? listener_ids->size() : 0);
+  UMA_HISTOGRAM_COUNTS_10000("Extensions.ListenersContainerSize.Active",
+                             active_listeners.size());
+  UMA_HISTOGRAM_COUNTS_10000("Extensions.ListenersContainerSize.Inactive",
+                             inactive_listeners.size());
+  UMA_HISTOGRAM_COUNTS_10000(
+      "Extensions.ListenersContainerSize.CrossActive",
+      cross_active_listeners ? cross_active_listeners->size() : 0);
+  UMA_HISTOGRAM_COUNTS_10000(
+      "Extensions.ListenersContainerSize.CrossInactive",
+      cross_inactive_listeners ? cross_inactive_listeners->size() : 0);
 
   for (const EventListener::ID& id : *listener_ids) {
     // Look for the event listener in the different listener sources.

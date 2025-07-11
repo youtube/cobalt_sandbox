@@ -18,12 +18,12 @@
 namespace ash {
 
 enum class PickerLayoutType;
-class PickerSearchFieldView;
+class QuickInsertSearchFieldView;
 class PickerPageView;
 class SystemShadow;
 
-// View for the main Picker container, which consists of the search field and
-// the main contents (e.g. search results page).
+// View for the main Quick Insert container, which consists of the search field
+// and the main contents (e.g. search results page).
 class ASH_EXPORT PickerMainContainerView
     : public views::View,
       public PickerTraversableItemContainer {
@@ -48,8 +48,8 @@ class ASH_EXPORT PickerMainContainerView
   views::View* GetItemRightOf(views::View* item) override;
   bool ContainsItem(views::View* item) override;
 
-  PickerSearchFieldView* AddSearchFieldView(
-      std::unique_ptr<PickerSearchFieldView> search_field_view);
+  QuickInsertSearchFieldView* AddSearchFieldView(
+      std::unique_ptr<QuickInsertSearchFieldView> search_field_view);
 
   // Creates and adds the contents view, which will contain the main contents of
   // the container (e.g. search results page).
@@ -66,7 +66,7 @@ class ASH_EXPORT PickerMainContainerView
  private:
   std::unique_ptr<SystemShadow> shadow_;
 
-  raw_ptr<PickerSearchFieldView> search_field_view_ = nullptr;
+  raw_ptr<QuickInsertSearchFieldView> search_field_view_ = nullptr;
   raw_ptr<PickerContentsView> contents_view_ = nullptr;
 
   // The currently visible page of `contents_view_`, or nullptr if there is no

@@ -29,6 +29,7 @@
 #include "base/test/gmock_callback_support.h"
 #include "base/test/gmock_move_support.h"
 #include "base/test/metrics/histogram_tester.h"
+#include "base/test/metrics/user_action_tester.h"
 #include "base/test/scoped_feature_list.h"
 #include "base/test/task_environment.h"
 #include "base/time/time.h"
@@ -835,7 +836,7 @@ class BrowserAutofillManagerTest : public testing::Test {
         std::make_unique<TestCreditCardSaveManager>(&autofill_client_);
     credit_card_save_manager->SetCreditCardUploadEnabled(true);
     autofill_client_.set_test_form_data_importer(
-        std::make_unique<autofill::TestFormDataImporter>(
+        std::make_unique<TestFormDataImporter>(
             &autofill_client_, std::move(credit_card_save_manager),
             std::make_unique<IbanSaveManager>(&autofill_client_), "en-US"));
 
@@ -973,13 +974,17 @@ class BrowserAutofillManagerTest : public testing::Test {
       AutofillTriggerDetails trigger_details = {
           .trigger_source = AutofillTriggerSource::kPopup}) {
     std::vector<FormFieldData> filled_fields;
-    std::vector<FieldGlobalId> global_ids;
-    for (const auto& field : input_form.fields()) {
-      global_ids.push_back(field.global_id());
-    }
     EXPECT_CALL(*autofill_driver_, ApplyFormAction)
-        .WillOnce(
-            DoAll(SaveArgElementsTo<2>(&filled_fields), Return(global_ids)));
+        .WillOnce([&filled_fields](
+                      mojom::FormActionType action_type,
+                      mojom::ActionPersistence action_persistence,
+                      base::span<const FormFieldData> data,
+                      const url::Origin& triggered_origin,
+                      const base::flat_map<FieldGlobalId, FieldType>&) {
+          filled_fields = std::vector<FormFieldData>(data.begin(), data.end());
+          return base::MakeFlatSet<FieldGlobalId>(data, {},
+                                                  &FormFieldData::global_id);
+        });
     FillAutofillFormData(input_form, input_field, guid, trigger_details);
     FormData result_form = input_form;
     // Copy the filled data into the form.
@@ -1123,10 +1128,10 @@ class BrowserAutofillManagerTest : public testing::Test {
     test_api(*browser_autofill_manager_)
         .set_single_field_fill_router(
             std::make_unique<NiceMock<MockSingleFieldFillRouter>>(
-                autofill_client_.GetMockAutocompleteHistoryManager(),
+                autofill_client_.GetAutocompleteHistoryManager(),
                 autofill_client_.GetPaymentsAutofillClient()->GetIbanManager(),
                 autofill_client_.GetPaymentsAutofillClient()
-                    ->GetMockMerchantPromoCodeManager()));
+                    ->GetMerchantPromoCodeManager()));
     test_api(*browser_autofill_manager_)
         .SetExternalDelegate(std::make_unique<TestAutofillExternalDelegate>(
             browser_autofill_manager_.get(),
@@ -3590,21 +3595,21 @@ TEST_F(BrowserAutofillManagerTest,
 
 TEST_F(BrowserAutofillManagerTest,
        OnCreditCardFetchedSuccessfully_VirtualCreditCard) {
-  const CreditCard virtual_card = test::WithCvc(test::GetVirtualCard());
+  const CreditCard filled_card = test::WithCvc(test::GetVirtualCard());
   using Options = FilledCardInformationBubbleOptions;
   EXPECT_CALL(
       payments_client(),
       OnCardDataAvailable(
           AllOf(Field(&Options::masked_card_name,
-                      virtual_card.CardNameForAutofillDisplay()),
+                      filled_card.CardNameForAutofillDisplay()),
                 Field(&Options::masked_card_number_last_four,
-                      virtual_card.ObfuscatedNumberWithVisibleLastFourDigits()),
-                Field(&Options::virtual_card_cvc, virtual_card.cvc()),
-                Field(&Options::virtual_card, virtual_card))));
+                      filled_card.ObfuscatedNumberWithVisibleLastFourDigits()),
+                Field(&Options::cvc, filled_card.cvc()),
+                Field(&Options::filled_card, filled_card))));
 
-  browser_autofill_manager_->OnCreditCardFetchedSuccessfully(virtual_card);
+  browser_autofill_manager_->OnCreditCardFetchedSuccessfully(filled_card);
   EXPECT_THAT(test_api(form_data_importer()).fetched_card_instrument_id(),
-              testing::Optional(virtual_card.instrument_id()));
+              testing::Optional(filled_card.instrument_id()));
 }
 
 // Test that the importing logic is called on form submit.
@@ -3850,7 +3855,7 @@ TEST_F(BrowserAutofillManagerWithLogEventsTest, LogEventsAtFormSubmitted) {
       &autofill_field));
   ASSERT_TRUE(form_structure);
 
-  const std::vector<AutofillField::FieldLogEventType>& focus_field_log_events =
+  const std::vector<AutofillField::FieldLogEventType> focus_field_log_events =
       autofill_field->field_log_events();
   ASSERT_EQ(u"First Name", autofill_field->parseable_label());
   const TriggerFillFieldLogEvent* trigger_fill_field_log_event =
@@ -4421,8 +4426,7 @@ TEST_F(BrowserAutofillManagerWithLogEventsTest,
   // Simulate having seen this form on page load.
   auto form_structure_instance = std::make_unique<FormStructure>(form);
   FormStructure* form_structure = form_structure_instance.get();
-  form_structure->DetermineHeuristicTypes(GeoIpCountryCode(""), nullptr,
-                                          nullptr);
+  form_structure->DetermineHeuristicTypes(GeoIpCountryCode(""), nullptr);
   browser_autofill_manager_->AddSeenFormStructure(
       std::move(form_structure_instance));
 
@@ -4476,8 +4480,7 @@ TEST_F(BrowserAutofillManagerWithLogEventsTest,
   auto form_structure_instance = std::make_unique<FormStructure>(form);
   // This pointer is valid as long as autofill manager lives.
   FormStructure* form_structure = form_structure_instance.get();
-  form_structure->DetermineHeuristicTypes(GeoIpCountryCode(""), nullptr,
-                                          nullptr);
+  form_structure->DetermineHeuristicTypes(GeoIpCountryCode(""), nullptr);
   browser_autofill_manager_->AddSeenFormStructure(
       std::move(form_structure_instance));
 
@@ -4588,8 +4591,7 @@ TEST_F(BrowserAutofillManagerWithLogEventsTest,
   auto form_structure_instance = std::make_unique<FormStructure>(form);
   // This pointer is valid as long as autofill manager lives.
   FormStructure* form_structure = form_structure_instance.get();
-  form_structure->DetermineHeuristicTypes(GeoIpCountryCode(""), nullptr,
-                                          nullptr);
+  form_structure->DetermineHeuristicTypes(GeoIpCountryCode(""), nullptr);
   browser_autofill_manager_->AddSeenFormStructure(
       std::move(form_structure_instance));
 
@@ -4700,10 +4702,10 @@ TEST_F(BrowserAutofillManagerTest, FormSubmittedAutocompleteEnabled) {
 TEST_F(BrowserAutofillManagerTest, ValuePatternsMetric) {
   struct ValuePatternTestCase {
     const char* value;
-    autofill::ValuePatternsMetric pattern;
+    ValuePatternsMetric pattern;
   } kTestCases[] = {
-      {"user@okaxis", autofill::ValuePatternsMetric::kUpiVpa},
-      {"IT60X0542811101000000123456", autofill::ValuePatternsMetric::kIban}};
+      {"user@okaxis", ValuePatternsMetric::kUpiVpa},
+      {"IT60X0542811101000000123456", ValuePatternsMetric::kIban}};
   for (const ValuePatternTestCase test_case : kTestCases) {
     // Set up our form data.
     FormData form;
@@ -4928,8 +4930,7 @@ TEST_F(BrowserAutofillManagerTest, OnLoadedServerPredictionsFromApi) {
   auto form_structure_instance = std::make_unique<FormStructure>(form);
   // This pointer is valid as long as autofill manager lives.
   FormStructure* form_structure = form_structure_instance.get();
-  form_structure->DetermineHeuristicTypes(GeoIpCountryCode(""), nullptr,
-                                          nullptr);
+  form_structure->DetermineHeuristicTypes(GeoIpCountryCode(""), nullptr);
   browser_autofill_manager_->AddSeenFormStructure(
       std::move(form_structure_instance));
 
@@ -4949,8 +4950,7 @@ TEST_F(BrowserAutofillManagerTest, OnLoadedServerPredictionsFromApi) {
   auto form_structure_instance2 = std::make_unique<FormStructure>(form2);
   // This pointer is valid as long as autofill manager lives.
   FormStructure* form_structure2 = form_structure_instance2.get();
-  form_structure2->DetermineHeuristicTypes(GeoIpCountryCode(""), nullptr,
-                                           nullptr);
+  form_structure2->DetermineHeuristicTypes(GeoIpCountryCode(""), nullptr);
   browser_autofill_manager_->AddSeenFormStructure(
       std::move(form_structure_instance2));
 
@@ -5018,8 +5018,7 @@ TEST_F(BrowserAutofillManagerTest, OnLoadedServerPredictions_ResetManager) {
   // Simulate having seen this form on page load.
   // |form_structure| will be owned by |browser_autofill_manager_|.
   auto form_structure = std::make_unique<FormStructure>(form);
-  form_structure->DetermineHeuristicTypes(GeoIpCountryCode(""), nullptr,
-                                          nullptr);
+  form_structure->DetermineHeuristicTypes(GeoIpCountryCode(""), nullptr);
   std::vector<FormSignature> signatures =
       test::GetEncodedSignatures(*form_structure);
   browser_autofill_manager_->AddSeenFormStructure(std::move(form_structure));
@@ -5070,8 +5069,7 @@ TEST_F(BrowserAutofillManagerTest, DetermineHeuristicsWithOverallPrediction) {
   FormStructure* form_structure = [&] {
     auto form_structure = std::make_unique<FormStructure>(form);
     FormStructure* ptr = form_structure.get();
-    form_structure->DetermineHeuristicTypes(GeoIpCountryCode(""), nullptr,
-                                            nullptr);
+    form_structure->DetermineHeuristicTypes(GeoIpCountryCode(""), nullptr);
     browser_autofill_manager_->AddSeenFormStructure(std::move(form_structure));
     return ptr;
   }();
@@ -5851,8 +5849,7 @@ TEST_F(BrowserAutofillManagerTest,
                                        FormControlType::kInputText)});
 
   auto form_structure = std::make_unique<FormStructure>(form);
-  form_structure->DetermineHeuristicTypes(GeoIpCountryCode(""), nullptr,
-                                          nullptr);
+  form_structure->DetermineHeuristicTypes(GeoIpCountryCode(""), nullptr);
   // Make sure the form can not be autofilled now.
   ASSERT_EQ(0u, form_structure->autofill_count());
   for (size_t idx = 0; idx < form_structure->field_count(); ++idx) {
@@ -6814,8 +6811,7 @@ TEST_F(BrowserAutofillManagerTest, AutocompleteMetrics) {
   }
   // Override the types and simulate seeing the form on page load.
   auto form_structure = std::make_unique<FormStructure>(form);
-  form_structure->DetermineHeuristicTypes(GeoIpCountryCode(""), nullptr,
-                                          nullptr);
+  form_structure->DetermineHeuristicTypes(GeoIpCountryCode(""), nullptr);
   test_api(*form_structure).SetFieldTypes(heuristic_types, server_types);
   browser_autofill_manager_->AddSeenFormStructure(std::move(form_structure));
 
@@ -7163,12 +7159,12 @@ TEST_F(BrowserAutofillManagerTest, ComposeSuggestionsOnFocusWithoutClick) {
   FormsSeen({form});
 
   EXPECT_CALL(single_field_fill_router(), OnGetSingleFieldSuggestions).Times(0);
-  EXPECT_CALL(compose_delegate,
-              GetSuggestion(_,
-                            Property(&FormFieldData::global_id,
-                                     Eq(form.fields()[3].global_id())),
-                            autofill::AutofillSuggestionTriggerSource::
-                                kTextareaFocusedWithoutClick))
+  EXPECT_CALL(
+      compose_delegate,
+      GetSuggestion(
+          _,
+          Property(&FormFieldData::global_id, Eq(form.fields()[3].global_id())),
+          AutofillSuggestionTriggerSource::kTextareaFocusedWithoutClick))
       .WillOnce(Return(
           Suggestion(u"Help me write", SuggestionType::kComposeResumeNudge)));
   GetAutofillSuggestions(
@@ -7198,7 +7194,7 @@ TEST_F(BrowserAutofillManagerTest, ComposeSuggestionsAreQueriedForTextareas) {
       GetSuggestion(
           _,
           Property(&FormFieldData::global_id, Eq(form.fields()[0].global_id())),
-          autofill::AutofillSuggestionTriggerSource::kTextFieldDidChange))
+          AutofillSuggestionTriggerSource::kTextFieldDidChange))
       .WillOnce(Return(
           Suggestion(u"Help me write", SuggestionType::kComposeResumeNudge)));
   GetAutofillSuggestions(form, form.fields()[0]);
@@ -7213,8 +7209,7 @@ TEST_F(BrowserAutofillManagerTest, ShowAutofillAiSuggestions) {
   NiceMock<MockAutofillAiDelegate> delegate;
   ON_CALL(autofill_client_, GetAutofillAiDelegate)
       .WillByDefault(Return(&delegate));
-  ON_CALL(delegate, IsPredictionImprovementsEligible)
-      .WillByDefault(Return(true));
+  ON_CALL(delegate, IsEligibleForAutofillAi).WillByDefault(Return(true));
   EXPECT_CALL(delegate, HasDataStored)
       .WillOnce(RunOnceCallback<0>(AutofillAiDelegate::HasData(true)));
   EXPECT_CALL(delegate, GetSuggestions)
@@ -7239,8 +7234,7 @@ TEST_F(BrowserAutofillManagerTest, ShowAutofillAiIPH) {
   NiceMock<MockAutofillAiDelegate> delegate;
   ON_CALL(autofill_client_, GetAutofillAiDelegate)
       .WillByDefault(Return(&delegate));
-  ON_CALL(delegate, IsPredictionImprovementsEligible)
-      .WillByDefault(Return(false));
+  ON_CALL(delegate, IsEligibleForAutofillAi).WillByDefault(Return(false));
   ON_CALL(delegate, ShouldDisplayIph).WillByDefault(Return(true));
 
   EXPECT_CALL(autofill_client_,
@@ -7279,13 +7273,13 @@ TEST_F(BrowserAutofillManagerTest,
   adm.ClearProfiles();
   ASSERT_TRUE(adm.GetProfiles().empty());
   EXPECT_CALL(delegate, MaybeImportForm)
-      .WillOnce([](std::unique_ptr<autofill::FormStructure> form,
-                   base::OnceCallback<void(
-                       std::unique_ptr<autofill::FormStructure> form,
-                       bool autofill_ai_shows_bubble)> callback) {
-        std::move(callback).Run(std::move(form),
-                                /*autofill_ai_shows_bubble=*/true);
-      });
+      .WillOnce(
+          [](std::unique_ptr<FormStructure> form,
+             base::OnceCallback<void(std::unique_ptr<FormStructure> form,
+                                     bool autofill_ai_shows_bubble)> callback) {
+            std::move(callback).Run(std::move(form),
+                                    /*autofill_ai_shows_bubble=*/true);
+          });
   FormSubmitted(response_data);
   EXPECT_TRUE(adm.GetProfiles().empty());
 }
@@ -7315,13 +7309,13 @@ TEST_F(BrowserAutofillManagerTest,
   adm.ClearProfiles();
   ASSERT_TRUE(adm.GetProfiles().empty());
   EXPECT_CALL(delegate, MaybeImportForm)
-      .WillOnce([](std::unique_ptr<autofill::FormStructure> form,
-                   base::OnceCallback<void(
-                       std::unique_ptr<autofill::FormStructure> form,
-                       bool autofill_ai_shows_bubble)> callback) {
-        std::move(callback).Run(std::move(form),
-                                /*autofill_ai_shows_bubble=*/false);
-      });
+      .WillOnce(
+          [](std::unique_ptr<FormStructure> form,
+             base::OnceCallback<void(std::unique_ptr<FormStructure> form,
+                                     bool autofill_ai_shows_bubble)> callback) {
+            std::move(callback).Run(std::move(form),
+                                    /*autofill_ai_shows_bubble=*/false);
+          });
   FormSubmitted(response_data);
   EXPECT_FALSE(adm.GetProfiles().empty());
 }
@@ -8507,6 +8501,7 @@ TEST_F(BrowserAutofillManagerPlusAddressTest,
 // without the email override is filled.
 TEST_F(BrowserAutofillManagerPlusAddressTest,
        FillsEmailOverrideAndShowsUserNotification) {
+  base::UserActionTester user_action_tester;
   // Set up gaia email.
   const std::string gaia_email = "theking@gmail.com";
   autofill_client_.identity_test_environment().MakePrimaryAccountAvailable(
@@ -8567,7 +8562,9 @@ TEST_F(BrowserAutofillManagerPlusAddressTest,
   // the popup since we've selected an option.
   external_delegate()->DidAcceptSuggestion(
       external_delegate()->suggestions().front(), {});
-
+  EXPECT_EQ(user_action_tester.GetActionCount(
+                "PlusAddresses.FillAddressSuggestionAccepted"),
+            1);
   // Call the undo operation.
   ASSERT_TRUE(undo_callback);
   std::move(undo_callback).Run();

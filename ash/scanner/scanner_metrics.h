@@ -5,9 +5,53 @@
 #ifndef ASH_SCANNER_SCANNER_METRICS_H_
 #define ASH_SCANNER_SCANNER_METRICS_H_
 
+#include <string_view>
+
 #include "ash/ash_export.h"
 
 namespace ash {
+
+inline constexpr std::string_view
+    kScannerFeatureTimerExecutePopulatedNewCalendarEventAction =
+        "Ash.ScannerFeature.Timer.ExecutePopulatedNewCalendarEventAction";
+
+inline constexpr std::string_view
+    kScannerFeatureTimerExecutePopulatedNewContactAction =
+        "Ash.ScannerFeature.Timer.ExecutePopulatedNewContactAction";
+
+inline constexpr std::string_view
+    kScannerFeatureTimerExecutePopulatedNewGoogleSheetAction =
+        "Ash.ScannerFeature.Timer.ExecutePopulatedNewGoogleSheetAction";
+
+inline constexpr std::string_view
+    kScannerFeatureTimerExecutePopulatedNewGoogleDocAction =
+        "Ash.ScannerFeature.Timer.ExecutePopulatedNewGoogleDocAction";
+
+inline constexpr std::string_view
+    kScannerFeatureTimerExecutePopulatedNewCopyToClipboardAction =
+        "Ash.ScannerFeature.Timer.ExecutePopulatedNewCopyToClipboardAction";
+
+inline constexpr std::string_view kScannerFeatureTimerFetchActionsForImage =
+    "Ash.ScannerFeature.Timer.FetchActionsForImage";
+
+inline constexpr std::string_view
+    kScannerFeatureTimerPopulateNewCalendarEventAction =
+        "Ash.ScannerFeature.Timer.PopulateNewCalendarEventAction";
+
+inline constexpr std::string_view kScannerFeatureTimerPopulateNewContactAction =
+    "Ash.ScannerFeature.Timer.PopulateNewContactAction";
+
+inline constexpr std::string_view
+    kScannerFeatureTimerPopulateNewGoogleSheetAction =
+        "Ash.ScannerFeature.Timer.PopulateNewGoogleSheetAction";
+
+inline constexpr std::string_view
+    kScannerFeatureTimerPopulateNewGoogleDocAction =
+        "Ash.ScannerFeature.Timer.PopulateNewGoogleDocAction";
+
+inline constexpr std::string_view
+    kScannerFeatureTimerPopulateNewCopyToClipboardAction =
+        "Ash.ScannerFeature.Timer.PopulateNewCopyToClipboardAction";
 
 // Enum for histogram. Stores what state the user is in.
 // LINT.IfChange(ScannerFeatureUserState)
@@ -21,20 +65,25 @@ enum class ScannerFeatureUserState {
   kNoActionsDetected,
   kNewCalendarEventActionDetected,
   kNewCalendarEventActionFinishedSuccessfully,
-  kNewCalendarEventActionFailed,
+  kNewCalendarEventActionPopulationFailed,
   kNewContactActionDetected,
   kNewContactActionFinishedSuccessfully,
-  kNewContactActionFailed,
+  kNewContactActionPopulationFailed,
   kNewGoogleSheetActionDetected,
   kNewGoogleSheetActionFinishedSuccessfully,
-  kNewGoogleSheetActionFailed,
+  kNewGoogleSheetActionPopulationFailed,
   kNewGoogleDocActionDetected,
   kNewGoogleDocActionFinishedSuccessfully,
-  kNewGoogleDocActionFailed,
+  kNewGoogleDocActionPopulationFailed,
   kCopyToClipboardActionDetected,
   kCopyToClipboardActionFinishedSuccessfully,
-  kCopyToClipboardActionFailed,
-  kMaxValue = kCopyToClipboardActionFailed,
+  kCopyToClipboardActionPopulationFailed,
+  kNewCalendarEventPopulatedActionExecutionFailed,
+  kNewContactPopulatedActionExecutionFailed,
+  kNewGoogleSheetPopulatedActionExecutionFailed,
+  kNewGoogleDocPopulatedActionExecutionFailed,
+  kCopyToClipboardPopulatedActionExecutionFailed,
+  kMaxValue = kCopyToClipboardPopulatedActionExecutionFailed,
 };
 // LINT.ThenChange(//tools/metrics/histograms/metadata/ash/enums.xml:ScannerFeatureUserState)
 

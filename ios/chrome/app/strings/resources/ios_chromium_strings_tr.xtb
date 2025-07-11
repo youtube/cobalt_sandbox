@@ -15,6 +15,7 @@
 <translation id="1383876407941801731">Ara</translation>
 <translation id="1423007117030725713">Yeni bir Chromium sekmesinde arama başlatır.</translation>
 <translation id="1431818719585918472">Chromium'un Gizli sekmelerinizi kapatmasına izin verin.</translation>
+<translation id="1451665391191990528">Chromium'dan ayrıldığınızda açık olan gizli sekmeleri gizleyin</translation>
 <translation id="146407871188825689">iPad'de varsayılan olarak Chromium'u kullanın</translation>
 <translation id="1471084500615228555">Chromium'daki tarama verilerini sil</translation>
 <translation id="1472013873724362412">Hesabınız Chromium'da kullanılamıyor. Lütfen alan adı yöneticinizle iletişim kurun veya oturum açmak için normal bir Google Hesabı kullanın.</translation>
@@ -98,7 +99,7 @@ Hesap değiştirmeden önce birkaç dakika beklemeyi deneyin. Hesabı şimdi de�
 <translation id="3472200483164753384">Chromium Canary'de desteklenmiyor</translation>
 <translation id="347967311580159871">Veri kullanarak Chromium deneyiminizi iyileştiren daha fazla ayar görmek için <ph name="BEGIN_LINK" />Google Hizmetleri<ph name="END_LINK" />'ne gidin.</translation>
 <translation id="3512168799938877162">Şifreniz paylaşılamadı. İnternet bağlantınızı kontrol edin ve Chromium'da oturum açtığınızdan emin olun. Daha sonra tekrar deneyin.</translation>
-<translation id="3529798650269984835">"Chromium'u kapattığınızda gizli sekmeleri kilitleyin" seçeneğini etkinleştirin.</translation>
+<translation id="3529798650269984835">"Chromium'u kapattığınızda gizli sekmeler kilitlensin" seçeneğini etkinleştirin.</translation>
 <translation id="3567399274263440288">Chromium'dan en iyi şekilde yararlanmak için Google Hesabı'nızla Chromium'da oturum açın.</translation>
 <translation id="3581385059720151202">Görselleri Chromium'da ara</translation>
 <translation id="3594315078412605236">Chromium'daki ödeme yöntemlerini yönet</translation>
@@ -257,7 +258,7 @@ Sadece parolanıza sahip olan kişiler şifrelenmiş verilerinizi okuyabilir. Pa
 <translation id="7747820849741499258">Chromium'da ara</translation>
 <translation id="7762622637388462191">Chromium'dan çıktığınızda veya farklı bir uygulamaya geçtiğinizde gizli sekmelerinizi kilitleyin.</translation>
 <translation id="7763454117143368771">Tehlikeli sitelere karşı koruma altında kalmak ve şifrelerinizi güvende tutmak için varsayılan tarayıcınız olarak Chromium'u kullanın</translation>
-<translation id="7784950022329154821">Chromium'u kapattığınızda gizli sekmeleri kilitleyin</translation>
+<translation id="7784950022329154821">Chromium'u kapattığınızda Gizli sekmeler kilitlensin</translation>
 <translation id="78025249032851484">Chromium'unuz güncel değil.</translation>
 <translation id="7859018312476869945">Adres çubuğuna veya arama kutusuna yazdığınızda Chromium, yazdıklarınızı varsayılan arama motorunuza göndererek daha iyi öneriler görmenizi sağlar. Bu ayar Gizli modda kapalıdır.</translation>
 <translation id="7859432380288435856">Chromium, ziyaret ettiğiniz sitelerdeki kargo takip numaralarını algılar ve kargoyla ilgili güncellemeleri Yeni Sekme sayfasında gösterir. Verileriniz, bu özelliği sunmak ve Alışveriş'i herkes için iyileştirmek üzere Google ile paylaşılır.</translation>

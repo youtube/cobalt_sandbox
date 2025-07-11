@@ -16,6 +16,10 @@ import {TestBrowserProxy} from 'chrome-untrusted://webui-test/test_browser_proxy
  */
 export class TestLensOverlayPageHandler extends TestBrowserProxy implements
     LensPageHandlerInterface {
+  private browserLocale: string = '';
+  private sourceLanguagesToFetch: Language[] = [];
+  private targetLanguagesToFetch: Language[] = [];
+
   constructor() {
     super([
       'activityRequestedByOverlay',
@@ -141,10 +145,25 @@ export class TestLensOverlayPageHandler extends TestBrowserProxy implements
     this.methodCalled('maybeCloseTranslateFeaturePromo');
   }
 
-  fetchSupportedLanguages():
-      Promise<{sourceLanguages: Language[], targetLanguages: Language[]}> {
+  fetchSupportedLanguages(): Promise<{
+    browserLocale: string,
+    sourceLanguages: Language[],
+    targetLanguages: Language[],
+  }> {
     this.methodCalled('fetchSupportedLanguages');
-    return Promise.resolve({sourceLanguages: [], targetLanguages: []});
+    return Promise.resolve({
+      browserLocale: this.browserLocale,
+      sourceLanguages: structuredClone(this.sourceLanguagesToFetch),
+      targetLanguages: structuredClone(this.targetLanguagesToFetch),
+    });
+  }
+
+  setLanguagesToFetchForTesting(
+      locale: string, sourceLanguages: Language[],
+      targetLanguages: Language[]) {
+    this.browserLocale = locale;
+    this.sourceLanguagesToFetch = sourceLanguages;
+    this.targetLanguagesToFetch = targetLanguages;
   }
 }
 

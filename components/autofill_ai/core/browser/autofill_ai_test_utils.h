@@ -7,12 +7,12 @@
 
 #include <ostream>
 
-#include "components/autofill_ai/core/browser/autofill_ai_filling_engine.h"
+#include "components/autofill_ai/core/browser/suggestion/autofill_ai_model_executor.h"
 
 namespace autofill_ai {
 
 // For GTest.
-void PrintTo(const AutofillAiFillingEngine::Prediction& prediction,
+void PrintTo(const AutofillAiModelExecutor::Prediction& prediction,
              std::ostream* os);
 
 }  // namespace autofill_ai

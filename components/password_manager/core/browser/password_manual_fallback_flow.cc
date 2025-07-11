@@ -15,6 +15,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "components/autofill/core/browser/ui/popup_open_enums.h"
 #include "components/autofill/core/browser/ui/suggestion.h"
+#include "components/autofill/core/common/aliases.h"
 #include "components/password_manager/core/browser/form_fetcher_impl.h"
 #include "components/password_manager/core/browser/form_parsing/form_data_parser.h"
 #include "components/password_manager/core/browser/manage_passwords_referrer.h"
@@ -185,9 +186,10 @@ PasswordManualFallbackFlow::GetDriver() {
 
 void PasswordManualFallbackFlow::OnSuggestionsShown(
     base::span<const Suggestion> suggestions) {
+  const PasswordForm* const form = password_form_cache_->GetPasswordForm(
+      password_manager_driver_, field_id_);
   manual_fallback_metrics_recorder_->OnDidShowSuggestions(
-      password_form_cache_->GetPasswordForm(password_manager_driver_,
-                                            field_id_));
+      IsTriggerFieldRelevantInPasswordForm(form));
 }
 
 void PasswordManualFallbackFlow::OnSuggestionsHidden() {}
@@ -239,10 +241,14 @@ void PasswordManualFallbackFlow::DidAcceptSuggestion(
       password_manager_driver_, field_id_);
   manual_fallback_metrics_recorder_->OnDidFillSuggestion(
       IsTriggerFieldRelevantInPasswordForm(form));
-
+  base::UmaHistogramEnumeration("Autofill.Suggestions.AcceptedType",
+                                suggestion.type);
   base::UmaHistogramBoolean(
       "PasswordManager.ManualFallback.AcceptedSuggestion.SearchInputUsed",
       metadata.from_search_result);
+  base::UmaHistogramBoolean(
+      "PasswordManager.ManualFallback.AcceptedSuggestion.FromRootPopup",
+      metadata.sub_popup_level == 0);
 
   switch (suggestion.type) {
     case autofill::SuggestionType::kPasswordEntry: {
@@ -261,11 +267,15 @@ void PasswordManualFallbackFlow::DidAcceptSuggestion(
                   form->username_element_renderer_id,
                   form->password_element_renderer_id,
                   GetUsernameFromLabel(suggestion.labels[0][0].value),
-                  payload.password)));
+                  payload.password,
+                  autofill::AutofillSuggestionTriggerSource::
+                      kManualFallbackPasswords)));
       break;
     }
     case autofill::SuggestionType::kPasswordFieldByFieldFilling:
-      password_manager_driver_->FillField(suggestion.main_text.value);
+      password_manager_driver_->FillField(
+          suggestion.main_text.value,
+          autofill::AutofillSuggestionTriggerSource::kManualFallbackPasswords);
       break;
     case autofill::SuggestionType::kFillPassword: {
       Suggestion::PasswordSuggestionDetails payload =
@@ -276,7 +286,9 @@ void PasswordManualFallbackFlow::DidAcceptSuggestion(
               weak_ptr_factory_.GetWeakPtr(),
               base::BindOnce(&PasswordManagerDriver::FillField,
                              base::Unretained(password_manager_driver_),
-                             payload.password)));
+                             payload.password,
+                             autofill::AutofillSuggestionTriggerSource::
+                                 kManualFallbackPasswords)));
       break;
     }
     case autofill::SuggestionType::kViewPasswordDetails: {
@@ -359,8 +371,6 @@ void PasswordManualFallbackFlow::RunFlowImpl(
 
 void PasswordManualFallbackFlow::MaybeAuthenticateBeforeFilling(
     base::OnceClosure fill_fields) {
-  // TODO(b/324241248): Conditionally trigger consent dialog and fill
-  // password.
   CancelBiometricReauthIfOngoing();
   std::unique_ptr<device_reauth::DeviceAuthenticator> authenticator =
       password_client_->GetDeviceAuthenticator();

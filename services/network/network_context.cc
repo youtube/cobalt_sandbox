@@ -665,7 +665,8 @@ NetworkContext::NetworkContext(
       http_auth_merged_preferences_(network_service),
       ohttp_handler_(this),
       prefetch_enabled_(
-          base::FeatureList::IsEnabled(features::kNetworkContextPrefetch)),
+          base::FeatureList::IsEnabled(features::kNetworkContextPrefetch) &&
+          (params_->bound_network == net::handles::kInvalidNetworkHandle)),
       cors_non_wildcard_request_headers_support_(base::FeatureList::IsEnabled(
           features::kCorsNonWildcardRequestHeadersSupport)),
       prefetch_cache_(prefetch_enabled_ ? std::make_unique<PrefetchCache>()
@@ -843,7 +844,9 @@ NetworkContext::NetworkContext(
       http_auth_merged_preferences_(network_service),
       ohttp_handler_(this),
       prefetch_enabled_(
-          base::FeatureList::IsEnabled(features::kNetworkContextPrefetch)),
+          base::FeatureList::IsEnabled(features::kNetworkContextPrefetch) &&
+          (url_request_context_->bound_network() ==
+           net::handles::kInvalidNetworkHandle)),
       prefetch_cache_(prefetch_enabled_ ? std::make_unique<PrefetchCache>()
                                         : nullptr) {
   // May be nullptr in tests.
@@ -2218,7 +2221,8 @@ void NetworkContext::PreconnectSockets(
     uint32_t num_streams,
     const GURL& original_url,
     mojom::CredentialsMode credentials_mode,
-    const net::NetworkAnonymizationKey& network_anonymization_key) {
+    const net::NetworkAnonymizationKey& network_anonymization_key,
+    const net::MutableNetworkTrafficAnnotationTag& traffic_annotation) {
   DCHECK(!require_network_anonymization_key_ ||
          !network_anonymization_key.IsEmpty());
 
@@ -2247,6 +2251,7 @@ void NetworkContext::PreconnectSockets(
   request_info.method = net::HttpRequestHeaders::kGetMethod;
   request_info.extra_headers.SetHeader(net::HttpRequestHeaders::kUserAgent,
                                        user_agent);
+  request_info.traffic_annotation = traffic_annotation;
 
   switch (credentials_mode) {
     case mojom::CredentialsMode::kOmit:
@@ -3013,7 +3018,10 @@ NetworkContext::MakeSessionCleanupCookieStore() const {
   }
 
 #if BUILDFLAG(IS_WIN)
-  const bool enable_exclusive_access = params_->enable_locking_cookie_database;
+  const bool enable_exclusive_access =
+      params_->enable_locking_cookie_database.value_or(
+          base::FeatureList::IsEnabled(
+              features::kEnableLockCookieDatabaseByDefault));
 #else
   const bool enable_exclusive_access = false;
 #endif  // BUILDFLAG(IS_WIN)

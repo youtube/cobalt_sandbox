@@ -241,10 +241,6 @@ WebRtcVideoFrameAdapter::SharedResources::ConstructVideoFrameFromTexture(
                                         raster_context_provider));
     }
 
-    auto origin = source_frame->metadata().texture_origin_is_top_left
-                      ? kTopLeft_GrSurfaceOrigin
-                      : kBottomLeft_GrSurfaceOrigin;
-
     scoped_refptr<media::VideoFrame> dst_frame;
     {
       // Blocking is necessary to create the GpuMemoryBuffer from this thread.
@@ -256,7 +252,7 @@ WebRtcVideoFrameAdapter::SharedResources::ConstructVideoFrameFromTexture(
     if (dst_frame) {
       CHECK(dst_frame->HasSharedImage());
       const bool copy_succeeded = media::CopyRGBATextureToVideoFrame(
-          raster_context_provider.get(), source_frame->coded_size(), origin,
+          raster_context_provider.get(), source_frame->coded_size(),
           source_frame->shared_image(), source_frame->acquire_sync_token(),
           dst_frame.get());
       if (copy_succeeded) {
@@ -415,6 +411,11 @@ WebRtcVideoFrameAdapter::ScaledBuffer::ScaledBuffer(
 rtc::scoped_refptr<webrtc::I420BufferInterface>
 WebRtcVideoFrameAdapter::ScaledBuffer::ToI420() {
   return parent_->GetOrCreateFrameBufferForSize(size_)->ToI420();
+}
+
+scoped_refptr<media::VideoFrame>
+WebRtcVideoFrameAdapter::ScaledBuffer::getMediaVideoFrame() const {
+  return parent_->getMediaVideoFrame();
 }
 
 rtc::scoped_refptr<webrtc::VideoFrameBuffer>

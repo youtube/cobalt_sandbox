@@ -7,6 +7,8 @@
 #include <optional>
 #include <string_view>
 
+#include "ash/constants/ash_features.h"
+#include "base/feature_list.h"
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/ui/webui/ash/lobster/lobster_view.h"
 #include "chrome/browser/ui/webui/ash/mako/mako_ui.h"
@@ -41,12 +43,23 @@ void LobsterBubbleCoordinator::LoadUI(Profile* profile,
                                                ? kLobsterInsertModeValue
                                                : kLobsterDownloadModeValue);
 
+  url = net::AppendOrReplaceQueryParameter(
+      url, kLobsterFeedbackEnabledParamKey,
+      base::FeatureList::IsEnabled(ash::features::kLobsterFeedback) ? "true"
+                                                                    : "false");
+
   contents_wrapper_ = std::make_unique<WebUIContentsWrapperT<MakoUntrustedUI>>(
       url, profile, IDS_ACCNAME_ORCA,
       /*esc_closes_ui=*/false);
 
-  views::BubbleDialogDelegateView::CreateBubble(
-      std::make_unique<LobsterView>(contents_wrapper_.get(), gfx::Rect()));
+  std::unique_ptr<LobsterView> lobster_view =
+      std::make_unique<LobsterView>(contents_wrapper_.get(), gfx::Rect());
+  auto bubble = lobster_view->GetWeakPtr();
+  views::BubbleDialogDelegateView::CreateBubble(std::move(lobster_view));
+
+  if (bubble->GetWidget()) {
+    widget_observation_.Observe(bubble->GetWidget());
+  }
 }
 
 void LobsterBubbleCoordinator::ShowUI() {
@@ -60,6 +73,7 @@ void LobsterBubbleCoordinator::CloseUI() {
     contents_wrapper_->CloseUI();
     contents_wrapper_ = nullptr;
   }
+  widget_observation_.Reset();
 }
 
 bool LobsterBubbleCoordinator::IsShowingUI() const {
@@ -67,6 +81,10 @@ bool LobsterBubbleCoordinator::IsShowingUI() const {
   // the JS has finished loading instead of checking this pointer.
   return contents_wrapper_ != nullptr &&
          contents_wrapper_->GetHost() != nullptr;
+}
+
+void LobsterBubbleCoordinator::OnWidgetDestroying(views::Widget* widget) {
+  CloseUI();
 }
 
 }  // namespace ash

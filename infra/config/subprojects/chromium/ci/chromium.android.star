@@ -23,6 +23,7 @@ ci.defaults.set(
     gardener_rotations = gardener_rotations.ANDROID,
     execution_timeout = ci.DEFAULT_EXECUTION_TIMEOUT,
     health_spec = health_spec.DEFAULT,
+    reclient_enabled = False,
     service_account = ci.DEFAULT_SERVICE_ACCOUNT,
     shadow_service_account = ci.DEFAULT_SHADOW_SERVICE_ACCOUNT,
     siso_enabled = True,
@@ -1253,7 +1254,12 @@ ci.builder(
                     "--test-launcher-filter-file=../../testing/buildbot/filters/android.emulator_p.content_browsertests.filter",
                 ],
                 swarming = targets.swarming(
-                    shards = 15,
+                    shards = 30,
+                ),
+            ),
+            "bf_cache_android_browsertests": targets.mixin(
+                swarming = targets.swarming(
+                    shards = 4,
                 ),
             ),
         },

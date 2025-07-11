@@ -34,11 +34,14 @@ class AITestUtils {
     mojo::PendingRemote<blink::mojom::ModelStreamingResponder>
     BindNewPipeAndPassRemote();
 
+    MOCK_METHOD(void, OnStreaming, (const std::string& text), (override));
     MOCK_METHOD(void,
-                OnResponse,
-                (blink::mojom::ModelStreamingResponseStatus status,
-                 const std::optional<std::string>& text,
-                 std::optional<uint64_t> current_tokens),
+                OnError,
+                (blink::mojom::ModelStreamingResponseStatus status),
+                (override));
+    MOCK_METHOD(void,
+                OnCompletion,
+                (blink::mojom::ModelExecutionContextInfoPtr context_info),
                 (override));
 
    private:
@@ -104,7 +107,7 @@ class AITestUtils {
     void SetupNullOptimizationGuideKeyedService();
 
     mojo::Remote<blink::mojom::AIManager> GetAIManagerRemote();
-    MockSupportsUserData* mock_host() { return mock_host_.get(); }
+    MockSupportsUserData& mock_host() { return *mock_host_.get(); }
     void ResetMockHost();
     size_t GetAIManagerReceiversSize();
     size_t GetAIManagerDownloadProgressObserversSize();

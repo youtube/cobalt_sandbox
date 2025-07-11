@@ -6,6 +6,7 @@
 
 #include <memory>
 
+#include "base/debug/crash_logging.h"
 #include "base/metrics/histogram_functions.h"
 #include "base/metrics/histogram_macros.h"
 #include "base/notreached.h"
@@ -158,7 +159,11 @@ bool StatusUpdateIsPossibleAfterFailure(PrefetchStatus status) {
   switch (status) {
     case PrefetchStatus::kPrefetchEvictedAfterCandidateRemoved:
     case PrefetchStatus::kPrefetchIsStale:
+    case PrefetchStatus::kPrefetchEvictedForNewerPrefetch: {
+      CHECK(TriggeringOutcomeFromStatus(status) ==
+            PreloadingTriggeringOutcome::kFailure);
       return true;
+    }
     case PrefetchStatus::kPrefetchNotFinishedInTime:
     case PrefetchStatus::kPrefetchSuccessful:
     case PrefetchStatus::kPrefetchResponseUsed:
@@ -186,7 +191,6 @@ bool StatusUpdateIsPossibleAfterFailure(PrefetchStatus status) {
     case PrefetchStatus::kPrefetchAllowed:
     case PrefetchStatus::kPrefetchNotStarted:
     case PrefetchStatus::kPrefetchIneligiblePrefetchProxyNotAvailable:
-    case PrefetchStatus::kPrefetchEvictedForNewerPrefetch:
       return false;
   }
 }
@@ -230,7 +234,7 @@ void RecordPrefetchMatchingBlockedNavigationWithPrefetchHistogram(
 
 void RecordBlockUntilHeadDurationHistogram(
     const PrefetchType& prefetch_type,
-    const base::TimeDelta& block_until_head_duration,
+    const base::TimeDelta& blocked_duration,
     bool served) {
   CHECK(!UseNewWaitLoop());
 
@@ -241,27 +245,36 @@ void RecordBlockUntilHeadDurationHistogram(
             served ? "Served" : "NotServed",
             GetPrefetchEagernessHistogramSuffix(prefetch_type.GetEagerness())
                 .c_str()),
-        block_until_head_duration);
+        blocked_duration);
   } else {
     // TODO(crbug.com/40946257, crbug.com/40898833): Extend the metrics for
     // embedder triggers.
   }
 }
 
-void RecordBlockUntilHeadDuration2Histogram(
+void MaybeRecordBlockUntilHeadDuration2Histogram(
     const PrefetchType& prefetch_type,
-    const base::TimeDelta block_until_head_duration,
+    const std::optional<base::TimeDelta>& blocked_duration,
     bool served) {
   CHECK(UseNewWaitLoop());
 
   if (IsSpeculationRuleType(prefetch_type.trigger_type())) {
     base::UmaHistogramTimes(
         base::StringPrintf(
-            "PrefetchProxy.AfterClick.BlockUntilHeadDuration2.%s.%s",
+            "PrefetchProxy.AfterClick.BlockUntilHeadDuration2NoBias.%s.%s",
             served ? "Served" : "NotServed",
             GetPrefetchEagernessHistogramSuffix(prefetch_type.GetEagerness())
                 .c_str()),
-        block_until_head_duration);
+        blocked_duration.value_or(base::Seconds(0)));
+    if (blocked_duration.has_value()) {
+      base::UmaHistogramTimes(
+          base::StringPrintf(
+              "PrefetchProxy.AfterClick.BlockUntilHeadDuration2.%s.%s",
+              served ? "Served" : "NotServed",
+              GetPrefetchEagernessHistogramSuffix(prefetch_type.GetEagerness())
+                  .c_str()),
+          blocked_duration.value());
+    }
   } else {
     // TODO(crbug.com/40946257, crbug.com/40898833): Extend the metrics for
     // embedder triggers.
@@ -311,7 +324,7 @@ bool CalculateIsLikelyAheadOfPrerender(PreloadingAttempt* attempt) {
       case PreloadingType::kPreconnect:
       case PreloadingType::kNoStatePrefetch:
       case PreloadingType::kLinkPreview:
-        NOTREACHED_NORETURN();
+        NOTREACHED();
     }
   }
 
@@ -683,15 +696,25 @@ void PrefetchContainer::SetTriggeringOutcomeAndFailureReasonFromStatus(
   if (old_prefetch_status &&
       TriggeringOutcomeFromStatus(old_prefetch_status.value()) ==
           PreloadingTriggeringOutcome::kFailure) {
-    CHECK(StatusUpdateIsPossibleAfterFailure(new_prefetch_status))
-        << "old_prefetch_status: "
-        << static_cast<int>(old_prefetch_status.value())
-        << " -> new_prefetch_status: " << static_cast<int>(new_prefetch_status);
-    CHECK(TriggeringOutcomeFromStatus(new_prefetch_status) ==
-          PreloadingTriggeringOutcome::kFailure);
-    // Skip this update if the triggering outcome has already been updated to
-    // kFailure.
-    return;
+    if (StatusUpdateIsPossibleAfterFailure(new_prefetch_status)) {
+      // Note that `StatusUpdateIsPossibleAfterFailure()` implies that the
+      // new status is a failure.
+      CHECK(TriggeringOutcomeFromStatus(new_prefetch_status) ==
+            PreloadingTriggeringOutcome::kFailure);
+      // Skip this update if the triggering outcome has already been updated to
+      // kFailure.
+      return;
+    } else {
+      SCOPED_CRASH_KEY_NUMBER("PrefetchContainer", "prefetch_status_from",
+                              static_cast<int>(old_prefetch_status.value()));
+      SCOPED_CRASH_KEY_NUMBER("PrefetchContainer", "prefetch_status_to",
+                              static_cast<int>(new_prefetch_status));
+      NOTREACHED()
+          << "PrefetchStatus illegal transition: (old_prefetch_status, "
+             "new_prefetch_status) = ("
+          << static_cast<int>(old_prefetch_status.value()) << ", "
+          << static_cast<int>(new_prefetch_status) << ")";
+    }
   }
 
   // We record the prefetch status to UMA if it's a failure, or if the prefetch
@@ -2070,10 +2093,8 @@ void PrefetchContainer::OnUnregisterCandidate(
   RecordPrefetchMatchingBlockedNavigationWithPrefetchHistogram(
       prefetch_type_, blocked_duration.has_value());
 
-  if (blocked_duration.has_value()) {
-    RecordBlockUntilHeadDuration2Histogram(prefetch_type_,
-                                           blocked_duration.value(), is_served);
-  }
+  MaybeRecordBlockUntilHeadDuration2Histogram(prefetch_type_, blocked_duration,
+                                              is_served);
 
   // See the comment in `PrefetchContainer::OnReturnPrefetchToServe()`.
   if (auto attempt = preloading_attempt()) {

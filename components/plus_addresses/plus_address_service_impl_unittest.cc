@@ -110,19 +110,20 @@ auto IsSingleCreatePlusAddressSuggestion() {
     labels = {{Suggestion::Text(l10n_util::GetStringUTF16(
         IDS_PLUS_ADDRESS_CREATE_SUGGESTION_SECONDARY_TEXT))}};
   }
-  return ElementsAre(
-      AllOf(EqualsSuggestion(SuggestionType::kCreateNewPlusAddress,
-                             /*main_text=*/l10n_util::GetStringUTF16(
-                                 IDS_PLUS_ADDRESS_CREATE_SUGGESTION_MAIN_TEXT)),
-            Field(&Suggestion::icon, Suggestion::Icon::kPlusAddress),
-            Field(&Suggestion::feature_for_iph,
-                  &feature_engagement::kIPHPlusAddressCreateSuggestionFeature),
+  return ElementsAre(AllOf(
+      EqualsSuggestion(SuggestionType::kCreateNewPlusAddress,
+                       /*main_text=*/l10n_util::GetStringUTF16(
+                           IDS_PLUS_ADDRESS_CREATE_SUGGESTION_MAIN_TEXT)),
+      Field(&Suggestion::icon, Suggestion::Icon::kPlusAddress),
+      Field(&Suggestion::iph_metadata,
+            Suggestion::IPHMetadata(
+                &feature_engagement::kIPHPlusAddressCreateSuggestionFeature)),
 #if BUILDFLAG(IS_ANDROID)
-            Field(&Suggestion::iph_description_text,
-                  l10n_util::GetStringUTF16(
-                      IDS_PLUS_ADDRESS_CREATE_SUGGESTION_IPH_ANDROID)),
+      Field(&Suggestion::iph_description_text,
+            l10n_util::GetStringUTF16(
+                IDS_PLUS_ADDRESS_CREATE_SUGGESTION_IPH_ANDROID)),
 #endif  // BUILDFLAG(IS_ANDROID)
-            Field(&Suggestion::labels, labels)));
+      Field(&Suggestion::labels, labels)));
 }
 
 auto EqualsFillPlusAddressSuggestion(std::string_view address) {
@@ -249,6 +250,10 @@ class PlusAddressServiceTest : public ::testing::Test {
     return test_url_loader_factory_;
   }
 
+  base::test::TestFuture<hats::SurveyType>& launch_survey_future() {
+    return launch_survey_future_;
+  }
+
   // Forces (re-)initialization of the `PlusAddressService`, which can be useful
   // when classes override feature parameters.
   void InitService() {
@@ -260,7 +265,8 @@ class PlusAddressServiceTest : public ::testing::Test {
                      /*affiliation_service=*/
                      &affiliation_service(),
                      /*feature_enabled_for_profile_check=*/
-                     base::BindRepeating(&base::FeatureList::IsEnabled));
+                     base::BindRepeating(&base::FeatureList::IsEnabled),
+                     launch_survey_future_.GetRepeatingCallback());
   }
 
  private:
@@ -271,6 +277,7 @@ class PlusAddressServiceTest : public ::testing::Test {
   scoped_refptr<network::SharedURLLoaderFactory> test_shared_loader_factory_;
   data_decoder::test::InProcessDataDecoder decoder_;
   std::optional<PlusAddressServiceImpl> service_;
+  base::test::TestFuture<hats::SurveyType> launch_survey_future_;
 };
 
 TEST_F(PlusAddressServiceTest, BasicTest) {
@@ -703,6 +710,7 @@ TEST_F(PlusAddressServiceRequestsTest,
   base::test::ScopedFeatureList feature_list{
       features::kPlusAddressInlineCreation};
   base::HistogramTester histogram_tester;
+  base::UserActionTester user_action_tester;
   base::MockCallback<PlusAddressService::UpdateSuggestionsCallback> callback;
 
   EXPECT_CALL(callback, Run).Times(0);
@@ -717,6 +725,9 @@ TEST_F(PlusAddressServiceRequestsTest,
   histogram_tester.ExpectUniqueSample(
       kPlusAddressSuggestionMetric,
       SuggestionEvent::kCreateNewPlusAddressInlineSuggested, 1);
+  EXPECT_EQ(
+      user_action_tester.GetActionCount("PlusAddresses.CreateSuggestionShown"),
+      1);
   EXPECT_EQ(url_loader_factory().NumPending(), 0);
 }
 
@@ -727,11 +738,20 @@ TEST_F(PlusAddressServiceRequestsTest, OnAcceptedInlineSuggestion) {
   base::test::ScopedFeatureList feature_list{
       features::kPlusAddressInlineCreation};
   base::HistogramTester histogram_tester;
+  base::UserActionTester user_action_tester;
   base::test::TestFuture<std::vector<Suggestion>,
                          AutofillSuggestionTriggerSource>
       update_callback;
   base::test::TestFuture<autofill::SuggestionHidingReason> hide_callback;
   base::test::TestFuture<const std::string&> fill_callback;
+
+  // Simulate the scenario when the user has already created 2 other plus
+  // addresses. This is relevant only for the HaTS survey triggering
+  // verification.
+  service().SavePlusProfile(test::CreatePlusProfileWithFacet(
+      FacetURI::FromPotentiallyInvalidSpec("https://example1.com")));
+  service().SavePlusProfile(test::CreatePlusProfileWithFacet(
+      FacetURI::FromPotentiallyInvalidSpec("https://example2.com")));
 
   PlusProfile profile = test::CreatePlusProfile();
 
@@ -751,6 +771,9 @@ TEST_F(PlusAddressServiceRequestsTest, OnAcceptedInlineSuggestion) {
   histogram_tester.ExpectUniqueSample(
       kPlusAddressSuggestionMetric,
       SuggestionEvent::kCreateNewPlusAddressInlineChosen, 1);
+  EXPECT_EQ(user_action_tester.GetActionCount(
+                "PlusAddresses.OfferedPlusAddressAccepted"),
+            1);
   url_loader_factory().SimulateResponseForPendingRequest(
       kCreatePlusAddressEndpoint, test::MakeCreationResponse(profile));
 
@@ -766,6 +789,11 @@ TEST_F(PlusAddressServiceRequestsTest, OnAcceptedInlineSuggestion) {
   ASSERT_TRUE(hide_callback.Wait());
   EXPECT_THAT(hide_callback.Get(),
               Eq(autofill::SuggestionHidingReason::kAcceptSuggestion));
+  // Feature perception survey should be triggered after the user has created
+  // the 3rd+ plus address.
+  ASSERT_TRUE(launch_survey_future().Wait());
+  ASSERT_THAT(launch_survey_future().Get(),
+              Eq(hats::SurveyType::kCreatedMultiplePlusAddresses));
 }
 
 // Tests that when the server call to create a plus address from an inline
@@ -781,6 +809,14 @@ TEST_F(PlusAddressServiceRequestsTest,
   base::test::TestFuture<autofill::SuggestionHidingReason> hide_callback;
   base::test::TestFuture<std::u16string, std::u16string>
       show_affiliation_error_callback;
+
+  // Simulate the scenario when the user has already created 2 other plus
+  // addresses. This is relevant only for the HaTS survey triggering
+  // verification.
+  service().SavePlusProfile(test::CreatePlusProfileWithFacet(
+      FacetURI::FromPotentiallyInvalidSpec("https://example1.com")));
+  service().SavePlusProfile(test::CreatePlusProfileWithFacet(
+      FacetURI::FromPotentiallyInvalidSpec("https://example2.com")));
 
   PlusProfile profile = test::CreatePlusProfile();
   PlusProfile affiliated_profile = test::CreatePlusProfile2();
@@ -817,6 +853,9 @@ TEST_F(PlusAddressServiceRequestsTest,
   EXPECT_THAT(show_affiliation_error_callback.Get<0>(), Eq(u"bar.com"));
   EXPECT_THAT(show_affiliation_error_callback.Get<1>(),
               Eq(base::UTF8ToUTF16(*affiliated_profile.plus_address)));
+  // Feature perception survey should not be triggered if the plus address was
+  // not created.
+  ASSERT_FALSE(launch_survey_future().IsReady());
 }
 
 // Tests that when the server call to create a plus address from an inline
@@ -831,6 +870,14 @@ TEST_F(PlusAddressServiceRequestsTest, OnAcceptedInlineSuggestionTimeoutError) {
   base::MockCallback<PlusAddressService::ShowErrorDialogCallback>
       show_error_callback;
   base::MockCallback<base::OnceClosure> reshow_callback;
+
+  // Simulate the scenario when the user has already created 2 other plus
+  // addresses. This is relevant only for the HaTS survey triggering
+  // verification.
+  service().SavePlusProfile(test::CreatePlusProfileWithFacet(
+      FacetURI::FromPotentiallyInvalidSpec("https://example1.com")));
+  service().SavePlusProfile(test::CreatePlusProfileWithFacet(
+      FacetURI::FromPotentiallyInvalidSpec("https://example2.com")));
 
   PlusProfile profile = test::CreatePlusProfile();
   PlusProfile affiliated_profile = test::CreatePlusProfile2();
@@ -868,6 +915,9 @@ TEST_F(PlusAddressServiceRequestsTest, OnAcceptedInlineSuggestionTimeoutError) {
 
   url_loader_factory().SimulateResponseForPendingRequest(
       kCreatePlusAddressEndpoint, "", net::HTTP_REQUEST_TIMEOUT);
+  // Feature perception survey should not be triggered if the plus address was
+  // not created.
+  ASSERT_FALSE(launch_survey_future().IsReady());
 }
 #endif  // !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_IOS)
 
@@ -955,7 +1005,8 @@ class PlusAddressServiceWebDataTest : public ::testing::Test {
         plus_webdata_service_,
         /*affiliation_service=*/&plus_environment_.affiliation_service(),
         /*feature_enabled_for_profile_check=*/
-        base::BindRepeating(&base::FeatureList::IsEnabled));
+        base::BindRepeating(&base::FeatureList::IsEnabled),
+        /*lauch_hats_survey=*/base::DoNothing());
   }
 
   signin::IdentityManager* identity_manager() {
@@ -1355,6 +1406,7 @@ class PlusAddressSuggestionsTest : public PlusAddressServiceTest {
 // focused field matches the prefix of an existing plus address.
 TEST_F(PlusAddressSuggestionsTest, SuggestionsForExistingPlusAddress) {
   base::HistogramTester histogram_tester;
+  base::UserActionTester user_action_tester;
   const PlusProfile profile = test::CreatePlusProfile();
   const url::Origin origin = OriginFromFacet(profile.facet);
   service().SavePlusProfile(profile);
@@ -1369,7 +1421,9 @@ TEST_F(PlusAddressSuggestionsTest, SuggestionsForExistingPlusAddress) {
   histogram_tester.ExpectUniqueSample(
       kPlusAddressSuggestionMetric,
       SuggestionEvent::kExistingPlusAddressSuggested, 1);
-
+  EXPECT_EQ(user_action_tester.GetActionCount(
+                "PlusAddresses.StandaloneFillSuggestionShown"),
+            1);
   // If the user types a letter and it matches the plus address (after
   // normalization), the plus address continues to be offered.
   focused_field.set_value(u"P");
@@ -1381,7 +1435,9 @@ TEST_F(PlusAddressSuggestionsTest, SuggestionsForExistingPlusAddress) {
   histogram_tester.ExpectUniqueSample(
       kPlusAddressSuggestionMetric,
       SuggestionEvent::kExistingPlusAddressSuggested, 2);
-
+  EXPECT_EQ(user_action_tester.GetActionCount(
+                "PlusAddresses.StandaloneFillSuggestionShown"),
+            2);
   // If the value does not match the prefix of the plus address, nothing is
   // shown.
   focused_field.set_value(u"pp");
@@ -1400,6 +1456,7 @@ TEST_F(PlusAddressSuggestionsTest, SuggestionsForExistingPlusAddress) {
 TEST_F(PlusAddressSuggestionsTest,
        SuggestionsForExistingPlusAddressWithManualFallback) {
   base::HistogramTester histogram_tester;
+  base::UserActionTester user_action_tester;
   const PlusProfile profile = test::CreatePlusProfile();
   const url::Origin origin = OriginFromFacet(profile.facet);
   service().SavePlusProfile(profile);
@@ -1415,7 +1472,9 @@ TEST_F(PlusAddressSuggestionsTest,
   histogram_tester.ExpectUniqueSample(
       kPlusAddressSuggestionMetric,
       SuggestionEvent::kExistingPlusAddressSuggested, 1);
-
+  EXPECT_EQ(user_action_tester.GetActionCount(
+                "PlusAddresses.StandaloneFillSuggestionShown"),
+            1);
   // We also offer filling if the field is not empty and the prefix does not
   // match the address.
   focused_field.set_value(u"pp");
@@ -1428,6 +1487,9 @@ TEST_F(PlusAddressSuggestionsTest,
   histogram_tester.ExpectUniqueSample(
       kPlusAddressSuggestionMetric,
       SuggestionEvent::kExistingPlusAddressSuggested, 2);
+  EXPECT_EQ(user_action_tester.GetActionCount(
+                "PlusAddresses.StandaloneFillSuggestionShown"),
+            2);
 }
 
 // Tests that a create plus address suggestion is offered if there is no
@@ -1457,6 +1519,77 @@ TEST_F(PlusAddressSuggestionsTest, SuggestionsForCreateNewPlusAddress) {
   histogram_tester.ExpectUniqueSample(
       kPlusAddressSuggestionMetric,
       SuggestionEvent::kCreateNewPlusAddressSuggested, 1);
+}
+
+// Tests that a user action is recorded when a create plus address suggestion is
+// shown to the user, and the user has never accepted the notice.
+TEST_F(PlusAddressSuggestionsTest,
+       RecordCreateSuggestionUserActionFirstTimeNotice) {
+  base::HistogramTester histogram_tester;
+  base::UserActionTester user_action_tester;
+  base::test::ScopedFeatureList feature_list{
+      features::kPlusAddressUserOnboardingEnabled};
+  setting_service().set_has_accepted_notice(false);
+  const auto origin = url::Origin::Create(GURL("https://foo.com"));
+
+  // We offer creation if the field is empty.
+  FormFieldData focused_field;
+  FetchPlusAddressSuggestions(
+      origin, /*is_off_the_record=*/false, PasswordFormClassification(),
+      focused_field,
+      AutofillSuggestionTriggerSource::kFormControlElementClicked);
+  histogram_tester.ExpectUniqueSample(
+      kPlusAddressSuggestionMetric,
+      SuggestionEvent::kCreateNewPlusAddressSuggested, 1);
+  EXPECT_EQ(user_action_tester.GetActionCount(
+                "PlusAddresses.CreateSuggestionFirstTimeNoticeShown"),
+            1);
+}
+
+// Tests that a user action is recorded when a plus address suggestion fill is
+// reported.
+TEST_F(PlusAddressSuggestionsTest, RecordExistingPlusAddressChosenUserAction) {
+  base::UserActionTester user_action_tester;
+  service().RecordAutofillSuggestionEvent(
+      SuggestionEvent::kExistingPlusAddressChosen);
+  EXPECT_EQ(user_action_tester.GetActionCount(
+                "PlusAddresses.FillStandaloneSuggestionAccepted"),
+            1);
+}
+
+// Tests that a user action is recorded when a create plus address suggestion is
+// shown to the user, and the user has already accepted the notice.
+TEST_F(PlusAddressSuggestionsTest, RecordCreateSuggestionUserActionShown) {
+  base::HistogramTester histogram_tester;
+  base::UserActionTester user_action_tester;
+  base::test::ScopedFeatureList feature_list{
+      features::kPlusAddressUserOnboardingEnabled};
+  setting_service().set_has_accepted_notice(true);
+  const auto origin = url::Origin::Create(GURL("https://foo.com"));
+
+  // We offer creation if the field is empty.
+  FormFieldData focused_field;
+  FetchPlusAddressSuggestions(
+      origin, /*is_off_the_record=*/false, PasswordFormClassification(),
+      focused_field,
+      AutofillSuggestionTriggerSource::kFormControlElementClicked);
+  histogram_tester.ExpectUniqueSample(
+      kPlusAddressSuggestionMetric,
+      SuggestionEvent::kCreateNewPlusAddressSuggested, 1);
+  EXPECT_EQ(
+      user_action_tester.GetActionCount("PlusAddresses.CreateSuggestionShown"),
+      1);
+}
+
+// Tests that a user action is recorded when the user selects the plus address
+// creation option.
+TEST_F(PlusAddressSuggestionsTest, RecordCreateSuggestionUserActionChosen) {
+  base::UserActionTester user_action_tester;
+  service().RecordAutofillSuggestionEvent(
+      SuggestionEvent::kCreateNewPlusAddressChosen);
+  EXPECT_EQ(user_action_tester.GetActionCount(
+                "PlusAddresses.CreateSuggestionAccepted"),
+            1);
 }
 
 // Tests that a create plus address suggestion is offered regardless of the

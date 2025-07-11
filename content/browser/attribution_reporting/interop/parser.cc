@@ -175,12 +175,12 @@ class AttributionInteropParser {
         ParseBool(dict, "needs_cross_app_web").value_or(false);
     interop_config.needs_aggregatable_debug =
         ParseBool(dict, "needs_aggregatable_debug").value_or(false);
-    interop_config.needs_source_destination_limit =
-        ParseBool(dict, "needs_source_destination_limit").value_or(false);
     interop_config.needs_aggregatable_filtering_ids =
         ParseBool(dict, "needs_aggregatable_filtering_ids").value_or(false);
     interop_config.needs_attribution_scopes =
         ParseBool(dict, "needs_attribution_scopes").value_or(false);
+    interop_config.needs_aggregatable_named_budgets =
+        ParseBool(dict, "needs_aggregatable_named_budgets").value_or(false);
 
     AttributionConfig& config = interop_config.attribution_config;
 

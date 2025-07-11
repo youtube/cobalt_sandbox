@@ -823,9 +823,6 @@ Status ExecuteExecuteScript(Session* session,
     case kTimeout:
     // If the target has been detached the script will never return
     case kTargetDetached:
-    // Navigation has happened during script execution. Further wait would lead
-    // to timeout.
-    case kNavigationDetectedByRemoteEnd:
       return Status(kScriptTimeout);
     default:
       return status;
@@ -857,7 +854,7 @@ Status ExecuteExecuteAsyncScript(Session* session,
     case kTimeout:
     // Navigation has happened during script execution. Further wait would lead
     // to timeout.
-    case kNavigationDetectedByRemoteEnd:
+    case kAbortedByNavigation:
       return Status(kScriptTimeout);
     default:
       return status;

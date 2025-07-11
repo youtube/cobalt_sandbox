@@ -25,7 +25,6 @@
 #include "chrome/browser/ash/crosapi/browser_util.h"
 #include "chrome/browser/ash/crosapi/environment_provider.h"
 #include "chrome/browser/ash/crosapi/field_trial_service_ash.h"
-#include "chrome/browser/ash/crosapi/hosted_app_util.h"
 #include "chrome/browser/ash/crosapi/idle_service_ash.h"
 #include "chrome/browser/ash/crosapi/native_theme_service_ash.h"
 #include "chrome/browser/ash/crosapi/resource_manager_ash.h"
@@ -907,9 +906,6 @@ void InjectBrowserInitParams(
   params->should_disable_chrome_compose_on_chromeos =
       chromeos::features::ShouldDisableChromeComposeOnChromeOS();
 
-  params->is_captive_portal_popup_window_enabled =
-      chromeos::features::IsCaptivePortalPopupWindowEnabled();
-
   params->is_file_system_provider_cloud_file_system_enabled =
       chromeos::features::IsFileSystemProviderCloudFileSystemEnabled();
 
@@ -954,7 +950,6 @@ void InjectBrowserPostLoginParams(mojom::BrowserInitParams* params,
   params->initial_browser_action = initial_browser_action.action;
 
   params->publish_chrome_apps = browser_util::IsLacrosChromeAppsEnabled();
-  params->publish_hosted_apps = crosapi::IsStandaloneBrowserHostedAppsEnabled();
 
   params->device_account_component_policy = GetDeviceAccountComponentPolicy();
 

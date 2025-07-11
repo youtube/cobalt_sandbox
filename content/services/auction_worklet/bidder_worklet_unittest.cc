@@ -1181,32 +1181,6 @@ class BidderWorkletMultiBidDisabledTest : public BidderWorkletTest {
   base::test::ScopedFeatureList feature_list_;
 };
 
-// kCookieDeprecationFacilitatedTesting disables kFledgeMultiBid.
-class BidderWorkletMultiBidAndCookieDeprecationTest : public BidderWorkletTest {
- public:
-  BidderWorkletMultiBidAndCookieDeprecationTest() {
-    feature_list_.InitWithFeatures(
-        /*enabled_features=*/{blink::features::kFledgeMultiBid,
-                              features::kCookieDeprecationFacilitatedTesting},
-        /*disabled_features=*/{});
-  }
-
- protected:
-  base::test::ScopedFeatureList feature_list_;
-};
-
-class BidderWorkletCrossOriginTrustedSignalsDisabledTest
-    : public BidderWorkletTest {
- public:
-  BidderWorkletCrossOriginTrustedSignalsDisabledTest() {
-    scoped_feature_list_.InitAndDisableFeature(
-        blink::features::kFledgePermitCrossOriginTrustedSignals);
-  }
-
- private:
-  base::test::ScopedFeatureList scoped_feature_list_;
-};
-
 // Test the case the BidderWorklet pipe is closed before invoking the
 // GenerateBidCallback. The invocation of the GenerateBidCallback is not
 // observed, since the callback is on the pipe that was just closed. There
@@ -2900,49 +2874,9 @@ TEST_F(BidderWorkletMultiBidDisabledTest, GenerateBidMultiBid) {
       /*expected_bids=*/mojom::BidderWorkletBidPtr());
 }
 
-// Cookie disabling trial forces multibid off.
-TEST_F(BidderWorkletMultiBidAndCookieDeprecationTest, GenerateBidMultiBid) {
-  RunGenerateBidWithReturnValueExpectingResult(
-      R"([{ad: "ad", bid: 1,
-          render: "https://response.test/"}])",
-      /*expected_bids=*/mojom::BidderWorkletBidPtr());
-}
-
 // Make sure that fields that are only available with multibid on aren't
 // read when its off.
 TEST_F(BidderWorkletMultiBidDisabledTest, ComponentTargetFieldsOnlyMultiBid) {
-  auto expected_bid = mojom::BidderWorkletBid::New(
-      auction_worklet::mojom::BidRole::kUnenforcedKAnon, "\"ad\"", 5,
-      /*bid_currency=*/std::nullopt,
-      /*ad_cost=*/std::nullopt,
-      blink::AdDescriptor(GURL("https://response.test/")),
-      /*selected_buyer_and_seller_reporting_id=*/std::nullopt,
-      /*ad_component_descriptors=*/std::nullopt,
-      /*modeling_signals=*/std::nullopt, base::TimeDelta());
-
-  RunGenerateBidWithReturnValueExpectingResult(
-      R"({ad: "ad", bid: 5,
-          render: {url: "https://response.test/"},
-          get numMandatoryAdComponents() {
-            throw 'used numMandatoryAdComponents';
-          }
-      })",
-      expected_bid->Clone());
-
-  RunGenerateBidWithReturnValueExpectingResult(
-      R"({ad: "ad", bid: 5,
-          render: {url: "https://response.test/"},
-          get targetNumAdComponents() {
-            throw 'used targetNumAdComponents';
-          }
-      })",
-      expected_bid->Clone());
-}
-
-// Make sure that fields that are only available with multibid on aren't
-// read when its forced off by kCookieDeprecationFacilitatedTesting.
-TEST_F(BidderWorkletMultiBidAndCookieDeprecationTest,
-       ComponentTargetFieldsOnlyMultiBid) {
   auto expected_bid = mojom::BidderWorkletBid::New(
       auction_worklet::mojom::BidRole::kUnenforcedKAnon, "\"ad\"", 5,
       /*bid_currency=*/std::nullopt,
@@ -6462,14 +6396,6 @@ TEST_F(BidderWorkletTest, GenerateBidTrustedBiddingSignals) {
           /*ad_component_descriptors=*/std::nullopt,
           /*modeling_signals=*/std::nullopt, base::TimeDelta()));
   EXPECT_EQ(observed_requests += 2, url_loader_factory_.total_requests());
-}
-
-// With the cross-origin trusted signals flag off, nothing is passed in to the
-// cross-original signals parameter.
-TEST_F(BidderWorkletCrossOriginTrustedSignalsDisabledTest, Basic) {
-  RunGenerateBidExpectingExpressionIsTrue(
-      "crossOriginTrustedSignals === undefined");
-  RunGenerateBidExpectingExpressionIsTrue("arguments.length === 6");
 }
 
 TEST_F(BidderWorkletTest, GenerateBidTrustedBiddingSignalsV1) {
@@ -13628,20 +13554,9 @@ TEST_F(BidderWorkletSampleDebugReportsDisabledTest,
   )");
 }
 
-class BidderWorkletCrossOriginTrustedSignalsTest : public BidderWorkletTest {
- public:
-  BidderWorkletCrossOriginTrustedSignalsTest() {
-    scoped_feature_list_.InitAndEnableFeature(
-        blink::features::kFledgePermitCrossOriginTrustedSignals);
-  }
-
- private:
-  base::test::ScopedFeatureList scoped_feature_list_;
-};
-
 // With the feature on, same-origin trusted signals still come in the same,
 // only there is an extra null param.
-TEST_F(BidderWorkletCrossOriginTrustedSignalsTest, SameOrigin) {
+TEST_F(BidderWorkletTest, SameOrigin) {
   base::HistogramTester histogram_tester;
 
   const GURL kBaseSignalsUrl("https://signals.test/");
@@ -13686,7 +13601,7 @@ TEST_F(BidderWorkletCrossOriginTrustedSignalsTest, SameOrigin) {
 
 // Cross-origin signals (and their version) come in as different parameters
 // and fields.
-TEST_F(BidderWorkletCrossOriginTrustedSignalsTest, CrossOrigin) {
+TEST_F(BidderWorkletTest, CrossOrigin) {
   base::HistogramTester histogram_tester;
   const GURL kBaseSignalsUrl("https://signals.test/");
   interest_group_bidding_url_ = GURL("https://url.test/");

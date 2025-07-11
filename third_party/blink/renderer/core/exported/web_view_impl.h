@@ -628,6 +628,9 @@ class CORE_EXPORT WebViewImpl final : public WebView,
   // words, after the frame has painted something.
   void DidFirstVisuallyNonEmptyPaint();
 
+  // Caleld once the first contentful paint happens on the main frame.
+  void OnFirstContentfulPaint();
+
   scheduler::WebAgentGroupScheduler& GetWebAgentGroupScheduler();
 
   // Returns true if the page supports app-region: drag/no-drag.
@@ -698,6 +701,10 @@ class CORE_EXPORT WebViewImpl final : public WebView,
   // Request the window to close from the renderer by sending the request to the
   // browser.
   void DoDeferredCloseWindowSoon();
+
+#if BUILDFLAG(IS_CHROMEOS)
+  void UpdateUseOverlayScrollbar(bool use_overlay_scrollbar);
+#endif
 
   WebViewImpl(
       WebViewClient*,

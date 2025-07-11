@@ -13,11 +13,16 @@
 #include "ash/wm/desks/desks_controller.h"
 #include "ash/wm/desks/desks_histogram_enums.h"
 #include "ash/wm/mru_window_tracker.h"
+#include "ash/wm/snap_group/snap_group.h"
+#include "ash/wm/snap_group/snap_group_controller.h"
 #include "base/command_line.h"
 #include "chromeos/ash/components/mojo_service_manager/connection.h"
 #include "chromeos/ash/services/coral/public/mojom/coral_service.mojom.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "third_party/cros_system_api/mojo/service_constants.h"
+
+#undef ENABLED_VLOG_LEVEL
+#define ENABLED_VLOG_LEVEL 1
 
 namespace ash {
 
@@ -45,6 +50,29 @@ aura::Window* FindAppWindowOnActiveDesk(const std::string& app_id) {
   }
 
   return nullptr;
+}
+
+const char* SourceToString(CoralSource source) {
+  switch (source) {
+    case CoralSource::kInSession:
+      return "in-session";
+    case CoralSource::kPostLogin:
+      return "post-login";
+    case CoralSource::kUnknown:
+      return "unknown";
+  }
+}
+
+std::string GroupResponseToString(
+    const coral::mojom::GroupResponsePtr& group_response) {
+  const std::vector<coral::mojom::GroupPtr>& groups = group_response->groups;
+  std::string group_info = base::NumberToString(groups.size()) + " groups";
+  for (size_t i = 0; i < groups.size(); i++) {
+    group_info += ", group " + base::NumberToString(i + 1) + " has " +
+                  base::NumberToString(groups[i]->entities.size()) +
+                  " entities";
+  }
+  return group_info;
 }
 
 }  // namespace
@@ -107,10 +135,11 @@ void CoralController::GenerateContentGroups(
   for (size_t i = 0; i < items_in_request; i++) {
     group_request->entities.push_back(request.content()[i]->Clone());
   }
-  coral_service->Group(std::move(group_request), std::move(title_observer),
-                       base::BindOnce(&CoralController::HandleGroupResult,
-                                      weak_factory_.GetWeakPtr(),
-                                      request.source(), std::move(callback)));
+  coral_service->Group(
+      std::move(group_request), std::move(title_observer),
+      base::BindOnce(&CoralController::HandleGroupResult,
+                     weak_factory_.GetWeakPtr(), request.source(),
+                     std::move(callback), base::TimeTicks::Now()));
 }
 
 void CoralController::CacheEmbeddings(const CoralRequest& request,
@@ -157,6 +186,7 @@ CoralController::CoralService* CoralController::EnsureCoralService() {
 
 void CoralController::HandleGroupResult(CoralSource source,
                                         CoralResponseCallback callback,
+                                        const base::TimeTicks& request_time,
                                         coral::mojom::GroupResultPtr result) {
   if (result->is_error()) {
     LOG(ERROR) << "Coral group request failed with CoralError code: "
@@ -166,6 +196,10 @@ void CoralController::HandleGroupResult(CoralSource source,
   }
   coral::mojom::GroupResponsePtr group_response =
       std::move(result->get_response());
+  VLOG(1) << "Coral group " << SourceToString(source)
+          << " request succeeded with " << GroupResponseToString(group_response)
+          << ", in " << (base::TimeTicks::Now() - request_time).InMilliseconds()
+          << " ms.";
   auto response = std::make_unique<CoralResponse>();
   response->set_source(source);
   response->set_groups(std::move(group_response->groups));
@@ -203,13 +237,35 @@ void CoralController::OpenNewDeskWithGroup(CoralResponse::Group group) {
   // Move the apps to the new desk.
   const int new_desk_idx = desks_controller->GetNumberOfDesks() - 1;
   Desk* new_desk = desks_controller->GetDeskAtIndex(new_desk_idx);
+
+  // First place all windows that should be moved in a set, this is so we can
+  // have O(1) lookups for snap groups later.
+  base::flat_set<aura::Window*> windows_set;
   for (const auto& app : tabs_apps.apps) {
-    auto* window = FindAppWindowOnActiveDesk(app.id);
-    if (window) {
-      desks_controller->MoveWindowFromActiveDeskTo(
-          window, new_desk, window->GetRootWindow(),
-          DesksMoveWindowFromActiveDeskSource::kCoral);
+    if (aura::Window* window = FindAppWindowOnActiveDesk(app.id)) {
+      windows_set.insert(window);
     }
+  }
+
+  auto* snap_group_controller = SnapGroupController::Get();
+  for (aura::Window* window : windows_set) {
+    // If a window is part of a snap group, and the other window is not part of
+    // `windows_set` (i.e. not in the group), remove the snap group first
+    // otherwise both windows will be moved.
+    if (SnapGroup* snap_group =
+            snap_group_controller->GetSnapGroupForGivenWindow(window)) {
+      aura::Window* other_window = window == snap_group->window1()
+                                       ? snap_group->window2()
+                                       : snap_group->window1();
+      CHECK(other_window);
+      if (!windows_set.contains(other_window)) {
+        snap_group_controller->RemoveSnapGroup(snap_group,
+                                               SnapGroupExitPoint::kCoral);
+      }
+    }
+    desks_controller->MoveWindowFromActiveDeskTo(
+        window, new_desk, window->GetRootWindow(),
+        DesksMoveWindowFromActiveDeskSource::kCoral);
   }
 
   desks_controller->ActivateDesk(desks_controller->desks().back().get(),

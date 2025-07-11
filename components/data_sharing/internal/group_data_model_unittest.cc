@@ -8,8 +8,10 @@
 #include <memory>
 
 #include "base/files/scoped_temp_dir.h"
+#include "base/files/scoped_temp_file.h"
 #include "base/run_loop.h"
 #include "base/test/gmock_callback_support.h"
+#include "base/test/metrics/histogram_tester.h"
 #include "base/test/task_environment.h"
 #include "build/build_config.h"
 #include "components/data_sharing/internal/collaboration_group_sync_bridge.h"
@@ -426,6 +428,77 @@ TEST_F(GroupDataModelTest, ShouldHandleDeletionsAfterRestart) {
   WaitForModelLoaded();
 
   EXPECT_FALSE(model().GetGroup(group_id).has_value());
+}
+
+TEST_F(GroupDataModelTest, ShouldGetPossiblyRemovedGroupMember) {
+  WaitForModelLoaded();
+
+  const GroupId group_id = MimicGroupAddedServerSide("group");
+  WaitForGroupAdded(group_id);
+
+  const std::string member_gaia_id = "gaia_id";
+  MimicMemberAddedServerSide(group_id, member_gaia_id);
+  WaitForGroupUpdated(group_id);
+
+  // Existing member should be returned.
+  const auto member_data_opt =
+      model().GetPossiblyRemovedGroupMember(group_id, member_gaia_id);
+  ASSERT_TRUE(member_data_opt.has_value());
+  EXPECT_EQ(member_data_opt->gaia_id, member_gaia_id);
+
+  // Group never existed, nullopt should be returned.
+  EXPECT_FALSE(model()
+                   .GetPossiblyRemovedGroupMember(GroupId("non-existing-group"),
+                                                  member_gaia_id)
+                   .has_value());
+
+  // Member never existed, nullopt should be returned.
+  EXPECT_FALSE(
+      model()
+          .GetPossiblyRemovedGroupMember(group_id, "non-existing-member")
+          .has_value());
+  // TODO(crbug.com/373628741): add coverage for the scenario when member was
+  // removed from the group once it is properly supported (i.e. removed members
+  // data is temporarily stored).
+}
+
+TEST(GroupDataModelTestNoFixture, ShouldRecordDBInitFailure) {
+  base::test::TaskEnvironment task_environment;
+
+  // Boilerplate to create a bridge / SDK delegate (required to create a model,
+  // but otherwise not relevant for this test)
+  std::unique_ptr<syncer::DataTypeStore> data_type_store(
+      syncer::DataTypeStoreTestUtil::CreateInMemoryStoreForTest());
+  testing::NiceMock<syncer::MockDataTypeLocalChangeProcessor> mock_processor;
+  auto collaboration_group_bridge =
+      std::make_unique<CollaborationGroupSyncBridge>(
+          mock_processor.CreateForwardingProcessor(),
+          syncer::DataTypeStoreTestUtil::FactoryForForwardingStore(
+              data_type_store.get()));
+  FakeDataSharingSDKDelegate sdk_delegate;
+
+  // Model expects a directory, not a file and this will cause DB init failure.
+  base::ScopedTempFile temp_file;
+  ASSERT_TRUE(temp_file.Create());
+
+  GroupDataModel model(temp_file.path(), collaboration_group_bridge.get(),
+                       &sdk_delegate);
+
+  base::HistogramTester histogram_tester;
+
+  base::RunLoop run_loop;
+  model.SetGroupDataStoreLoadedCallbackForTesting(run_loop.QuitClosure());
+  run_loop.Run();
+
+  histogram_tester.ExpectUniqueSample("DataSharing.GroupDBInitSuccess", false,
+                                      1);
+}
+
+TEST_F(GroupDataModelTest, ShouldRecordDBInitSuccess) {
+  base::HistogramTester histogram_tester;
+  WaitForModelLoaded();
+  histogram_tester.ExpectUniqueSample("DataSharing.GroupDBInitSuccess", true,
+                                      1);
 }
 
 }  // namespace

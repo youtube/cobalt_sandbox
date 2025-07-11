@@ -46,6 +46,7 @@ source_set("credential_provider") {
     "//ios/chrome/common/ui/colors",
     "//ios/chrome/common/ui/confirmation_alert",
     "//ios/chrome/common/ui/reauthentication",
+    "//ios/chrome/common/ui/util",
     "//ios/chrome/credential_provider_extension/resources",
     "//ios/chrome/credential_provider_extension/ui",
     "//ios/chrome/credential_provider_extension/ui:credential_response_handler",
@@ -119,7 +120,10 @@ source_set("passkey_util") {
     "//ios/chrome/common/app_group",
     "//ios/chrome/common/credential_provider",
   ]
-  frameworks = [ "Foundation.framework" ]
+  frameworks = [
+    "AuthenticationServices.framework",
+    "Foundation.framework",
+  ]
 }
 
 source_set("passkey_keychain_provider_bridge") {
@@ -129,6 +133,7 @@ source_set("passkey_keychain_provider_bridge") {
   ]
   deps = [
     ":passkey_keychain_provider",
+    ":passkey_util",
     "//base",
     "//ios/chrome/credential_provider_extension/ui:credential_response_handler",
   ]

@@ -18,12 +18,13 @@
 #include "base/logging.h"
 #include "base/notimplemented.h"
 #include "base/notreached.h"
-#include "base/path_service.h"
 #include "base/task/single_thread_task_runner.h"
 #include "chrome/browser/ash/file_manager/fileapi_util.h"
 #include "chrome/browser/ash/file_manager/io_task_controller.h"
 #include "chrome/browser/ash/file_manager/volume_manager.h"
 #include "chrome/browser/ash/policy/skyvault/drive_skyvault_uploader.h"
+#include "chrome/browser/ash/policy/skyvault/histogram_helper.h"
+#include "chrome/browser/ash/policy/skyvault/local_files_migration_constants.h"
 #include "chrome/browser/ash/policy/skyvault/odfs_skyvault_uploader.h"
 #include "chrome/browser/ash/policy/skyvault/policy_utils.h"
 #include "chrome/browser/download/download_dir_util.h"
@@ -52,6 +53,11 @@ base::FilePath GetPathRelativeToMyFiles(Profile* profile,
   base::FilePath rel_path;
   my_files_path.AppendRelativePath(file_path.DirName(), &rel_path);
   return rel_path;
+}
+
+bool ErrorCanBeIgnored(MigrationUploadError error) {
+  return error == MigrationUploadError::kDeleteFailed ||
+         error == MigrationUploadError::kFileNotFound;
 }
 
 std::string FormatErrorMessage(CloudProvider provider,
@@ -97,7 +103,6 @@ base::File CreateOrOpenLogFile(Profile* profile, base::FilePath path) {
   if (!error_log_file_.IsValid()) {
     PLOG(ERROR) << "Failed to open migration error log file.";
   }
-  // TODO(aidazolic): Do we need a header?
   return error_log_file_;
 }
 
@@ -115,16 +120,13 @@ void LogError(base::File& error_log_file,
   error_log_file.WriteAtCurrentPos(log_entry.c_str(), log_entry.size());
 }
 
-base::FilePath GetLogPath() {
-  base::FilePath home_dir;
-  CHECK(base::PathService::Get(base::DIR_HOME, &home_dir));
-  return home_dir.AppendASCII("local_files_upload");
-}
-
 }  // namespace
 
 MigrationCoordinator::MigrationCoordinator(Profile* profile)
-    : profile_(profile) {}
+    : profile_(profile) {
+  error_log_path_ =
+      base::FilePath(kErrorLogFileBasePath).Append(kErrorLogFileName);
+}
 
 MigrationCoordinator::~MigrationCoordinator() = default;
 
@@ -140,11 +142,13 @@ void MigrationCoordinator::Run(CloudProvider cloud_provider,
   switch (cloud_provider) {
     case CloudProvider::kGoogleDrive:
       uploader_ = std::make_unique<GoogleDriveMigrationUploader>(
-          profile_, std::move(files), upload_root, std::move(wrapped_callback));
+          profile_, std::move(files), upload_root, error_log_path_,
+          std::move(wrapped_callback));
       break;
     case CloudProvider::kOneDrive:
       uploader_ = std::make_unique<OneDriveMigrationUploader>(
-          profile_, std::move(files), upload_root, std::move(wrapped_callback));
+          profile_, std::move(files), upload_root, error_log_path_,
+          std::move(wrapped_callback));
       break;
     case CloudProvider::kNotSpecified:
       NOTREACHED()
@@ -153,13 +157,17 @@ void MigrationCoordinator::Run(CloudProvider cloud_provider,
   uploader_->Run();
 }
 
-void MigrationCoordinator::Cancel() {
+void MigrationCoordinator::Cancel(MigrationStoppedCallback callback) {
   if (uploader_) {
     MigrationCloudUploader* uploader_ptr = uploader_.get();
     uploader_ptr->Cancel(base::BindOnce(&OnMigrationStopped,
                                         std::move(uploader_),
                                         std::move(cancelled_cb_for_testing_)));
   }
+
+  base::ThreadPool::PostTaskAndReplyWithResult(
+      FROM_HERE, {base::MayBlock()},
+      base::BindOnce(&base::DeleteFile, error_log_path_), std::move(callback));
 }
 
 bool MigrationCoordinator::IsRunning() const {
@@ -172,11 +180,17 @@ void MigrationCoordinator::SetCancelledCallbackForTesting(
   cancelled_cb_for_testing_ = std::move(cb);
 }
 
+void MigrationCoordinator::SetErrorLogPathForTesting(
+    const base::FilePath& path) {
+  CHECK_IS_TEST();
+  error_log_path_ = path;
+}
+
 void MigrationCoordinator::OnMigrationDone(
     MigrationDoneCallback callback,
     std::map<base::FilePath, MigrationUploadError> errors,
     base::FilePath upload_root_path,
-    std::optional<base::FilePath> error_log_path) {
+    base::FilePath error_log_path) {
   uploader_.reset();
   std::move(callback).Run(std::move(errors), upload_root_path, error_log_path);
 }
@@ -185,11 +199,13 @@ MigrationCloudUploader::MigrationCloudUploader(
     Profile* profile,
     std::vector<base::FilePath> files,
     const std::string& upload_root,
+    const base::FilePath& error_log_path,
     MigrationDoneCallback callback)
     : profile_(profile),
       files_(std::move(files)),
       upload_root_(upload_root),
       done_callback_(std::move(callback)),
+      error_log_path_(error_log_path),
       log_task_runner_(base::ThreadPool::CreateSequencedTaskRunner(
           {base::MayBlock(), base::TaskPriority::BEST_EFFORT,
            base::TaskShutdownBehavior::BLOCK_SHUTDOWN})) {}
@@ -207,7 +223,6 @@ void MigrationCloudUploader::Run() {
     return;
   }
 
-  error_log_path_ = GetLogPath();
   log_task_runner_->PostTaskAndReplyWithResult(
       FROM_HERE,
       base::BindOnce(&CreateOrOpenLogFile, profile_, error_log_path_),
@@ -219,10 +234,12 @@ OneDriveMigrationUploader::OneDriveMigrationUploader(
     Profile* profile,
     std::vector<base::FilePath> files,
     const std::string& upload_root,
+    const base::FilePath& error_log_path,
     MigrationDoneCallback callback)
     : MigrationCloudUploader(profile,
                              std::move(files),
                              upload_root,
+                             error_log_path,
                              std::move(callback)) {}
 
 OneDriveMigrationUploader::~OneDriveMigrationUploader() = default;
@@ -250,9 +267,6 @@ void OneDriveMigrationUploader::OnLogFileReady(base::File log_file) {
 void OneDriveMigrationUploader::Cancel(base::OnceClosure callback) {
   cancelled_callback_ = std::move(callback);
   cancelled_ = true;
-
-  // TODO(aidazolic): Delete the log file.
-
   // Create a copy of the keys to iterate over. This is necessary because
   // calling Cancel() on the uploader may trigger OnUploadDone(), which
   // modifies the |uploaders_| map, potentially invalidating iterators.
@@ -280,9 +294,10 @@ void OneDriveMigrationUploader::OnUploadDone(
     return;
   }
 
-  // If we only failed to delete the file, don't fail the entire migration
-  // because of it.
-  if (error != MigrationUploadError::kDeleteFailed) {
+  SkyVaultMigrationUploadErrorHistogram(CloudProvider::kOneDrive,
+                                        error.value());
+
+  if (!ErrorCanBeIgnored(error.value())) {
     errors_.insert({file_path, error.value()});
   }
 
@@ -324,10 +339,12 @@ GoogleDriveMigrationUploader::GoogleDriveMigrationUploader(
     Profile* profile,
     std::vector<base::FilePath> files,
     const std::string& upload_root,
+    const base::FilePath& error_log_path,
     MigrationDoneCallback callback)
     : MigrationCloudUploader(profile,
                              std::move(files),
                              upload_root,
+                             error_log_path,
                              std::move(callback)) {}
 
 GoogleDriveMigrationUploader::~GoogleDriveMigrationUploader() = default;
@@ -353,9 +370,6 @@ void GoogleDriveMigrationUploader::OnLogFileReady(base::File log_file) {
 void GoogleDriveMigrationUploader::Cancel(base::OnceClosure callback) {
   cancelled_callback_ = std::move(callback);
   cancelled_ = true;
-
-  // TODO(aidazolic): Delete the log file.
-
   // Create a copy of the keys to iterate over. This is necessary because
   // calling Cancel() on the uploader may trigger OnUploadDone(), which
   // modifies the |uploaders_| map, potentially invalidating iterators.
@@ -383,9 +397,10 @@ void GoogleDriveMigrationUploader::OnUploadDone(
     return;
   }
 
-  // If we only failed to delete the file, don't fail the entire migration
-  // because of it.
-  if (error != MigrationUploadError::kDeleteFailed) {
+  SkyVaultMigrationUploadErrorHistogram(CloudProvider::kGoogleDrive,
+                                        error.value());
+
+  if (!ErrorCanBeIgnored(error.value())) {
     errors_.insert({file_path, error.value()});
   }
 

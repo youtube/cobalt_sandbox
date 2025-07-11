@@ -1459,6 +1459,7 @@ mojom::URLResponseHeadPtr URLLoader::BuildResponseHead() const {
 
   response->request_time = url_request_->request_time();
   response->response_time = url_request_->response_time();
+  response->original_response_time = url_request_->original_response_time();
   response->headers = url_request_->response_headers();
   response->parsed_headers =
       PopulateParsedHeaders(response->headers.get(), url_request_->url());
@@ -1599,8 +1600,11 @@ void URLLoader::OnReceivedRedirect(net::URLRequest* url_request,
   net::cookie_util::AddOrRemoveStorageAccessApiOverride(
       redirect_info.new_url, storage_access_api_status_,
       url_request_->initiator(), url_request_->cookie_setting_overrides());
-  url_request_->cookie_setting_overrides().Remove(
-      net::CookieSettingOverride::kStorageAccessGrantEligibleViaHeader);
+  if (!url::Origin::Create(url_request_->url())
+           .IsSameOriginWith(redirect_info.new_url)) {
+    url_request_->cookie_setting_overrides().Remove(
+        net::CookieSettingOverride::kStorageAccessGrantEligibleViaHeader);
+  }
 
   // Note: There are some ordering dependencies here.
   // `CalculateStorageAccessStatus` depends on

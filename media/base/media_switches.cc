@@ -11,7 +11,6 @@
 #include "base/command_line.h"
 #include "base/feature_list.h"
 #include "base/strings/string_number_conversions.h"
-#include "base/time/time.h"
 #include "build/build_config.h"
 #include "build/chromecast_buildflags.h"
 #include "build/chromeos_buildflags.h"
@@ -303,16 +302,6 @@ const char kCastMirroringTargetPlayoutDelay[] =
 
 namespace media {
 
-// Enables customized AudioRendererAlgorithmParameters.
-BASE_FEATURE(kAudioRendererAlgorithmParameters,
-             "AudioRendererAlgorithmParameters",
-             base::FEATURE_DISABLED_BY_DEFAULT);
-
-const base::FeatureParam<base::TimeDelta>
-    kAudioRendererAlgorithmStartingCapacityForEncrypted{
-        &kAudioRendererAlgorithmParameters, "starting_capacity_for_encrypted",
-        base::Milliseconds(500)};
-
 // Only used for disabling overlay fullscreen (aka SurfaceView) in Clank.
 BASE_FEATURE(kOverlayFullscreenVideo,
              "overlay-fullscreen-video",
@@ -442,13 +431,6 @@ BASE_FEATURE(kCdmHostVerification,
              "CdmHostVerification",
              base::FEATURE_ENABLED_BY_DEFAULT);
 
-// Use per-CDM-type, per-user and per-site CDM processes (for library CDM). If
-// disabled, the CDM processes are only per-CDM-type, meaning different sites
-// using the same CDM type would share one CDM process.
-BASE_FEATURE(kCdmProcessSiteIsolation,
-             "CdmProcessSiteIsolation",
-             base::FEATURE_ENABLED_BY_DEFAULT);
-
 // Enables the "Copy Video Frame" context menu item.
 BASE_FEATURE(kContextMenuCopyVideoFrame,
              "ContextMenuCopyVideoFrame",
@@ -480,6 +462,13 @@ BASE_FEATURE(kContextMenuSearchForVideoFrame,
 BASE_FEATURE(kChromeWideEchoCancellation,
              "ChromeWideEchoCancellation",
              base::FEATURE_ENABLED_BY_DEFAULT);
+#endif
+
+#if BUILDFLAG(IS_MAC)
+// Enforces the use of system echo cancellation.
+BASE_FEATURE(kEnforceSystemEchoCancellation,
+             "EnforceSystemEchoCancellation",
+             base::FEATURE_DISABLED_BY_DEFAULT);
 #endif
 
 #if BUILDFLAG(IS_CHROMEOS)
@@ -1128,10 +1117,6 @@ BASE_FEATURE(kMediaDrmGetStatusForPolicy,
              "MediaDrmGetStatusForPolicy",
              base::FEATURE_ENABLED_BY_DEFAULT);
 
-// Enables the use of MediaPlayerRenderer for HLS playback. When disabled,
-// HLS manifests will fail to load (triggering source fallback or load error).
-BASE_FEATURE(kHlsPlayer, "HlsPlayer", base::FEATURE_ENABLED_BY_DEFAULT);
-
 // When enabled, Playing media sessions will request audio focus from the
 // Android system.
 BASE_FEATURE(kRequestSystemAudioFocus,
@@ -1144,12 +1129,6 @@ BASE_FEATURE(kRequestSystemAudioFocus,
 BASE_FEATURE(kUseAudioLatencyFromHAL,
              "UseAudioLatencyFromHAL",
              base::FEATURE_DISABLED_BY_DEFAULT);
-
-// Enable pooling of AndroidVideoImageBacking objects for use by MCVD, to save a
-// hop to the GPU main thread during VideoFrame construction.
-BASE_FEATURE(kUsePooledSharedImageVideoProvider,
-             "UsePooledSharedImageVideoProvider",
-             base::FEATURE_ENABLED_BY_DEFAULT);
 
 // Allow the media pipeline to prioritize the software decoder provided by
 // MediaCodec, instead of the built-in software decoders. This is only enabled
@@ -1295,11 +1274,6 @@ BASE_FEATURE(kMediaFoundationD3D11VideoCapture,
 // Enable zero-copy based on MediaFoundation video capture with D3D11.
 BASE_FEATURE(kMediaFoundationD3D11VideoCaptureZeroCopy,
              "MediaFoundationD3D11VideoCaptureZeroCopy",
-             base::FEATURE_DISABLED_BY_DEFAULT);
-
-// Enables VP8 decode acceleration for Windows.
-BASE_FEATURE(kMediaFoundationVP8Decoding,
-             "MediaFoundationVP8Decoding",
              base::FEATURE_DISABLED_BY_DEFAULT);
 
 // Enables the use of MediaFoundationRenderer for clear content on supported
@@ -1755,7 +1729,16 @@ BASE_FEATURE(kMediaFoundationD3DVideoProcessing,
 
 bool IsChromeWideEchoCancellationEnabled() {
 #if BUILDFLAG(CHROME_WIDE_ECHO_CANCELLATION)
-  return base::FeatureList::IsEnabled(kChromeWideEchoCancellation);
+  return base::FeatureList::IsEnabled(kChromeWideEchoCancellation) &&
+         !IsSystemEchoCancellationEnforced();
+#else
+  return false;
+#endif
+}
+
+bool IsSystemEchoCancellationEnforced() {
+#if BUILDFLAG(IS_MAC)
+  return base::FeatureList::IsEnabled(kEnforceSystemEchoCancellation);
 #else
   return false;
 #endif

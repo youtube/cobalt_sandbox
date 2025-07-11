@@ -92,6 +92,8 @@ LensOverlayUntrustedUI::LensOverlayUntrustedUI(content::WebUI* web_ui)
       "translateTo", IDS_LENS_OVERLAY_TARGET_LANGUAGE_PICKER_MENU_TITLE);
   html_source->AddLocalizedString("allLanguages",
                                   IDS_LENS_OVERLAY_ALL_LANGUAGES_LABEL);
+  html_source->AddLocalizedString("recentLanguages",
+                                  IDS_LENS_OVERLAY_RECENT_LANGUAGES_LABEL);
   html_source->AddLocalizedString("languagePickerAriaLabel",
                                   IDS_LENS_OVERLAY_LANGUAGE_PICKER_LABEL);
   html_source->AddLocalizedString(
@@ -110,6 +112,11 @@ LensOverlayUntrustedUI::LensOverlayUntrustedUI(content::WebUI* web_ui)
       IDS_GOOGLE_SEARCH_BOX_CONTEXTUAL_LOADING_HINT_SECONDARY);
   html_source->AddLocalizedString("searchboxGhostLoaderErrorText",
                                   IDS_GOOGLE_SEARCH_BOX_CONTEXTUAL_ERROR_TEXT);
+  html_source->AddLocalizedString(
+      "searchboxGhostLoaderNoSuggestText",
+      IDS_GOOGLE_SEARCH_BOX_CONTEXTUAL_NO_SUGGEST_TEXT);
+  html_source->AddLocalizedString(
+      "searchButton", IDS_LENS_OVERLAY_SEARCH_LANGUAGE_PICKER_LABEL);
 
   // Add default theme colors.
   const auto& palette = lens::kPaletteColors.at(lens::PaletteId::kFallback);
@@ -181,14 +188,30 @@ LensOverlayUntrustedUI::LensOverlayUntrustedUI(content::WebUI* web_ui)
   html_source->AddBoolean(
       "enableOverlayContextualSearchbox",
       lens::features::IsLensOverlayContextualSearchboxEnabled());
-  html_source->AddBoolean("showContextualSearchboxGhostLoader",
-                          lens::features::ShowContextualSearchboxGhostLoader());
+  html_source->AddBoolean(
+      "showContextualSearchboxLoadingState",
+      lens::features::ShowContextualSearchboxGhostLoaderLoadingState());
+  html_source->AddBoolean(
+      "shouldFetchSupportedLanguages",
+      lens::features::IsLensOverlayTranslateLanguagesFetchEnabled());
+  html_source->AddString(
+      "translateSourceLanguages",
+      lens::features::GetLensOverlayTranslateSourceLanguages());
+  html_source->AddString(
+      "translateTargetLanguages",
+      lens::features::GetLensOverlayTranslateSourceLanguages());
+  html_source->AddDouble(
+      "languagesCacheTimeout",
+      lens::features::GetLensOverlaySupportedLanguagesCacheTimeoutMs()
+          .InMilliseconds());
+  html_source->AddInteger(
+      "recentLanguagesAmount",
+      lens::features::GetLensOverlayTranslateRecentLanguagesAmount());
 
   // Controller doesn't exist in unsupported context but WebUI should still
   // load.
   if (auto* controller =
-          LensOverlayController::GetControllerFromWebViewWebContents(
-              web_ui->GetWebContents())) {
+          LensOverlayController::GetController(web_ui->GetWebContents())) {
     html_source->AddDouble("invocationTime",
                            controller->GetInvocationTimeSinceEpoch());
     html_source->AddString("invocationSource",
@@ -260,7 +283,7 @@ void LensOverlayUntrustedUI::BindInterface(
 void LensOverlayUntrustedUI::BindInterface(
     mojo::PendingReceiver<searchbox::mojom::PageHandler> receiver) {
   LensOverlayController* controller =
-      LensOverlayController::GetController(web_ui());
+      LensOverlayController::GetController(web_ui()->GetWebContents());
   // TODO(crbug.com/360724768): This should not need to be null-checked and
   // exists here as a temporary solution to handle situations where lens may be
   // loaded in an unsupported context (e.g. browser tab). Remove this once work
@@ -295,7 +318,7 @@ void LensOverlayUntrustedUI::CreatePageHandler(
     mojo::PendingReceiver<lens::mojom::LensPageHandler> receiver,
     mojo::PendingRemote<lens::mojom::LensPage> page) {
   LensOverlayController* controller =
-      LensOverlayController::GetController(web_ui());
+      LensOverlayController::GetController(web_ui()->GetWebContents());
   // TODO(crbug.com/360724768): This should not need to be null-checked and
   // exists here as a temporary solution to handle situations where lens may be
   // loaded in an unsupported context (e.g. browser tab). Remove this once work
@@ -311,7 +334,7 @@ void LensOverlayUntrustedUI::CreatePageHandler(
 void LensOverlayUntrustedUI::CreateGhostLoaderPage(
     mojo::PendingRemote<lens::mojom::LensGhostLoaderPage> page) {
   LensOverlayController* controller =
-      LensOverlayController::GetController(web_ui());
+      LensOverlayController::GetController(web_ui()->GetWebContents());
   // TODO(crbug.com/360724768): See above.
   if (!controller) {
     return;

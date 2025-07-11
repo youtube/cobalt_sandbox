@@ -445,17 +445,18 @@ CanvasRenderingContext* HTMLCanvasElement::GetCanvasRenderingContext(
 
   Document& doc = GetDocument();
   if (IsRenderingContext2D()) {
-    UseCounter::CountWebDXFeature(doc, WebDXFeature::kCanvas2D);
+    UseCounter::CountWebDXFeature(doc, WebDXFeature::kCanvas2d);
   }
   if (attributes.alpha) {
-    UseCounter::CountWebDXFeature(doc, WebDXFeature::kCanvasAlpha);
+    UseCounter::CountWebDXFeature(doc, WebDXFeature::kCanvas2dAlpha);
   }
   if (attributes.desynchronized) {
-    UseCounter::CountWebDXFeature(doc, WebDXFeature::kCanvasDesynchronized);
+    UseCounter::CountWebDXFeature(doc, WebDXFeature::kCanvas2dDesynchronized);
   }
   if (attributes.will_read_frequently ==
       CanvasContextCreationAttributesCore::WillReadFrequently::kTrue) {
-    UseCounter::CountWebDXFeature(doc, WebDXFeature::kWillReadFrequently);
+    UseCounter::CountWebDXFeature(doc,
+                                  WebDXFeature::kCanvas2dWillreadfrequently);
   }
   if (IdentifiabilityStudySettings::Get()->ShouldSampleType(
           IdentifiableSurface::Type::kCanvasRenderingContext)) {
@@ -1109,7 +1110,7 @@ void HTMLCanvasElement::SetSurfaceSize(gfx::Size size) {
   did_fail_to_create_resource_provider_ = false;
   DiscardResourceProvider();
   if (IsRenderingContext2D() && context_->isContextLost())
-    context_->DidSetSurfaceSize();
+    context_->RestoreProviderAndContextIfPossible();
   if (frame_dispatcher_)
     frame_dispatcher_->Reshape(Size());
 }
@@ -1983,15 +1984,16 @@ HTMLCanvasElement::GetOrCreateCanvasResourceProviderFor2DContext(
 
   if (resource_provider->IsAccelerated()) {
     Canvas2DLayerBridge::ReportHibernationEvent(
-        Canvas2DLayerBridge::kHibernationEndedNormally);
+        CanvasHibernationHandler::HibernationEvent::kHibernationEndedNormally);
   } else {
     if (!IsPageVisible()) {
       Canvas2DLayerBridge::ReportHibernationEvent(
-          Canvas2DLayerBridge::
+          CanvasHibernationHandler::HibernationEvent::
               kHibernationEndedWithSwitchToBackgroundRendering);
     } else {
       Canvas2DLayerBridge::ReportHibernationEvent(
-          Canvas2DLayerBridge::kHibernationEndedWithFallbackToSW);
+          CanvasHibernationHandler::HibernationEvent::
+              kHibernationEndedWithFallbackToSW);
     }
   }
 

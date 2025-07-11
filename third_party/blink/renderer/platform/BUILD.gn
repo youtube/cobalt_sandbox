@@ -341,6 +341,7 @@ component("platform") {
   output_name = "blink_platform"
 
   sources = [
+    "accept_languages_watcher.h",
     "animation/animation_translation_util.cc",
     "animation/animation_translation_util.h",
     "animation/compositor_animation.cc",
@@ -709,6 +710,8 @@ component("platform") {
     "fonts/generic_font_family_settings.cc",
     "fonts/generic_font_family_settings.h",
     "fonts/glyph_metrics_map.h",
+    "fonts/opentype/color_table_lookup.cc",
+    "fonts/opentype/color_table_lookup.h",
     "fonts/opentype/font_format_check.cc",
     "fonts/opentype/font_format_check.h",
     "fonts/opentype/font_settings.cc",
@@ -1265,8 +1268,6 @@ component("platform") {
     "mediastream/aec_dump_agent_impl.h",
     "mediastream/audio_service_audio_processor_proxy.cc",
     "mediastream/audio_service_audio_processor_proxy.h",
-    "mediastream/media_constraints_consts.cc",
-    "mediastream/media_constraints_consts.h",
     "mediastream/media_stream_audio_deliverer.h",
     "mediastream/media_stream_audio_level_calculator.cc",
     "mediastream/media_stream_audio_level_calculator.h",
@@ -2172,6 +2173,7 @@ source_set("blink_platform_unittests_sources") {
     "fonts/font_test.cc",
     "fonts/font_test_utilities.cc",
     "fonts/generic_font_family_settings_test.cc",
+    "fonts/opentype/color_table_lookup_test.cc",
     "fonts/opentype/font_format_check_test.cc",
     "fonts/opentype/font_settings_test.cc",
     "fonts/opentype/open_type_baseline_metrics_test.cc",
@@ -2555,7 +2557,6 @@ test("blink_platform_perftests") {
     "//testing/perf",
     "//third_party:freetype_harfbuzz",
   ]
-  data = [ "testing/data/" ]
 }
 
 group("blink_platform_unittests_data") {

@@ -207,6 +207,7 @@ void ToastController::ShowToast(ToastParams params) {
   const ToastSpecification* current_toast_spec =
       toast_registry_->GetToastSpecification(params.toast_id);
   CHECK(current_toast_spec);
+  CHECK_EQ(current_toast_spec->has_menu(), !!params.menu_model);
 
   currently_showing_toast_id_ = params.toast_id;
   base::TimeDelta timeout =
@@ -261,6 +262,10 @@ void ToastController::CreateToast(ToastParams params,
                      params.action_button_string_replacement_params),
         spec->action_button_callback().Then(base::BindRepeating(
             &RecordToastActionButtonClicked, params.toast_id)));
+  }
+
+  if (params.menu_model) {
+    toast_view->AddMenu(std::move(params.menu_model));
   }
 
   toast_view_ = toast_view.get();

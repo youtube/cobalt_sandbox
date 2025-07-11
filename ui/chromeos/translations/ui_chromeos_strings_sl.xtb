@@ -422,6 +422,7 @@
 <translation id="4387004326333427325">Potrdilo za preverjanje pristnosti je bilo zavrnjeno na oddaljeni lokaciji</translation>
 <translation id="4394214039309501350">Zunanja povezava</translation>
 <translation id="4394980935660306080">Prej v tem tednu</translation>
+<translation id="4397435965699247285">OneDrive ni na voljo brez povezave</translation>
 <translation id="4398096759193130964">Obnovite elemente ali jih povlecite v novo mapo zunaj smetnjaka.</translation>
 <translation id="4401287888955153199">Razširi vse</translation>
 <translation id="4410695710508688828">Dejanje ekstrahiranja ni uspelo. <ph name="ERROR_MESSAGE" /></translation>
@@ -582,7 +583,6 @@
 <translation id="5447680084201416734">Ni dovolj prostora za shranjevanje.</translation>
 <translation id="5449551289610225147">Neveljavno geslo</translation>
 <translation id="5459064203055649751">Datoteka z imenom »<ph name="FILENAME" />« že obstaja. Ali jo želite zamenjati z datoteko, ki jo premikate?</translation>
-<translation id="5462378611565326489">OneDrive ni na voljo brez povezave.</translation>
 <translation id="5463231940765244860">Vnos</translation>
 <translation id="5469868506864199649">italijanščina</translation>
 <translation id="5473333559083690127">Vnovični vnos nove kode PIN</translation>
@@ -664,7 +664,7 @@
 <translation id="6096979789310008754">Besedilo iskanja je izbrisano, prikaz vseh datotek in map.</translation>
 <translation id="610101264611565198">Premikanje datoteke <ph name="FILE_NAME" /> v mapo <ph name="FOLDER_NAME" /></translation>
 <translation id="61118516107968648">Besedilna datoteka CSV</translation>
-<translation id="6129953537138746214">Presledek</translation>
+<translation id="6129953537138746214">Preslednica</translation>
 <translation id="6133173853026656527">Premikanje datoteke <ph name="FILE_NAME" /> ...</translation>
 <translation id="6133877453787250710">Skrbnik nadzira:</translation>
 <translation id="613750717151263950">japonščina z angleško tipkovnico (ZDA)</translation>

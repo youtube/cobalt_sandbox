@@ -358,8 +358,9 @@ fyi_reclient_staging_builder(
         ],
     ),
     builderless = True,
-    cores = 32,
+    cores = 16,
     os = os.WINDOWS_ANY,
+    ssd = True,
     console_view_category = "win",
     execution_timeout = 5 * time.hour,
 )
@@ -390,8 +391,9 @@ fyi_reclient_test_builder(
         ],
     ),
     builderless = True,
-    cores = 32,
+    cores = 16,
     os = os.WINDOWS_ANY,
+    ssd = True,
     console_view_category = "win",
     execution_timeout = 5 * time.hour,
     reclient_rewrapper_env = {
@@ -617,8 +619,9 @@ ci.builder(
         ),
     },
     builderless = True,
-    cores = 32,
+    cores = 16,
     os = os.WINDOWS_DEFAULT,
+    ssd = True,
     console_view_entry = consoles.console_view_entry(
         category = "win",
         short_name = "detcross",
@@ -660,8 +663,9 @@ ci.builder(
         ],
     ),
     builderless = True,
-    cores = 32,
+    cores = 16,
     os = os.WINDOWS_DEFAULT,
+    ssd = True,
     console_view_entry = consoles.console_view_entry(
         category = "win",
         short_name = "compcross",

@@ -212,9 +212,7 @@ bool IsAmbientAuthAllowedForProfile(Profile* profile) {
   }
 
   // Profile type not yet supported.
-  NOTREACHED_IN_MIGRATION();
-
-  return false;
+  NOTREACHED();
 }
 
 void UpdateAntiAbuseSettings(Profile* profile) {
@@ -1110,9 +1108,8 @@ ProfileNetworkContextService::CreateClientCertStore() {
   // Note that while this applies to the whole sign-in profile / lock screen
   // profile, client certificates will only be selected for the StoragePartition
   // currently used in the sign-in frame (see SigninPartitionManager).
-  if (ash::switches::IsSigninFrameClientCertsEnabled() &&
-      (ash::ProfileHelper::IsSigninProfile(profile_) ||
-       ash::ProfileHelper::IsLockScreenProfile(profile_))) {
+  if (ash::ProfileHelper::IsSigninProfile(profile_) ||
+      ash::ProfileHelper::IsLockScreenProfile(profile_)) {
     use_system_key_slot = true;
   }
 
@@ -1321,11 +1318,11 @@ void ProfileNetworkContextService::ConfigureNetworkContextParamsInternal(
         base::FilePath(chrome::kCookieFilename);
 
 #if BUILDFLAG(IS_WIN)
-    // If this feature is enabled, then the cookie database used by this profile
-    // will be locked for exclusive access by sqlite3 implementation in the
-    // network service.
-    network_context_params->enable_locking_cookie_database =
-        base::FeatureList::IsEnabled(features::kLockProfileCookieDatabase);
+    // The cookie database used by this profile will be locked for exclusive
+    // access by sqlite3 implementation in the network service.
+    //
+    // TODO(crbug.com/377642763): See if we can remove this flag.
+    network_context_params->enable_locking_cookie_database = true;
 #endif  // BUILDFLAG(IS_WIN)
 
     g_browser_process->system_network_context_manager()

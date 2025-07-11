@@ -96,13 +96,12 @@ class AuthenticatorRequestDialogController
   //
   // Valid action when at step: kNotStarted.
   void StartFlow(device::FidoRequestHandlerBase::TransportAvailabilityInfo
-                     transport_availability,
-                 bool is_conditional_mediation);
+                     transport_availability);
 
   // Starts a modal WebAuthn flow (i.e. what you normally get if you call
   // WebAuthn with no mediation parameter) from a conditional request.
   //
-  // Valid action when at step: kConditionalMediation.
+  // Valid action when at step: kPasskeyAutofill.
   void TransitionToModalWebAuthnRequest();
 
   // Starts the UX flow. Tries to figure out the most likely transport to be
@@ -352,6 +351,11 @@ class AuthenticatorRequestDialogController
 
   void set_ambient_credential_types(int types);
 
+  content::AuthenticatorRequestClientDelegate::UIPresentation ui_presentation()
+      const;
+  void set_ui_presentation(
+      content::AuthenticatorRequestClientDelegate::UIPresentation modality);
+
   base::WeakPtr<AuthenticatorRequestDialogController> GetWeakPtr();
 
  private:
@@ -418,7 +422,7 @@ class AuthenticatorRequestDialogController
   void ContactPhoneAfterOffTheRecordInterstitial(std::string name);
   void ContactPhoneAfterBleIsPowered(std::string name);
 
-  void StartConditionalMediationRequest();
+  void StartAutofillRequest();
 
   void DispatchRequestAsync(AuthenticatorReference* authenticator);
 
@@ -508,9 +512,8 @@ class AuthenticatorRequestDialogController
   base::OnceCallback<void(device::AuthenticatorGetAssertionResponse)>
       selection_callback_;
 
-  // True if this request should display credentials on the password autofill
-  // prompt instead of the page-modal, regular UI.
-  bool use_conditional_mediation_ = false;
+  content::AuthenticatorRequestClientDelegate::UIPresentation ui_presentation_ =
+      content::AuthenticatorRequestClientDelegate::UIPresentation::kModal;
 
   // cable_extension_provided_ indicates whether the request included a caBLE
   // extension.
@@ -557,7 +560,7 @@ class AuthenticatorRequestDialogController
   // profile authenticator.
   bool should_create_in_icloud_keychain_ = false;
 
-  // enclave_enabled_status_ determines whether Googple Password Manager entries
+  // enclave_enabled_status_ determines whether Google Password Manager entries
   // should be offered both for `makeCredential` or `getAssertion`. If reauth
   // needed, instead of offering the actual passkeys or creating a passkey,
   // re-authentication to Google is offered.

@@ -132,7 +132,7 @@ void SupervisedUserGoogleAuthNavigationThrottle::OnGoogleAuthStateChanged() {
     case content::NavigationThrottle::BLOCK_REQUEST:
     case content::NavigationThrottle::BLOCK_REQUEST_AND_COLLAPSE:
     case content::NavigationThrottle::BLOCK_RESPONSE: {
-      NOTREACHED_IN_MIGRATION();
+      NOTREACHED();
     }
   }
 }
@@ -186,7 +186,7 @@ SupervisedUserGoogleAuthNavigationThrottle::ShouldProceed() {
     case content::FrameType::kPrerenderMainFrame:
       return content::NavigationThrottle::PROCEED;
     default:
-      NOTREACHED_NORETURN();
+      NOTREACHED();
   }
 
   // Cancel the navigation and show the re-authentication page.

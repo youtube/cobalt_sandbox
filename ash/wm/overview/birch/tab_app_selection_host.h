@@ -29,6 +29,9 @@ class TabAppSelectionHost : public views::Widget {
   // Slides the widget under `owner_` before hiding it.
   void SlideOut();
 
+  // Removes an item associated with given `identifier` from selection view.
+  void RemoveItem(std::string_view identifier);
+
   // views::Widget:
   void OnNativeWidgetVisibilityChanged(bool visible) override;
 
@@ -41,6 +44,9 @@ class TabAppSelectionHost : public views::Widget {
 
   std::unique_ptr<SelectionHostHider> hider_;
   const raw_ptr<BirchChipButton> owner_;
+
+  // Used for metrics.
+  int number_of_removed_items_ = 0;
 
   // This widget isn't activatable so this is a way to force accessibility
   // features to focus on the underlying window.

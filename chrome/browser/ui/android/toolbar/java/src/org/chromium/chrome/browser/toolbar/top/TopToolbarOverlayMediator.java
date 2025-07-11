@@ -82,6 +82,7 @@ public class TopToolbarOverlayMediator {
     /** Whether a layout that this overlay can be displayed on is showing. */
     private boolean mIsOnValidLayout;
 
+    private ObservableSupplier<Tab> mTabSupplier;
     private float mViewportHeight;
 
     TopToolbarOverlayMediator(
@@ -104,6 +105,7 @@ public class TopToolbarOverlayMediator {
         mBottomToolbarControlsOffsetSupplier = bottomToolbarControlsOffsetSupplier;
         mIsVisibilityManuallyControlled = manualVisibilityControl;
         mIsOnValidLayout = (mLayoutStateProvider.getActiveLayoutType() & layoutsToShowOn) > 0;
+        mTabSupplier = tabSupplier;
         updateVisibility();
 
         mSceneChangeObserver =
@@ -146,6 +148,11 @@ public class TopToolbarOverlayMediator {
                                 updateThemeColor(tab);
                                 updateAnonymize(tab);
                             }
+
+                            @Override
+                            public void didBackForwardTransitionAnimationChange(Tab tab) {
+                                updateVisibility();
+                            }
                         },
                         activityTabCallback);
 
@@ -162,7 +169,7 @@ public class TopToolbarOverlayMediator {
                             int bottomControlsMinHeightOffset,
                             boolean needsAnimate,
                             boolean isVisibilityForced) {
-                        if (!ToolbarFeatures.isBrowserControlsInVizEnabled(isTablet())
+                        if (!ChromeFeatureList.sBrowserControlsInViz.isEnabled()
                                 || needsAnimate
                                 || isVisibilityForced) {
                             updateContentOffset();
@@ -189,7 +196,7 @@ public class TopToolbarOverlayMediator {
                             BrowserControlsOffsetTagsInfo oldOffsetTagsInfo,
                             BrowserControlsOffsetTagsInfo offsetTagsInfo,
                             @BrowserControlsState int constraints) {
-                        if (ToolbarFeatures.isBrowserControlsInVizEnabled(isTablet())) {
+                        if (ChromeFeatureList.sBrowserControlsInViz.isEnabled()) {
                             if (ChromeFeatureList.sBcivZeroBrowserFrames.isEnabled()) {
                                 mModel.set(
                                         TopToolbarOverlayProperties.TOOLBAR_OFFSET_TAG,
@@ -200,19 +207,11 @@ public class TopToolbarOverlayMediator {
                                         offsetTagsInfo.getContentOffsetTag());
                             }
 
-                            // With BCIV enabled, scrolling will not update the content offset of
-                            // the browser's compositor frame. If we transition to a HIDDEN state
-                            // while the controls are already scrolled offscreen, then there is no
-                            // need to move the top controls, which means the renderer will not
-                            // notify the browser to move them. We set the content offset here so
-                            // the browser will submit a compositor frame with the correct offset.
-                            int contentOffset = mBrowserControlsStateProvider.getContentOffset();
-                            if (constraints == BrowserControlsState.HIDDEN
-                                    && contentOffset
-                                            == mBrowserControlsStateProvider
-                                                    .getTopControlsMinHeight()) {
+                            if (mBrowserControlsStateProvider
+                                    .shouldUpdateOffsetsWhenConstraintsChange()) {
                                 mModel.set(
-                                        TopToolbarOverlayProperties.CONTENT_OFFSET, contentOffset);
+                                        TopToolbarOverlayProperties.CONTENT_OFFSET,
+                                        mBrowserControlsStateProvider.getContentOffset());
                             }
                         }
                     }
@@ -238,7 +237,7 @@ public class TopToolbarOverlayMediator {
      * android view is not shown.
      */
     private void updateShadowState() {
-        if (ToolbarFeatures.isBrowserControlsInVizEnabled(isTablet())
+        if (ChromeFeatureList.sBrowserControlsInViz.isEnabled()
                 && ChromeFeatureList.sBcivZeroBrowserFrames.isEnabled()) {
             // With BCIV enabled, we show the hairline on the composited toolbar by default,
             // and we don't want to update its visibility from the browser, because that incurs a
@@ -325,7 +324,11 @@ public class TopToolbarOverlayMediator {
 
     /** Update the visibility of the overlay. */
     private void updateVisibility() {
-        if (mIsVisibilityManuallyControlled) {
+        Tab tab = mTabSupplier.get();
+        if (tab != null && tab.isNativePage() && tab.isDisplayingBackForwardAnimation()) {
+            // TODO(crbug.com/365818512): Add a screenshot capture test to cover this case.
+            mModel.set(TopToolbarOverlayProperties.VISIBLE, false);
+        } else if (mIsVisibilityManuallyControlled) {
             mModel.set(TopToolbarOverlayProperties.VISIBLE, mManualVisibility && mIsOnValidLayout);
         } else {
             boolean visibility =

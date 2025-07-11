@@ -1518,6 +1518,10 @@ AutofillSaveCreditCardPromptDestination.
 
     Any form that contains at least one credit card field counts as credit card
     form.
+
+    Note that the Fillable.AtFillTimeAfterSecurityPolicy variant is not recorded
+    because at the time of recording the available information are not enough to
+    infer this metric.
   </summary>
   <token key="AutofillSeamlessnessFillability"
       variants="AutofillSeamlessnessFillability"/>
@@ -1547,6 +1551,10 @@ AutofillSaveCreditCardPromptDestination.
     Bit #2 is true iff an expiraton date was filled.
 
     Bit #1 is true iff a CVC name was filled.
+
+    Note that the Fillable.AtFillTimeAfterSecurityPolicy variant is not recorded
+    because at the time of recording the available information are not enough to
+    infer this metric.
   </summary>
   <token key="AutofillSeamlessnessFillability"
       variants="AutofillSeamlessnessFillability"/>
@@ -3318,6 +3326,21 @@ AutofillSaveCreditCardPromptDestination.
     Records whether a form submission was inferred after html forms or formless
     fields were removed from the page. Recorded when a set of html forms or
     formless fields are removed from the page. iOS only.
+  </summary>
+</histogram>
+
+<histogram name="Autofill.iOS.FormSubmission.IsProgrammatic" enum="Boolean"
+    expires_after="M135">
+  <owner>eic@google.com</owner>
+  <owner>vincb@google.com</owner>
+  <owner>bling-transactions@google.com</owner>
+  <summary>
+    Records whether an http form submission was triggered by a script (i.e.
+    form.submit()). On iOS, we have to modify the prototype of HtmlFormElement
+    to detect programmatic form submissions. This histogram is for tracking
+    which submissions are detected through the modified prototype. Recorded when
+    the browser process receives a form submission message from the renderer.
+    iOS only.
   </summary>
 </histogram>
 
@@ -5289,34 +5312,6 @@ AutofillSaveCreditCardPromptDestination.
   <summary>Usage of the &quot;Scan card&quot; control item.</summary>
 </histogram>
 
-<histogram name="Autofill.Sectioning.FieldsPerSection" units="Fields"
-    expires_after="2025-03-09">
-  <owner>fleimgruber@google.com</owner>
-  <owner>schwering@google.com</owner>
-  <owner>chrome-autofill-alerts@google.com</owner>
-  <summary>
-    The number of fields per section after sectioning a form using
-    kAutofillUseParameterizedSectioning. Only considers fields that may actually
-    be autofilled: fields that (a) are either focusable or a select field, and
-    (b) have a fillable type (e.g., UNKNOWN_TYPE and NUMERIC_QUANTITY are not
-    fillable). Emitted once per section every time sectioning is done.
-  </summary>
-</histogram>
-
-<histogram name="Autofill.Sectioning.NumberOfSections" units="Sections"
-    expires_after="2025-03-09">
-  <owner>fleimgruber@google.com</owner>
-  <owner>schwering@google.com</owner>
-  <owner>chrome-autofill-alerts@google.com</owner>
-  <summary>
-    The number of sections after sectioning a form using
-    kAutofillUseParameterizedSectioning. Only considers fields that may actually
-    be autofilled: fields that (a) are either focusable or a select field, and
-    (b) have a fillable type (e.g., UNKNOWN_TYPE and NUMERIC_QUANTITY are not
-    fillable). Emitted every time sectioning is done.
-  </summary>
-</histogram>
-
 <histogram name="Autofill.ServerCardLinkClicked" enum="AutofillSyncState"
     expires_after="2025-07-01">
   <owner>jsaul@google.com</owner>
@@ -5443,7 +5438,7 @@ AutofillSaveCreditCardPromptDestination.
   </token>
 </histogram>
 
-<histogram name="Autofill.SettingsPageActions.LocalIban"
+<histogram name="Autofill.SettingsPage.LocalIbanActions"
     enum="AutofillPaymentMethodsActionEnum" expires_after="2025-07-01">
   <owner>jsaul@google.com</owner>
   <owner>averina@google.com</owner>

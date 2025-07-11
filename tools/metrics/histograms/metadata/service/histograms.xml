@@ -678,7 +678,7 @@ chromium-metrics-reviews@google.com.
 
 <histogram
     name="ServiceWorker.LoadTiming.MainFrame.MainResource.FetchHandlerStartToFetchHandlerEndByFetchResult_{ServiceWorkerFetchEventResult}"
-    units="ms" expires_after="2024-12-08">
+    units="ms" expires_after="2025-06-30">
   <owner>yyanagisawa@chromium.org</owner>
   <owner>chrome-worker@google.com</owner>
   <summary>
@@ -1112,7 +1112,7 @@ chromium-metrics-reviews@google.com.
 </histogram>
 
 <histogram name="ServiceWorker.MaybeStartWorker.RunningStatus"
-    enum="EmbeddedWorkerStatus" expires_after="2024-12-01">
+    enum="EmbeddedWorkerStatus" expires_after="2025-06-30">
   <owner>yyanagisawa@chromium.org</owner>
   <owner>chrome-worker@google.com</owner>
   <summary>
@@ -1396,7 +1396,7 @@ chromium-metrics-reviews@google.com.
 </histogram>
 
 <histogram name="ServiceWorker.StartTiming.Duration" units="ms"
-    expires_after="2024-12-08">
+    expires_after="2025-06-30">
   <owner>yyanagisawa@chromium.org</owner>
   <owner>chrome-worker@google.com</owner>
   <summary>
@@ -1413,7 +1413,7 @@ chromium-metrics-reviews@google.com.
 
 <histogram
     name="ServiceWorker.StartTiming.ReceivedStartWorkerToScriptEvaluationStart"
-    units="ms" expires_after="2024-12-08">
+    units="ms" expires_after="2025-06-30">
   <owner>yyanagisawa@chromium.org</owner>
   <owner>chrome-worker@google.com</owner>
   <summary>
@@ -1473,7 +1473,7 @@ chromium-metrics-reviews@google.com.
 </histogram>
 
 <histogram name="ServiceWorker.StartTiming.StartToScriptEvaluationEnd"
-    units="ms" expires_after="2024-12-01">
+    units="ms" expires_after="2025-06-30">
   <owner>yyanagisawa@chromium.org</owner>
   <owner>chrome-worker@google.com</owner>
   <summary>
@@ -1486,7 +1486,7 @@ chromium-metrics-reviews@google.com.
 </histogram>
 
 <histogram name="ServiceWorker.StartTiming.StartToScriptEvaluationStart"
-    units="ms" expires_after="2024-12-01">
+    units="ms" expires_after="2025-06-30">
   <owner>yyanagisawa@chromium.org</owner>
   <owner>chrome-worker@google.com</owner>
   <summary>
@@ -1499,7 +1499,7 @@ chromium-metrics-reviews@google.com.
 </histogram>
 
 <histogram name="ServiceWorker.StartTiming.StartToSentStartWorker" units="ms"
-    expires_after="2024-12-01">
+    expires_after="2025-06-30">
   <owner>yyanagisawa@chromium.org</owner>
   <owner>chrome-worker@google.com</owner>
   <summary>
@@ -1510,7 +1510,7 @@ chromium-metrics-reviews@google.com.
 </histogram>
 
 <histogram name="ServiceWorker.StartWorker.Purpose"
-    enum="ServiceWorkerMetrics.EventType" expires_after="2024-12-08">
+    enum="ServiceWorkerMetrics.EventType" expires_after="2025-06-30">
   <owner>yyanagisawa@chromium.org</owner>
   <owner>chrome-worker@google.com</owner>
   <summary>
@@ -1535,7 +1535,7 @@ chromium-metrics-reviews@google.com.
 
 <histogram
     name="ServiceWorker.StartWorker.StatusByPurpose_{ServiceWorkerEventType}"
-    enum="ServiceWorkerStatusCode" expires_after="2024-12-01">
+    enum="ServiceWorkerStatusCode" expires_after="2025-06-30">
   <owner>yyanagisawa@chromium.org</owner>
   <owner>chrome-worker@google.com</owner>
   <summary>
@@ -1679,20 +1679,8 @@ chromium-metrics-reviews@google.com.
   </summary>
 </histogram>
 
-<histogram name="ServiceWorker.Storage.RetryCountForRecovery" units="retries"
-    expires_after="2024-12-15">
-  <owner>yyanagisawa@chromium.org</owner>
-  <owner>chrome-worker@google.com</owner>
-  <summary>
-    The counts of retries to recover after a Storage Service crash. Logged after
-    a recovery, or the maximum number of retries is exceeded. See
-    ServiceWorkerRegistry::OnRemoteStorageDisconnected() for the maximum number
-    of retries.
-  </summary>
-</histogram>
-
 <histogram name="ServiceWorker.Subresource.Fallbacked.Type2"
-    enum="ResourceType" expires_after="2024-12-04">
+    enum="ResourceType" expires_after="2025-06-30">
   <owner>yyanagisawa@google.com</owner>
   <owner>chrome-worker@google.com</owner>
   <summary>
@@ -1705,7 +1693,7 @@ chromium-metrics-reviews@google.com.
 </histogram>
 
 <histogram name="ServiceWorker.Subresource.Handled.Type2" enum="ResourceType"
-    expires_after="2024-12-04">
+    expires_after="2025-06-30">
   <owner>yyanagisawa@google.com</owner>
   <owner>chrome-worker@google.com</owner>
   <summary>
@@ -1996,6 +1984,53 @@ chromium-metrics-reviews@google.com.
   <token key="ServiceWorkerSchedulerOp" variants="ServiceWorkerSchedulerOp"/>
 </histogram>
 
+<histogram name="Worker.BrowserProcess.DevToolsCreateTime" units="ms"
+    expires_after="2025-04-01">
+  <owner>yyanagisawa@chromium.org</owner>
+  <owner>chrome-worker@google.com</owner>
+  <summary>
+    The time in ms for setting up the devtools agent for the dedicated worker to
+    trace the dedicated worker script fetch.
+  </summary>
+</histogram>
+
+<histogram name="Worker.BrowserProcess.StartScriptLoadTime" units="ms"
+    expires_after="2025-04-01">
+  <owner>yyanagisawa@chromium.org</owner>
+  <owner>chrome-worker@google.com</owner>
+  <summary>
+    The time in ms from when a dedicated worker host is created inside the
+    browser process until when the script is started to load in the browser
+    process.
+  </summary>
+</histogram>
+
+<histogram name="Worker.BrowserProcess.WorkerHostCreateTime" units="ms"
+    expires_after="2025-04-01">
+  <owner>yyanagisawa@chromium.org</owner>
+  <owner>chrome-worker@google.com</owner>
+  <summary>
+    The time in ms for creating a DedicatedWorkerHost in the browser process.
+    The time include all procedures that is needed for creating the
+    DedicatedWorkerHost.
+  </summary>
+</histogram>
+
+<histogram name="Worker.DevTools.AgentHost.Size" units="count"
+    expires_after="2025-04-01">
+  <owner>yyanagisawa@chromium.org</owner>
+  <owner>chrome-worker@google.com</owner>
+  <summary>
+    If PlzDedicatedWorker is enabled, DedicatedWorkerDebToolsAgent will be
+    created and kept in the WorkerDevtoolsManager. This metric shows the number
+    of the agent kept in the manager. The metric is recorded when the new entry
+    is created, which correspond to timing when the
+    Worker.BrowserProcess.DevToolsCreateTime metric is recorded. Therefore, it
+    can be used for good understanding on how the number of entries affect the
+    devtools agent creation time.
+  </summary>
+</histogram>
+
 <histogram name="Worker.TopLevelScript.FetchClassicScriptTime" units="ms"
     expires_after="2025-04-01">
   <owner>yyanagisawa@chromium.org</owner>
@@ -2041,6 +2076,17 @@ chromium-metrics-reviews@google.com.
     fetch finished. This includes PlzDedicatedWorker to offload starting to
     fetch a script in the browser process. It does not include the initial
     evaluation of the script.
+  </summary>
+</histogram>
+
+<histogram name="Worker.TopLevelScript.WorkerHostCreatedTime" units="ms"
+    expires_after="2025-04-01">
+  <owner>yyanagisawa@chromium.org</owner>
+  <owner>chrome-worker@google.com</owner>
+  <summary>
+    The time in ms from when a dedicated worker starts until the worker host
+    creation callback is called from the browser process. This roughly means IPC
+    turn-around time betweeen the renderer process and the browser process.
   </summary>
 </histogram>
 

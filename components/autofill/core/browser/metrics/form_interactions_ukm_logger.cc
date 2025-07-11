@@ -375,7 +375,8 @@ void FormInteractionsUkmLogger::LogAutofillFieldInfoAtFormRemove(
           // UKM logging.
           break;
 #endif
-        case HeuristicSource::kMachineLearning:
+        case HeuristicSource::kAutofillMachineLearning:
+        case HeuristicSource::kPasswordManagerMachineLearning:
           NOTREACHED();
       }
 
@@ -600,7 +601,7 @@ void FormInteractionsUkmLogger::
   // Determine whether `pattern` matches `value`.
   auto matches = [](const std::u16string& value,
                     const icu::RegexPattern& pattern) {
-    return !value.empty() && autofill::MatchesRegex(value, pattern);
+    return !value.empty() && MatchesRegex(value, pattern);
   };
   // Count in `num_experimental_fields[i]` if `pattern[i]` matches the label,
   // id_attribute or name_attribute of `field`. Returns true if any pattern
@@ -861,37 +862,6 @@ void FormInteractionsUkmLogger::LogHiddenRepresentationalFieldSkipDecision(
       .SetHtmlFieldType(static_cast<int>(field.html_type()))
       .SetHtmlFieldMode(static_cast<int>(field.html_mode()))
       .SetIsSkipped(is_skipped)
-      .Record(ukm_recorder_);
-}
-
-void FormInteractionsUkmLogger::LogRepeatedServerTypePredictionRationalized(
-    const FormSignature form_signature,
-    const AutofillField& field,
-    FieldType old_type) {
-  if (!CanLog()) {
-    return;
-  }
-
-  ukm::builders::Autofill_RepeatedServerTypePredictionRationalized(
-      GetSourceId())
-      .SetFormSignature(HashFormSignature(form_signature))
-      .SetFieldSignature(HashFieldSignature(field.GetFieldSignature()))
-      .SetFieldTypeGroup(static_cast<int>(field.Type().group()))
-      .SetFieldNewOverallType(static_cast<int>(field.Type().GetStorableType()))
-      .SetHeuristicType(static_cast<int>(field.heuristic_type()))
-      .SetHtmlFieldType(static_cast<int>(field.html_type()))
-      .SetHtmlFieldMode(static_cast<int>(field.html_mode()))
-      .SetServerType(static_cast<int>(field.server_type()))
-      .SetFieldOldOverallType(static_cast<int>(old_type))
-      .Record(ukm_recorder_);
-}
-
-void FormInteractionsUkmLogger::LogSectioningHash(
-    FormSignature form_signature,
-    uint32_t sectioning_signature) {
-  ukm::builders::Autofill_Sectioning(GetSourceId())
-      .SetFormSignature(HashFormSignature(form_signature))
-      .SetSectioningSignature(sectioning_signature % 1024)
       .Record(ukm_recorder_);
 }
 

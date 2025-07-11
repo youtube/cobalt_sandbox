@@ -10,6 +10,8 @@
 #include "base/feature_list.h"
 #include "base/functional/bind.h"
 #include "base/memory/weak_ptr.h"
+#include "base/metrics/user_metrics.h"
+#include "base/metrics/user_metrics_action.h"
 #include "base/notimplemented.h"
 #include "base/notreached.h"
 #include "base/ranges/algorithm.h"
@@ -613,6 +615,11 @@ void AutofillContextMenuManager::AddPasswordsManualFallbackItems(
         IDC_CONTENT_CONTEXT_AUTOFILL_FALLBACK_PASSWORDS_SELECT_PASSWORD,
         IDS_CONTENT_CONTEXT_AUTOFILL_FALLBACK_PASSWORDS_SELECT_PASSWORD);
   }
+  if (add_password_generation_option) {
+    passwords_submenu_model_.AddItemWithStringId(
+        IDC_CONTENT_CONTEXT_AUTOFILL_FALLBACK_PASSWORDS_SUGGEST_PASSWORD,
+        IDS_CONTENT_CONTEXT_AUTOFILL_FALLBACK_PASSWORDS_SUGGEST_PASSWORD);
+  }
   if (add_no_saved_passwords_option) {
     // This entry is disabled (i.e. it is greyed out and doesn't do anything
     // upon clicking). The logic which disables it is in
@@ -626,13 +633,6 @@ void AutofillContextMenuManager::AddPasswordsManualFallbackItems(
         IDC_CONTENT_CONTEXT_AUTOFILL_FALLBACK_PASSWORDS_IMPORT_PASSWORDS,
         IDS_CONTENT_CONTEXT_AUTOFILL_FALLBACK_PASSWORDS_IMPORT_PASSWORDS);
   }
-
-  if (add_password_generation_option) {
-    passwords_submenu_model_.AddItemWithStringId(
-        IDC_CONTENT_CONTEXT_AUTOFILL_FALLBACK_PASSWORDS_SUGGEST_PASSWORD,
-        IDS_CONTENT_CONTEXT_AUTOFILL_FALLBACK_PASSWORDS_SUGGEST_PASSWORD);
-  }
-
   if (add_passkey_from_another_device_option) {
     passwords_submenu_model_.AddItemWithStringId(
         IDC_CONTENT_CONTEXT_AUTOFILL_FALLBACK_PASSWORDS_USE_PASSKEY_FROM_ANOTHER_DEVICE,
@@ -782,7 +782,8 @@ void AutofillContextMenuManager::ExecuteFallbackForPlusAddressesCommand(
                     FieldRendererId(params_.field_renderer_id)},
       AutofillSuggestionTriggerSource::kManualFallbackPlusAddresses);
 
-  // TODO(crbug.com/327566698): Add metrics for plus addresses.
+  base::RecordAction(base::UserMetricsAction(
+      "PlusAddresses.ManualFallbackDesktopContextManualFallbackSelected"));
   UserEducationService::MaybeNotifyNewBadgeFeatureUsed(
       delegate_->GetBrowserContext(),
       plus_addresses::features::kPlusAddressFallbackFromContextMenu);

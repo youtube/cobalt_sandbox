@@ -24,9 +24,9 @@ class IconButton;
 class PickerEmojiBarViewDelegate;
 class SystemShadow;
 
-// View for the Picker emoji bar, which is a small bar above the main Picker
-// container that shows expression search results (i.e. emojis, symbols and
-// emoticons).
+// View for the Quick Insert emoji bar, which is a small bar above the main
+// Quick Insert container that shows expression search results (i.e. emojis,
+// symbols and emoticons).
 class ASH_EXPORT PickerEmojiBarView : public views::View,
                                       public PickerTraversableItemContainer {
   METADATA_HEADER(PickerEmojiBarView, views::View)
@@ -34,7 +34,7 @@ class ASH_EXPORT PickerEmojiBarView : public views::View,
  public:
   // `delegate` must remain valid for the lifetime of this class.
   PickerEmojiBarView(PickerEmojiBarViewDelegate* delegate,
-                     int picker_view_width,
+                     int quick_insert_view_width,
                      bool is_gifs_enabled = false);
   PickerEmojiBarView(const PickerEmojiBarView&) = delete;
   PickerEmojiBarView& operator=(const PickerEmojiBarView&) = delete;
@@ -86,8 +86,8 @@ class ASH_EXPORT PickerEmojiBarView : public views::View,
   // `delegate_` outlives `this`.
   raw_ptr<PickerEmojiBarViewDelegate> delegate_;
 
-  // The width of the PickerView that contains this emoji bar.
-  int picker_view_width_ = 0;
+  // The width of the QuickInsertView that contains this emoji bar.
+  int quick_insert_view_width_ = 0;
 
   // Contains the item views corresponding to each search result.
   raw_ptr<views::View> item_row_ = nullptr;

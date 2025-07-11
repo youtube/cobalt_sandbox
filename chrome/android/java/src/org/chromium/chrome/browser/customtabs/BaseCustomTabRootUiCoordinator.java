@@ -311,10 +311,23 @@ public class BaseCustomTabRootUiCoordinator extends RootUiCoordinator {
                         && SigninFeatureMap.isEnabled(SigninFeatures.CCT_SIGN_IN_PROMPT);
         if (!signInPromptEnabled) return null;
 
-        if (isMismatchNotificationSuppressed()) return null;
+        if (isMismatchNotificationSuppressed()) {
+            MismatchNotificationController.recordMismatchNoticeSuppressedHistogram(
+                    MismatchNotificationController.SuppressedReason.FRE_COMPLETED_RECENTLY);
+            return null;
+        }
+
+        if (!mProfileSupplier.hasValue()) {
+            return null;
+        }
 
         Profile profile = mProfileSupplier.get();
-        if (profile == null) return null;
+        // Exclude incognito and ephemeral sessions.
+        if (profile.isOffTheRecord()) {
+            MismatchNotificationController.recordMismatchNoticeSuppressedHistogram(
+                    MismatchNotificationController.SuppressedReason.CCT_IS_OFF_THE_RECORD);
+            return null;
+        }
         return new MismatchNotificationChecker(
                 profile,
                 IdentityServicesProvider.get().getIdentityManager(profile),
@@ -334,6 +347,14 @@ public class BaseCustomTabRootUiCoordinator extends RootUiCoordinator {
     }
 
     private static boolean isMismatchNotificationSuppressed() {
+        // Skip checking if the cadence is set to zero for easy local testing.
+        // TODO(crbug.com/372609889): Use a dedicated flag param.
+        SigninFeatureMap featureMap = SigninFeatureMap.getInstance();
+        int cadence =
+                featureMap.getFieldTrialParamByFeatureAsInt(
+                        SigninFeatures.CCT_SIGN_IN_PROMPT, "cadence_day", 14);
+        if (cadence == 0) return false;
+
         final long suppressionPeriodStart =
                 SigninPreferencesManager.getInstance().getCctMismatchNoticeSuppressionPeriodStart();
         if (suppressionPeriodStart == 0) return false;
@@ -572,7 +593,6 @@ public class BaseCustomTabRootUiCoordinator extends RootUiCoordinator {
                         intentDataProvider,
                         () -> mCompositorViewHolderSupplier.get(),
                         () -> mTabModelSelectorSupplier.get().getCurrentTab(),
-                        CustomTabsConnection.getInstance(),
                         mActivityLifecycleDispatcher,
                         mFullscreenManager,
                         () -> mMinimizeDelegateSupplier.get().isMinimized(),

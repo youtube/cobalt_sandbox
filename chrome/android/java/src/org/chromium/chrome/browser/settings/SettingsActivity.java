@@ -58,6 +58,7 @@ import org.chromium.components.browser_ui.widget.scrim.ScrimCoordinator;
 import org.chromium.ui.KeyboardVisibilityDelegate;
 import org.chromium.ui.UiUtils;
 import org.chromium.ui.base.DeviceFormFactor;
+import org.chromium.ui.base.IntentRequestTracker;
 import org.chromium.ui.modaldialog.ModalDialogManager;
 import org.chromium.ui.modaldialog.ModalDialogManager.ModalDialogType;
 
@@ -120,6 +121,9 @@ public class SettingsActivity extends ChromeBaseAppCompatActivity
 
     // This is only used on automotive.
     private @Nullable MissingDeviceLockLauncher mMissingDeviceLockLauncher;
+
+    // Used to manage and show new intents;
+    private IntentRequestTracker mIntentRequestTracker;
 
     private static final String MAIN_FRAGMENT_TAG = "settings_main";
 
@@ -188,6 +192,8 @@ public class SettingsActivity extends ChromeBaseAppCompatActivity
 
         mSnackbarManagerSupplier.set(
                 new SnackbarManager(this, findViewById(android.R.id.content), null));
+
+        mIntentRequestTracker = IntentRequestTracker.createFromActivity(this);
     }
 
     @Override
@@ -367,6 +373,16 @@ public class SettingsActivity extends ChromeBaseAppCompatActivity
         return getSupportFragmentManager().findFragmentById(R.id.content);
     }
 
+    /**
+     * Returns the intent request tracker for the Settings Activity. If the tracker does not exist
+     * yet create one and return that.
+     *
+     * @return IntentRequestTracker The intent request tracker for the Settings Activity.
+     */
+    public IntentRequestTracker getIntentRequestTracker() {
+        return mIntentRequestTracker;
+    }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // By default, every screen in Settings shows a "Help & feedback" menu item.
@@ -407,6 +423,12 @@ public class SettingsActivity extends ChromeBaseAppCompatActivity
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        mIntentRequestTracker.onActivityResult(requestCode, resultCode, data);
     }
 
     private void initBackPressHandler() {
@@ -467,8 +489,6 @@ public class SettingsActivity extends ChromeBaseAppCompatActivity
                 && !DeviceFormFactor.isNonMultiDisplayContextOnTablet(this)) {
             return;
         }
-
-        if (UiUtils.isSystemUiThemingDisabled()) return;
 
         // Use transparent color, so the AppBarLayout can color the status bar on scroll.
         UiUtils.setStatusBarColor(getWindow(), Color.TRANSPARENT);

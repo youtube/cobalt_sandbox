@@ -104,11 +104,18 @@ class ModelExecutionManager
       base::expected<const proto::ExecuteResponse,
                      OptimizationGuideModelExecutionError> execute_response);
 
+  // Registers text safety and language detection models. Does nothing if
+  // already registered.
+  void RegisterTextSafetyAndLanguageModels();
+
   // Owned by OptimizationGuideKeyedService and outlives `this`. This is to be
   // passed through the ModelQualityLogEntry to invoke upload during log
   // destruction.
   base::WeakPtr<ModelQualityLogsUploaderService>
       model_quality_uploader_service_;
+
+  base::WeakPtr<OnDeviceModelComponentStateManager>
+      on_device_component_state_manager_;
 
   // Owned by OptimizationGuideKeyedService and outlives `this`.
   raw_ptr<OptimizationGuideLogger> optimization_guide_logger_;

@@ -33,7 +33,7 @@ EchoAIManagerImpl::~EchoAIManagerImpl() = default;
 
 // static
 void EchoAIManagerImpl::Create(
-    std::variant<RenderFrameHost*, base::SupportsUserData*> context,
+    base::SupportsUserData& context_user_data,
     mojo::PendingReceiver<blink::mojom::AIManager> receiver) {
   static base::NoDestructor<EchoAIManagerImpl> ai;
   ai->receivers_.Add(ai.get(), std::move(receiver));
@@ -115,7 +115,7 @@ void EchoAIManagerImpl::ReturnAIAssistantCreationResult(
   client_remote->OnResult(
       std::move(assistant),
       blink::mojom::AIAssistantInfo::New(
-          optimization_guide::features::GetOnDeviceModelMaxTokensForContext(),
+          kMaxContextSizeInTokens,
           blink::mojom::AIAssistantSamplingParams::New(
               optimization_guide::features::GetOnDeviceModelDefaultTopK(),
               optimization_guide::features::

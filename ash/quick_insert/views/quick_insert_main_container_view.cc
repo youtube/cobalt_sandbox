@@ -42,7 +42,7 @@ std::unique_ptr<views::Separator> CreateSeparator() {
 PickerMainContainerView::PickerMainContainerView() {
   SetPaintToLayer();
   layer()->SetRoundedCornerRadius(
-      gfx::RoundedCornersF{kPickerContainerBorderRadius});
+      gfx::RoundedCornersF{kQuickInsertContainerBorderRadius});
   layer()->SetFillsBoundsOpaquely(false);
   layer()->SetIsFastRoundedCorner(true);
   // We set background blur even though the main container background is opaque,
@@ -52,13 +52,13 @@ PickerMainContainerView::PickerMainContainerView() {
   layer()->SetBackdropFilterQuality(ColorProvider::kBackgroundBlurQuality);
 
   SetBackground(views::CreateThemedRoundedRectBackground(
-      kPickerContainerBackgroundColor, kPickerContainerBorderRadius));
+      kQuickInsertContainerBackgroundColor, kQuickInsertContainerBorderRadius));
   SetBorder(std::make_unique<views::HighlightBorder>(
-      kPickerContainerBorderRadius,
+      kQuickInsertContainerBorderRadius,
       views::HighlightBorder::Type::kHighlightBorderOnShadow));
   shadow_ = SystemShadow::CreateShadowOnNinePatchLayerForView(
-      this, kPickerContainerShadowType);
-  shadow_->SetRoundedCornerRadius(kPickerContainerBorderRadius);
+      this, kQuickInsertContainerShadowType);
+  shadow_->SetRoundedCornerRadius(kQuickInsertContainerBorderRadius);
 
   SetLayoutManager(std::make_unique<views::BoxLayout>())
       ->SetOrientation(views::LayoutOrientation::kVertical);
@@ -70,7 +70,7 @@ gfx::Size PickerMainContainerView::CalculatePreferredSize(
     const views::SizeBounds& available_size) const {
   const int preferred_height =
       views::View::CalculatePreferredSize(available_size).height();
-  return gfx::Size(kPickerViewWidth,
+  return gfx::Size(kQuickInsertViewWidth,
                    std::min(preferred_height, kMainContainerMaxHeight));
 }
 
@@ -116,8 +116,8 @@ bool PickerMainContainerView::ContainsItem(views::View* item) {
   return Contains(item);
 }
 
-PickerSearchFieldView* PickerMainContainerView::AddSearchFieldView(
-    std::unique_ptr<PickerSearchFieldView> search_field_view) {
+QuickInsertSearchFieldView* PickerMainContainerView::AddSearchFieldView(
+    std::unique_ptr<QuickInsertSearchFieldView> search_field_view) {
   search_field_view_ = AddChildView(std::move(search_field_view));
   return search_field_view_;
 }

@@ -20,6 +20,8 @@
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/profiles/profile_key.h"
 #include "chrome/browser/signin/identity_manager_factory.h"
+#include "chrome/browser/sync/sessions/sync_sessions_router_tab_helper.h"
+#include "chrome/browser/sync/sessions/sync_sessions_web_contents_router_factory.h"
 #include "chrome/browser/sync/sync_service_factory.h"
 #include "chrome/browser/themes/theme_service_factory.h"
 #include "chrome/browser/ui/commerce/commerce_ui_tab_helper.h"
@@ -32,11 +34,11 @@
 #include "chrome/browser/ui/views/side_panel/customize_chrome/side_panel_controller_views.h"
 #include "chrome/browser/ui/views/side_panel/extensions/extension_side_panel_manager.h"
 #include "chrome/browser/ui/views/side_panel/read_anything/read_anything_side_panel_controller.h"
-#include "chrome/browser/ui/views/webid/fedcm_account_selection_view_controller.h"
 #include "chrome/browser/ui/webui/webui_embedding_context.h"
 #include "chrome/browser/web_applications/web_app_tab_helper.h"
 #include "chrome/browser/web_applications/web_app_utils.h"
 #include "components/browsing_topics/browsing_topics_service.h"
+#include "components/favicon/content/content_favicon_driver.h"
 #include "components/fingerprinting_protection_filter/common/fingerprinting_protection_filter_features.h"
 #include "components/image_fetcher/core/image_fetcher_service.h"
 #include "components/permissions/permission_indicators_tab_data.h"
@@ -126,15 +128,6 @@ void TabFeatures::Init(TabInterface& tab, Profile* profile) {
             tab.GetContents());
   }
 
-  // FedCM is supported in general web content, but not in chrome UI. Of the
-  // BrowserWindow types, devtools show Chrome UI and the rest show general web
-  // content.
-  if (tab.GetBrowserWindowInterface()->GetType() !=
-      BrowserWindowInterface::Type::TYPE_DEVTOOLS) {
-    fedcm_account_selection_view_controller_ =
-        std::make_unique<FedCmAccountSelectionViewController>(&tab);
-  }
-
   customize_chrome_side_panel_controller_ =
       std::make_unique<customize_chrome::SidePanelControllerViews>(tab);
 
@@ -161,6 +154,14 @@ void TabFeatures::Init(TabInterface& tab, Profile* profile) {
   if (web_app::AreWebAppsEnabled(profile)) {
     web_app::WebAppTabHelper::Create(&tab, tab.GetContents());
   }
+
+  sync_sessions_router_ =
+      std::make_unique<sync_sessions::SyncSessionsRouterTabHelper>(
+          tab.GetContents(),
+          sync_sessions::SyncSessionsWebContentsRouterFactory::GetForProfile(
+              profile),
+          ChromeTranslateClient::FromWebContents(tab.GetContents()),
+          favicon::ContentFaviconDriver::FromWebContents(tab.GetContents()));
 }
 
 TabFeatures::TabFeatures() = default;
@@ -191,8 +192,7 @@ TabFeatures::CreateCommerceUiTabHelper(content::WebContents* web_contents,
 void TabFeatures::WillDiscardContents(tabs::TabInterface* tab,
                                       content::WebContents* old_contents,
                                       content::WebContents* new_contents) {
-  Profile* profile =
-      Profile::FromBrowserContext(new_contents->GetBrowserContext());
+  Profile* profile = tab->GetBrowserWindowInterface()->GetProfile();
 
   // This method is transiently used to reset features that do not handle tab
   // discarding themselves.
@@ -228,6 +228,15 @@ void TabFeatures::WillDiscardContents(tabs::TabInterface* tab,
           tab->GetBrowserWindowInterface()->GetProfile())) {
     web_app::WebAppTabHelper::Create(tab, new_contents);
   }
+
+  sync_sessions_router_.reset();
+  sync_sessions_router_ =
+      std::make_unique<sync_sessions::SyncSessionsRouterTabHelper>(
+          new_contents,
+          sync_sessions::SyncSessionsWebContentsRouterFactory::GetForProfile(
+              profile),
+          ChromeTranslateClient::FromWebContents(new_contents),
+          favicon::ContentFaviconDriver::FromWebContents(new_contents));
 }
 
 }  // namespace tabs

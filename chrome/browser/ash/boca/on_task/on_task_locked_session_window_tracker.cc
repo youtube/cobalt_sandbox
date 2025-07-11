@@ -117,6 +117,10 @@ void LockedSessionWindowTracker::MaybeCloseBrowser(
 void LockedSessionWindowTracker::MaybeCloseWebContents(
     base::WeakPtr<content::WebContents> weak_tab_ptr) {
   content::WebContents* const tab = weak_tab_ptr.get();
+  if (!tab || tab->GetLastCommittedURL().is_valid() ||
+      on_task_blocklist()->IsParentTab(tab)) {
+    return;
+  }
   if (browser_->tab_strip_model()->count() > 1) {
     int index = browser_->tab_strip_model()->GetIndexOfWebContents(tab);
     if (index == TabStripModel::kNoTab) {
@@ -319,10 +323,6 @@ void LockedSessionWindowTracker::DidFinishNavigation(
                        browser->AsWeakPtr()));
   } else {
     content::WebContents* const tab = navigation_handle->GetWebContents();
-    if (!tab || tab->GetLastCommittedURL().is_valid() ||
-        on_task_blocklist()->IsParentTab(tab)) {
-      return;
-    }
     base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
         FROM_HERE,
         base::BindOnce(&LockedSessionWindowTracker::MaybeCloseWebContents,

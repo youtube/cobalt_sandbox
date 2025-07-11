@@ -130,6 +130,7 @@ class BackgroundTracingManagerImpl
   // TracingScenario::Delegate:
   bool OnScenarioActive(TracingScenario* scenario) override;
   bool OnScenarioIdle(TracingScenario* scenario) override;
+  bool OnScenarioCloned(TracingScenario* scenario) override;
   void OnScenarioRecording(TracingScenario* scenario) override;
   void SaveTrace(TracingScenario* scenario,
                  base::Token trace_uuid,
@@ -213,6 +214,10 @@ class BackgroundTracingManagerImpl
   CONTENT_EXPORT void SetPreferenceManagerForTesting(
       std::unique_ptr<PreferenceManager> preferences);
 
+  void GenerateMetadataProto(
+      perfetto::protos::pbzero::ChromeMetadataPacket* metadata,
+      bool privacy_filtering_enabled);
+
  private:
 #if BUILDFLAG(IS_ANDROID)
   // ~1MB compressed size.
@@ -228,9 +233,6 @@ class BackgroundTracingManagerImpl
   bool DoEmitNamedTrigger(const std::string& trigger_name,
                           std::optional<int32_t>) override;
 
-  void GenerateMetadataProto(
-      perfetto::protos::pbzero::ChromeMetadataPacket* metadata,
-      bool privacy_filtering_enabled);
   void OnScenarioAborted();
   static void AddPendingAgent(
       int child_process_id,

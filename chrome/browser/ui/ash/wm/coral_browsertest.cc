@@ -199,53 +199,12 @@ IN_PROC_BROWSER_TEST_F(CoralBrowserTest, PostLoginLaunch) {
   aura::Window* files_window =
       GetNativeWindowForSwa(SystemWebAppType::FILE_MANAGER);
   ASSERT_TRUE(files_window);
-  EXPECT_EQ(gfx::Rect(600, 600), files_window->GetBoundsInScreen());
+  EXPECT_EQ(files_window->GetBoundsInScreen(), gfx::Rect(600, 600));
 
   aura::Window* settings_window =
       GetNativeWindowForSwa(SystemWebAppType::SETTINGS);
   ASSERT_TRUE(settings_window);
   EXPECT_TRUE(WindowState::Get(settings_window)->IsMaximized());
-}
-
-// Tests that clicking the in session coral button opens and activates a new
-// desk.
-// TODO(zxdan): Temporarily disable the test until the item uses the real group
-// data.
-IN_PROC_BROWSER_TEST_F(CoralBrowserTest, DISABLED_OpenNewDesk) {
-  DesksController* desks_controller = DesksController::Get();
-  EXPECT_EQ(1u, desks_controller->desks().size());
-
-  // Set up a callback for a birch data fetch.
-  base::RunLoop birch_data_fetch_waiter;
-  Shell::Get()->birch_model()->SetDataFetchCallbackForTest(
-      birch_data_fetch_waiter.QuitClosure());
-
-  // Create a test coral group with no tabs and apps.
-  std::vector<coral::mojom::GroupPtr> test_groups;
-  test_groups.push_back(CreateTestGroup({}, "Coral desk"));
-  OverrideTestResponse(std::move(test_groups));
-
-  ToggleOverview();
-  WaitForOverviewEntered();
-
-  // Wait for fetch callback to complete.
-  birch_data_fetch_waiter.Run();
-
-  // The birch bar is created with a single chip.
-  BirchChipButtonBase* coral_chip = GetBirchChipButton();
-  ASSERT_TRUE(coral_chip);
-  ASSERT_EQ(coral_chip->GetItem()->GetType(), BirchItemType::kCoral);
-
-  DeskSwitchAnimationWaiter waiter;
-  test::Click(coral_chip);
-  waiter.Wait();
-
-  // After clicking the coral chip, we have two desks and the new active desk
-  // has the coral title.
-  EXPECT_EQ(2u, desks_controller->desks().size());
-  EXPECT_EQ(1, desks_controller->GetActiveDeskIndex());
-  EXPECT_EQ(u"Coral desk", desks_controller->GetDeskName(
-                               desks_controller->GetActiveDeskIndex()));
 }
 
 // Tests that the Coral Delegate could create a new browser on the new desk by
@@ -276,10 +235,11 @@ IN_PROC_BROWSER_TEST_F(CoralBrowserTest, MoveTabsToNewDesk) {
 
   // We should have two desks and the new active desk has the coral title.
   DesksController* desks_controller = DesksController::Get();
-  EXPECT_EQ(2u, desks_controller->desks().size());
-  EXPECT_EQ(1, desks_controller->GetActiveDeskIndex());
-  EXPECT_EQ(u"Coral desk", desks_controller->GetDeskName(
-                               desks_controller->GetActiveDeskIndex()));
+  EXPECT_EQ(desks_controller->desks().size(), 2u);
+  EXPECT_EQ(desks_controller->GetActiveDeskIndex(), 1);
+  EXPECT_EQ(
+      desks_controller->GetDeskName(desks_controller->GetActiveDeskIndex()),
+      u"Coral desk");
 
   // The active desk should have a browser window which has the two tabs in the
   // fake group.
@@ -336,10 +296,11 @@ IN_PROC_BROWSER_TEST_F(CoralBrowserTest, MoveAppsToNewDesk) {
 
   // We should have two desks and the new active desk has the coral title.
   DesksController* desks_controller = DesksController::Get();
-  EXPECT_EQ(2u, desks_controller->desks().size());
-  EXPECT_EQ(1, desks_controller->GetActiveDeskIndex());
-  EXPECT_EQ(u"Coral desk", desks_controller->GetDeskName(
-                               desks_controller->GetActiveDeskIndex()));
+  EXPECT_EQ(desks_controller->desks().size(), 2u);
+  EXPECT_EQ(desks_controller->GetActiveDeskIndex(), 1);
+  EXPECT_EQ(
+      desks_controller->GetDeskName(desks_controller->GetActiveDeskIndex()),
+      u"Coral desk");
 
   // The active desk should have the four apps in the group.
   std::vector<std::string> app_ids_on_active_desk = CollectAppIDsFromWindows(
@@ -445,8 +406,8 @@ IN_PROC_BROWSER_TEST_F(CoralBrowserTest, CloseTabAppUpdateChip) {
   // Create a fake coral group which contains non-duplicated tabs and apps.
   std::vector<coral::mojom::GroupPtr> test_groups;
   test_groups.push_back(
-      CreateTestGroup({{"google.com", "https://google.com/"},
-                       {"youtube.com", "https://youtube.com/"},
+      CreateTestGroup({{"google.com", GURL("https://google.com/")},
+                       {"youtube.com", GURL("https://youtube.com/")},
                        {"YouTube", "adnlfjpnmidfimlkaohpidplnoimahfh"},
                        {"Files", "fkiggjmkendpmbegkagpmagjepfkpmeb"}},
                       "Coral desk"));
@@ -469,37 +430,315 @@ IN_PROC_BROWSER_TEST_F(CoralBrowserTest, CloseTabAppUpdateChip) {
 
   const auto& group = BirchCoralProvider::Get()->GetGroupById(base::Token());
 
-  EXPECT_EQ(4u, group->entities.size());
+  EXPECT_EQ(group->entities.size(), 4u);
 
   // Closing the first browser with the duplicated tab (https://youtube.com)
   // will not change the group.
   SelectFirstBrowser();
   CloseBrowserSynchronously(browser());
-  EXPECT_EQ(4u, group->entities.size());
+  EXPECT_EQ(group->entities.size(), 4u);
 
   // Closing the next browser will decrease the items in the group.
   SelectFirstBrowser();
   CloseBrowserSynchronously(browser());
-  EXPECT_EQ(2u, group->entities.size());
+  EXPECT_EQ(group->entities.size(), 2u);
 
   // Closing a duplicated window (file manager) will not change the group.
   SelectFirstBrowser();
-  EXPECT_EQ(u"Files", browser()->window()->GetNativeWindow()->GetTitle());
+  EXPECT_EQ(browser()->window()->GetNativeWindow()->GetTitle(), u"Files");
   CloseBrowserSynchronously(browser());
-  EXPECT_EQ(2u, group->entities.size());
+  EXPECT_EQ(group->entities.size(), 2u);
 
   // Closing a non-duplicated window will decrease the items in the group.
   SelectFirstBrowser();
-  EXPECT_EQ(u"Files", browser()->window()->GetNativeWindow()->GetTitle());
+  EXPECT_EQ(browser()->window()->GetNativeWindow()->GetTitle(), u"Files");
   CloseBrowserSynchronously(browser());
-  EXPECT_EQ(1u, group->entities.size());
+  EXPECT_EQ(group->entities.size(), 1u);
 
   // Closing the last app window in group will remove the chip.
   SelectFirstBrowser();
-  EXPECT_EQ(u"YouTube", browser()->window()->GetNativeWindow()->GetTitle());
+  EXPECT_EQ(browser()->window()->GetNativeWindow()->GetTitle(), u"YouTube");
   CloseBrowserSynchronously(browser());
 
   EXPECT_FALSE(GetBirchChipButton());
+}
+
+// Tests that closing a window which contains all the items in two groups would
+// remove corresponding coral chips.
+IN_PROC_BROWSER_TEST_F(CoralBrowserTest, CloseWindowRemoveTwoChips) {
+  Profile* primary_profile = ProfileManager::GetPrimaryUserProfile();
+
+  // Create a browser containing 8 tabs.
+  test::CreateAndShowBrowser(
+      primary_profile,
+      {GURL("https://mail.google.com"), GURL("https://youtube.com"),
+       GURL("https://google.com"), GURL("https://earth.google.com"),
+       GURL("https://maps.google.com"), GURL("https://docs.google.com"),
+       GURL("https://calendar.google.com"), GURL("https://chat.google.com")});
+  // Create another browser to keep staying in Overview after removing the first
+  // one.
+  test::CreateAndShowBrowser(primary_profile,
+                             {GURL("https://meet.google.com")});
+
+  // Create a fake coral group which contains non-duplicated tabs and apps.
+  std::vector<coral::mojom::GroupPtr> test_groups;
+  test_groups.push_back(
+      CreateTestGroup({{"mail.google.com", GURL("https://mail.google.com")},
+                       {"youtube.com", GURL("https://youtube.com")},
+                       {"google.com", GURL("https://google.com")},
+                       {"earth.google.com", GURL("https://earth.google.com")}},
+                      "Coral desk 1", /*id=*/base::Token(1, 2)));
+  test_groups.push_back(CreateTestGroup(
+      {{"maps.google.com", GURL("https://maps.google.com")},
+       {"docs.google.com", GURL("https://docs.google.com")},
+       {"calendar.google.com", GURL("https://calendar.google.com")},
+       {"chat.google.com", GURL("https://chat.google.com")}},
+      "Coral desk 2", /*id=*/base::Token(2, 3)));
+
+  OverrideTestResponse(std::move(test_groups));
+
+  // Set up a callback for a birch data fetch.
+  base::RunLoop birch_data_fetch_waiter;
+  Shell::Get()->birch_model()->SetDataFetchCallbackForTest(
+      birch_data_fetch_waiter.QuitClosure());
+
+  ToggleOverview();
+  WaitForOverviewEntered();
+
+  // Wait for fetch callback to complete.
+  birch_data_fetch_waiter.Run();
+
+  // The birch bar is created with two coral chips.
+  ASSERT_EQ(GetBirchChipsNum(), 2u);
+
+  // Closing the first browser with all items in groups.
+  SelectFirstBrowser();
+  EXPECT_EQ(8, browser()->tab_strip_model()->GetTabCount());
+  CloseBrowserSynchronously(browser());
+
+  // Two chips are removed.
+  EXPECT_EQ(0u, GetBirchChipsNum());
+}
+
+// Tests that closing a desk removes all coral chips.
+IN_PROC_BROWSER_TEST_F(CoralBrowserTest, CloseDeskRemoveAllChips) {
+  Profile* primary_profile = ProfileManager::GetPrimaryUserProfile();
+
+  // Create a browser containing 8 tabs.
+  test::CreateAndShowBrowser(
+      primary_profile,
+      {GURL("https://mail.google.com"), GURL("https://youtube.com"),
+       GURL("https://google.com"), GURL("https://earth.google.com"),
+       GURL("https://maps.google.com"), GURL("https://docs.google.com"),
+       GURL("https://calendar.google.com"), GURL("https://chat.google.com")});
+
+  test::InstallSystemAppsForTesting(primary_profile);
+
+  // Open a File window and a PWA window.
+  test::CreateSystemWebApp(primary_profile, SystemWebAppType::FILE_MANAGER);
+  test::InstallAndLaunchPWA(primary_profile, GURL("https://www.youtube.com/"),
+                            /*launch_in_browser=*/false,
+                            /*app_title=*/u"YouTube");
+
+  // Create two fake coral groups.
+  std::vector<coral::mojom::GroupPtr> test_groups;
+  test_groups.push_back(
+      CreateTestGroup({{"mail.google.com", GURL("https://mail.google.com")},
+                       {"youtube.com", GURL("https://youtube.com")},
+                       {"google.com", GURL("https://google.com")},
+                       {"YouTube", "adnlfjpnmidfimlkaohpidplnoimahfh"}},
+                      "Coral desk 1", /*id=*/base::Token(1, 2)));
+  test_groups.push_back(CreateTestGroup(
+      {{"maps.google.com", GURL("https://maps.google.com")},
+       {"docs.google.com", GURL("https://docs.google.com")},
+       {"calendar.google.com", GURL("https://calendar.google.com")},
+       {"Files", "fkiggjmkendpmbegkagpmagjepfkpmeb"}},
+      "Coral desk 2", /*id=*/base::Token(2, 3)));
+
+  OverrideTestResponse(std::move(test_groups));
+
+  // Set up a callback for a birch data fetch.
+  base::RunLoop birch_data_fetch_waiter;
+  Shell::Get()->birch_model()->SetDataFetchCallbackForTest(
+      birch_data_fetch_waiter.QuitClosure());
+
+  NewDesk();
+
+  ToggleOverview();
+  WaitForOverviewEntered();
+
+  // Wait for fetch callback to complete.
+  birch_data_fetch_waiter.Run();
+
+  // The birch bar is created with two coral chips.
+  ASSERT_EQ(GetBirchChipsNum(), 2u);
+
+  // Closing the active desk removes all chips.
+  RemoveDesk(GetActiveDesk(), DeskCloseType::kCloseAllWindows);
+  SimulateWaitForCloseAll();
+
+  // Two chips are removed.
+  EXPECT_EQ(0u, GetBirchChipsNum());
+}
+
+// Tests that moving a window to another desk would update the groups and chips.
+IN_PROC_BROWSER_TEST_F(CoralBrowserTest, MoveWindowToOtherDeskUpdateChip) {
+  Profile* primary_profile = ProfileManager::GetPrimaryUserProfile();
+
+  // TODO(crbug.com/378159705): move this to a test helper.
+  // Create a browser containing 8 tabs.
+  test::CreateAndShowBrowser(
+      primary_profile,
+      {GURL("https://mail.google.com"), GURL("https://youtube.com"),
+       GURL("https://google.com"), GURL("https://earth.google.com"),
+       GURL("https://maps.google.com"), GURL("https://docs.google.com"),
+       GURL("https://calendar.google.com"), GURL("https://chat.google.com")});
+
+  test::InstallSystemAppsForTesting(primary_profile);
+
+  // Open a File window and a PWA window.
+  test::CreateSystemWebApp(primary_profile, SystemWebAppType::FILE_MANAGER);
+  test::InstallAndLaunchPWA(primary_profile, GURL("https://www.youtube.com/"),
+                            /*launch_in_browser=*/false,
+                            /*app_title=*/u"YouTube");
+
+  // Create two fake coral groups.
+  std::vector<coral::mojom::GroupPtr> test_groups;
+  test_groups.push_back(
+      CreateTestGroup({{"mail.google.com", GURL("https://mail.google.com")},
+                       {"youtube.com", GURL("https://youtube.com")},
+                       {"google.com", GURL("https://google.com")},
+                       {"YouTube", "adnlfjpnmidfimlkaohpidplnoimahfh"}},
+                      "Coral desk 1", /*id=*/base::Token(1, 2)));
+  test_groups.push_back(CreateTestGroup(
+      {{"maps.google.com", GURL("https://maps.google.com")},
+       {"docs.google.com", GURL("https://docs.google.com")},
+       {"calendar.google.com", GURL("https://calendar.google.com")},
+       {"Files", "fkiggjmkendpmbegkagpmagjepfkpmeb"}},
+      "Coral desk 2", /*id=*/base::Token(2, 3)));
+
+  OverrideTestResponse(std::move(test_groups));
+
+  // Set up a callback for a birch data fetch.
+  base::RunLoop birch_data_fetch_waiter;
+  Shell::Get()->birch_model()->SetDataFetchCallbackForTest(
+      birch_data_fetch_waiter.QuitClosure());
+
+  // Create another desk.
+  NewDesk();
+
+  ToggleOverview();
+  WaitForOverviewEntered();
+
+  // Wait for fetch callback to complete.
+  birch_data_fetch_waiter.Run();
+
+  // The birch bar is created with two coral chips.
+  ASSERT_EQ(GetBirchChipsNum(), 2u);
+
+  // Both groups initially have 4 entities.
+  const auto& group_1 =
+      BirchCoralProvider::Get()->GetGroupById(base::Token(1, 2));
+  EXPECT_EQ(group_1->entities.size(), 4u);
+
+  const auto& group_2 =
+      BirchCoralProvider::Get()->GetGroupById(base::Token(2, 3));
+  EXPECT_EQ(group_2->entities.size(), 4u);
+
+  auto* browser_list = BrowserList::GetInstance();
+
+  auto* desks_controller = DesksController::Get();
+
+  auto* new_desk = desks_controller->GetDeskAtIndex(1);
+
+  // Move the browser window to another desk.
+  ASSERT_EQ(8, browser_list->get(0)->tab_strip_model()->GetTabCount());
+  auto* browser_window = browser_list->get(0)->window()->GetNativeWindow();
+  desks_controller->MoveWindowFromActiveDeskTo(
+      browser_window, new_desk, browser_window->GetRootWindow(),
+      DesksMoveWindowFromActiveDeskSource::kSendToDesk);
+  EXPECT_FALSE(desks_controller->BelongsToActiveDesk(browser_window));
+
+  // Both groups are reduced to 1 entity.
+  EXPECT_EQ(group_1->entities.size(), 1u);
+  EXPECT_EQ(group_2->entities.size(), 1u);
+
+  // Move the Files app to another desk.
+  auto* file_window = browser_list->get(1)->window()->GetNativeWindow();
+  ASSERT_EQ(file_window->GetTitle(), u"Files");
+  desks_controller->MoveWindowFromActiveDeskTo(
+      file_window, new_desk, file_window->GetRootWindow(),
+      DesksMoveWindowFromActiveDeskSource::kSendToDesk);
+  EXPECT_FALSE(desks_controller->BelongsToActiveDesk(file_window));
+
+  // The first chip is removed.
+  EXPECT_EQ(GetBirchChipsNum(), 1u);
+}
+
+// Tests that the same coral chip will not show up again if we just created a
+// desk from it.
+IN_PROC_BROWSER_TEST_F(CoralBrowserTest, NoRepeatChipAfterLaunchGroup) {
+  Profile* primary_profile = ProfileManager::GetPrimaryUserProfile();
+
+  // Create a browser with two tabs.
+  test::CreateAndShowBrowser(primary_profile, {GURL("https://youtube.com"),
+                                               GURL("https://google.com")});
+
+  test::InstallSystemAppsForTesting(primary_profile);
+
+  // Open one SWA window and a PWA window.
+  test::CreateSystemWebApp(primary_profile, SystemWebAppType::FILE_MANAGER);
+  test::InstallAndLaunchPWA(primary_profile, GURL("https://www.youtube.com/"),
+                            /*launch_in_browser=*/false,
+                            /*app_title=*/u"YouTube");
+
+  // Create a fake coral group which contains all tabs and apps.
+  std::vector<coral::mojom::GroupPtr> test_groups;
+  test_groups.push_back(
+      CreateTestGroup({{"google.com", GURL("https://google.com/")},
+                       {"youtube.com", GURL("https://youtube.com/")},
+                       {"YouTube", "adnlfjpnmidfimlkaohpidplnoimahfh"},
+                       {"Files", "fkiggjmkendpmbegkagpmagjepfkpmeb"}},
+                      "Coral desk"));
+  OverrideTestResponse(std::move(test_groups));
+
+  // Set up a callback for a birch data fetch.
+  base::RunLoop birch_data_fetch_waiter;
+  Shell::Get()->birch_model()->SetDataFetchCallbackForTest(
+      birch_data_fetch_waiter.QuitClosure());
+
+  ToggleOverview();
+  WaitForOverviewEntered();
+
+  // Wait for fetch callback to complete.
+  birch_data_fetch_waiter.Run();
+
+  // The birch bar is created with a coral chip.
+  auto* coral_chip = GetBirchChipButton();
+  ASSERT_TRUE(coral_chip);
+
+  // Create a new desk by clicking on the chip.
+  DeskSwitchAnimationWaiter waiter;
+  test::Click(coral_chip);
+  waiter.Wait();
+
+  auto* desks_controller = DesksController::Get();
+  EXPECT_EQ(2u, desks_controller->desks().size());
+  EXPECT_EQ(u"Coral desk", desks_controller->GetDeskName(
+                               desks_controller->GetActiveDeskIndex()));
+
+  // Re-enter in Overview, there should be no chips.
+  base::RunLoop birch_data_fetch_waiter2;
+  Shell::Get()->birch_model()->SetDataFetchCallbackForTest(
+      birch_data_fetch_waiter2.QuitClosure());
+
+  ToggleOverview();
+  WaitForOverviewEntered();
+
+  birch_data_fetch_waiter2.Run();
+
+  // The birch bar should have no coral chips.
+  ASSERT_FALSE(GetBirchChipButton());
 }
 
 }  // namespace ash

@@ -22,12 +22,14 @@
 <translation id="1120743664840974483">{"a": "Adam", "b": "Bertil", "c": "Cesar", "d": "David", "e": "Erik", "f": "Filip", "g": "Gustav", "h": "Helge", "i": "Ivar", "j": "Johan","k": "Kalle", "l": "Ludvig", "m": "Martin", "n": "Niklas", "o": "Olof","p": "Petter", "q": "Quintus", "r": "Rudolf", "s": "Sigurd", "t": "Tore", "u": "Urban", "v": "Viktor", "w": "Wilhelm","x": "Xerxes", "y": "Yngve", "z": "Zäta", "å": "Åke", "ä": "Ärlig", "ö": "Östen"}</translation>
 <translation id="1120938014254001895">Svep uppåt med två fingrar</translation>
 <translation id="1126928665165112660">Inte kursiv</translation>
+<translation id="1133751489735776037">Klicka snabbt tre gånger med musen</translation>
 <translation id="113582498867142724"><ph name="TAG" />-samling med <ph name="NUM" /> objekt</translation>
 <translation id="1146441463334103638">Aktivera eller inaktivera skärmen</translation>
 <translation id="1156488781945104845">Aktuell tid</translation>
 <translation id="1161762950103988776">Hoppa</translation>
 <translation id="1164857107703583584">Med hoppkommandon kan du effektivt navigera genom en webbsida.</translation>
 <translation id="1175914831232945926">Siffror</translation>
+<translation id="1186712907912748007">Dra och släpp pågår. <ph name="GESTURE" /> för att avsluta. Andra rörelser är inte tillgängliga för tillfället.</translation>
 <translation id="1188858454923323853">kompletterande</translation>
 <translation id="1189258430971676908">Övningsområde: Rullgardinsmenyer</translation>
 <translation id="1195238899008218998">Efterord</translation>
@@ -209,6 +211,7 @@
 <translation id="2347456970887948350">En länk</translation>
 <translation id="2363753371702255035">punkt</translation>
 <translation id="2365384324219615024">Du kan även trycka på Retur för att aktivera objekt. Du kan till exempel trycka på Retur för att skicka text i ett formulär. Tryck på Retur för att fortsätta.</translation>
+<translation id="2371402123699727805">Diktering är aktiverat. <ph name="GESTURE" /> för att stoppa. Andra rörelser är inte tillgängliga för tillfället.</translation>
 <translation id="2381733276052567791">Aktivera och inaktivera tal</translation>
 <translation id="2390264819538553347">Tryck på Retur om du vill fortsätta. Tryck på mellanslag om du vill öppna föregående sida.</translation>
 <translation id="2398579267367951220">Skriv det du vill söka efter på sidan. Hoppa till resultatet genom att trycka på Retur. Bläddra mellan resultaten med uppåt- och nedåtpil, fortsätt skriva om du vill ändra sökningen eller tryck på Esc om du vill avbryta.</translation>
@@ -342,7 +345,6 @@
 <translation id="311015743332597320">Svep åt höger med fyra fingrar</translation>
 <translation id="3112457281078985179">Slå på eller stäng av ChromeVox genom att trycka på Ctrl + Alt + Z.</translation>
 <translation id="3115800313647508384">Vill du stänga av skärmen?</translation>
-<translation id="3127625407966660979">Diktering är aktiverat</translation>
 <translation id="3131002934070407451">Läs upp nummer som:</translation>
 <translation id="3134461040845705080">skrivskydd</translation>
 <translation id="3137663468179739624">Olivgrön</translation>
@@ -464,6 +466,7 @@
 <translation id="3870295413168340326">Det finns ingen föregående rubrik på nivå 3</translation>
 <translation id="3887399638190992181">Viktiga tangenter</translation>
 <translation id="3887576927692165210">textfält</translation>
+<translation id="3896762831164962772">Ansiktsstyrning är pausad. <ph name="GESTURE" /> för att återuppta. Andra rörelser är inte tillgängliga för tillfället.</translation>
 <translation id="3897092660631435901">Meny</translation>
 <translation id="3907138069015388678">rutnät</translation>
 <translation id="3909320334364316587">Föregående rubrik på nivå 6</translation>
@@ -503,7 +506,6 @@
 <translation id="4161104397932142764">{COUNT,plural, =1{sekund}other{sekunder}}</translation>
 <translation id="4161663686871496107">Uppläst feedback från ChromeVox har aktiverats</translation>
 <translation id="4176463684765177261">Inaktiverad</translation>
-<translation id="4176677444195790114">Dra och släpp pågår</translation>
 <translation id="4187322598335821254">Flytta en rad i taget genom att svepa uppåt eller nedåt</translation>
 <translation id="4188530942454211480">Föregående mening</translation>
 <translation id="4191918948604314587">En knapp</translation>
@@ -548,6 +550,7 @@
 <translation id="4402014469255336455">Djupt himmelsblå</translation>
 <translation id="4406249099130339147">Upprepa skiljetecken:</translation>
 <translation id="441418754432585599"><ph name="MODIFIER_ONE" /> + <ph name="MODIFIER_TWO" /> + <ph name="KEY" /></translation>
+<translation id="4423525817792153232">Visa alla tänderna</translation>
 <translation id="4432457053224379116">Brunröd</translation>
 <translation id="4432896207833262240">Markerat innehåll</translation>
 <translation id="4437615272777527928">Skriv det du vill söka efter i menyerna. Bläddra bland resultat med upp- och nedpilarna. Justera textmarkören och navigera mellan menyer med vänster- och högerpilarna.</translation>
@@ -700,6 +703,7 @@
 <translation id="5452267669091857717">Det finns inga fler rubriker på nivå 1</translation>
 <translation id="5455441614648621694">Kompletterande</translation>
 <translation id="5462510922370980473">Sidlista</translation>
+<translation id="5489460663499094917">Scrollningsläge är aktiverat. <ph name="GESTURE" /> för att avsluta. Andra rörelser är inte tillgängliga för tillfället.</translation>
 <translation id="5495517933067991341">Viktiga tangenter: Skift</translation>
 <translation id="549602578321198708">Ord</translation>
 <translation id="5513242761114685513">Snabbmeny</translation>
@@ -1112,7 +1116,6 @@
 <translation id="8378855320830505539">Område</translation>
 <translation id="8382679411218029383">Autoslutför med både direktinfogning och lista</translation>
 <translation id="8394908167088220973">Spela upp/Pausa</translation>
-<translation id="8409502156784390079">Scrollningsläge aktivt</translation>
 <translation id="8428213095426709021">Inställningar</translation>
 <translation id="8428603554127842284">nivå <ph name="DEPTH" /></translation>
 <translation id="8430049249787218991">menyfält</translation>
@@ -1190,7 +1193,6 @@
 <translation id="8986362086234534611">Glöm</translation>
 <translation id="8989104346085848538">Tryck på Ctrl-tangenten för att stoppa en pågående ChromeVox-uppläsning.</translation>
 <translation id="9014206344398081366">Självstudier för ChromeVox</translation>
-<translation id="9034592733577768445">Ansiktsstyrning har pausats</translation>
 <translation id="9040132695316389094">Rubrik 1</translation>
 <translation id="9061884144798498064">Välj punktskrift med åtta punkter:</translation>
 <translation id="9063946545000394379">flytta till föregående tecken</translation>

@@ -1122,6 +1122,7 @@ public class ChromeTabbedActivity extends ChromeActivity<ChromeActivityComponent
         return false;
     }
 
+    // Returns whether startup was cold or not.
     private boolean isColdStart() {
         return ColdStartTracker.wasColdOnFirstActivityCreationOrNow()
                 && SimpleStartupForegroundSessionDetector.runningCleanForegroundSession();
@@ -1268,11 +1269,6 @@ public class ChromeTabbedActivity extends ChromeActivity<ChromeActivityComponent
     @Override
     public void onPauseWithNative() {
         mTabModelSelector.commitAllTabClosures();
-
-        if (!isColdStart() && isMainIntentLaunch()) {
-            RecordHistogram.recordTimesHistogram(
-                    HISTOGRAM_MAIN_INTENT_TIME_TO_FIRST_DRAW_WARM_MS, mTimeToFirstDrawAfterStartMs);
-        }
 
         if (mIncognitoCookiesFetcher != null) {
             mIncognitoCookiesFetcher.persistCookies();
@@ -1878,9 +1874,10 @@ public class ChromeTabbedActivity extends ChromeActivity<ChromeActivityComponent
                 // and may fail if that's not the case.
                 ArchivedTabModelOrchestrator archivedOrchestrator =
                         ArchivedTabModelOrchestrator.getForProfile(mTabModelProfileSupplier.get());
+                @Nullable TabModel archivedTabModel = archivedOrchestrator.getTabModel();
                 @Nullable
                 Tab archivedTab =
-                        archivedOrchestrator == null
+                        archivedTabModel == null
                                 ? null
                                 : archivedOrchestrator
                                         .getTabModel()
@@ -1907,9 +1904,11 @@ public class ChromeTabbedActivity extends ChromeActivity<ChromeActivityComponent
                     }
                 } else {
                     TabModelUtils.setIndex(tabModel, tabIndex);
+                    LayoutManagerChrome layoutManager = getLayoutManager();
                     // If the tab-switcher is displayed, hide it to show the tab.
-                    if (getLayoutManager().isLayoutVisible(LayoutType.TAB_SWITCHER)) {
-                        getLayoutManager().showLayout(LayoutType.BROWSING, /* animate= */ false);
+                    if (layoutManager != null
+                            && layoutManager.isLayoutVisible(LayoutType.TAB_SWITCHER)) {
+                        layoutManager.showLayout(LayoutType.BROWSING, /* animate= */ false);
                     }
                 }
                 break;
@@ -3423,7 +3422,8 @@ public class ChromeTabbedActivity extends ChromeActivity<ChromeActivityComponent
                         event,
                         mUiWithNativeInitialized,
                         getFullscreenManager(),
-                        /* menuOrKeyboardActionController= */ this);
+                        /* menuOrKeyboardActionController= */ this,
+                        this);
         return result != null ? result : super.dispatchKeyEvent(event);
     }
 
@@ -3550,6 +3550,15 @@ public class ChromeTabbedActivity extends ChromeActivity<ChromeActivityComponent
     @Override
     public void onPause() {
         try (TraceEvent e = TraceEvent.scoped("ChromeTabbedActivity.onPause")) {
+
+            // isColdStart() relies on {@link SimpleStartupForegroundSessionDetector} and the
+            // session is discarded during AsyncInitializationActivity's onPause so the metric has
+            // to be recorded here instead of onPauseWithNative().
+            if (!isColdStart() && isMainIntentLaunch()) {
+                RecordHistogram.recordTimesHistogram(
+                        HISTOGRAM_MAIN_INTENT_TIME_TO_FIRST_DRAW_WARM_MS,
+                        mTimeToFirstDrawAfterStartMs);
+            }
             super.onPause();
         }
     }

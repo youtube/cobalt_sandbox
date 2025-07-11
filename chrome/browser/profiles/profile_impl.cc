@@ -14,6 +14,7 @@
 #include "base/command_line.h"
 #include "base/compiler_specific.h"
 #include "base/containers/contains.h"
+#include "base/debug/dump_without_crashing.h"
 #include "base/environment.h"
 #include "base/files/file.h"
 #include "base/files/file_path.h"
@@ -1018,12 +1019,17 @@ Profile* ProfileImpl::GetOffTheRecordProfile(const OTRProfileID& otr_profile_id,
 
   if (!create_if_needed)
     return nullptr;
-#if BUILDFLAG(IS_CHROMEOS)
   if (IsGuestSession()) {
-    // ChromeOS Guest Session has only one primary OTR.
+    // Guest Session has only one primary OTR.
+#if BUILDFLAG(IS_CHROMEOS)
     CHECK_EQ(otr_profile_id, OTRProfileID::PrimaryID());
-  }
+#else
+    // TODO(crbug.com/374351946): Remove macro in m135.
+    if (otr_profile_id != OTRProfileID::PrimaryID()) {
+      NOTREACHED(base::NotFatalUntil::M135);
+    }
 #endif
+  }
 
   // Create a new OffTheRecordProfile
   std::unique_ptr<Profile> otr_profile =
@@ -1085,8 +1091,7 @@ bool ProfileImpl::IsChild() const {
 
 bool ProfileImpl::AllowsBrowserWindows() const {
 #if BUILDFLAG(IS_CHROMEOS)
-  if (ash::ProfileHelper::IsSigninProfile(this) ||
-      ash::ProfileHelper::IsLockScreenAppProfile(this)) {
+  if (ash::ProfileHelper::IsSigninProfile(this)) {
     return false;
   }
 #endif
@@ -1476,8 +1481,7 @@ void ProfileImpl::EnsureSessionServiceCreated() {
 void ProfileImpl::ChangeAppLocale(const std::string& new_locale,
                                   AppLocaleChangedVia via) {
   if (new_locale.empty()) {
-    NOTREACHED_IN_MIGRATION();
-    return;
+    NOTREACHED();
   }
   PrefService* local_state = g_browser_process->local_state();
   DCHECK(local_state);
@@ -1558,8 +1562,7 @@ void ProfileImpl::ChangeAppLocale(const std::string& new_locale,
       break;
     }
     case APP_LOCALE_CHANGED_VIA_UNKNOWN: {
-      NOTREACHED_IN_MIGRATION();
-      break;
+      NOTREACHED();
     }
   }
   if (do_update_pref)

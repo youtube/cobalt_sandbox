@@ -79,11 +79,48 @@ bool WebAppSourceSupported(const WebApp& web_app) {
   return true;
 }
 
-bool IsLinkCapturingDisabledByDefaultBasedOnFlagState() {
-  return features::kNavigationCapturingDefaultState.Get() ==
-             features::CapturingState::kDefaultOff ||
-         features::kNavigationCapturingDefaultState.Get() ==
-             features::CapturingState::kReimplDefaultOff;
+BASE_FEATURE(kDiyAppsDefaultCaptureForcedOff,
+             "capture_forced_off_diy_apps",
+             base::FEATURE_DISABLED_BY_DEFAULT);
+
+struct AppStateForNavigationCapturing {
+  bool is_diy_app = false;
+  bool is_preinstalled_browser_tab_app = false;
+  blink::Manifest::LaunchHandler::ClientMode client_mode =
+      blink::Manifest::LaunchHandler::ClientMode::kAuto;
+};
+
+bool IsNavigationCapturingSettingOffByDefault(
+    AppStateForNavigationCapturing app_state) {
+  // If the app is a DIY app, capture navigations by default unless enforced via
+  // flag.
+  if (app_state.is_diy_app &&
+      base::FeatureList::IsEnabled(kDiyAppsDefaultCaptureForcedOff)) {
+    return true;
+  }
+
+  // If the app is a preinstalled app that opens in a new browser tab, then
+  // prevent disabling capturing if the
+  // kPreinstalledBrowserTabWebAppsCaptureOnDefault flag is used. This is a
+  // stopgap in case we need to disable the setting by default, but want to keep
+  // the preinstalled apps having it on by default.
+  if (app_state.is_preinstalled_browser_tab_app &&
+      base::FeatureList::IsEnabled(
+          kPreinstalledBrowserTabWebAppsCaptureOnDefault)) {
+    return false;
+  }
+
+  switch (features::kNavigationCapturingDefaultState.Get()) {
+    case features::CapturingState::kDefaultOff:
+    case features::CapturingState::kReimplDefaultOff:
+      return true;
+    case features::CapturingState::kDefaultOn:
+    case features::CapturingState::kReimplDefaultOn:
+      return false;
+    case features::CapturingState::kReimplOnViaClientMode:
+      return app_state.client_mode ==
+             blink::Manifest::LaunchHandler::ClientMode::kAuto;
+  }
 }
 
 bool IsAppCapturingSettingForcedOff(const webapps::AppId& app_id) {
@@ -103,6 +140,14 @@ bool IsAppCapturingSettingForcedOff(const webapps::AppId& app_id) {
 }
 
 }  // namespace
+
+BASE_FEATURE(kPreinstalledBrowserTabWebAppsCaptureOnDefault,
+             "PreinstalledBrowserTabWebAppsCaptureOnDefault",
+             base::FEATURE_ENABLED_BY_DEFAULT);
+
+BASE_FEATURE(kPreinstalledBrowserTabWebAppsForcedDefaultCaptureOff,
+             "PreinstalledBrowserTabWebAppsForcedDefaultCaptureOff",
+             base::FEATURE_DISABLED_BY_DEFAULT);
 
 // static
 bool WebAppRegistrar::IsSupportedDisplayModeForNavigationCapture(
@@ -1155,9 +1200,20 @@ bool WebAppRegistrar::CapturesLinksInScope(const webapps::AppId& app_id) const {
 
   const WebApp* web_app = GetAppById(app_id);
   CHECK(web_app);
+  bool is_preinstalled_browser_tab_app =
+      (web_app->GetSources() ==
+           WebAppManagementTypes({WebAppManagement::Type::kDefault}) &&
+       web_app->user_display_mode() == mojom::UserDisplayMode::kBrowser);
+
   switch (web_app->user_link_capturing_preference()) {
     case proto::LinkCapturingUserPreference::LINK_CAPTURING_PREFERENCE_DEFAULT:
-      if (IsLinkCapturingDisabledByDefaultBasedOnFlagState()) {
+      if (IsNavigationCapturingSettingOffByDefault(
+              {.is_diy_app = web_app->is_diy_app(),
+               .is_preinstalled_browser_tab_app =
+                   is_preinstalled_browser_tab_app,
+               .client_mode = web_app->launch_handler()
+                                  .value_or(LaunchHandler())
+                                  .client_mode})) {
         return false;
       }
       break;
@@ -1165,6 +1221,14 @@ bool WebAppRegistrar::CapturesLinksInScope(const webapps::AppId& app_id) const {
       return true;
     case proto::LinkCapturingUserPreference::DO_NOT_CAPTURE_SUPPORTED_LINKS:
       return false;
+  }
+
+  // This is a stop gap in case there are issues concerning preinstalled apps
+  // automatically capturing links by default post navigation capturing launch.
+  if (is_preinstalled_browser_tab_app &&
+      base::FeatureList::IsEnabled(
+          kPreinstalledBrowserTabWebAppsForcedDefaultCaptureOff)) {
+    return false;
   }
 
   // Reaching here means that the default link capturing behavior is 'on' and

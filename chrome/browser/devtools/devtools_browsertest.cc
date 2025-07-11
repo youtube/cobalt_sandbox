@@ -2,13 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifdef UNSAFE_BUFFERS_BUILD
-// TODO(crbug.com/40285824): Remove this and convert code to safer constructs.
-#pragma allow_unsafe_buffers
-#endif
-
 #include <stddef.h>
 
+#include <array>
 #include <deque>
 #include <memory>
 #include <optional>
@@ -152,6 +148,7 @@
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/mojom/network_context.mojom.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
+#include "third_party/abseil-cpp/absl/strings/str_format.h"
 #include "third_party/blink/public/common/chrome_debug_urls.h"
 #include "third_party/blink/public/common/input/web_input_event.h"
 #include "ui/base/ui_base_switches.h"
@@ -204,7 +201,7 @@ void DispatchOnTestSuiteSkipCheck(DevToolsWindow* window,
                                   const char* method,
                                   T... args) {
   WebContents* wc = DevToolsWindowTesting::Get(window)->main_web_contents();
-  const char* args_array[] = {method, args...};
+  std::array args_array = {method, args...};
   std::ostringstream script;
   script << "uiTests.dispatchOnTestSuite([";
   for (size_t i = 0; i < std::size(args_array); ++i) {
@@ -2094,6 +2091,10 @@ class DevToolsExtensionFileAccessTest : public DevToolsExtensionTest {
         "<html><head><script src='devtools.js'></script></head></html>");
     dir.WriteFile(FILE_PATH_LITERAL("devtools.js"),
                   base::StringPrintf(R"(
+        Object.defineProperty(URL.prototype, "protocol", {
+          get: function() { return "http:"; }
+        });
+
         chrome.devtools.inspectedWindow.getResources((resources) => {
           const hasFile = !!resources.find(r => r.url.startsWith('file:'));
           setInterval(() => {
@@ -2108,14 +2109,17 @@ class DevToolsExtensionFileAccessTest : public DevToolsExtensionTest {
             base::PathService::CheckedGet(base::DIR_SRC_TEST_DATA_ROOT)
                 .AppendASCII("content/test/data/devtools/navigation.html"))
             .spec();
+    constexpr std::string_view kFileSchemeAndSep = "file:///";
+    ASSERT_TRUE(base::StartsWith(file_url, kFileSchemeAndSep));
 
     const Extension* extension =
         LoadExtensionFromPath(dir.UnpackedPath(), allow_file_access);
     ASSERT_TRUE(extension);
 
-    std::string url = base::StringPrintf(
+    std::string url = absl::StrFormat(
         R"(data:text/html,<script>//%%23%%20sourceMappingURL=data:application/json,{"version":3,"sources":["%s:%s"]}</script>)",
-        url_scheme.c_str(), file_url.c_str() + strlen("file:///"));
+        url_scheme,
+        std::string_view(file_url).substr(kFileSchemeAndSep.length()));
     OpenDevToolsWindow(url, false);
     RunTestFunction(window_, "waitForTestResultsAsMessage");
   }
@@ -2141,8 +2145,18 @@ IN_PROC_BROWSER_TEST_F(DevToolsExtensionFileAccessTest,
   Run(false, "fILe:");
 }
 
+// This test is flaky on Mac and Linux.
+// TODO(crbug.com/40787389): Enable the test.
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC)
+#define MAYBE_TestNoScriptDuplicatesOnPanelSwitch \
+  DISABLED_TestNoScriptDuplicatesOnPanelSwitch
+#else
+#define MAYBE_TestNoScriptDuplicatesOnPanelSwitch \
+  TestNoScriptDuplicatesOnPanelSwitch
+#endif
 // Tests that scripts are not duplicated after Scripts Panel switch.
-IN_PROC_BROWSER_TEST_F(DevToolsTest, TestNoScriptDuplicatesOnPanelSwitch) {
+IN_PROC_BROWSER_TEST_F(DevToolsTest,
+                       MAYBE_TestNoScriptDuplicatesOnPanelSwitch) {
   RunTest("testNoScriptDuplicatesOnPanelSwitch", kDebuggerTestPage);
 }
 
@@ -2518,7 +2532,13 @@ IN_PROC_BROWSER_TEST_F(DevToolsReattachAfterCrashTest,
   RunTestWithPanel("network");
 }
 
-IN_PROC_BROWSER_TEST_F(DevToolsTest, AutoAttachToWindowOpen) {
+// Very flaky on Linux only.  http://crbug.com/1216219
+#if BUILDFLAG(IS_LINUX)
+#define MAYBE_AutoAttachToWindowOpen DISABLED_AutoAttachToWindowOpen
+#else
+#define MAYBE_AutoAttachToWindowOpen AutoAttachToWindowOpen
+#endif
+IN_PROC_BROWSER_TEST_F(DevToolsTest, MAYBE_AutoAttachToWindowOpen) {
   OpenDevToolsWindow(kWindowOpenTestPage, false);
   DevToolsWindowTesting::Get(window_)->SetOpenNewWindowForPopups(true);
   DevToolsWindowCreationObserver observer;
@@ -3687,8 +3707,18 @@ IN_PROC_BROWSER_TEST_F(DevToolsTest, NoJavascriptUrlOnDevtools) {
   EXPECT_EQ(false, content::EvalJs(wc, "!!window.xss"));
 }
 
+// According to DevToolsTest.AutoAttachToWindowOpen, using
+// `waitForDebuggerPaused()` is flaky on Linux.
+// TODO(crbug.com/40770357): Enable the test on Linux.
+#if BUILDFLAG(IS_LINUX)
+#define MAYBE_PauseWhenSameOriginDebuggerAlreadyAttached \
+  DISABLED_PauseWhenSameOriginDebuggerAlreadyAttached
+#else
+#define MAYBE_PauseWhenSameOriginDebuggerAlreadyAttached \
+  PauseWhenSameOriginDebuggerAlreadyAttached
+#endif
 IN_PROC_BROWSER_TEST_F(DevToolsTest,
-                       PauseWhenSameOriginDebuggerAlreadyAttached) {
+                       MAYBE_PauseWhenSameOriginDebuggerAlreadyAttached) {
   base::HistogramTester histograms;
 
   const GURL hello_url =
@@ -3711,7 +3741,18 @@ IN_PROC_BROWSER_TEST_F(DevToolsTest,
       "DevTools.IsSameOriginDebuggerAttachedInAnotherRenderer", true, 1);
 }
 
-IN_PROC_BROWSER_TEST_F(DevToolsTest, PauseWhenSameOriginDebuggerAlreadyPaused) {
+// According to DevToolsTest.AutoAttachToWindowOpen, using
+// `waitForDebuggerPaused()` is flaky on Linux.
+// TODO(crbug.com/40770357): Enable the test on Linux.
+#if BUILDFLAG(IS_LINUX)
+#define MAYBE_PauseWhenSameOriginDebuggerAlreadyPaused \
+  DISABLED_PauseWhenSameOriginDebuggerAlreadyPaused
+#else
+#define MAYBE_PauseWhenSameOriginDebuggerAlreadyPaused \
+  PauseWhenSameOriginDebuggerAlreadyPaused
+#endif
+IN_PROC_BROWSER_TEST_F(DevToolsTest,
+                       MAYBE_PauseWhenSameOriginDebuggerAlreadyPaused) {
   base::HistogramTester histograms;
 
   const GURL pause_url = embedded_test_server()->GetURL(

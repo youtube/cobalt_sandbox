@@ -32,11 +32,6 @@ BASE_FEATURE(kBluetoothWifiQSPodRefresh,
              "BluetoothWifiQSPodRefresh",
              base::FEATURE_DISABLED_BY_DEFAULT);
 
-// Enables show captive portal signin in a specially flagged popup window.
-BASE_FEATURE(kCaptivePortalPopupWindow,
-             "CaptivePortalPopupWindow",
-             base::FEATURE_ENABLED_BY_DEFAULT);
-
 // Enables updated UI for the clipboard history menu and new system behavior
 // related to clipboard history.
 BASE_FEATURE(kClipboardHistoryRefresh,
@@ -265,11 +260,6 @@ BASE_FEATURE(kFeatureManagementRoundedWindows,
              "FeatureManagementRoundedWindows",
              base::FEATURE_DISABLED_BY_DEFAULT);
 
-// Whether PreinstalledWebApps should only install core apps.
-BASE_FEATURE(kPreinstalledWebAppsCoreOnly,
-             "PreinstalledWebAppsCoreOnly",
-             base::FEATURE_DISABLED_BY_DEFAULT);
-
 // Controls whether to enable quick answers V2 settings sub-toggles.
 BASE_FEATURE(kQuickAnswersV2SettingsSubToggle,
              "QuickAnswersV2SettingsSubToggle",
@@ -305,6 +295,44 @@ BASE_FEATURE(kUploadOfficeToCloudForEnterprise,
              "UploadOfficeToCloudForEnterprise",
              base::FEATURE_ENABLED_BY_DEFAULT);
 
+// Controls the use of scope extensions for the Microsoft 365 PWA from finch as
+// a fallback.
+BASE_FEATURE(kMicrosoft365ScopeExtensions,
+             "Microsoft365ScopeExtensions",
+             base::FEATURE_ENABLED_BY_DEFAULT);
+
+// Comma separated list of scope extension URLs for the Microsoft 365 PWA.
+const base::FeatureParam<std::string> kMicrosoft365ScopeExtensionsURLs{
+    &kMicrosoft365ScopeExtensions, "m365-scope-extensions-urls",
+    /*default*/
+
+    // The Office editors (Word, Excel, PowerPoint) are located on the
+    // OneDrive origin.
+    "https://onedrive.live.com/,"
+
+    // Links to opening Office editors go via this URL shortener origin.
+    "https://1drv.ms/,"
+
+    // The old branding of the Microsoft 365 web app. Many links within
+    // Microsoft 365 still link to the old www.office.com origin.
+    "https://www.office.com/,"
+
+    // The new branding for the Microsoft 365 web app.
+    "https://m365.cloud.microsoft/,"
+
+    // The current Microsoft 365 web app. The scope of the new Microsoft 365
+    // Copilot web app remains unclear, so this is added for safety.
+    "https://www.microsoft365.com/"};
+
+// Comma separated list of scope extension domains for the Microsoft 365 PWA.
+const base::FeatureParam<std::string> kMicrosoft365ScopeExtensionsDomains{
+    &kMicrosoft365ScopeExtensions, "m365-scope-extensions-domains",
+    /*default*/
+
+    // The OneDrive Business domain (for the extension to match
+    // https://<customer>-my.sharepoint.com).
+    "https://sharepoint.com"};
+
 // Enables the Microsoft OneDrive integration workflow for enterprise users to
 // cloud integration support.
 BASE_FEATURE(kMicrosoftOneDriveIntegrationForEnterprise,
@@ -337,15 +365,6 @@ bool IsBatteryBadgeIconEnabled() {
 
 bool IsBluetoothWifiQSPodRefreshEnabled() {
   return base::FeatureList::IsEnabled(kBluetoothWifiQSPodRefresh);
-}
-
-bool IsCaptivePortalPopupWindowEnabled() {
-#if BUILDFLAG(IS_CHROMEOS_LACROS)
-  return chromeos::BrowserParamsProxy::Get()
-      ->IsCaptivePortalPopupWindowEnabled();
-#else
-  return base::FeatureList::IsEnabled(kCaptivePortalPopupWindow);
-#endif
 }
 
 bool IsClipboardHistoryRefreshEnabled() {
@@ -565,6 +584,10 @@ bool IsUploadOfficeToCloudForEnterpriseEnabled() {
   return base::FeatureList::IsEnabled(kUploadOfficeToCloud) &&
          base::FeatureList::IsEnabled(kUploadOfficeToCloudForEnterprise);
 #endif
+}
+
+bool IsMicrosoft365ScopeExtensionsEnabled() {
+  return base::FeatureList::IsEnabled(kMicrosoft365ScopeExtensions);
 }
 
 bool IsMicrosoftOneDriveIntegrationForEnterpriseEnabled() {

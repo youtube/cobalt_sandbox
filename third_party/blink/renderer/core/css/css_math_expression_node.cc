@@ -1798,6 +1798,9 @@ CSSMathExpressionOperation::CreateArithmeticOperationSimplified(
   } else {
     // Simplify multiplying or dividing by a number for simplifiable types.
     DCHECK(op == CSSMathOperator::kMultiply || op == CSSMathOperator::kDivide);
+    if (right_category != kCalcNumber && op == CSSMathOperator::kDivide) {
+      return nullptr;
+    }
     const CSSMathExpressionNode* number_side =
         GetNumericLiteralSide(left_side, right_side);
     if (!number_side) {
@@ -3906,18 +3909,29 @@ class CSSMathExpressionNodeParser {
       case CSSValueID::kAsin:
       case CSSValueID::kAcos:
       case CSSValueID::kAtan:
-      case CSSValueID::kAtan2:
-        return CSSMathExpressionOperation::
-            CreateTrigonometricFunctionSimplified(std::move(nodes),
-                                                  function_id);
+      case CSSValueID::kAtan2: {
+        CSSMathExpressionNode* node =
+            CSSMathExpressionOperation::CreateTrigonometricFunctionSimplified(
+                std::move(nodes), function_id);
+        if (node) {
+          context_.Count(WebFeature::kCSSTrigFunctions);
+        }
+        return node;
+      }
       case CSSValueID::kPow:
       case CSSValueID::kSqrt:
       case CSSValueID::kHypot:
       case CSSValueID::kLog:
-      case CSSValueID::kExp:
+      case CSSValueID::kExp: {
         DCHECK(RuntimeEnabledFeatures::CSSExponentialFunctionsEnabled());
-        return CSSMathExpressionOperation::CreateExponentialFunction(
-            std::move(nodes), function_id);
+        CSSMathExpressionNode* node =
+            CSSMathExpressionOperation::CreateExponentialFunction(
+                std::move(nodes), function_id);
+        if (node) {
+          context_.Count(WebFeature::kCSSExponentialFunctions);
+        }
+        return node;
+      }
       case CSSValueID::kRound:
       case CSSValueID::kMod:
       case CSSValueID::kRem: {
@@ -3946,6 +3960,7 @@ class CSSMathExpressionNodeParser {
           op = CSSMathOperator::kRem;
         }
         DCHECK_EQ(nodes.size(), 2u);
+        context_.Count(WebFeature::kCSSRoundModRemFunctions);
         return CSSMathExpressionOperation::CreateSteppedValueFunction(
             std::move(nodes), op);
       }
@@ -3972,25 +3987,30 @@ class CSSMathExpressionNodeParser {
     whitespace_after_token = stream.Peek().GetType() == kWhitespaceToken;
     stream.ConsumeWhitespace();
     if (token.Id() == CSSValueID::kInfinity) {
+      context_.Count(WebFeature::kCSSCalcConstants);
       return CSSMathExpressionNumericLiteral::Create(
           std::numeric_limits<double>::infinity(),
           CSSPrimitiveValue::UnitType::kNumber);
     }
     if (token.Id() == CSSValueID::kNegativeInfinity) {
+      context_.Count(WebFeature::kCSSCalcConstants);
       return CSSMathExpressionNumericLiteral::Create(
           -std::numeric_limits<double>::infinity(),
           CSSPrimitiveValue::UnitType::kNumber);
     }
     if (token.Id() == CSSValueID::kNan) {
+      context_.Count(WebFeature::kCSSCalcConstants);
       return CSSMathExpressionNumericLiteral::Create(
           std::numeric_limits<double>::quiet_NaN(),
           CSSPrimitiveValue::UnitType::kNumber);
     }
     if (token.Id() == CSSValueID::kPi) {
+      context_.Count(WebFeature::kCSSCalcConstants);
       return CSSMathExpressionNumericLiteral::Create(
           M_PI, CSSPrimitiveValue::UnitType::kNumber);
     }
     if (token.Id() == CSSValueID::kE) {
+      context_.Count(WebFeature::kCSSCalcConstants);
       return CSSMathExpressionNumericLiteral::Create(
           M_E, CSSPrimitiveValue::UnitType::kNumber);
     }

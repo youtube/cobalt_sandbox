@@ -20,6 +20,7 @@
 #include "ash/capture_mode/sunfish_capture_bar_view.h"
 #include "ash/constants/ash_features.h"
 #include "ash/projector/projector_controller_impl.h"
+#include "ash/public/cpp/capture_mode/capture_mode_api.h"
 #include "ash/scanner/scanner_controller.h"
 #include "ash/session/session_controller_impl.h"
 #include "ash/shelf/shelf.h"
@@ -100,7 +101,7 @@ class DefaultBehavior : public CaptureModeBehavior {
     // TODO(crbug.com/376103983): Verify `CaptureRegionOverlayController` works
     // correctly. It is always created in Sunfish session to paint the region
     // selection UI, but should only support text overlay if Scanner is enabled.
-    return features::CanStartSunfishSession();
+    return CanStartSunfishSession();
   }
   bool CanPaintRegionOverlay() const override {
     auto* controller = CaptureModeController::Get();
@@ -112,6 +113,7 @@ class DefaultBehavior : public CaptureModeBehavior {
     auto* scanner_controller = Shell::Get()->scanner_controller();
     return scanner_controller && scanner_controller->CanStartSession();
   }
+  bool CanShowActionButtons() const override { return true; }
   void OnRegionSelectedOrAdjusted() override {
     if (ShouldShowDefaultActionButtonsAfterRegionSelected() &&
         features::IsScannerEnabled()) {
@@ -347,7 +349,7 @@ class SunfishBehavior : public CaptureModeBehavior {
     }
   }
   bool ShouldRegionOverlayBeAllowed() const override {
-    return features::CanStartSunfishSession();
+    return CanStartSunfishSession();
   }
   bool CanPaintRegionOverlay() const override { return true; }
   bool ShouldShowUserNudge() const override { return false; }
@@ -364,6 +366,7 @@ class SunfishBehavior : public CaptureModeBehavior {
   bool ShouldShowCaptureButtonAfterRegionSelected() const override {
     return false;
   }
+  bool CanShowActionButtons() const override { return true; }
   bool ShouldEndSessionOnSearchResultClicked() const override { return true; }
   const std::u16string GetCaptureLabelRegionText() const override {
     return l10n_util::GetStringUTF16(IDS_ASH_SUNFISH_CAPTURE_LABEL);
@@ -511,16 +514,21 @@ bool CaptureModeBehavior::RequiresCaptureFolderCreation() const {
 
 bool CaptureModeBehavior::ShouldReShowUisAtPerformingCapture(
     PerformCaptureType capture_type) const {
-  // We don't need to bring capture mode UIs back if `type_` is
-  // `CaptureModeType::kImage` or `capture_type` is
-  // `PerformCaptureType::kSearch` since the session is about to shutdown
-  // anyways at these use cases, so it's better to avoid any wasted effort. In
-  // the case of video recording, we need to reshow the UIs so that we can start
-  // the 3-second count down animation.
-  return capture_type == PerformCaptureType::kTextDetection ||
-         capture_type == PerformCaptureType::kScanner ||
-         (capture_type != PerformCaptureType::kSearch &&
-          CaptureModeController::Get()->type() != CaptureModeType::kImage);
+  switch (capture_type) {
+    case PerformCaptureType::kCapture:
+      // The session shuts down after image capture so there is no need to
+      // reshow the UIs. For video recording, we need to reshow the UIs so that
+      // we can start the 3-second count down animation.
+      return CaptureModeController::Get()->type() != CaptureModeType::kImage;
+    case PerformCaptureType::kSearch:
+      // The session shuts down after capture for `PerformCaptureType::kSearch`
+      // so there is no need to reshow the UIs.
+      return false;
+    case PerformCaptureType::kScanner:
+    case PerformCaptureType::kTextDetection:
+    case PerformCaptureType::kSunfish:
+      return true;
+  }
 }
 
 bool CaptureModeBehavior::ShouldShowDefaultActionButtonsAfterRegionSelected()
@@ -534,6 +542,10 @@ bool CaptureModeBehavior::ShouldShowDefaultActionButtonsAfterRegionSelected()
 }
 
 bool CaptureModeBehavior::CanShowSmartActionsButton() const {
+  return false;
+}
+
+bool CaptureModeBehavior::CanShowActionButtons() const {
   return false;
 }
 

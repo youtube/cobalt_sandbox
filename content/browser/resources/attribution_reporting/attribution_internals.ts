@@ -207,6 +207,7 @@ interface Source {
   remainingAggregatableDebugBudget: number;
   aggregatableDebugKeyPiece: string;
   attributionScopesData: string;
+  aggregatableNamedBudgets: string;
 }
 
 function newSource(mojo: WebUISource): Source {
@@ -238,6 +239,7 @@ function newSource(mojo: WebUISource): Source {
     remainingAggregatableDebugBudget: mojo.remainingAggregatableDebugBudget,
     aggregatableDebugKeyPiece: mojo.aggregatableDebugKeyPiece,
     attributionScopesData: mojo.attributionScopesDataJson,
+    aggregatableNamedBudgets: mojo.aggregatableNamedBudgets,
   };
 }
 
@@ -290,6 +292,8 @@ function initSourceTable(panel: HTMLElement):
             'Remaining Aggregatable Attribution Budget',
             'remainingAggregatableAttributionBudget',
             asCustomNumber((v) => `${v} / ${BUDGET_PER_SOURCE}`)),
+        valueColumn(
+            'Named Budgets', 'aggregatableNamedBudgets', asCode),
         valueColumn('Aggregation Keys', 'aggregationKeys', asCode),
         valueColumn('Dedup Keys', 'aggregatableDedupKeys', asList(asNumber)),
       ]);
@@ -833,6 +837,8 @@ const aggregatableResultText: Readonly<Record<AggregatableResult, string>> = {
   [AggregatableResult.kProhibitedByBrowserPolicy]:
       commonResult.prohibitedByBrowserPolicy,
   [AggregatableResult.kExcessiveReports]: commonResult.excessiveReports,
+  [AggregatableResult.kInsufficientNamedBudget]:
+      'Failure: Insufficient budget with selected name',
 };
 
 const attributionSupportText: Readonly<Record<AttributionSupport, string>> = {

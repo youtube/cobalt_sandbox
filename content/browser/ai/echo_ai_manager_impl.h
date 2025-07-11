@@ -25,14 +25,17 @@ namespace content {
 // will be set using the default value.
 class EchoAIManagerImpl : public blink::mojom::AIManager {
  public:
+  // The context size for EchoAIManagerImpl is intentionally set to a small
+  // value so we can easily simulate the context overflow scenario.
+  static constexpr int kMaxContextSizeInTokens = 1000;
+
   EchoAIManagerImpl(const EchoAIManagerImpl&) = delete;
   EchoAIManagerImpl& operator=(const EchoAIManagerImpl&) = delete;
 
   ~EchoAIManagerImpl() override;
 
-  static void Create(
-      std::variant<RenderFrameHost*, base::SupportsUserData*> context,
-      mojo::PendingReceiver<blink::mojom::AIManager> receiver);
+  static void Create(base::SupportsUserData& context_user_data,
+                     mojo::PendingReceiver<blink::mojom::AIManager> receiver);
 
  private:
   friend base::NoDestructor<EchoAIManagerImpl>;

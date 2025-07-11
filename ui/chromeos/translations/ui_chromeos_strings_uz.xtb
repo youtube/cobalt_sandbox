@@ -422,6 +422,7 @@
 <translation id="4387004326333427325">Haqiqiylikni tekshirish sertifikati masofadan turib rad etildi</translation>
 <translation id="4394214039309501350">Tashqi havola</translation>
 <translation id="4394980935660306080">Shu hafta boshi</translation>
+<translation id="4397435965699247285">OneDrive oflayn rejimda ishlamaydi</translation>
 <translation id="4398096759193130964">Fayllarni tiklang yoki ularni chiqitdon tashqarisidagi yangi jildga sudrang.</translation>
 <translation id="4401287888955153199">Barchasini ajratish</translation>
 <translation id="4410695710508688828">Arxivdan chiqarish amali bajarilmadi. <ph name="ERROR_MESSAGE" /></translation>
@@ -582,7 +583,6 @@ Amal bajarilishini kuting va qurilmani “Fayllar” ilovasida chiqarib oling. A
 <translation id="5447680084201416734">Xotiradagi joy yetarli emas.</translation>
 <translation id="5449551289610225147">Parol noto‘g‘ri</translation>
 <translation id="5459064203055649751">“<ph name="FILENAME" />” nomli fayl allaqachon mavjud. Uni oʻzingiz koʻchirayotgan fayl bilan almashtirmoqchimisiz?</translation>
-<translation id="5462378611565326489">OneDrive oflayn rejimda ishlamaydi.</translation>
 <translation id="5463231940765244860">Enter</translation>
 <translation id="5469868506864199649">Italyan</translation>
 <translation id="5473333559083690127">Yangi PIN kodni qayta kiriting</translation>
@@ -718,7 +718,7 @@ Amal bajarilishini kuting va qurilmani “Fayllar” ilovasida chiqarib oling. A
 <translation id="649877868557234318"><ph name="FILE_NAME" /> fayli <ph name="FOLDER_NAME" /> jildiga chiqarilmoqda</translation>
 <translation id="6499681088828539489">Umumiy tarmoqlarga proksi-serverlardan foydalanishni taqiqlash</translation>
 <translation id="6503285896705205014"><ph name="COUNT" /> ta faylni nusxalash administrator tomonidan bloklandi</translation>
-<translation id="6509122719576673235">Norvey tili</translation>
+<translation id="6509122719576673235">Norveg</translation>
 <translation id="6528513914570774834">Bu tarmoqdan foydalanish uchun ushbu qurilmadagi boshqa foydalanuvchilarga ruxsat berish</translation>
 <translation id="6549689063733911810">Yaqinda</translation>
 <translation id="6558280019477628686">Xatolik yuz berdi. Ba’zi elementlar o‘chirilmadi.</translation>

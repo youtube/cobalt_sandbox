@@ -92,7 +92,7 @@
 //      "high_level_stats": {
 //        // Which fraction of fields had the heuristic type match the tester
 //        // type.
-//        "fraction_machtes": 0.7258244384259996,
+//        "fraction_matches": 0.7258244384259996,
 //        // Number of fields for which the heuristic type matched the tester
 //        // type or did not match.
 //        "matches": 9112,
@@ -101,7 +101,7 @@
 //      // Same staistics as above, drilled down by tester type.
 //      "per_type_stats": {
 //         "{tester_type}": {
-//            "fraction_machtes": 0.9132743362831859,
+//            "fraction_matches": 0.9132743362831859,
 //            "matches": 1032,
 //            "mismatches": 98
 //         },
@@ -266,7 +266,7 @@ base::Value ResultAnalyzer::GetResult() {
   base::Value::Dict high_level_stats;
   high_level_stats.Set("matches", matches_);
   high_level_stats.Set("mismatches", mismatches_);
-  high_level_stats.Set("fraction_machtes",
+  high_level_stats.Set("fraction_matches",
                        matches_ / (double)(matches_ + mismatches_));
   result.Set("high_level_stats", std::move(high_level_stats));
 
@@ -280,7 +280,7 @@ base::Value ResultAnalyzer::GetResult() {
       base::Value::Dict tester_type_stats;
       tester_type_stats.Set("matches", matches);
       tester_type_stats.Set("mismatches", mismatches);
-      tester_type_stats.Set("fraction_machtes",
+      tester_type_stats.Set("fraction_matches",
                             matches / (double)(matches + mismatches));
       per_type_stats.Set(type, std::move(tester_type_stats));
     }
@@ -359,8 +359,9 @@ FormFieldData ParseFieldFromJsonDict(const base::Value::Dict& field_dict,
   field.set_form_control_type(FormControlType::kInputText);
   if (const std::string* json_type = field_dict.FindString("type_attr")) {
     std::string type = *json_type == "select" ? "select-one" : *json_type;
-    field.set_form_control_type(autofill::StringToFormControlTypeDiscouraged(
-        type, /*fallback=*/autofill::FormControlType::kInputText));
+    field.set_form_control_type(
+        StringToFormControlTypeDiscouraged(type).value_or(
+            FormControlType::kInputText));
   }
   if (const std::string* autocomplete =
           field_dict.FindString("autocomplete_attr")) {
@@ -474,8 +475,7 @@ FormFieldData ParseFieldFromJsonDict(const base::Value::Dict& field_dict,
     // Similarly to AutofillManager::ParseFormsAsync, the heuristics are
     // executed after the ML model. If ML predictions are enabled, this does
     // not override the heuristic types but performs rationalization.
-    form_structure->DetermineHeuristicTypes(client_country, nullptr,
-                                            log_manager);
+    form_structure->DetermineHeuristicTypes(client_country, log_manager);
 
     result_analyzer.AnalyzeClassification(*form_structure, form.GetDict());
   }
@@ -498,7 +498,7 @@ FormFieldData ParseFieldFromJsonDict(const base::Value::Dict& field_dict,
     std::ostringstream result;
     result << caption << ": Fraction matches " << std::fixed
            << std::setprecision(2)
-           << (*dict.FindDouble("fraction_machtes") * 100.0) << "%, "
+           << (*dict.FindDouble("fraction_matches") * 100.0) << "%, "
            << "Matches: " << *dict.FindInt("matches") << ", "
            << "Mismatches: " << *dict.FindInt("mismatches") << std::endl;
     return result.str();

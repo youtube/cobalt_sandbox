@@ -1348,8 +1348,10 @@ class TabImpl implements Tab, SensitiveContentClient.Observer {
     }
 
     void handleBackForwardTransitionUiChanged() {
+        if (isDestroyed()) return;
+
         for (TabObserver observer : mObservers) {
-            observer.didBackForwardTransitionAnimationChange();
+            observer.didBackForwardTransitionAnimationChange(this);
         }
 
         // Start the cross-fade animation after the invoking animation is done.

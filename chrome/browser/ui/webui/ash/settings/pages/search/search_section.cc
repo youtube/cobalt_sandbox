@@ -11,12 +11,15 @@
 #include "ash/constants/url_constants.h"
 #include "ash/lobster/lobster_controller.h"
 #include "ash/public/cpp/assistant/assistant_state.h"
+#include "ash/public/cpp/capture_mode/capture_mode_api.h"
 #include "base/metrics/histogram_functions.h"
 #include "base/no_destructor.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/ash/assistant/assistant_util.h"
 #include "chrome/browser/ash/input_method/editor_mediator_factory.h"
+#include "chrome/browser/ash/lobster/lobster_service.h"
+#include "chrome/browser/ash/lobster/lobster_service_provider.h"
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/ui/webui/ash/assistant_optin/assistant_optin_utils.h"
 #include "chrome/browser/ui/webui/ash/settings/pages/search/google_assistant_handler.h"
@@ -86,9 +89,12 @@ bool IsMagicBoostNoticeBannerVisible(Profile* profile) {
   return hmr_needs_notice_banner || hmw_needs_notice_banner;
 }
 
-bool IsLobsterSettingsToggleVisible() {
-  return ash::features::IsLobsterEnabled() &&
-         ash::LobsterController::IsEnabled();
+bool IsLobsterSettingsToggleVisible(Profile* profile) {
+  LobsterService* lobster_service =
+      ash::features::IsLobsterEnabled()
+          ? LobsterServiceProvider::GetForProfile(profile)
+          : nullptr;
+  return lobster_service != nullptr && lobster_service->UserHasAccess();
 }
 
 base::span<const SearchConcept> GetSearchPageSearchConcepts() {
@@ -414,13 +420,17 @@ void SearchSection::AddLoadTimeData(content::WebUIDataSource* html_source) {
 
   html_source->AddBoolean(
       "isMagicBoostFeatureEnabled",
-      chromeos::MagicBoostState::Get()->IsMagicBoostAvailable());
+      chromeos::MagicBoostState::Get()->IsMagicBoostAvailable() ||
+          IsLobsterSettingsToggleVisible(profile()));
 
   html_source->AddBoolean("isMagicBoostNoticeBannerVisible",
                           IsMagicBoostNoticeBannerVisible(profile()));
 
   html_source->AddBoolean("isLobsterSettingsToggleVisible",
-                          IsLobsterSettingsToggleVisible());
+                          IsLobsterSettingsToggleVisible(profile()));
+
+  html_source->AddBoolean("isSunfishSettingsToggleVisible",
+                          ash::CanStartSunfishSession());
 
   const bool is_assistant_allowed = IsAssistantAllowed();
   html_source->AddBoolean("isAssistantAllowed", is_assistant_allowed);
@@ -481,6 +491,12 @@ bool SearchSection::LogMetric(mojom::Setting setting,
       base::UmaHistogramBoolean("ChromeOS.Settings.MagicBoost.LobsterEnabled",
                                 value.GetBool());
       return true;
+
+    case mojom::Setting::kSunfishOnOff:
+      base::UmaHistogramBoolean("ChromeOS.Settings.SunfishEnabled",
+                                value.GetBool());
+      return true;
+
     default:
       return false;
   }
@@ -499,6 +515,7 @@ void SearchSection::RegisterHierarchy(HierarchyGenerator* generator) const {
   generator->RegisterTopLevelSetting(mojom::Setting::kMahiOnOff);
   generator->RegisterTopLevelSetting(mojom::Setting::kMagicBoostOnOff);
   generator->RegisterTopLevelSetting(mojom::Setting::kLobsterOnOff);
+  generator->RegisterTopLevelSetting(mojom::Setting::kSunfishOnOff);
 
   // Search.
   generator->RegisterTopLevelSubpage(

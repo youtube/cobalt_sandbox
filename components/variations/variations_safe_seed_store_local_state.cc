@@ -19,14 +19,12 @@ const base::FilePath::CharType kSafeSeedFilename[] =
 
 VariationsSafeSeedStoreLocalState::VariationsSafeSeedStoreLocalState(
     PrefService* local_state,
-    const version_info::Channel channel,
     const base::FilePath& seed_file_dir)
     : local_state_(local_state),
       seed_reader_writer_(std::make_unique<SeedReaderWriter>(
           local_state,
           seed_file_dir,
           kSafeSeedFilename,
-          channel,
           prefs::kVariationsSafeCompressedSeed)) {}
 
 VariationsSafeSeedStoreLocalState::~VariationsSafeSeedStoreLocalState() =
@@ -59,9 +57,9 @@ void VariationsSafeSeedStoreLocalState::SetTimeForStudyDateChecks(
   local_state_->SetTime(prefs::kVariationsSafeSeedDate, safe_seed_time);
 }
 
-std::string VariationsSafeSeedStoreLocalState::GetCompressedSeed() const {
-  // TODO(crbug.com/374947675): Support reading the compressed unencoded seed
-  // from the new seed file.
+const std::string& VariationsSafeSeedStoreLocalState::GetCompressedSeed()
+    const {
+  // TODO(crbug.com/374947675): Use |seed_reader_writer_| to read a seed.
   return local_state_->GetString(prefs::kVariationsSafeCompressedSeed);
 }
 
@@ -112,6 +110,11 @@ void VariationsSafeSeedStoreLocalState::SetSessionConsistencyCountry(
     const std::string& session_consistency_country) {
   local_state_->SetString(prefs::kVariationsSafeSeedSessionConsistencyCountry,
                           session_consistency_country);
+}
+
+SeedReaderWriter*
+VariationsSafeSeedStoreLocalState::GetSeedReaderWriterForTesting() {
+  return seed_reader_writer_.get();
 }
 
 void VariationsSafeSeedStoreLocalState::SetSeedReaderWriterForTesting(

@@ -316,7 +316,7 @@
     "owners": ["vasilyt@chromium.org", "chrome-gpu@google.com"],
     "platforms": ["Linux", "Mac", "Win"],
     "bases": ["images",
-              "external/wpt/css/css-images/gradient"],
+              "external/wpt/css/css-images"],
     "args": ["--enable-gpu-rasterization"],
     "expires": "Jul 1, 2025"
   },
@@ -1205,7 +1205,9 @@
   {
     "prefix": "port-bound-cookies",
     "platforms": ["Linux", "Mac", "Win"],
-    "bases":[ "http/tests/inspector-protocol/issues/port-mismatch-exclusion.js" ],
+    "bases":[
+      "http/tests/inspector-protocol/issues/port-mismatch-exclusion.js",
+      "http/tests/inspector-protocol/network/blocked-cookie-port-mismatch.js"],
     "expires": "Mar 1, 2025",
     "exclusive_tests": "ALL",
     "args": [ "--enable-features=EnablePortBoundCookies"],
@@ -1215,7 +1217,9 @@
   {
     "prefix": "scheme-bound-cookies",
     "platforms": ["Linux", "Mac", "Win"],
-    "bases":[ "http/tests/inspector-protocol/issues/scheme-mismatch-exclusion.js" ],
+    "bases":[
+      "http/tests/inspector-protocol/issues/scheme-mismatch-exclusion.js",
+      "http/tests/inspector-protocol/network/blocked-cookie-scheme-mismatch.js"],
     "expires": "Mar 1, 2025",
     "exclusive_tests": "ALL",
     "args": [ "--enable-features=EnableSchemeBoundCookies"],
@@ -1551,26 +1555,6 @@
       "--disable-features=CookieDeprecationFacilitatedTesting,FledgeEnforceKAnonymity"
     ],
     "expires": "Mar 1, 2025"
-  },
-  "This virtual suite disables CookieDeprecationFacilitatedTesting while",
-  "enabling fledge flags, to test fledge features that are disabled when",
-  "CookieDeprecationFacilitatedTesting is enabled.",
-  {
-    "prefix": "fledge-disable-cookie-deprecation-testing",
-    "platforms": ["Linux", "Mac", "Win"],
-    "owners": ["ybourouphael@google.com", "behamilton@google.com", "mmenke@chromium.org", "pauljensen@chromium.org", "qingxinwu@google.com"],
-    "bases": [
-      "external/wpt/fledge/tentative/deprecated-render-url-replacements.https.window.js",
-      "external/wpt/fledge/tentative/auction-config-passed-to-worklets.https.window.js",
-      "external/wpt/fledge/tentative/auction-config.https.window.js",
-      "external/wpt/fledge/tentative/component-ads.https.window.js",
-      "external/wpt/fledge/tentative/component-auction.https.window.js"
-    ],
-    "args": [
-      "--enable-features=InterestGroupStorage,PrivacySandboxAdsAPIsOverride,FencedFrames:implementation_type/mparch,FledgeConsiderKAnonymity",
-      "--disable-features=CookieDeprecationFacilitatedTesting"
-    ],
-    "expires": "Jan 1, 2025"
   },
   {
     "prefix": "fledge-bidding-and-auction",
@@ -3671,6 +3655,20 @@
     "expires": "May 1, 2025"
   },
   {
+    "prefix": "selection-shadow-delegates-focus-disabled",
+    "owners": ["dizhangg@google.com"],
+    "platforms": ["Linux", "Mac", "Win"],
+    "bases": [
+      "external/wpt/shadow-dom/focus/text-selection-with-delegatesFocus-on-slotted-content.html",
+      "external/wpt/shadow-dom/focus/text-selection-with-delegatesFocus.html",
+      "shadow-dom/focus-slide-on-shadow-host.html"
+    ],
+    "args": [
+      "--disable-blink-features=SelectionOnShadowDOMWithDelegatesFocus"
+    ],
+    "expires": "May 1, 2025"
+  },
+  {
     "prefix": "shadow-realm-enabled",
     "platforms": ["Linux", "Mac", "Win"],
     "bases": [
@@ -4030,6 +4028,15 @@
     "expires": "Jan 1, 2025"
   },
   {
+    "prefix": "single-import-map",
+    "platforms": ["Linux", "Mac", "Win"],
+    "bases": ["external/wpt/import-maps",
+              "wpt_internal/import-maps"],
+    "args": ["--disable-blink-features=MultipleImportMaps"],
+    "owners": ["yoavweiss@chromium.org"],
+    "expires": "Jul 1, 2025"
+  },
+  {
     "prefix": "at-property-string-syntax",
     "platforms": ["Linux"],
     "bases": [
@@ -4040,5 +4047,31 @@
     ],
     "expires": "Jan 1, 2025",
     "owners": ["moonira@google.com"]
+  },
+  {
+    "prefix": "devtools-improved-network-error",
+    "platforms": ["Linux"],
+    "bases": [
+      "http/tests/inspector-protocol/runtime/runtime-exception-thrown-cors-issue-summary.js"
+    ],
+    "exclusive_tests": "ALL",
+    "args": [
+      "--enable-features=DevToolsImprovedNetworkError"
+    ],
+    "expires": "Jan 3, 2025",
+    "owners": [
+      "bmeurer@google.com",
+      "changhaohan@google.com"
+    ]
+  },
+  {
+    "prefix": "select-audio-output",
+    "platforms": ["Linux", "Mac", "Win"],
+    "bases": ["external/wpt/audio-output",
+              "external/wpt/webaudio/the-audio-api/the-mediaelementaudiosourcenode-interface/setSinkId-with-MediaElementAudioSourceNode.https.html"],
+    "exclusive_tests": "ALL",
+    "args": ["--enable-features=SelectAudioOutput"],
+    "owners": ["agpalak@chromium.org", "guidou@chromium.org"],
+    "expires": "Nov 11, 2025"
   }
 ]

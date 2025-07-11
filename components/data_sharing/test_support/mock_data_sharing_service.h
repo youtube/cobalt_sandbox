@@ -35,6 +35,9 @@ class MockDataSharingService : public DataSharingService {
   MOCK_METHOD0(IsGroupDataModelLoaded, bool());
   MOCK_METHOD1(ReadGroup, std::optional<GroupData>(const GroupId&));
   MOCK_METHOD0(ReadAllGroups, std::set<GroupData>());
+  MOCK_METHOD2(GetPossiblyRemovedGroupMember,
+               std::optional<GroupMemberPartialData>(const GroupId&,
+                                                     const std::string&));
   MOCK_METHOD1(
       ReadAllGroups,
       void(base::OnceCallback<void(const GroupsDataSetOrFailureOutcome&)>));
@@ -67,8 +70,8 @@ class MockDataSharingService : public DataSharingService {
   MOCK_METHOD1(ShouldInterceptNavigationForShareURL, bool(const GURL&));
   MOCK_METHOD2(HandleShareURLNavigationIntercepted,
                void(const GURL&, std::unique_ptr<ShareURLInterceptionContext>));
-  MOCK_METHOD1(GetDataSharingURL, std::unique_ptr<GURL>(const GroupData&));
-  MOCK_METHOD1(ParseDataSharingURL, ParseURLResult(const GURL&));
+  MOCK_METHOD1(GetDataSharingUrl, std::unique_ptr<GURL>(const GroupData&));
+  MOCK_METHOD1(ParseDataSharingUrl, ParseUrlResult(const GURL&));
   MOCK_METHOD2(
       EnsureGroupVisibility,
       void(const GroupId&,
@@ -79,8 +82,7 @@ class MockDataSharingService : public DataSharingService {
            base::OnceCallback<void(const SharedDataPreviewOrFailureOutcome&)>));
   MOCK_METHOD1(SetSDKDelegate, void(std::unique_ptr<DataSharingSDKDelegate>));
   MOCK_METHOD1(SetUIDelegate, void(std::unique_ptr<DataSharingUIDelegate>));
-  MOCK_METHOD0(GetUIDelegate, DataSharingUIDelegate*());
-  MOCK_METHOD0(GetServiceStatus, ServiceStatus());
+  MOCK_METHOD0(GetUiDelegate, DataSharingUIDelegate*());
 };
 
 }  // namespace data_sharing

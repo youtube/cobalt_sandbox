@@ -339,6 +339,7 @@ class GoToQuestionAndAnswerButton : public IconButton,
       case MahiUiUpdateType::kAnswerLoaded:
       case MahiUiUpdateType::kErrorReceived:
       case MahiUiUpdateType::kOutlinesLoaded:
+      case MahiUiUpdateType::kPanelBoundsChanged:
       case MahiUiUpdateType::kQuestionAndAnswerViewNavigated:
       case MahiUiUpdateType::kQuestionReAsked:
       case MahiUiUpdateType::kRefreshAvailabilityUpdated:
@@ -453,6 +454,7 @@ class MahiScrollView : public views::ScrollView,
       case MahiUiUpdateType::kContentsRefreshInitiated:
       case MahiUiUpdateType::kErrorReceived:
       case MahiUiUpdateType::kOutlinesLoaded:
+      case MahiUiUpdateType::kPanelBoundsChanged:
       case MahiUiUpdateType::kQuestionAndAnswerViewNavigated:
       case MahiUiUpdateType::kQuestionReAsked:
       case MahiUiUpdateType::kRefreshAvailabilityUpdated:
@@ -883,11 +885,17 @@ void MahiPanelView::OnUpdated(const MahiUiUpdate& update) {
       send_button_->SetEnabled(true);
       return;
     case MahiUiUpdateType::kContentsRefreshInitiated: {
-      content_source_button_->RefreshContentSourceInfo();
+      content_source_button_->RefreshContentSourceInfo(
+          /*elucidation_in_use=*/false);
 
       // Reset feedback buttons when new content is requested.
       thumbs_up_button_->SetToggled(false);
       thumbs_down_button_->SetToggled(false);
+      return;
+    }
+    case MahiUiUpdateType::kElucidationRequested: {
+      content_source_button_->RefreshContentSourceInfo(
+          /*elucidation_in_use=*/true);
       return;
     }
     case MahiUiUpdateType::kErrorReceived:
@@ -895,6 +903,7 @@ void MahiPanelView::OnUpdated(const MahiUiUpdate& update) {
       send_button_->SetEnabled(true);
       return;
     case MahiUiUpdateType::kOutlinesLoaded:
+    case MahiUiUpdateType::kPanelBoundsChanged:
     case MahiUiUpdateType::kQuestionAndAnswerViewNavigated:
     case MahiUiUpdateType::kQuestionPosted:
     case MahiUiUpdateType::kQuestionReAsked:
@@ -902,7 +911,6 @@ void MahiPanelView::OnUpdated(const MahiUiUpdate& update) {
     case MahiUiUpdateType::kSummaryLoaded:
     case MahiUiUpdateType::kSummaryAndOutlinesSectionNavigated:
     case MahiUiUpdateType::kSummaryAndOutlinesReloaded:
-    case MahiUiUpdateType::kElucidationRequested:
     case MahiUiUpdateType::kElucidationLoaded:
       return;
   }
@@ -952,7 +960,9 @@ void MahiPanelView::OnSendButtonPressed() {
 }
 
 void MahiPanelView::OnBoundsChanged(const gfx::Rect& previous_bounds) {
-  layer()->SetClipRect(GetLocalBounds());
+  gfx::Rect panel_bounds = GetLocalBounds();
+  layer()->SetClipRect(panel_bounds);
+  ui_controller_->NotifyPanelBoundsChanged(panel_bounds);
 }
 
 void MahiPanelView::OnThumbsUpButtonActive() {

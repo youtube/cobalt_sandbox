@@ -35,10 +35,10 @@
 #include "components/autofill/core/common/unique_ids.h"
 #include "components/autofill_ai/core/browser/autofill_ai_client.h"
 #include "components/autofill_ai/core/browser/autofill_ai_features.h"
-#include "components/autofill_ai/core/browser/autofill_ai_filling_engine.h"
 #include "components/autofill_ai/core/browser/autofill_ai_logger.h"
 #include "components/autofill_ai/core/browser/autofill_ai_utils.h"
 #include "components/autofill_ai/core/browser/autofill_ai_value_filter.h"
+#include "components/autofill_ai/core/browser/suggestion/autofill_ai_model_executor.h"
 #include "components/autofill_ai/core/browser/suggestion/autofill_ai_suggestions.h"
 #include "components/optimization_guide/core/optimization_guide_decider.h"
 #include "components/optimization_guide/proto/features/common_quality_data.pb.h"
@@ -89,7 +89,7 @@ bool AutofillAiManager::IsFormBlockedForImport(
   }
 
   return user_annotation_prompt_strike_database_->ShouldBlockFeature(
-      AutofillPrectionImprovementsAnnotationPromptStrikeDatabaseTraits::GetId(
+      AutofillAiAnnotationPromptStrikeDatabaseTraits::GetId(
           form.form_signature()));
 }
 void AutofillAiManager::AddStrikeForImportFromForm(
@@ -99,7 +99,7 @@ void AutofillAiManager::AddStrikeForImportFromForm(
   }
 
   user_annotation_prompt_strike_database_->AddStrike(
-      AutofillPrectionImprovementsAnnotationPromptStrikeDatabaseTraits::GetId(
+      AutofillAiAnnotationPromptStrikeDatabaseTraits::GetId(
           form.form_signature()));
 }
 
@@ -110,7 +110,7 @@ void AutofillAiManager::RemoveStrikesForImportFromForm(
   }
 
   user_annotation_prompt_strike_database_->ClearStrikes(
-      AutofillPrectionImprovementsAnnotationPromptStrikeDatabaseTraits::GetId(
+      AutofillAiAnnotationPromptStrikeDatabaseTraits::GetId(
           form.form_signature()));
 }
 
@@ -159,11 +159,12 @@ bool AutofillAiManager::HasImprovedPredictionsForField(
   return cache_ && cache_->contains(field.global_id());
 }
 
-bool AutofillAiManager::IsPredictionImprovementsEligible(
+bool AutofillAiManager::IsEligibleForAutofillAi(
     const autofill::FormStructure& form,
     const autofill::AutofillField& field) const {
   return IsFormAndFieldEligible(form, field) &&
-         ShouldProvidePredictionImprovements(form.main_frame_origin().GetURL());
+         client_->IsAutofillAiEnabledPref() && IsUserEligible() &&
+         IsURLEligibleForAutofillAi(form.main_frame_origin().GetURL());
 }
 
 bool AutofillAiManager::IsUserEligible() const {
@@ -296,7 +297,7 @@ void AutofillAiManager::OnReceivedAXTree(
     const autofill::FormData& form,
     const autofill::FormFieldData& trigger_field,
     optimization_guide::proto::AXTreeUpdate ax_tree_update) {
-  client_->GetFillingEngine()->GetPredictions(
+  client_->GetModelExecutor()->GetPredictions(
       form, GetFieldFillingEligibilityMap(form),
       GetFieldValueSensitivityMap(form), std::move(ax_tree_update),
       base::BindOnce(&AutofillAiManager::OnReceivedPredictions,
@@ -306,7 +307,7 @@ void AutofillAiManager::OnReceivedAXTree(
 void AutofillAiManager::OnReceivedPredictions(
     const autofill::FormData& form,
     const autofill::FormFieldData& trigger_field,
-    AutofillAiFillingEngine::PredictionsOrError predictions_or_error,
+    AutofillAiModelExecutor::PredictionsOrError predictions_or_error,
     std::optional<std::string> model_execution_id) {
   LOG_AF(GetLogManager()) << LoggingScope::kAutofillAi
                           << LogMessage::kAutofillAi
@@ -388,8 +389,7 @@ void AutofillAiManager::UserClickedLearnMore() {
   client_->OpenPredictionImprovementsSettings();
 }
 
-bool AutofillAiManager::IsURLEligibleForPredictionImprovements(
-    const GURL& url) const {
+bool AutofillAiManager::IsURLEligibleForAutofillAi(const GURL& url) const {
   if (!decider_) {
     return false;
   }
@@ -408,12 +408,6 @@ bool AutofillAiManager::IsURLEligibleForPredictionImprovements(
           optimization_guide::proto::AUTOFILL_PREDICTION_IMPROVEMENTS_ALLOWLIST,
           /*optimization_metadata=*/nullptr);
   return decision == optimization_guide::OptimizationGuideDecision::kTrue;
-}
-
-bool AutofillAiManager::ShouldProvidePredictionImprovements(
-    const GURL& url) const {
-  return client_->IsAutofillAiEnabledPref() && IsUserEligible() &&
-         IsURLEligibleForPredictionImprovements(url);
 }
 
 void AutofillAiManager::OnClickedTriggerSuggestion(
@@ -680,8 +674,7 @@ bool AutofillAiManager::ShouldDisplayIph(
   // 3. The current domain can trigger the feature.
   return !client_->IsAutofillAiEnabledPref() && IsUserEligible() &&
          IsFormAndFieldEligible(form, field) &&
-         IsURLEligibleForPredictionImprovements(
-             form.main_frame_origin().GetURL());
+         IsURLEligibleForAutofillAi(form.main_frame_origin().GetURL());
 }
 
 void AutofillAiManager::GoToSettings() const {
@@ -700,7 +693,7 @@ void AutofillAiManager::OnFailedToGenerateSuggestions() {
   switch (prediction_retrieval_state_) {
     case PredictionRetrievalState::kReady:
     case PredictionRetrievalState::kIsLoadingPredictions:
-      NOTREACHED_NORETURN();
+      NOTREACHED();
     case PredictionRetrievalState::kDoneSuccess:
       UpdateSuggestions(CreateNoInfoSuggestions());
       break;

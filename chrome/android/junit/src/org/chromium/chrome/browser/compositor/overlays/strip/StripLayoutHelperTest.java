@@ -200,7 +200,6 @@ public class StripLayoutHelperTest {
     @After
     public void tearDown() {
         if (mStripLayoutHelper != null) {
-            mStripLayoutHelper.stopReorderMode();
             mStripLayoutHelper.setTabAtPositionForTesting(null);
             mStripLayoutHelper.setRunningAnimatorForTesting(null);
         }
@@ -1956,7 +1955,7 @@ public class StripLayoutHelperTest {
 
         // Start then stop reorder.
         mStripLayoutHelper.startReorderModeAtIndexForTesting(0);
-        mStripLayoutHelper.stopReorderMode();
+        mStripLayoutHelper.stopReorderModeForTesting();
 
         // Verify no tabs have a trailing margin when reordering is stopped.
         StripLayoutTab[] tabs = mStripLayoutHelper.getStripLayoutTabsForTesting();
@@ -1986,7 +1985,7 @@ public class StripLayoutHelperTest {
                 EPSILON);
 
         // Stop reorder. Verify the scroll offset is still 0.
-        mStripLayoutHelper.stopReorderMode();
+        mStripLayoutHelper.stopReorderModeForTesting();
         assertEquals(
                 "Scroll offset should return to 0 after stopping reorder mode.",
                 0f,
@@ -2617,7 +2616,7 @@ public class StripLayoutHelperTest {
 
         // Start and stop reorder mode for tab drop.
         mStripLayoutHelper.updateStripForExternalTabDrop(10.f);
-        mStripLayoutHelper.stopReorderMode();
+        mStripLayoutHelper.stopReorderModeForTesting();
 
         // Verify: folio reattachment animation does not run for tab drop.
         verify(reorderDelegateSpy, never()).updateTabAttachState(any(), eq(true), notNull());

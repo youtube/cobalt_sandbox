@@ -382,6 +382,18 @@ chromium-metrics-reviews@google.com.
   </summary>
 </histogram>
 
+<histogram name="Variations.SafeMode.CrashStreakDiscrepancy" units="crashes"
+    expires_after="2025-05-09">
+  <owner>caitlinfischer@google.com</owner>
+  <owner>src/base/metrics/OWNERS</owner>
+  <summary>
+    The absolute value of the difference between the beacon-file-based crash
+    streak and the local-state-based crash streak. Recorded during startup after
+    successfully reading the beacon file's crash streak and before any updates
+    are made (in memory) to the Local State crash streak.
+  </summary>
+</histogram>
+
 <histogram name="Variations.SafeMode.LoadSafeSeed.Result"
     enum="VariationsSeedLoadResult" expires_after="2025-03-09">
   <owner>isherman@chromium.org</owner>
@@ -551,6 +563,23 @@ chromium-metrics-reviews@google.com.
 
     The respective metric for Android's is Variations.FirstRun.SeedFetchTime.
   </summary>
+</histogram>
+
+<histogram name="Variations.SeedFileRead.{SeedFile}" enum="BooleanSuccess"
+    expires_after="2025-05-06">
+  <owner>caitlinfischer@google.com</owner>
+  <owner>src/base/metrics/OWNERS</owner>
+  <summary>
+    Records the success or failure of reading a seed file, distinguishing
+    between safe seed file and latest seed file. This metric is emitted only by
+    clients in the seed file treatment group.
+
+    {SeedFile}
+  </summary>
+  <token key="SeedFile">
+    <variant name="Latest" summary="Read outcome for latest seed file."/>
+    <variant name="Safe" summary="Read outcome for safe seed file."/>
+  </token>
 </histogram>
 
 <histogram name="Variations.SeedFreshness" units="minutes"

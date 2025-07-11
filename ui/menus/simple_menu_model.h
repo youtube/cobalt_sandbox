@@ -218,6 +218,12 @@ class COMPONENT_EXPORT(UI_MENUS) SimpleMenuModel : public MenuModel {
   // Sets the label for the item at |index|.
   void SetLabel(size_t index, const std::u16string& label);
 
+  // Sets an accelerator for the item at |index|.
+  //
+  // Delegate's accelerator will be preferred over one set this way (in case the
+  // former is set).
+  void SetAcceleratorAt(size_t index, const ui::Accelerator& accelerator);
+
   // Sets the minor text for the item at |index|.
   void SetMinorText(size_t index, const std::u16string& minor_text);
 
@@ -254,6 +260,13 @@ class COMPONENT_EXPORT(UI_MENUS) SimpleMenuModel : public MenuModel {
   // nullopt if not found.
   std::optional<size_t> GetIndexOfCommandId(int command_id) const;
 
+  // Sets whether an accelerator will be displayed for item at |index|
+  // disregarding of the platform.
+  // Can be used to violate platform UI expectations. Any usage should be agreed
+  // with the Mac team.
+  void SetForceShowAcceleratorForItemAt(size_t index,
+                                        bool force_show_accelerator_for_item);
+
   // Overridden from MenuModel:
   base::WeakPtr<ui::MenuModel> AsWeakPtr() override;
   size_t GetItemCount() const override;
@@ -264,6 +277,12 @@ class COMPONENT_EXPORT(UI_MENUS) SimpleMenuModel : public MenuModel {
   std::u16string GetMinorTextAt(size_t index) const override;
   ImageModel GetMinorIconAt(size_t index) const override;
   bool IsItemDynamicAt(size_t index) const override;
+  // First defers to the delegate's GetAcceleratorForCommandId() method to
+  // retrieve the accelerator for the command associated with the item at
+  // |index|.
+  // If no delegate is present or if the delegate does not provide an
+  // accelerator, GetAcceleratorAt() will retrieve simple menu model's
+  // accelerator for the item at |index| set by SetAcceleratorAt().
   bool GetAcceleratorAt(size_t index,
                         ui::Accelerator* accelerator) const override;
   bool IsItemCheckedAt(size_t index) const override;
@@ -282,6 +301,7 @@ class COMPONENT_EXPORT(UI_MENUS) SimpleMenuModel : public MenuModel {
   MenuModel* GetSubmenuModelAt(size_t index) const override;
   void MenuWillShow() override;
   void MenuWillClose() override;
+  bool GetForceShowAcceleratorForItemAt(size_t index) const override;
 
  protected:
   Delegate* delegate() { return delegate_; }
@@ -300,6 +320,7 @@ class COMPONENT_EXPORT(UI_MENUS) SimpleMenuModel : public MenuModel {
     int command_id = 0;
     ItemType type = TYPE_COMMAND;
     std::u16string label;
+    ui::Accelerator accelerator;
     std::u16string minor_text;
     ImageModel minor_icon;
     ImageModel icon;
@@ -311,6 +332,7 @@ class COMPONENT_EXPORT(UI_MENUS) SimpleMenuModel : public MenuModel {
     bool visible = true;
     bool is_new_feature = false;
     bool may_have_mnemonics = true;
+    bool force_show_accelerator_for_item = false;
     std::u16string accessible_name;
     ElementIdentifier unique_id;
     base::RepeatingCallback<void(int)> on_execute_callback;

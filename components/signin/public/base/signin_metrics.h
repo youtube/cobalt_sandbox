@@ -249,6 +249,9 @@ enum class AccessPoint : int {
   ACCESS_POINT_CCT_ACCOUNT_MISMATCH_NOTIFICATION = 71,
   // Access point for the Drive file picker on iOS.
   ACCESS_POINT_DRIVE_FILE_PICKER_IOS = 72,
+  // Access point triggered when a user attempts to share or join a tab group
+  // without being signed in or synced.
+  ACCESS_POINT_COLLABORATION_TAB_GROUP = 73,
 
   // Add values above this line with a corresponding label to the
   // "SigninAccessPoint" enum in
@@ -480,8 +483,9 @@ enum class SourceForRefreshTokenOperation {
   // DEPRECATED on 05/2024
   // kDiceResponseHandler_PasswordPromoSignin = 22,
   kEnterpriseForcedProfileCreation_UserDecline = 23,
+  kEnterprisePolicy_AccountNotAllowedInContentArea = 24,
 
-  kMaxValue = kEnterpriseForcedProfileCreation_UserDecline,
+  kMaxValue = kEnterprisePolicy_AccountNotAllowedInContentArea,
 };
 
 // Different types of reporting. This is used as a histogram suffix.
@@ -578,8 +582,10 @@ void LogSigninAccessPointCompleted(AccessPoint access_point,
 
 // Logs sign in offered events and their associated access points.
 // Access points (or features) are responsible for recording this where relevant
-// for them.
-void LogSignInOffered(AccessPoint access_point);
+// for them. The `promo_action` determines which specific histogram will be
+// recorded based and should be computed based on the signin state when the
+// promo is offered.
+void LogSignInOffered(AccessPoint access_point, PromoAction promo_action);
 
 // Logs sign in start events and their associated access points. The
 // completion events are automatically logged when the primary account state

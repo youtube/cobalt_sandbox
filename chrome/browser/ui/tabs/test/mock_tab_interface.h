@@ -7,10 +7,12 @@
 
 #include "chrome/browser/ui/tabs/public/tab_interface.h"
 #include "testing/gmock/include/gmock/gmock.h"
+#include "ui/views/widget/widget.h"
+#include "ui/views/widget/widget_delegate.h"
 
 namespace tabs {
 
-class MockTabInterface : public TabInterface {
+class MockTabInterface : public testing::NiceMock<TabInterface> {
  public:
   MockTabInterface();
   ~MockTabInterface();
@@ -38,6 +40,14 @@ class MockTabInterface : public TabInterface {
               RegisterDidInsert,
               (DidInsertCallback),
               (override));
+  MOCK_METHOD(base::CallbackListSubscription,
+              RegisterPinnedStateChanged,
+              (PinnedStateChangedCallback),
+              (override));
+  MOCK_METHOD(base::CallbackListSubscription,
+              RegisterGroupChanged,
+              (GroupChangedCallback),
+              (override));
   MOCK_METHOD(bool, CanShowModalUI, (), (const, override));
   MOCK_METHOD(std::unique_ptr<ScopedTabModalUI>, ShowModalUI, (), (override));
   MOCK_METHOD(bool, IsInNormalWindow, (), (const override));
@@ -46,7 +56,16 @@ class MockTabInterface : public TabInterface {
               (),
               (override));
   MOCK_METHOD(TabFeatures*, GetTabFeatures, (), (override));
-  MOCK_METHOD(uint32_t, GetTabHandle, (), (override));
+  MOCK_METHOD(std::unique_ptr<views::Widget>,
+              CreateAndShowTabScopedWidget,
+              (views::WidgetDelegate*),
+              (override));
+  MOCK_METHOD(bool, IsPinned, (), (const override));
+  MOCK_METHOD(std::optional<tab_groups::TabGroupId>,
+              GetGroup,
+              (),
+              (const override));
+  MOCK_METHOD(uint32_t, GetTabHandle, (), (const override));
 };
 
 }  // namespace tabs

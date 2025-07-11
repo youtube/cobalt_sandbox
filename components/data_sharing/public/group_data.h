@@ -39,10 +39,31 @@ struct GroupMember {
   std::string given_name;
 };
 
+// Subset of GroupMember fields that could be temporarily stored after member is
+// removed from the group.
+struct GroupMemberPartialData {
+  static GroupMemberPartialData FromGroupMember(const GroupMember& member);
+
+  GroupMemberPartialData();
+
+  GroupMemberPartialData(const GroupMemberPartialData&);
+  GroupMemberPartialData& operator=(const GroupMemberPartialData&);
+
+  GroupMemberPartialData(GroupMemberPartialData&&);
+  GroupMemberPartialData& operator=(GroupMemberPartialData&&);
+
+  ~GroupMemberPartialData();
+
+  std::string gaia_id;
+  std::string display_name;
+  std::string email;
+  GURL avatar_url;
+};
+
 struct GroupToken {
   GroupToken();
 
-  GroupToken(GroupId group_id, std::string access_token);
+  GroupToken(GroupId group_id, const std::string& access_token);
 
   GroupToken(const GroupToken&);
   GroupToken& operator=(const GroupToken&);
@@ -137,6 +158,10 @@ struct SharedDataPreview {
 // Only takes `group_id` into account, used to allow storing GroupData in
 // std::set.
 bool operator<(const GroupData& lhs, const GroupData& rhs);
+
+// Used to allow storing GroupToken in arrays.
+bool operator==(const GroupToken& lhs, const GroupToken& rhs);
+bool operator<(const GroupToken& lhs, const GroupToken& rhs);
 
 }  // namespace data_sharing
 

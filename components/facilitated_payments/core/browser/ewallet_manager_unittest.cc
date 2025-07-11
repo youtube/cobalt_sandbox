@@ -18,6 +18,8 @@
 #include "components/facilitated_payments/core/browser/facilitated_payments_client.h"
 #include "components/facilitated_payments/core/browser/mock_facilitated_payments_api_client.h"
 #include "components/facilitated_payments/core/browser/mock_facilitated_payments_client.h"
+#include "components/facilitated_payments/core/browser/network_api/facilitated_payments_initiate_payment_response_details.h"
+#include "components/facilitated_payments/core/browser/network_api/mock_facilitated_payments_network_interface.h"
 #include "components/signin/public/identity_manager/account_info.h"
 #include "components/sync/test/test_sync_service.h"
 #include "testing/gmock/include/gmock/gmock.h"
@@ -25,6 +27,19 @@
 #include "url/gurl.h"
 
 namespace payments::facilitated {
+namespace {
+
+// Returns an account info that has all the details a logged in account should
+// have.
+CoreAccountInfo CreateLoggedInAccountInfo() {
+  CoreAccountInfo account;
+  account.email = "foo@bar.com";
+  account.gaia = "foo-gaia-id";
+  account.account_id = CoreAccountId::FromGaiaId(account.gaia);
+  return account;
+}
+
+}  // namespace
 
 class EwalletManagerTest : public testing::Test {
  public:
@@ -40,7 +55,18 @@ class EwalletManagerTest : public testing::Test {
     payments_data_manager_.SetSyncServiceForTest(&sync_service_);
     ON_CALL(client_, GetPaymentsDataManager)
         .WillByDefault(testing::Return(&payments_data_manager_));
+    ON_CALL(client_, GetFacilitatedPaymentsNetworkInterface)
+        .WillByDefault(testing::Return(&payments_network_interface_));
     ON_CALL(client_, IsInLandscapeMode).WillByDefault(testing::Return(false));
+    ON_CALL(client_, GetCoreAccountInfo)
+        .WillByDefault(testing::Return(CreateLoggedInAccountInfo()));
+
+    // `initiate_payment_request_details_` is lazy initialized in the
+    // implementation. Initialize it here so tests depending on it won't crash.
+    test_api(ewallet_manager_)
+        .set_initiate_payment_request_details(
+            std::make_unique<
+                FacilitatedPaymentsInitiatePaymentRequestDetails>());
   }
 
   MockFacilitatedPaymentsApiClient& GetApiClient() {
@@ -54,6 +80,7 @@ class EwalletManagerTest : public testing::Test {
   std::unique_ptr<PrefService> pref_service_;
   syncer::TestSyncService sync_service_;
   autofill::TestPaymentsDataManager payments_data_manager_;
+  MockFacilitatedPaymentsNetworkInterface payments_network_interface_;
 };
 
 // The manager checks for API availability after payment link validation.
@@ -139,6 +166,30 @@ TEST_F(EwalletManagerTest, InLandscapeMode_ApiClientNotCheckedForAvailability) {
                                              GURL("https://www.example.com"));
 }
 
+// API availability is not invoked if payments data manager is not available.
+TEST_F(EwalletManagerTest,
+       PaymentsDataManagerUnavailable_ApiClientNotCheckedForAvailability) {
+  payments_data_manager_.AddEwalletForTest(
+      autofill::Ewallet(/*instrument_id=*/100, u"nickname",
+                        /*display_icon_url=*/GURL("http://www.example.com"),
+                        u"ewallet_name", u"account_display_name",
+                        /*supported_payment_link_uris=*/
+                        {u"^shopeepay:\\/\\/shopeepay\\.com\\.my\\?code=.*$",
+                         u"^tngd:\\/\\/tngdigital\\.com\\.my\\?code=.*$"},
+                        /*is_fido_enrolled=*/true));
+  GURL supportedPaymentLink(
+      "shopeepay://shopeepay.com.my?code=https://shopeepay.com.my/"
+      "281011051692389958586862838?merchant=Walmart&amount=101&currency=usd");
+
+  EXPECT_CALL(client_, GetPaymentsDataManager)
+      .Times(1)
+      .WillOnce(testing::Return(nullptr));
+  EXPECT_CALL(GetApiClient(), IsAvailable(testing::_)).Times(0);
+
+  ewallet_manager_.TriggerEwalletPushPayment(supportedPaymentLink,
+                                             GURL("https://www.example.com"));
+}
+
 // If the facilitated payment API is available, then the manager shows the
 // eWallet payment prompt.
 TEST_F(EwalletManagerTest, ShowsEwalletPaymentPromptWhenApiClientAvailable) {
@@ -172,6 +223,169 @@ TEST_F(EwalletManagerTest,
   EXPECT_CALL(client_, ShowEwalletPaymentPrompt).Times(0);
 
   test_api(ewallet_manager_).OnApiAvailabilityReceived(false);
+}
+
+// If the user does not select an eWallet account in the payment prompt, request
+// for risk data is not made, and progress screen is not shown.
+TEST_F(
+    EwalletManagerTest,
+    EwalletPaymentPromptNotAccepted_LoadRiskDataNotTriggered_ProgressScreenNotShown) {
+  EXPECT_CALL(client_, LoadRiskData(testing::_)).Times(0);
+  EXPECT_CALL(client_, ShowProgressScreen()).Times(0);
+
+  test_api(ewallet_manager_)
+      .OnEwalletPaymentPromptResult(/*is_prompt_accepted=*/false,
+                                    /*selected_instrument_id=*/0);
+}
+
+// If the user selects an eWallet account in the payment prompt, request for
+// risk data is made, and progress screen is shown.
+TEST_F(EwalletManagerTest,
+       EwalletPaymentPromptAccepted_LoadRiskDataTriggered_ProgressScreenShown) {
+  EXPECT_CALL(client_, LoadRiskData(testing::_));
+  EXPECT_CALL(client_, ShowProgressScreen());
+
+  test_api(ewallet_manager_)
+      .OnEwalletPaymentPromptResult(/*is_prompt_accepted=*/true,
+                                    /*selected_instrument_id=*/100L);
+}
+
+// If the risk data is empty, then the manager does not retrieve a client token
+// from the facilitated payments API client.
+TEST_F(EwalletManagerTest,
+       RiskDataEmpty_GetClientTokenNotCalled_ErrorScreenShown) {
+  EXPECT_CALL(GetApiClient(), GetClientToken(testing::_)).Times(0);
+  EXPECT_CALL(client_, ShowErrorScreen);
+
+  test_api(ewallet_manager_).OnRiskDataLoaded(/*risk_data=*/"");
+}
+
+// If the risk data is not empty, then the manager retrieves a client token from
+// the facilitated payments API client.
+TEST_F(EwalletManagerTest, RiskDataNotEmpty_GetClientTokenCalled) {
+  EXPECT_CALL(GetApiClient(), GetClientToken(testing::_));
+
+  test_api(ewallet_manager_).OnRiskDataLoaded(/*risk_data=*/"fake risk data");
+}
+
+// If the client token is empty, an error screen will be shown.
+TEST_F(EwalletManagerTest, OnGetClientToken_ClientTokenEmpty_ErrorScreenShown) {
+  EXPECT_CALL(client_, ShowErrorScreen);
+
+  test_api(ewallet_manager_).OnGetClientToken(std::vector<uint8_t>{});
+}
+
+// Test that SendInitiatePaymentRequest doesn't initiates payment when
+// FacilitatedPaymentsNetworkInterface is not available.
+TEST_F(
+    EwalletManagerTest,
+    SendInitiatePaymentRequest_PaymentsNetworkInterfaceNotAvailable_InitiatePaymentNotTriggered) {
+  EXPECT_CALL(client_, GetFacilitatedPaymentsNetworkInterface)
+      .Times(1)
+      .WillOnce(testing::Return(nullptr));
+
+  EXPECT_CALL(payments_network_interface_,
+              InitiatePayment(testing::_, testing::_, testing::_))
+      .Times(0);
+  EXPECT_CALL(client_, ShowErrorScreen);
+
+  test_api(ewallet_manager_).SendInitiatePaymentRequest();
+}
+
+// Test that if the response from
+// `FacilitatedPaymentsNetworkInterface::InitiatePayment` call has failure
+// result, purchase action is not invoked. Instead, an error message is shown.
+TEST_F(EwalletManagerTest,
+       OnInitiatePaymentResponseReceived_FailureResponse_ErrorScreenShown) {
+  EXPECT_CALL(client_, ShowErrorScreen);
+  EXPECT_CALL(GetApiClient(), InvokePurchaseAction).Times(0);
+
+  auto response_details =
+      std::make_unique<FacilitatedPaymentsInitiatePaymentResponseDetails>();
+  response_details->action_token_ =
+      std::vector<uint8_t>{'t', 'o', 'k', 'e', 'n'};
+  test_api(ewallet_manager_)
+      .OnInitiatePaymentResponseReceived(
+          autofill::payments::PaymentsAutofillClient::PaymentsRpcResult::
+              kPermanentFailure,
+          std::move(response_details));
+}
+
+// Test that if the response from
+// `FacilitatedPaymentsNetworkInterface::InitiatePayment` has empty action
+// token, purchase action is not invoked. Instead, an error message is shown.
+TEST_F(EwalletManagerTest,
+       OnInitiatePaymentResponseReceived_NoActionToken_ErrorScreenShown) {
+  EXPECT_CALL(client_, ShowErrorScreen);
+  EXPECT_CALL(GetApiClient(), InvokePurchaseAction).Times(0);
+
+  auto response_details =
+      std::make_unique<FacilitatedPaymentsInitiatePaymentResponseDetails>();
+  test_api(ewallet_manager_)
+      .OnInitiatePaymentResponseReceived(
+          autofill::payments::PaymentsAutofillClient::PaymentsRpcResult::
+              kSuccess,
+          std::move(response_details));
+}
+
+// Test that if the core account is std::nullopt, purchase action is not
+// invoked. Instead, an error message is shown.
+TEST_F(EwalletManagerTest,
+       OnInitiatePaymentResponseReceived_NoCoreAccountInfo_ErrorScreenShown) {
+  EXPECT_CALL(client_, GetCoreAccountInfo)
+      .Times(1)
+      .WillOnce(testing::Return(std::nullopt));
+
+  EXPECT_CALL(client_, ShowErrorScreen);
+  EXPECT_CALL(GetApiClient(), InvokePurchaseAction).Times(0);
+
+  auto response_details =
+      std::make_unique<FacilitatedPaymentsInitiatePaymentResponseDetails>();
+  response_details->action_token_ =
+      std::vector<uint8_t>{'t', 'o', 'k', 'e', 'n'};
+  test_api(ewallet_manager_)
+      .OnInitiatePaymentResponseReceived(
+          autofill::payments::PaymentsAutofillClient::PaymentsRpcResult::
+              kSuccess,
+          std::move(response_details));
+}
+
+// Test that if the user is logged out, purchase action is not invoked. Instead,
+// an error message is shown.
+TEST_F(EwalletManagerTest,
+       OnInitiatePaymentResponseReceived_LoggedOutProfile_ErrorScreenShown) {
+  ON_CALL(client_, GetCoreAccountInfo)
+      .WillByDefault(testing::Return(CoreAccountInfo()));
+
+  EXPECT_CALL(client_, ShowErrorScreen);
+  EXPECT_CALL(GetApiClient(), InvokePurchaseAction).Times(0);
+
+  auto response_details =
+      std::make_unique<FacilitatedPaymentsInitiatePaymentResponseDetails>();
+  response_details->action_token_ =
+      std::vector<uint8_t>{'t', 'o', 'k', 'e', 'n'};
+  test_api(ewallet_manager_)
+      .OnInitiatePaymentResponseReceived(
+          autofill::payments::PaymentsAutofillClient::PaymentsRpcResult::
+              kSuccess,
+          std::move(response_details));
+}
+
+// Test that the puchase action is invoked after receiving a success response
+// from the `FacilitatedPaymentsNetworkInterface::InitiatePayment` call.
+TEST_F(EwalletManagerTest,
+       OnInitiatePaymentResponseReceived_InvokePurchaseActionTriggered) {
+  EXPECT_CALL(GetApiClient(), InvokePurchaseAction);
+
+  auto response_details =
+      std::make_unique<FacilitatedPaymentsInitiatePaymentResponseDetails>();
+  response_details->action_token_ =
+      std::vector<uint8_t>{'t', 'o', 'k', 'e', 'n'};
+  test_api(ewallet_manager_)
+      .OnInitiatePaymentResponseReceived(
+          autofill::payments::PaymentsAutofillClient::PaymentsRpcResult::
+              kSuccess,
+          std::move(response_details));
 }
 
 }  // namespace payments::facilitated

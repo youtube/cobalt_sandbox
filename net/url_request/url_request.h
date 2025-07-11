@@ -78,6 +78,10 @@ class URLRequestContext;
 class URLRequestJob;
 class X509Certificate;
 
+namespace device_bound_sessions {
+struct SessionKey;
+}
+
 //-----------------------------------------------------------------------------
 // A class  representing the asynchronous load of a data stream from an URL.
 //
@@ -518,6 +522,11 @@ class NET_EXPORT URLRequest : public base::SupportsUserData {
     return response_info_.response_time;
   }
 
+  // Like response_time, but ignoring revalidations.
+  const base::Time& original_response_time() const {
+    return response_info_.original_response_time;
+  }
+
   // Indicate if this response was fetched from disk cache.
   bool was_cached() const { return response_info_.was_cached; }
 
@@ -581,13 +590,7 @@ class NET_EXPORT URLRequest : public base::SupportsUserData {
   const HttpResponseInfo& response_info() const { return response_info_; }
 
   // Access the LOAD_* flags modifying this request (see load_flags.h).
-  int load_flags() const {
-    if (cookie_setting_overrides().Has(
-            CookieSettingOverride::kStorageAccessGrantEligibleViaHeader)) {
-      return partial_load_flags_ | LOAD_BYPASS_CACHE;
-    }
-    return partial_load_flags_;
-  }
+  int load_flags() const { return partial_load_flags_ | per_hop_load_flags_; }
 
   bool is_created_from_network_anonymization_key() const {
     return is_created_from_network_anonymization_key_;
@@ -622,6 +625,9 @@ class NET_EXPORT URLRequest : public base::SupportsUserData {
   // before Start() is called, it must only set the flag, and if set,
   // the priority of this request must already be MAXIMUM_PRIORITY.
   void SetLoadFlags(int flags);
+
+  // Sets "temporary" load flags. They are cleared upon receiving a redirect.
+  void set_per_hop_load_flags(int flags) { per_hop_load_flags_ = flags; }
 
   // Controls the Secure DNS behavior to use when creating the socket for this
   // request.
@@ -805,6 +811,18 @@ class NET_EXPORT URLRequest : public base::SupportsUserData {
   // available to determine whether it is allowed to use the dictionary.
   void SetIsSharedDictionaryReadAllowedCallback(
       base::RepeatingCallback<bool()> callback);
+
+  // Set a callback that will be invoked each time a device bound
+  // session is accessed as part of this URL request. Because device
+  // bound sessions can be accessed asynchronously after this request
+  // completes, this callback must be able to safely outlive `this`.
+  void SetDeviceBoundSessionAccessCallback(
+      base::RepeatingCallback<void(const device_bound_sessions::SessionKey&)>
+          callback);
+  base::RepeatingCallback<void(const device_bound_sessions::SessionKey&)>
+  device_bound_session_access_callback() {
+    return device_bound_session_access_callback_;
+  }
 
   // Sets socket tag to be applied to all sockets used to execute this request.
   // Must be set before Start() is called.  Only currently supported for HTTP
@@ -1027,6 +1045,9 @@ class NET_EXPORT URLRequest : public base::SupportsUserData {
   // Flags indicating the request type for the load. Expected values are LOAD_*
   // enums above.
   int partial_load_flags_ = LOAD_NORMAL;
+  // Load flags that only apply to a single hop in the redirect chain.
+  int per_hop_load_flags_ = LOAD_NORMAL;
+
   // Whether the request is allowed to send credentials in general. Set by
   // caller.
   bool allow_credentials_ = true;
@@ -1157,6 +1178,9 @@ class NET_EXPORT URLRequest : public base::SupportsUserData {
   // The storage access status for this request. If this is nullopt, this
   // request will not include the Sec-Fetch-Storage-Access header.
   std::optional<net::cookie_util::StorageAccessStatus> storage_access_status_;
+
+  base::RepeatingCallback<void(const device_bound_sessions::SessionKey&)>
+      device_bound_session_access_callback_;
 
   THREAD_CHECKER(thread_checker_);
 

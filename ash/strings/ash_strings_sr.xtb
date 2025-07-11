@@ -219,7 +219,7 @@
 <translation id="1719094688023114093">Титл уживо је укључен.</translation>
 <translation id="1720011244392820496">Укључите WiFi синхронизацију</translation>
 <translation id="1720230731642245863">Хотспот је искључен</translation>
-<translation id="1731815243805539470">Пређите на претходног корисника</translation>
+<translation id="1731815243805539470">Пређи на претходног корисника</translation>
 <translation id="1733996486177697563">Прелазите са тамне на светлу тему и обратно. Додирните и задржите радну површину, па изаберите Позадина и стил.</translation>
 <translation id="1736898441010944794">Ставка „<ph name="NAME" />“ је видљива за Bluetooth уређаје.</translation>
 <translation id="1737078180382804488">Одбаците подешавање прегледа обавештења на телефону</translation>
@@ -278,7 +278,7 @@
 <translation id="1925320505152357008">мање од 1 мин</translation>
 <translation id="1928739107511554905">Да бисте преузели ажурирање, рестартујте Chromebook са прикљученом тастатуром на додирном екрану.</translation>
 <translation id="1929331825127010451">Назад на питање</translation>
-<translation id="1948405482892809935">Пређите на следећег корисника</translation>
+<translation id="1948405482892809935">Пређи на следећег корисника</translation>
 <translation id="1951012854035635156">Помоћник</translation>
 <translation id="1954252331066828794">Снимање екрана је довршено</translation>
 <translation id="1957958912175573503">Подесите језик</translation>
@@ -630,7 +630,6 @@
 <translation id="3208321278970793882">Апликација</translation>
 <translation id="3213571860604332401">Сачувај линк као обележивач</translation>
 <translation id="3217205077783620295">Звук је укључен. Можете да га искључите померањем прекидача.</translation>
-<translation id="3218561536255328229">Притисните Esc 5 пута да бисте омогућили тачпед</translation>
 <translation id="3226991577105957773">и још <ph name="COUNT" /></translation>
 <translation id="3227137524299004712">Микрофон</translation>
 <translation id="3233611303007751344">Уштеда батерије је искључена</translation>
@@ -1008,7 +1007,7 @@
 <translation id="4453876312474547652">Привремену меморију ћете видети кад притиснете и задржите Ctrl + V. Ову пречицу можете да искључите ако онемогућите ознаку #clipboard-history-longpress у одељку chrome://flags (os://flags ако користите Lacros).</translation>
 <translation id="445765352722456792">Прилагоди предлоге</translation>
 <translation id="445864333228800152">Добро вече,</translation>
-<translation id="4458688154122353284">Зауставите снимање екрана</translation>
+<translation id="4458688154122353284">Заустави снимање екрана</translation>
 <translation id="445923051607553918">Придружите се WiFi мрежи</translation>
 <translation id="4471354919263203780">Преузимају се датотеке за препознавање говора... <ph name="PERCENT" />%</translation>
 <translation id="4471432286288241507">{0,plural, =0{Ажурирајте уређај}=1{Ажурирајте уређај у року од 1 секунде}one{Ажурирајте уређај у року од # секунде}few{Ажурирајте уређај у року од # секунде}other{Ажурирајте уређај у року од # секунди}}</translation>
@@ -1531,7 +1530,7 @@
 <translation id="6121838516699723042">Потврдите преузимање фајла <ph name="FILENAME" /></translation>
 <translation id="612734058257491180">Google помоћник није доступан у сесији госта.</translation>
 <translation id="6127395413317891856">Офлајн сте. Проверите везу и пробајте поново.</translation>
-<translation id="6129953537138746214">Размак</translation>
+<translation id="6129953537138746214">Тастер за размак</translation>
 <translation id="6137566720514957455">Отвара налог за уклањање за корисника <ph name="USER_EMAIL_ADDRESS" /></translation>
 <translation id="6141205840878048728">На шта желите да се фокусирате?</translation>
 <translation id="6141988275892716286">Потврдите преузимање</translation>
@@ -2289,7 +2288,7 @@
 <translation id="875593634123171288">Прегледајте подешавања VPN-а</translation>
 <translation id="8756799553341497810">Можете да почнете са прилагођавањем распореда апликација када изађете из овог приказа.</translation>
 <translation id="8759408218731716181">Није могуће подесити вишеструко пријављивање</translation>
-<translation id="8763883995157866248">Пребаците уређај у режим спавања</translation>
+<translation id="8763883995157866248">Пребаци уређај у режим спавања</translation>
 <translation id="877404052021108314">90 °F у C</translation>
 <translation id="878215960996152260"><ph name="APP_NAME" />, инсталирана апликација, блокирана</translation>
 <translation id="8785070478575117577">Повежите са уређајем <ph name="NETWORK_NAME" /></translation>
@@ -2439,6 +2438,7 @@
 <translation id="98120814841227350">Идите на крај документа</translation>
 <translation id="987589956647469042">Мобилни подаци су укључени</translation>
 <translation id="989374776391122812">Контроле камере и звука</translation>
+<translation id="990263227494928142">Притисните shift 5 пута да бисте омогућили тачпед</translation>
 <translation id="990277280839877440">Прозор <ph name="WINDOW_TITILE" /> је затворен.</translation>
 <translation id="993398562350683614"><ph name="STEP" />. корак обиласка од <ph name="TOTAL_STEPS" />. Користите апликације да бисте обављали све потребне радње на <ph name="PRODUCT_NAME" />-у. Апликације можете да пронађете у Покретачу. Притисните Alt + Shift + L да бисте фокусирали дугме Покретача.</translation>
 <translation id="994354411665877646"><ph name="NETWORK_NAME" />, <ph name="SUBTEXT" /></translation>

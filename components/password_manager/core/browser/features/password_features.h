@@ -30,7 +30,8 @@ BASE_DECLARE_FEATURE(kAutoApproveSharedPasswordUpdatesFromSameSender);
 // across quarters.
 BASE_DECLARE_FEATURE(kAutofillPasswordUserPerceptionSurvey);
 // Moves the "Use a passkey / Use a different passkey" to the context menu from
-// the autofill dropdown.
+// the autofill dropdown. This is now decoupled from
+// "PasswordManualFallbackAvailable" flag.
 BASE_DECLARE_FEATURE(kWebAuthnUsePasskeyFromAnotherDeviceInContextMenu);
 #endif  // !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_IOS)
 
@@ -134,7 +135,6 @@ BASE_DECLARE_FEATURE(kSkipUndecryptablePasswords);
 BASE_DECLARE_FEATURE(kTriggerPasswordResyncAfterDeletingUndecryptablePasswords);
 
 #if BUILDFLAG(IS_ANDROID)
-
 // Enables showing various warnings for password manager users not yet enrolled
 // into the new experience of storing passwords in GMSCore.
 BASE_DECLARE_FEATURE(
@@ -160,6 +160,11 @@ BASE_DECLARE_FEATURE(kBiometricAuthIdentityCheck);
 // Enables clearing the login database for the users who already migrated their
 // credentials to GMS Core.
 BASE_DECLARE_FEATURE(kClearLoginDatabaseForAllMigratedUPMUsers);
+
+// If enabled, the profile login db will no longer be renamed to account
+// login db upon UPM with split stores activation. The db is cleared on
+// the following run anyway.
+BASE_DECLARE_FEATURE(kDropLoginDbRenameForUpmSyncingUsers);
 #endif  // BUILDFLAG(IS_ANDROID)
 
 // Improves PSL matching capabilities by utilizing PSL-extension list from
@@ -190,6 +195,13 @@ BASE_DECLARE_FEATURE(kUseNewEncryptionMethod);
 
 // Enables re-encryption of all passwords. Done separately for each store.
 BASE_DECLARE_FEATURE(kEncryptAllPasswordsWithOSCryptAsync);
+
+// Marks all submitted credentials as leaked, useful for testing of a password
+// leak dialog.
+BASE_DECLARE_FEATURE(kMarkAllCredentialsAsLeaked);
+
+// Enables improvements to password change functionality.
+BASE_DECLARE_FEATURE(kImprovedPasswordChangeService);
 
 // All features parameters in alphabetical order.
 }  // namespace password_manager::features

@@ -38,6 +38,8 @@
 #include "chrome/browser/ui/views/toolbar/pinned_action_toolbar_button.h"
 #include "chrome/browser/ui/views/user_education/autofill_help_bubble_factory.h"
 #include "chrome/browser/ui/views/user_education/browser_help_bubble.h"
+#include "chrome/browser/ui/views/user_education/impl/browser_feature_promo_controller_20.h"
+#include "chrome/browser/ui/views/user_education/impl/browser_feature_promo_controller_25.h"
 #include "chrome/browser/ui/views/web_apps/pwa_confirmation_bubble_view.h"
 #include "chrome/browser/ui/webui/new_tab_page/new_tab_page_ui.h"
 #include "chrome/browser/ui/webui/password_manager/password_manager_ui.h"
@@ -93,9 +95,9 @@
 #include "components/plus_addresses/resources/vector_icons.h"
 #endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
 
-#if BUILDFLAG(IS_CHROMEOS_ASH)
+#if BUILDFLAG(IS_CHROMEOS)
 #include "ash/user_education/views/help_bubble_factory_views_ash.h"
-#endif  // BUILDFLAG(IS_CHROMEOS_ASH)
+#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(IS_MAC)
 #include "components/user_education/views/help_bubble_factory_mac.h"
@@ -186,14 +188,13 @@ void RegisterChromeHelpBubbleFactories(
     user_education::HelpBubbleFactoryRegistry& registry) {
   const user_education::HelpBubbleDelegate* const delegate =
       GetHelpBubbleDelegate();
-#if BUILDFLAG(IS_CHROMEOS_ASH)
-  // TODO(http://b/277994050): Move registration after Lacros launch.
+#if BUILDFLAG(IS_CHROMEOS)
   // Try to create an Ash-specific help bubble first. Note that an Ash-specific
   // help bubble will only take precedence over a standard Views-specific help
   // bubble if the tracked element's help bubble context is explicitly set to
   // `ash::HelpBubbleContext::kAsh`.
   registry.MaybeRegister<ash::HelpBubbleFactoryViewsAsh>(delegate);
-#endif  // BUILDFLAG(IS_CHROMEOS_ASH)
+#endif  // BUILDFLAG(IS_CHROMEOS)
   // Autofill bubbles require special handling.
   registry.MaybeRegister<AutofillHelpBubbleFactory>(delegate);
   registry.MaybeRegister<user_education::HelpBubbleFactoryViews>(delegate);
@@ -606,6 +607,17 @@ void MaybeRegisterChromeFeaturePromos(
           .SetBubbleIcon(kLightbulbOutlineIcon)
           .SetBubbleTitleText(IDS_PASSWORD_MANAGER_IPH_CREATE_SHORTCUT_TITLE)));
 
+  // kIPHPdfSearchifyFeature:
+  registry.RegisterFeature(std::move(
+      FeaturePromoSpecification::CreateForToastPromo(
+          feature_engagement::kIPHPdfSearchifyFeature, kTopContainerElementId,
+          IDS_PDF_SEARCHIFY_IPH_BODY, IDS_PDF_SEARCHIFY_IPH_BODY_SCREEN_READER,
+          FeaturePromoSpecification::AcceleratorInfo())
+          .SetBubbleArrow(HelpBubbleArrow::kNone)
+          .SetBubbleTitleText(IDS_PDF_SEARCHIFY_IPH_TITLE)
+          .SetMetadata(132, "rhalavati@chromium.org",
+                       "Triggered once when user opens a PDF with images.")));
+
   // kIPHLensOverlayFeature:
   registry.RegisterFeature(std::move(
       FeaturePromoSpecification::CreateForTutorialPromo(
@@ -657,7 +669,7 @@ void MaybeRegisterChromeFeaturePromos(
                                  "Triggered when a bookmark is added from the "
                                  "bookmark page action in omnibox.")));
 
-#if !BUILDFLAG(IS_CHROMEOS_ASH)
+#if !BUILDFLAG(IS_CHROMEOS)
   // kIPHSwitchProfileFeature:
   registry.RegisterFeature(FeaturePromoSpecification::CreateForToastPromo(
       feature_engagement::kIPHProfileSwitchFeature,
@@ -684,9 +696,6 @@ void MaybeRegisterChromeFeaturePromos(
           .SetPromoSubtype(user_education::FeaturePromoSpecification::
                                PromoSubtype::kKeyedNotice)));
 
-#endif  // !BUILDFLAG(IS_CHROMEOS_ASH)
-
-#if !BUILDFLAG(IS_CHROMEOS_ASH) && !BUILDFLAG(IS_CHROMEOS_LACROS)
   // kIPHExplicitBrowserSigninPreferenceRememberedFeature:
   registry.RegisterFeature(std::move(
       FeaturePromoSpecification::CreateForToastPromo(
@@ -703,7 +712,7 @@ void MaybeRegisterChromeFeaturePromos(
           .SetBubbleArrow(HelpBubbleArrow::kTopRight)
           .SetBubbleIcon(&vector_icons::kCelebrationIcon)
           .SetReshowPolicy(base::Days(14), /*max_show_count=*/6)));
-#endif  // !BUILDFLAG(IS_CHROMEOS_ASH) && !BUILDFLAG(IS_CHROMEOS_LACROS)
+#endif  // !BUILDFLAG(IS_CHROMEOS)
 
   // kIPHPwaQuietNotificationFeature:
   registry.RegisterFeature(std::move(
@@ -1147,6 +1156,50 @@ void MaybeRegisterChromeFeaturePromos(
           .SetMetadata(122, "dibyapal@chromium.org",
                        "Triggered once per-app when a link is captured and "
                        "opened in a PWA.")));
+
+  // kIPHDesktopPWAsLinkCapturingLaunchAppInTab:
+  registry.RegisterFeature(std::move(
+      FeaturePromoSpecification::CreateForCustomAction(
+          feature_engagement::kIPHDesktopPWAsLinkCapturingLaunchAppInTab,
+          kLocationIconElementId, IDS_DESKTOP_PWA_LINK_CAPTURING_TEXT,
+          IDS_DESKTOP_PWA_LINK_CAPTURING_SETTINGS,
+          base::BindRepeating(
+              [](ui::ElementContext ctx,
+                 user_education::FeaturePromoHandle promo_handle) {
+                auto* const browser =
+                    chrome::FindBrowserWithUiElementContext(ctx);
+                if (!browser) {
+                  return;
+                }
+                TabStripModel* const tab_strip_model =
+                    browser->tab_strip_model();
+                if (!tab_strip_model) {
+                  return;
+                }
+                content::WebContents* const web_contents =
+                    tab_strip_model->GetActiveWebContents();
+                const webapps::AppId* app_id =
+                    web_app::WebAppTabHelper::GetAppId(web_contents);
+                if (!app_id) {
+                  return;
+                }
+                const GURL final_url(chrome::kChromeUIWebAppSettingsURL +
+                                     *app_id);
+                if (web_contents &&
+                    web_contents->GetURL() != browser->GetNewTabURL()) {
+                  NavigateParams params(browser->profile(), final_url,
+                                        ui::PAGE_TRANSITION_LINK);
+                  params.disposition =
+                      WindowOpenDisposition::NEW_FOREGROUND_TAB;
+                  Navigate(&params);
+                }
+              }))
+          .SetBubbleArrow(HelpBubbleArrow::kTopLeft)
+          .SetPromoSubtype(user_education::FeaturePromoSpecification::
+                               PromoSubtype::kKeyedNotice)
+          .SetMetadata(122, "finnur@chromium.org",
+                       "Triggered once per-app when a link is captured and "
+                       "opened in a browser tab.")));
 
   registry.RegisterFeature(std::move(
       FeaturePromoSpecification::CreateForCustomAction(
@@ -1597,12 +1650,6 @@ void MaybeRegisterChromeNewBadges(user_education::NewBadgeRegistry& registry) {
                                "Shown in app and web context menus.")));
 
   registry.RegisterFeature(user_education::NewBadgeSpecification(
-      features::kTabOrganization,
-      user_education::Metadata(
-          126, "emshack@chromium.org",
-          "Shown in app menu when TabOrganizationAppMenuItem is enabled.")));
-
-  registry.RegisterFeature(user_education::NewBadgeSpecification(
       autofill::features::kAutofillForUnclassifiedFieldsAvailable,
       user_education::Metadata(
           125, "vidhanj@google.com",
@@ -1636,8 +1683,8 @@ void MaybeRegisterChromeNewBadges(user_education::NewBadgeRegistry& registry) {
           "Shown in app menu when Tab Declutter menu item is enabled.")));
 }
 
-std::unique_ptr<BrowserFeaturePromoController> CreateUserEducationResources(
-    BrowserView* browser_view) {
+std::unique_ptr<user_education::FeaturePromoControllerCommon>
+CreateUserEducationResources(BrowserView* browser_view) {
   Profile* const profile = browser_view->GetProfile();
 
   // Get the user education service.
@@ -1663,13 +1710,25 @@ std::unique_ptr<BrowserFeaturePromoController> CreateUserEducationResources(
 
   LowUsageHelpController::MaybeCreateForProfile(browser_view->GetProfile());
 
-  return std::make_unique<BrowserFeaturePromoController>(
-      browser_view,
-      feature_engagement::TrackerFactory::GetForBrowserContext(profile),
-      &user_education_service->feature_promo_registry(),
-      &user_education_service->help_bubble_factory_registry(),
-      &user_education_service->user_education_storage_service(),
-      &user_education_service->feature_promo_session_policy(),
-      &user_education_service->tutorial_service(),
-      &user_education_service->product_messaging_controller());
+  if (user_education::features::IsUserEducationV25()) {
+    return std::make_unique<BrowserFeaturePromoController25>(
+        browser_view,
+        feature_engagement::TrackerFactory::GetForBrowserContext(profile),
+        &user_education_service->feature_promo_registry(),
+        &user_education_service->help_bubble_factory_registry(),
+        &user_education_service->user_education_storage_service(),
+        &user_education_service->feature_promo_session_policy(),
+        &user_education_service->tutorial_service(),
+        &user_education_service->product_messaging_controller());
+  } else {
+    return std::make_unique<BrowserFeaturePromoController20>(
+        browser_view,
+        feature_engagement::TrackerFactory::GetForBrowserContext(profile),
+        &user_education_service->feature_promo_registry(),
+        &user_education_service->help_bubble_factory_registry(),
+        &user_education_service->user_education_storage_service(),
+        &user_education_service->feature_promo_session_policy(),
+        &user_education_service->tutorial_service(),
+        &user_education_service->product_messaging_controller());
+  }
 }

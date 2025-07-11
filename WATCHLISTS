@@ -1841,10 +1841,6 @@
                   '|components/plus_addresses_strings_grdp/'\
                   '|ios/chrome/browser/plus_addresses/'
     },
-    'policy_features': {
-      'filepath' : 'third_party/blink/renderer/core/permissions_policy/document_policy_features.json5|'\
-                   'third_party/blink/renderer/core/permissions_policy/permissions_policy_features.json5'
-    },
     'popup_blocker': {
       'filepath': 'chrome/browser/ui/blocked_content'
     },
@@ -2093,6 +2089,9 @@
     },
     'styleguide_python': {
       'filepath': '^styleguide/python',
+    },
+    'stylus_handwriting': {
+      'filepath': 'components/stylus_handwriting',
     },
     'subresource_filter': {
       'filepath': 'subresource_filter|SubresourceFilter|url_pattern_index',
@@ -3119,8 +3118,7 @@
     'page_load_metrics' : ['bmcquade+watch@chromium.org',
                            'csharrison+watch@chromium.org',
                            'loading-reviews+metrics@chromium.org',
-                           'speed-metrics-reviews@chromium.org',
-                           'haoliuk+watch@chromium.org'],
+                           'speed-metrics-reviews@chromium.org'],
     'page_load_metrics_abandoned_navigations': ['suzukikeita+watch@chromium.org'],
     'panels': ['dimich@chromium.org',
                'jennb@chromium.org',
@@ -3160,7 +3158,6 @@
              'marimatthew+watch-plus_addresses@google.com',
              'minap+watch-plus_addresses@google.com',
              'jkeitel+watch-plus_addresses@google.com'],
-    'policy_features': ['feature-control+watch@chromium.org'],
     'popup_blocker': ['csharrison+watch-popups@chromium.org'],
     'precache': ['wifiprefetch-reviews@google.com'],
     'prefetch_proxy': ['marcinjb+p4watch@google.com',
@@ -3259,6 +3256,7 @@
                    'wfh+watch@chromium.org'],
     'styleguide_python': ['agrieve+watch@chromium.org',
                           'wnwen+watch@chromium.org'],
+    'stylus_handwriting': ['alexmitra+watch@chromium.org'],
     'subresource_filter': ['subresource-filter-reviews@chromium.org'],
     'supervised_users': [],
     'surface_layer_for_video': [ 'lethalantidote@chromium.org',

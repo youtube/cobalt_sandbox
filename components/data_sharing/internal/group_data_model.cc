@@ -9,6 +9,7 @@
 #include "base/files/file_path.h"
 #include "base/functional/bind.h"
 #include "base/functional/callback_forward.h"
+#include "base/metrics/histogram_functions.h"
 #include "base/observer_list.h"
 #include "components/data_sharing/internal/group_data_proto_utils.h"
 #include "components/data_sharing/internal/group_data_store.h"
@@ -83,6 +84,29 @@ std::set<GroupData> GroupDataModel::GetAllGroups() const {
   return result;
 }
 
+std::optional<GroupMemberPartialData>
+GroupDataModel::GetPossiblyRemovedGroupMember(
+    const GroupId& group_id,
+    const std::string& member_gaia_id) const {
+  if (!IsModelLoaded()) {
+    return std::nullopt;
+  }
+
+  const auto group_data_opt = group_data_store_.GetGroupData(group_id);
+  if (!group_data_opt.has_value()) {
+    return std::nullopt;
+  }
+  for (const auto& member : group_data_opt->members) {
+    if (member.gaia_id == member_gaia_id) {
+      return GroupMemberPartialData::FromGroupMember(member);
+    }
+  }
+
+  // TODO(crbug.com/373628741): attempt to read the data from the database with
+  // removed members once it is implemented.
+  return std::nullopt;
+}
+
 bool GroupDataModel::IsModelLoaded() const {
   return is_group_data_store_loaded_ && is_collaboration_group_bridge_loaded_;
 }
@@ -116,9 +140,12 @@ void GroupDataModel::OnCollaborationGroupSyncDataLoaded() {
 
 void GroupDataModel::OnGroupDataStoreLoaded(
     GroupDataStore::DBInitStatus status) {
+  base::UmaHistogramBoolean("DataSharing.GroupDBInitSuccess",
+                            status == GroupDataStore::DBInitStatus::kSuccess);
+  if (db_loaded_callback_) {
+    std::move(db_loaded_callback_).Run();
+  }
   if (status != GroupDataStore::DBInitStatus::kSuccess) {
-    // TODO(crbug.com/301390275): perhaps some error handling is needed in this
-    // case (at least metrics).
     return;
   }
 
@@ -303,6 +330,11 @@ void GroupDataModel::NotifyObserversAboutChangedMembers(
 
 GroupDataStore& GroupDataModel::GetGroupDataStoreForTesting() {
   return group_data_store_;
+}
+
+void GroupDataModel::SetGroupDataStoreLoadedCallbackForTesting(
+    base::OnceClosure db_loaded_callback) {
+  db_loaded_callback_ = std::move(db_loaded_callback);
 }
 
 }  // namespace data_sharing

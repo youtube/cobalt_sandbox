@@ -8,6 +8,7 @@
 #import "base/functional/bind.h"
 #import "base/functional/callback.h"
 #import "base/strings/sys_string_conversions.h"
+#import "base/task/sequenced_task_runner.h"
 #import "base/uuid.h"
 #import "ios/chrome/browser/profile/model/constants.h"
 #import "ios/chrome/browser/shared/model/profile/profile_attributes_ios.h"
@@ -245,14 +246,23 @@ AccountProfileMapper::Assigner::Assigner(
       identity_access_token_refresh_failed_cb_(
           identity_access_token_refresh_failed_cb) {
   CHECK(system_identity_manager_);
-  // `profile_manager_` can be null in unit tests.
+  if (!profile_manager_) {
+    CHECK_IS_TEST();
+  }
 
   system_identity_manager_observation_.Observe(system_identity_manager_);
 
   profile_to_gaia_ids_ = GetMappingFromProfileAttributes(
       system_identity_manager_, GetProfileAttributesStorage());
   // Ensure the mapping is populated and up-to-date.
-  OnIdentityListChanged();
+  // TODO(crbug.com/377724747): Doing this synchronously, during the
+  // initialization of the initial profile, causes a crash in some cases. Figure
+  // out why and fix it. (Maybe resolving crbug.com/377724748, i.e. making
+  // profile creation lazy, will fix this?)
+  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+      FROM_HERE,
+      base::BindOnce(&AccountProfileMapper::Assigner::OnIdentityListChanged,
+                     weak_ptr_factory_.GetWeakPtr()));
 }
 
 AccountProfileMapper::Assigner::~Assigner() = default;
@@ -416,7 +426,7 @@ void AccountProfileMapper::Assigner::AssignIdentityToProfile(
   // Still here: The account isn't assigned to a profile yet, or was just
   // unassigned.
 
-  if (is_managed_account) {
+  if (is_managed_account && profile_manager_) {
     // Managed account, create a new dedicated profile and assign the identity
     // to that (asynchronously).
     // TODO(crbug.com/331783685): Find a way to create (and load!) the new
@@ -431,6 +441,9 @@ void AccountProfileMapper::Assigner::AssignIdentityToProfile(
 
 void AccountProfileMapper::Assigner::CreateProfileForIdentity(
     id<SystemIdentity> identity) {
+  CHECK(AreSeparateProfilesForManagedAccountsEnabled());
+  CHECK(profile_manager_);
+
   const std::string gaia_id = base::SysNSStringToUTF8(identity.gaiaID);
   // Track the pending profile creation, to avoid creating two profiles for
   // the same identity.
@@ -453,6 +466,8 @@ void AccountProfileMapper::Assigner::CreateProfileForIdentity(
 void AccountProfileMapper::Assigner::ProfileCreatedAndInitializedForIdentity(
     id<SystemIdentity> identity,
     ProfileIOS* profile) {
+  CHECK(AreSeparateProfilesForManagedAccountsEnabled());
+
   const std::string gaia_id = base::SysNSStringToUTF8(identity.gaiaID);
   gaia_ids_with_profile_in_creation_.erase(gaia_id);
   // TODO(crbug.com/331783685): Handle edge cases, like the identity having been
@@ -478,7 +493,9 @@ AccountProfileMapper::AccountProfileMapper(
     : system_identity_manager_(system_identity_manager),
       profile_manager_(profile_manager) {
   CHECK(system_identity_manager);
-  // `profile_manager_` can be null in unit tests.
+  if (!profile_manager_) {
+    CHECK_IS_TEST();
+  }
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
   assigner_ = std::make_unique<Assigner>(
@@ -528,6 +545,22 @@ void AccountProfileMapper::IterateOverIdentities(
   system_identity_manager_->IterateOverIdentities(manager_callback);
 }
 
+void AccountProfileMapper::IterateOverAllIdentitiesOnDevice(
+    IdentityIteratorCallback callback) {
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  system_identity_manager_->IterateOverIdentities(base::BindRepeating(
+      [](IdentityIteratorCallback callback,
+         id<SystemIdentity> identity) -> SystemIdentityManager::IteratorResult {
+        switch (callback.Run(identity)) {
+          case IteratorResult::kContinueIteration:
+            return SystemIdentityManager::IteratorResult::kContinueIteration;
+          case IteratorResult::kInterruptIteration:
+            return SystemIdentityManager::IteratorResult::kInterruptIteration;
+        }
+      },
+      callback));
+}
+
 void AccountProfileMapper::IdentityUpdated(id<SystemIdentity> identity) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   NotifyIdentityUpdated(
@@ -574,7 +607,7 @@ AccountProfileMapper::FilterIdentitiesForProfile(
   // by enterprise policy, and remove that filter done by
   // ChromeAccountManagerService.
 
-  if (AreSeparateProfilesForManagedAccountsEnabled()) {
+  if (AreSeparateProfilesForManagedAccountsEnabled() && profile_manager_) {
     ProfileAttributesIOS attr =
         profile_manager_->GetProfileAttributesStorage()
             ->GetAttributesForProfileWithName(profile_name);

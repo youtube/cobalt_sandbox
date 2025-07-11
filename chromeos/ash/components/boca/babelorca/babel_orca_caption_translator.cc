@@ -7,6 +7,7 @@
 #include <memory>
 
 #include "chromeos/ash/components/boca/babelorca/babel_orca_translation_dispatcher.h"
+#include "chromeos/ash/components/boca/boca_metrics_util.h"
 #include "components/live_caption/translation_dispatcher.h"
 #include "components/live_caption/translation_util.h"
 #include "media/mojo/mojom/speech_recognition_result.h"
@@ -22,6 +23,11 @@ void BabelOrcaCaptionTranslator::InitTranslationAndSetCallback(
     OnTranslationCallback callback,
     const std::string& source_language,
     const std::string& target_language) {
+  if (source_language != target_language &&
+      target_language != target_language_) {
+    boca::RecordBabelOrcaTranslationLanguage(target_language);
+    boca::RecordBabelOrcaTranslationLanguageSwitched();
+  }
   source_language_ = source_language;
   target_language_ = target_language;
 
@@ -39,7 +45,7 @@ void BabelOrcaCaptionTranslator::Translate(
 
   // If recognition result is nullopt or the languages are the same
   // then immediately pass the recognition_result to the callback.
-  if (!recognition_result || source_language_ == target_language_) {
+  if (!recognition_result || AreLanguagesTheSame()) {
     callback_.Run(recognition_result);
     return;
   }
@@ -49,6 +55,8 @@ void BabelOrcaCaptionTranslator::Translate(
   std::string cached_translation = cache_result.second;
   std::string string_to_translate = cache_result.first;
 
+  // This logic mirrors the logic in SystemLiveCaptionService's
+  // OnSpeechResult translation logic.
   if (!string_to_translate.empty()) {
     // TODO(376329088) record translation metric.
     translation_dispatcher_->GetTranslation(
@@ -59,8 +67,17 @@ void BabelOrcaCaptionTranslator::Translate(
             string_to_translate, source_language_, target_language_,
             recognition_result->is_final));
   } else {
-    callback_.Run(recognition_result);
+    // If the entirety of the string to translate is found in the cache
+    // return the cached translation rather than performing a redundant
+    // translation.
+    callback_.Run(media::SpeechRecognitionResult(cached_translation,
+                                                 recognition_result->is_final));
   }
+}
+
+std::string BabelOrcaCaptionTranslator::GetLanguageComponentFromLocale(
+    const std::string& locale) {
+  return locale.substr(0, 2);
 }
 
 void BabelOrcaCaptionTranslator::OnTranslationDispatcherCallback(
@@ -70,13 +87,17 @@ void BabelOrcaCaptionTranslator::OnTranslationDispatcherCallback(
     const std::string& target_language,
     bool is_final,
     const std::string& result) {
-  // We should never get here without the callback.
-  CHECK(callback_);
-
-  // We should always have the same source and target languages
-  // on both sides of the transaction.
-  CHECK_EQ(source_language_, source_language);
-  CHECK_EQ(target_language_, target_language);
+  // Do nothing if callback has been reset between the
+  // translation dispatch and the call to this function.
+  // If the source or target language changes we should
+  // also drop this translation.
+  if (!callback_ ||
+      GetLanguageComponentFromLocale(source_language_) !=
+          GetLanguageComponentFromLocale(source_language) ||
+      GetLanguageComponentFromLocale(target_language_) !=
+          GetLanguageComponentFromLocale(target_language)) {
+    return;
+  }
 
   std::string formatted_result = result;
 
@@ -99,6 +120,15 @@ void BabelOrcaCaptionTranslator::OnTranslationDispatcherCallback(
 bool BabelOrcaCaptionTranslator::IsNonIdeographicSourceOrIdeographicTarget() {
   return !::captions::IsIdeographicLocale(source_language_) ||
          ::captions::IsIdeographicLocale(target_language_);
+}
+
+bool BabelOrcaCaptionTranslator::AreLanguagesTheSame() {
+  std::string source_language_component =
+      GetLanguageComponentFromLocale(source_language_);
+  std::string target_language_component =
+      GetLanguageComponentFromLocale(target_language_);
+
+  return source_language_component == target_language_component;
 }
 
 }  // namespace ash::babelorca

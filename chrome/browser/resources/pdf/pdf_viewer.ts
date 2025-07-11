@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import 'chrome://resources/cr_elements/cr_toast/cr_toast.js';
 import './elements/viewer_error_dialog.js';
 // <if expr="enable_ink">
 import './elements/viewer_ink_host.js';
@@ -15,6 +16,7 @@ import './elements/viewer_pdf_sidenav.js';
 import './elements/viewer_properties_dialog.js';
 import './elements/viewer_toolbar.js';
 
+import type {CrToastElement} from 'chrome://resources/cr_elements/cr_toast/cr_toast.js';
 import {assert, assertNotReached} from 'chrome://resources/js/assert.js';
 import {loadTimeData} from 'chrome://resources/js/load_time_data.js';
 import {listenOnce} from 'chrome://resources/js/util.js';
@@ -145,6 +147,7 @@ export interface PdfViewerElement {
     scroller: HTMLElement,
     sizer: HTMLElement,
     toolbar: ViewerToolbarElement,
+    searchifyProgress: CrToastElement,
   };
 }
 
@@ -290,6 +293,7 @@ export class PdfViewerElement extends PdfViewerBaseElement {
   protected twoUpViewEnabled_: boolean = false;
   protected viewportZoom_: number = 1;
   protected zoomBounds_: ZoomBounds = {min: 0, max: 0};
+  private hasSearchifyText_: boolean = false;
 
   // <if expr="enable_ink">
   private inkController_: InkController = InkController.getInstance();
@@ -513,8 +517,8 @@ export class PdfViewerElement extends PdfViewerBaseElement {
     if (this.pdfInk2Enabled_) {
       if (!this.restoreAnnotationMode_) {
         record(
-            annotationMode ? UserAction.ENTER_ANNOTATION_MODE :
-                             UserAction.EXIT_ANNOTATION_MODE);
+            annotationMode ? UserAction.ENTER_INK2_ANNOTATION_MODE :
+                             UserAction.EXIT_INK2_ANNOTATION_MODE);
       }
       this.pluginController_.setAnnotationMode(annotationMode);
       if (!this.hasInitializedBrush_) {
@@ -864,6 +868,9 @@ export class PdfViewerElement extends PdfViewerBaseElement {
             return;
           case 'Copy':
             record(UserAction.COPY);
+            if (this.hasSearchifyText_) {
+              record(UserAction.COPY_SEARCHIFIED);
+            }
             return;
           case 'Paste':
             record(UserAction.PASTE);
@@ -892,6 +899,11 @@ export class PdfViewerElement extends PdfViewerBaseElement {
             data as unknown as {metadataData: DocumentMetadata};
         this.setDocumentMetadata_(metadataData.metadataData);
         return;
+      // <if expr="enable_pdf_ink2">
+      case 'contentFocused':
+        this.handleContentFocused_();
+        return;
+      // </if>
       case 'navigate':
         const navigateData = data as unknown as NavigateMessageData;
         this.handleNavigate_(navigateData.url, navigateData.disposition);
@@ -907,8 +919,25 @@ export class PdfViewerElement extends PdfViewerBaseElement {
         // Editing mode can only be entered once, and cannot be exited.
         this.hasEdits_ = true;
         return;
+      case 'setHasSearchifyText':
+        // TODO(crbug.com/360803943): Add test for metrics.
+        this.hasSearchifyText_ = true;
+        return;
+      case 'showSearchifyInProgress':
+        // TODO(crbug.com/360803943): Add test.
+        if ((data as unknown as {
+              show: boolean,
+            }).show) {
+          this.$.searchifyProgress.show();
+        } else {
+          this.$.searchifyProgress.hide();
+        }
+        return;
       case 'startedFindInPage':
         record(UserAction.FIND_IN_PAGE);
+        if (this.hasSearchifyText_) {
+          record(UserAction.FIND_IN_PAGE_SEARCHIFIED);
+        }
         return;
       case 'touchSelectionOccurred':
         this.sendScriptingMessage({
@@ -984,6 +1013,12 @@ export class PdfViewerElement extends PdfViewerBaseElement {
     this.pluginController_.getEventTarget().dispatchEvent(
         new CustomEvent(PluginControllerEventType.FINISH_INK_STROKE));
     this.setShowBeforeUnloadDialog_(true);
+  }
+
+  /** Handles a 'contentFocused' event in the PDF content. */
+  private handleContentFocused_() {
+    this.pluginController_.getEventTarget().dispatchEvent(
+        new CustomEvent(PluginControllerEventType.CONTENT_FOCUSED));
   }
   // </if>
 
@@ -1085,8 +1120,15 @@ export class PdfViewerElement extends PdfViewerBaseElement {
       return;
     }
 
+    let shouldSaveWithAnnotation = this.hasEnteredAnnotationMode_;
+    // <if expr="enable_pdf_ink2">
+    if (this.pdfInk2Enabled_) {
+      shouldSaveWithAnnotation = this.hasInk2Edits_;
+    }
+    // </if>
+
     let saveMode;
-    if (this.hasEnteredAnnotationMode_) {
+    if (shouldSaveWithAnnotation) {
       saveMode = SaveRequestType.ANNOTATION;
     } else if (this.hasEdits_) {
       saveMode = SaveRequestType.EDITED;
@@ -1308,8 +1350,19 @@ export class PdfViewerElement extends PdfViewerBaseElement {
     switch (requestType) {
       case SaveRequestType.ANNOTATION:
         record(UserAction.SAVE_WITH_ANNOTATION);
+        // <if expr="enable_pdf_ink2">
+        if (this.pdfInk2Enabled_) {
+          record(UserAction.SAVE_WITH_INK2_ANNOTATION);
+        }
+        // </if>
         break;
       case SaveRequestType.ORIGINAL:
+        // <if expr="enable_pdf_ink2">
+        if (this.hasInk2Edits_) {
+          record(UserAction.SAVE_ORIGINAL);
+          break;
+        }
+        // </if>
         record(
             this.hasEdits_ ? UserAction.SAVE_ORIGINAL :
                              UserAction.SAVE_ORIGINAL_ONLY);

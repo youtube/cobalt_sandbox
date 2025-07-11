@@ -878,6 +878,7 @@ void URLRequest::ReceivedRedirect(RedirectInfo redirect_info) {
   // code must return immediately.
   base::WeakPtr<URLRequest> weak_this(weak_factory_.GetWeakPtr());
   bool defer_redirect = false;
+  per_hop_load_flags_ = LOAD_NORMAL;
   delegate_->OnReceivedRedirect(this, redirect_info, &defer_redirect);
 
   // Ensure that the request wasn't detached, destroyed, or canceled in
@@ -1057,9 +1058,6 @@ void URLRequest::Redirect(
                          url::Origin::Create(redirect_info.new_url)),
                      redirect_info.new_url);
 
-  cookie_setting_overrides().Remove(
-      CookieSettingOverride::kStorageAccessGrantEligibleViaHeader);
-
   if ((load_flags() & LOAD_CAN_USE_SHARED_DICTIONARY) &&
       (load_flags() &
        LOAD_DISABLE_SHARED_DICTIONARY_AFTER_CROSS_ORIGIN_REDIRECT) &&
@@ -1088,6 +1086,7 @@ void URLRequest::RetryWithStorageAccess() {
   // Sec- header helpers at a higher layer, not within //net.
   cookie_setting_overrides().Put(
       CookieSettingOverride::kStorageAccessGrantEligibleViaHeader);
+  set_per_hop_load_flags(LOAD_BYPASS_CACHE);
   set_storage_access_status(CalculateStorageAccessStatus());
   // This code is only reachable if the status was previously "inactive", which
   // implies that the URL is "potentially trustworthy" and that adding the
@@ -1362,6 +1361,12 @@ void URLRequest::SetIsSharedDictionaryReadAllowedCallback(
   DCHECK(!job_.get());
   DCHECK(is_shared_dictionary_read_allowed_callback_.is_null());
   is_shared_dictionary_read_allowed_callback_ = std::move(callback);
+}
+
+void URLRequest::SetDeviceBoundSessionAccessCallback(
+    base::RepeatingCallback<void(const device_bound_sessions::SessionKey&)>
+        callback) {
+  device_bound_session_access_callback_ = std::move(callback);
 }
 
 void URLRequest::set_socket_tag(const SocketTag& socket_tag) {

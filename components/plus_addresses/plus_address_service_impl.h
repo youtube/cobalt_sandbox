@@ -59,6 +59,7 @@ class PlusAddressServiceImpl : public PlusAddressService,
  public:
   using FeatureEnabledForProfileCheck =
       base::RepeatingCallback<bool(const base::Feature&)>;
+  using LaunchHatsSurvey = base::RepeatingCallback<void(hats::SurveyType)>;
 
   PlusAddressServiceImpl(
       PrefService* pref_service,
@@ -67,7 +68,8 @@ class PlusAddressServiceImpl : public PlusAddressService,
       std::unique_ptr<PlusAddressHttpClient> plus_address_http_client,
       scoped_refptr<PlusAddressWebDataService> webdata_service,
       affiliations::AffiliationService* affiliation_service,
-      FeatureEnabledForProfileCheck feature_enabled_for_profile_check);
+      FeatureEnabledForProfileCheck feature_enabled_for_profile_check,
+      LaunchHatsSurvey launch_hats_survey);
   ~PlusAddressServiceImpl() override;
 
   // autofill::AutofillPlusAddressDelegate:
@@ -151,6 +153,7 @@ class PlusAddressServiceImpl : public PlusAddressService,
                                 bool is_off_the_record) const override;
   void SavePlusProfile(const PlusProfile& profile) override;
   bool IsEnabled() const override;
+  void TriggerUserPerceptionSurvey(hats::SurveyType survey_type) override;
 
  private:
   // signin::IdentityManager::Observer:
@@ -169,9 +172,18 @@ class PlusAddressServiceImpl : public PlusAddressService,
   const PlusProfileOrError& HandleCreateOrConfirmResponse(
       const PlusProfileOrError& maybe_profile);
 
+  // Analyzes `maybe_profile` and triggers a HaTS survey if
+  // * plus address was confirmed successfully.
+  // * it's identical to the `requested_address` (it might be different if there
+  //   is an affiliation error).
+  // * the user has created 3 or more plus addresses.
+  const PlusProfileOrError& MaybeTriggerUserPerceptionSurvey(
+      const PlusAddress& requested_address,
+      const PlusProfileOrError& maybe_profile);
+
   // Checks whether the `origin` supports plus address.
-  // Returns `true` when origin is not opaque, not excluded, and scheme is http
-  // or https.
+  // Returns `true` when origin is not opaque, not excluded, and scheme is
+  // http or https.
   bool IsSupportedOrigin(const url::Origin& origin) const;
 
   // Reacts to the server response for confirming a plus address from an inline
@@ -220,6 +232,9 @@ class PlusAddressServiceImpl : public PlusAddressService,
   // Allows checking whether a group-controlled feature is enabled for the
   // profile associated with this `KeyedService`.
   const FeatureEnabledForProfileCheck feature_enabled_for_profile_check_;
+
+  // Allows launching feature perception surveys.
+  const LaunchHatsSurvey launch_hats_survey_;
 
   base::ScopedObservation<signin::IdentityManager,
                           signin::IdentityManager::Observer>

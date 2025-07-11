@@ -10,6 +10,7 @@
 #include "base/metrics/histogram_functions.h"
 #include "base/notreached.h"
 #include "base/strings/strcat.h"
+#include "chrome/browser/ash/policy/skyvault/local_files_migration_constants.h"
 #include "chrome/browser/ash/policy/skyvault/policy_utils.h"
 
 namespace policy::local_user_files {
@@ -30,11 +31,13 @@ constexpr char kLocalStorageMisconfiguredSuffix[] =
 constexpr char kMigrationEnabledSuffix[] = "Enabled";
 constexpr char kMigrationMisconfiguredSuffix[] = "Misconfigured";
 constexpr char kMigrationResetSuffix[] = "Reset";
+constexpr char kMigrationRetrySuffix[] = "Retry";
 constexpr char kMigrationStoppedSuffix[] = "Stopped";
 constexpr char kMigrationStateErrorContextSuffix[] = "StateErrorContext";
 constexpr char kMigrationWrongStateSuffix[] = "WrongState";
 constexpr char kMigrationFailedSuffix[] = "Failed";
 constexpr char kMigrationWriteAccessErrorSuffix[] = "WriteAccessError";
+constexpr char kMigrationUploadErrorSuffix[] = "UploadError";
 constexpr char kMigrationDialogActionSuffix[] = "DialogAction";
 constexpr char kMigrationDialogShownSuffix[] = "DialogShown";
 
@@ -51,7 +54,7 @@ constexpr char kMigrationTrigger[] = "Migration";
 std::string GetUMACloudProvider(CloudProvider provider) {
   switch (provider) {
     case CloudProvider::kNotSpecified:
-      NOTREACHED_NORETURN();
+      NOTREACHED();
     case CloudProvider::kGoogleDrive:
       return kGoogleDriveProvider;
     case CloudProvider::kOneDrive:
@@ -135,6 +138,12 @@ void SkyVaultMigrationResetHistogram(bool value) {
       value);
 }
 
+void SkyVaultMigrationRetryHistogram(int count) {
+  base::UmaHistogramCustomCounts(
+      GetHistogramName(kMigrationRetrySuffix, UploadTrigger::kMigration), count,
+      1, kMaxRetryCount, kMaxRetryCount);
+}
+
 void SkyVaultMigrationStoppedHistogram(CloudProvider provider, bool value) {
   base::UmaHistogramBoolean(
       GetHistogramName(kMigrationStoppedSuffix, UploadTrigger::kMigration,
@@ -166,6 +175,14 @@ void SkyVaultMigrationWriteAccessErrorHistogram(bool value) {
   base::UmaHistogramBoolean(GetHistogramName(kMigrationWriteAccessErrorSuffix,
                                              UploadTrigger::kMigration),
                             value);
+}
+
+void SkyVaultMigrationUploadErrorHistogram(CloudProvider provider,
+                                           MigrationUploadError error) {
+  base::UmaHistogramEnumeration(
+      GetHistogramName(kMigrationUploadErrorSuffix, UploadTrigger::kMigration,
+                       provider),
+      error);
 }
 
 void SkyVaultMigrationDialogActionHistogram(CloudProvider provider,

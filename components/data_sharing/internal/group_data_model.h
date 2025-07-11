@@ -74,6 +74,10 @@ class GroupDataModel : public CollaborationGroupSyncBridge::Observer {
   std::optional<GroupData> GetGroup(const GroupId& group_id) const;
   // Groups are ordered by id.
   std::set<GroupData> GetAllGroups() const;
+  // Returns nullopt if no data about the member is found.
+  std::optional<GroupMemberPartialData> GetPossiblyRemovedGroupMember(
+      const GroupId& group_id,
+      const std::string& member_gaia_id) const;
 
   // CollaborationGroupSyncBridge::Observer implementation.
   void OnGroupsUpdated(const std::vector<GroupId>& added_group_ids,
@@ -82,6 +86,8 @@ class GroupDataModel : public CollaborationGroupSyncBridge::Observer {
   void OnCollaborationGroupSyncDataLoaded() override;
 
   GroupDataStore& GetGroupDataStoreForTesting();
+  void SetGroupDataStoreLoadedCallbackForTesting(
+      base::OnceClosure db_loaded_callback);
 
  private:
   void OnGroupDataStoreLoaded(GroupDataStore::DBInitStatus status);
@@ -112,6 +118,10 @@ class GroupDataModel : public CollaborationGroupSyncBridge::Observer {
 
   raw_ptr<CollaborationGroupSyncBridge> collaboration_group_sync_bridge_;
   raw_ptr<DataSharingSDKDelegate> sdk_delegate_;
+
+  // Used only for tests to notify that GroupDataStore has been loaded (either
+  // successfully or unsuccessfully).
+  base::OnceClosure db_loaded_callback_;
 
   base::ObserverList<Observer> observers_;
 

@@ -273,6 +273,16 @@ chromium-metrics-reviews@google.com.
   </summary>
 </histogram>
 
+<histogram name="Passkeys.IOSMigration" enum="PasskeysMigrationStatus"
+    expires_after="2025-11-21">
+  <owner>sugoi@chromium.org</owner>
+  <owner>tmartino@chromium.org</owner>
+  <summary>
+    Records if passkeys migrated from the CPE were either created, updated or
+    invalid during Chrome's passkey migration process.
+  </summary>
+</histogram>
+
 <histogram name="PasswordBubble.AddUsernameBubble.UsernameAdded"
     enum="BooleanYesNo" expires_after="2025-03-30">
   <owner>sygiet@google.com</owner>
@@ -1493,12 +1503,18 @@ chromium-metrics-reviews@google.com.
   <token key="ErrorMessageType">
     <variant name="AuthErrorResolvable" summary="resolvable auth error"/>
     <variant name="AuthErrorUnresolvable" summary="unresolvable auth error"/>
+    <variant name="EmptySecurityDomain"
+        summary="error shown for trusted vault users when the security domain
+                 is empty"/>
     <variant name="GMSCoreOutdatedSavingDisabled"
         summary="error that nudges to update GMSCore because password saving
                  is disabled"/>
     <variant name="GMSCoreOutdatedSavingPossible"
         summary="error that nudges to update GMSCore because only account
                  passwords can be saved"/>
+    <variant name="IrretrievableSecurityDomain"
+        summary="error shown for trusted vault users when the security domain
+                 is irretrievable"/>
     <variant name="KeyRetrievalRequired"
         summary="error shown because key retrieval is required"/>
   </token>
@@ -2157,6 +2173,18 @@ chromium-metrics-reviews@google.com.
     Referrer of a navigation to the &quot;Manage Passwords&quot; page. Recorded
     when the user attempts to see their list of passwords, either via native or
     Web UI.
+  </summary>
+</histogram>
+
+<histogram
+    name="PasswordManager.ManualFallback.AcceptedSuggestion.FromRootPopup"
+    enum="BooleanRootPopupSuggestionAccepted" expires_after="2025-08-21">
+  <owner>brunobraga@google.com</owner>
+  <owner>tchudakov@google.com</owner>
+  <summary>
+    Desktop only. Emitted on every accepted suggestion from a manually triggered
+    password autofill popup. The two buckets allow to see whether the user
+    accepted a suggestion from the root popup or from the subpopup.
   </summary>
 </histogram>
 

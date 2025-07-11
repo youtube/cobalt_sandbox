@@ -10,6 +10,8 @@
 #import "base/types/cxx23_to_underlying.h"
 #import "ios/chrome/app/application_delegate/app_state.h"
 #import "ios/chrome/app/application_delegate/startup_information.h"
+#import "ios/chrome/app/deferred_initialization_queue.h"
+#import "ios/chrome/app/deferred_initialization_runner.h"
 #import "ios/chrome/app/profile/profile_state_agent.h"
 #import "ios/chrome/app/profile/profile_state_observer.h"
 #import "ios/chrome/browser/shared/coordinator/scene/scene_state.h"
@@ -85,6 +87,8 @@
     _observers = [ProfileStateObserverList observers];
     _uiBlockerManagerObservers = [UIBlockerManagerObservers
         observersWithProtocol:@protocol(UIBlockerManagerObserver)];
+    _deferredRunner = [[DeferredInitializationRunner alloc]
+        initWithQueue:[DeferredInitializationQueue sharedInstance]];
   }
   return self;
 }
@@ -156,6 +160,17 @@
 
 - (id<StartupInformation>)startupInformation {
   return _appState.startupInformation;
+}
+
+- (void)setUiBlockerTarget:(id<UIBlockerTarget>)uiBlockerTarget {
+  _uiBlockerTarget = uiBlockerTarget;
+  for (SceneState* scene in _connectedSceneStates) {
+    // When there's a scene with blocking UI, all other scenes should show the
+    // overlay.
+    BOOL shouldPresentOverlay =
+        (uiBlockerTarget != nil) && (scene != uiBlockerTarget);
+    scene.presentingModalOverlay = shouldPresentOverlay;
+  }
 }
 
 #pragma mark - Public
@@ -252,14 +267,14 @@
   CHECK(_uiBlockerTarget == nil || target == _uiBlockerTarget)
       << "Another scene is already showing a blocking UI!";
   _blockingUICounter++;
-  _uiBlockerTarget = target;
+  [self setUiBlockerTarget:target];
 }
 
 - (void)decrementBlockingUICounterForTarget:(id<UIBlockerTarget>)target {
   CHECK_GT(_blockingUICounter, 0u);
   CHECK_EQ(_uiBlockerTarget, target);
   if (--_blockingUICounter == 0) {
-    _uiBlockerTarget = nil;
+    [self setUiBlockerTarget:nil];
     [_uiBlockerManagerObservers currentUIBlockerRemoved];
   }
 }

@@ -28,7 +28,6 @@
 #include "chrome/browser/ash/eche_app/eche_app_manager_factory.h"
 #include "chrome/browser/ash/guest_os/guest_os_session_tracker.h"
 #include "chrome/browser/ash/guest_os/guest_os_session_tracker_factory.h"
-#include "chrome/browser/ash/lock_screen_apps/state_controller.h"
 #include "chrome/browser/ash/login/startup_utils.h"
 #include "chrome/browser/ash/phonehub/phone_hub_manager_factory.h"
 #include "chrome/browser/ash/plugin_vm/plugin_vm_manager.h"
@@ -269,8 +268,6 @@ void UserSessionInitializer::InitializePrimaryProfileServices(
   ++call_count;
   CHECK_EQ(call_count, 1);
 
-  lock_screen_apps::StateController::Get()->SetPrimaryProfile(profile);
-
   if (user->GetType() == user_manager::UserType::kRegular) {
     // App install logs for extensions and ARC++ are uploaded via the user's
     // communication channel with the management server. This channel exists for
@@ -361,6 +358,7 @@ void UserSessionInitializer::OnUserSessionStarted(bool is_primary_user) {
         settings::PeripheralDataAccessHandler::GetPrefState());
 
     CrasAudioHandler::Get()->RefreshVoiceIsolationState();
+    CrasAudioHandler::Get()->RefreshVoiceIsolationPreferredEffect();
 
     MediaNotificationProvider::Get()->OnPrimaryUserSessionStarted();
     if (base::FeatureList::IsEnabled(media::kShowForceRespectUiGainsToggle)) {

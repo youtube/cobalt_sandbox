@@ -334,7 +334,7 @@
 <translation id="36451918667380448">મોબાઇલ નેટવર્ક પ્રદાતા લૉક કરેલા છે. સપોર્ટ માટે તમારા પ્રદાતાનો સંપર્ક કરો.</translation>
 <translation id="3645233063072417428"><ph name="NUMBER_OF_ITEMS" /> આઇટમ ખસેડી.</translation>
 <translation id="3658269352872031728"><ph name="SELECTED_FILE_COUNT" /> ફાઇલ પસંદ કરી</translation>
-<translation id="3685122418104378273">મોબાઇલ ડેટાનો ઉપયોગ કરી રહ્યાં હોય ત્યારે, Google ડ્રાઇવ સિંક ડિફોલ્ટ રૂપે બંધ છે.</translation>
+<translation id="3685122418104378273">મોબાઇલ ડેટાનો ઉપયોગ કરી રહ્યાં હોય ત્યારે, Google Drive સિંક ડિફૉલ્ટ તરીકે બંધ છે.</translation>
 <translation id="3689865792480713551"><ph name="ACTIVITY_DESCRIPTION" />ને રદ કરો.</translation>
 <translation id="3690128548376345212"><ph name="NETWORK_COUNT" />માંથી <ph name="NETWORK_INDEX" /> નેટવર્ક, <ph name="NETWORK_NAME" />, સક્રિય કર્યા વિનાનું, <ph name="CONNECTION_STATUS" />, સિગ્નલની પ્રબળતા <ph name="SIGNAL_STRENGTH" />%, વિગતો</translation>
 <translation id="3691184985318546178">સિંહાલા</translation>
@@ -422,6 +422,7 @@
 <translation id="4387004326333427325">પ્રમાણીકરણ પ્રમાણપત્ર રિમોટલી નકારવામાં આવ્યું છે</translation>
 <translation id="4394214039309501350">બાહ્ય લિંક</translation>
 <translation id="4394980935660306080">આ અઠવાડિયાની શરૂઆતમાં</translation>
+<translation id="4397435965699247285">ઑફલાઇન હોવા પર OneDrive ઉપલબ્ધ હોતી નથી</translation>
 <translation id="4398096759193130964">આઇટમ રિસ્ટોર કરો અથવા તેમને ટ્રેશની બહાર કોઈ નવા ફોલ્ડર પર ખેંચો</translation>
 <translation id="4401287888955153199">બધું એક્સટ્રેક્ટ કરો</translation>
 <translation id="4410695710508688828">એક્સટ્રેક્ટ કરવામાં નિષ્ફ્ળ રહ્યાં. <ph name="ERROR_MESSAGE" /></translation>
@@ -582,7 +583,6 @@
 <translation id="5447680084201416734">પૂરતું સ્ટોરેજ નથી.</translation>
 <translation id="5449551289610225147">અમાન્ય પાસવર્ડ</translation>
 <translation id="5459064203055649751">"<ph name="FILENAME" />" નામની ફાઇલ પહેલેથી અસ્તિત્વમાં છે. શું તમે તે ફાઇલને, તમે ખસેડી રહ્યાં છો તે ફાઇલ વડે બદલવા માંગો છો?</translation>
-<translation id="5462378611565326489">ઑફલાઇન હોવા પર OneDrive ઉપલબ્ધ હોતી નથી.</translation>
 <translation id="5463231940765244860">દાખલ કરો</translation>
 <translation id="5469868506864199649">ઇટાલિયન</translation>
 <translation id="5473333559083690127">નવો PIN ફરીથી દાખલ કરો</translation>
@@ -664,7 +664,7 @@
 <translation id="6096979789310008754">શોધ ટેક્સ્ટ સાફ કરી, બધી ફાઇલો અને ફોલ્ડરો બતાવવામાં આવી રહ્યાં છે.</translation>
 <translation id="610101264611565198"><ph name="FILE_NAME" />ને <ph name="FOLDER_NAME" />માં ખસેડાય છે</translation>
 <translation id="61118516107968648">CSV ટેક્સ્ટ</translation>
-<translation id="6129953537138746214">જગ્યા</translation>
+<translation id="6129953537138746214">Space</translation>
 <translation id="6133173853026656527"><ph name="FILE_NAME" /> ખસેડાઈ રહી છે...</translation>
 <translation id="6133877453787250710">ઍડમિનિસ્ટ્રેટર મૉનિટર:</translation>
 <translation id="613750717151263950">જાપાનીઝ, યુએસ કીબોર્ડ સાથે</translation>

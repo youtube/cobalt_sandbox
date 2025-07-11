@@ -479,7 +479,9 @@ _BANNED_IOS_OBJC_FUNCTIONS = (
       excluded_paths=(
         'ios/chrome/browser/shared/ui/symbols/symbol_helpers.mm',
         'ios/chrome/common',
-        'ios/chrome/search_widget_extension/',
+        # App extensions have restricted dependencies and thus can't use the
+        # wrappers.
+        '^ios/chrome/\w+_extension/',
       ),
     ),
 )
@@ -2098,6 +2100,18 @@ _BANNED_CPP_FUNCTIONS: Sequence[BanRule] = (
         ),
         treat_as_error=False,
     ),
+    BanRule(
+        pattern='WebContentsDestroyed',
+        explanation=
+        ('Do not use this method. It is invoked half-way through the '
+         'destructor of WebContentsImpl and using it often results in crashes '
+         'or surprising behavior. Conceptually, this is only necessary by '
+         'objects that depend on, but outlive the WebContents. These objects '
+         'should instead coordinate with the owner of the WebContents which is '
+         'responsible for destroying the WebContents.',
+        ),
+        treat_as_error=False,
+    ),
 )
 
 _DEPRECATED_SYNC_CONSENT_FUNCTION_WARNING = (
@@ -2336,7 +2350,9 @@ _KNOWN_ROBOTS = set(
                     'global-integration-ci-builder')
   ) | set('%s@prod.google.com' % s
           for s in ('chops-security-borg',
-                    'chops-security-cronjobs-cpesuggest'))
+                    'chops-security-cronjobs-cpesuggest')
+  ) | set('%s@chromeos-release-bot.iam.gserviceaccount.com' % s
+          for s in ('chromeos-ci-release', ))
 
 _INVALID_GRD_FILE_LINE = [
         (r'<file lang=.* path=.*', 'Path should come before lang in GRD files.')

@@ -38,7 +38,8 @@ namespace blink {
 
 static void RecordUsageAndDeprecationsOneSelector(
     const CSSSelector* selector,
-    const CSSParserContext* context);
+    const CSSParserContext* context,
+    bool* has_visited_pseudo);
 
 namespace {
 
@@ -132,19 +133,20 @@ base::span<CSSSelector> CSSSelectorParser::ConsumeSelector(
     bool semicolon_aborts_nested_selector,
     StyleSheetContents* style_sheet,
     CSSParserObserver* observer,
-    HeapVector<CSSSelector>& arena) {
+    HeapVector<CSSSelector>& arena,
+    bool* has_visited_style) {
   CSSSelectorParser parser(context, parent_rule_for_nesting, is_within_scope,
                            semicolon_aborts_nested_selector, style_sheet,
                            arena);
   stream.ConsumeWhitespace();
   base::span<CSSSelector> result =
       parser.ConsumeComplexSelectorList(stream, observer, nesting_type);
-  parser.RecordUsageAndDeprecations(result);
+  parser.RecordUsageAndDeprecations(result, has_visited_style);
   return result;
 }
 
 // static
-std::optional<base::span<CSSSelector>> CSSSelectorParser::ParseScopeBoundary(
+base::span<CSSSelector> CSSSelectorParser::ParseScopeBoundary(
     CSSParserTokenStream& stream,
     const CSSParserContext* context,
     CSSNestingType nesting_type,
@@ -158,13 +160,12 @@ std::optional<base::span<CSSSelector>> CSSSelectorParser::ParseScopeBoundary(
   DisallowPseudoElementsScope disallow_pseudo_elements(&parser);
 
   stream.ConsumeWhitespace();
-  std::optional<base::span<CSSSelector>> result =
-      parser.ConsumeForgivingComplexSelectorList(stream, nesting_type);
-  DCHECK(result.has_value());
-  if (!stream.AtEnd()) {
-    return std::nullopt;
+  base::span<CSSSelector> result =
+      parser.ConsumeComplexSelectorList(stream, nesting_type);
+  if (result.empty() || !stream.AtEnd()) {
+    return {};
   }
-  parser.RecordUsageAndDeprecations(result.value());
+  parser.RecordUsageAndDeprecations(result);
   return result;
 }
 
@@ -1615,6 +1616,12 @@ bool CSSSelectorParser::ConsumePseudo(CSSParserTokenStream& stream) {
           context_->Count(WebFeature::kHasMarkerPseudoElement);
         }
         break;
+      case CSSSelector::kPseudoSpellingError:
+      case CSSSelector::kPseudoGrammarError:
+        if (context_->Mode() != kUASheetMode) {
+          context_->Count(WebFeature::kHasSpellingOrGrammarErrorPseudoElement);
+        }
+        break;
       default:
         break;
     }
@@ -2469,7 +2476,8 @@ WebFeature FeatureForWebKitCustomPseudoElement(const AtomicString& name) {
 
 static void RecordUsageAndDeprecationsOneSelector(
     const CSSSelector* selector,
-    const CSSParserContext* context) {
+    const CSSParserContext* context,
+    bool* has_visited_pseudo) {
   std::optional<WebFeature> feature;
   switch (selector->GetPseudoType()) {
     case CSSSelector::kPseudoAny:
@@ -2546,6 +2554,20 @@ static void RecordUsageAndDeprecationsOneSelector(
         feature = WebFeature::kCSSSelectorNthChildOfSelector;
       }
       break;
+    case CSSSelector::kPseudoModal:
+      feature = WebFeature::kCSSSelectorPseudoModal;
+      break;
+    case CSSSelector::kPseudoFileSelectorButton:
+      feature = WebFeature::kCSSSelectorPseudoFileSelectorButton;
+      break;
+    case CSSSelector::kPseudoVisited:
+      if (has_visited_pseudo) {
+        *has_visited_pseudo = true;
+      }
+      break;
+    case CSSSelector::kPseudoActiveViewTransition:
+      feature = WebFeature::kActiveViewTransitionPseudo;
+      break;
     default:
       break;
   }
@@ -2562,13 +2584,15 @@ static void RecordUsageAndDeprecationsOneSelector(
   if (selector->SelectorList()) {
     for (const CSSSelector* current = selector->SelectorList()->First();
          current; current = current->NextSimpleSelector()) {
-      RecordUsageAndDeprecationsOneSelector(current, context);
+      RecordUsageAndDeprecationsOneSelector(current, context,
+                                            has_visited_pseudo);
     }
   }
 }
 
 void CSSSelectorParser::RecordUsageAndDeprecations(
-    const base::span<CSSSelector> selector_vector) {
+    const base::span<CSSSelector> selector_vector,
+    bool* has_visited_pseudo) {
   if (!context_->IsUseCounterRecordingEnabled()) {
     return;
   }
@@ -2577,7 +2601,8 @@ void CSSSelectorParser::RecordUsageAndDeprecations(
   }
 
   for (const CSSSelector& current : selector_vector) {
-    RecordUsageAndDeprecationsOneSelector(&current, context_);
+    RecordUsageAndDeprecationsOneSelector(&current, context_,
+                                          has_visited_pseudo);
   }
 }
 

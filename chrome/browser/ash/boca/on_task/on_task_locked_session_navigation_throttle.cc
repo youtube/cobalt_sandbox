@@ -127,7 +127,10 @@ void OnTaskLockedSessionNavigationThrottle::MaybeShowBlockedURLToast() {
     LockedSessionWindowTracker* const window_tracker =
         LockedSessionWindowTrackerFactory::GetForBrowserContext(
             navigation_handle()->GetWebContents()->GetBrowserContext());
-    if (window_tracker) {
+
+    // TODO: b/377767192 - Add tests to for scenarios regarding tab browser
+    // instance changes
+    if (window_tracker && !IsOutsideOnTaskAppNavigation()) {
       window_tracker->ShowURLBlockedToast();
     }
   }
@@ -155,15 +158,17 @@ bool OnTaskLockedSessionNavigationThrottle::MaybeProceedForOneLevelDeep(
 
 bool OnTaskLockedSessionNavigationThrottle::
     ShouldBlockSensitiveUrlNavigation() {
-  // Block download urls, files, urls via post request, blob urls, non-boca app
-  // chrome urls, and other local schemes.
+  // Block download urls, files, urls via post request (form submission being
+  // an exception), blob urls, non-boca app chrome urls, and other local
+  // schemes.
   const GURL& url = navigation_handle()->GetURL();
   bool is_boca_app_host_url =
       (url.SchemeIs(content::kChromeUIUntrustedScheme) &&
        url.host() == boca::kChromeBocaAppHost);
   return (navigation_handle()->IsDownload() ||
           (navigation_handle()->GetRequestMethod() !=
-           net::HttpRequestHeaders::kGetMethod) ||
+               net::HttpRequestHeaders::kGetMethod &&
+           !navigation_handle()->IsFormSubmission()) ||
           (!url.SchemeIsHTTPOrHTTPS() && !is_boca_app_host_url));
 }
 
@@ -248,7 +253,8 @@ OnTaskLockedSessionNavigationThrottle::CheckRestrictions() {
   // by the device admin panel, this would be enforced by a different
   // NavigationThrottle.
   if (window_tracker->on_task_blocklist()->IsCurrentRestrictionOneLevelDeep() &&
-      navigation_handle()->GetReloadType() != content::ReloadType::NONE) {
+      navigation_handle()->GetReloadType() != content::ReloadType::NONE &&
+      navigation_handle()->GetWebContents()->GetLastCommittedURL().is_valid()) {
     should_redirects_pass_ = true;
     return PROCEED;
   }
@@ -357,7 +363,13 @@ OnTaskLockedSessionNavigationThrottle::WillProcessResponse() {
   LockedSessionWindowTracker* const window_tracker =
       LockedSessionWindowTrackerFactory::GetForBrowserContext(
           navigation_handle()->GetWebContents()->GetBrowserContext());
-  if (should_redirects_pass_) {
+
+  // This check is needed other SWA launches during unlocked that needs to
+  // process navigation responses.
+  // TODO: b/377767192 - Add tests to for scenarios regarding tab browser
+  // instance changes
+
+  if (IsOutsideOnTaskAppNavigation() || should_redirects_pass_) {
     return PROCEED;
   }
   if (ShouldBlockSensitiveUrlNavigation() &&

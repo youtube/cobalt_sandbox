@@ -365,6 +365,7 @@ First-Party Set 中的所有网站都必须是采用 HTTPS 协议的可注册网
 <translation id="1262993197422487260">不在登录屏幕和锁定的屏幕上显示“显示密码”按钮</translation>
 <translation id="1265053460044691532">限制通过SAML验证身份的用户可离线登录的时长</translation>
 <translation id="1265076559723566171">控制教育版用户的设置</translation>
+<translation id="1268561791350382977">允许使用智能镜头叠加功能并改进 AI 模型。</translation>
 <translation id="1271811620059192171">启用政策原子组</translation>
 <translation id="127264587838521316">启用 <ph name="PRODUCT_NAME" /> 扩展程序安装请求</translation>
 <translation id="1272798957154751008">允许将 Chromad 设备迁移到云管理服务</translation>
@@ -491,6 +492,7 @@ First-Party Set 中的所有网站都必须是采用 HTTPS 协议的可注册网
 
       注意：如需查看更详细的示例，请访问 Chromium 项目 (https://www.chromium.org/developers/design-documents/network-settings#TOC-Command-line-options-for-proxy-sett)。</translation>
 <translation id="1354280967938151061">停用 ARC</translation>
+<translation id="1354349503792572661">强制允许在 <ph name="PRODUCT_OS_NAME" /> 上运行 Native Client (NaCl)。</translation>
 <translation id="1354424209129232709">上限：</translation>
 <translation id="1355050231181289439"> 此政策用于控制是否启用改进后的国际键盘快捷键映射。
       该功能可确保键盘快捷键的运行方式契合国际键盘布局并弃用旧版快捷键。
@@ -868,6 +870,7 @@ First-Party Set 中的所有网站都必须是采用 HTTPS 协议的可注册网
 最低阈值为 1 分钟。
 
 “用户输入”由操作系统 API 定义，包括移动鼠标或使用键盘输入内容等操作。</translation>
+<translation id="1611144198714227240">停用 NTP Outlook 日历卡片</translation>
 <translation id="1611394564825535541">让您能够控制用户能否访问非企业打印机。
 
       如果此政策设为 True 或根本未设置，用户将能够添加和配置自己的打印机并使用这些打印机进行打印。
@@ -1055,6 +1058,7 @@ Related Website Set 中的所有网站都必须是采用 HTTPS 协议的可注�
       网址格式不能与 <ph name="FILE_SYSTEM_WRITE_ASK_FOR_URLS_POLICY_NAME" /> 冲突。如果某个网址与这两项政策都相符，系统将不会优先应用任一项政策。
 
       如需详细了解有效的<ph name="URL_LABEL" />格式，请访问 https://cloud.google.com/docs/chrome-enterprise/policies/url-patterns。<ph name="WILDCARD_VALUE" /> 不是此政策可接受的值。</translation>
+<translation id="1754668667300090632">停用 NTP SharePoint 文件卡片</translation>
 <translation id="1755310913456007816">使用现有的在线撤消检查设置</translation>
 <translation id="1760951637494635692">允许在这些网站上使用 Serial API</translation>
 <translation id="1765503534110351026">此政策已被弃用，请改用 <ph name="PROXY_SETTINGS_POLICY_NAME" />。
@@ -1134,6 +1138,7 @@ Related Website Set 中的所有网站都必须是采用 HTTPS 协议的可注�
 如果此政策已停用或未设置，在受管理的账号登录后，系统可能会显示一个信息气泡，要求用户创建新的个人资料。用户可以关闭该气泡，在非受管环境中继续浏览。该气泡受 <ph name="SIGNIN_INTERCEPTION_ENABLED_POLICY_NAME" /> 政策控制。
 
 如果此政策是在机器级设置的，它不会产生任何效力。</translation>
+<translation id="1834796168555733063">禁止使用密码管理工具保存通行密钥</translation>
 <translation id="1836380138559328229">在设备级别保存有效的 Wi-Fi 凭据</translation>
 <translation id="1837165432382702436">页面的高度（以微米为单位）</translation>
 <translation id="1838910874018595451">Kerberos 票据的预填充配置</translation>
@@ -1279,6 +1284,7 @@ Related Website Set 中的所有网站都必须是采用 HTTPS 协议的可注�
 <translation id="1928355425032308464">启用视频输入</translation>
 <translation id="1930094135927166199">停用 USB 电源共享</translation>
 <translation id="1930127294345368978">单个打印任务可以使用的纸张数上限</translation>
+<translation id="1931537386635075674">启用 NTP Outlook 日历卡片</translation>
 <translation id="1933378685401357864">壁纸图片</translation>
 <translation id="1935409768874953955">始终启用以网址为键的匿名化数据收集功能</translation>
 <translation id="1942015922182679826">允许删除无法破解的密码</translation>
@@ -1372,6 +1378,7 @@ Related Website Set 中的所有网站都必须是采用 HTTPS 协议的可注�
       如果此政策设为 false 或未设置，系统将不会报告这些信息。
       如果此政策设为 true，系统将会报告设备当前所设的时区。</translation>
 <translation id="1990784382342293892">此政策已被弃用且不再受支持，请改用“<ph name="NATIVE_MESSAGING_BLOCKLIST_POLICY_NAME" />”政策。</translation>
+<translation id="1990823660725793326">blob 网址 SharedWorker 不继承控制器。（旧版行为）</translation>
 <translation id="1995744620192427843">通过设置此政策，您可阻止在用户验证身份期间（例如在登录界面中和锁定的屏幕中）加载已列入屏蔽名单的网址所对应的网页。此政策让您能够列出一系列网址格式，从而指定禁止加载的网址。如果您未设置此政策，任何网址都能在用户验证身份期间加载。所列网址必须采用 https://support.google.com/chrome/a?p=url_blocklist_filter_format 规定的格式。
 
 您可以在相关政策 <ph name="DEVICE_AUTHENTICATION_URL_ALLOWLIST_POLICY_NAME" /> 中定义此类格式的例外情况。
@@ -1992,6 +1999,7 @@ IPv4 地址的前缀为 0010；IPv6 地址的前缀为 0020。对于双栈网络
 
       拼写检查功能始终都能就地使用已下载的字典，除非该功能已被 <ph name="SPELLCHECK_ENABLED_POLICY_NAME" /> 停用（在这种情况下，此政策将不会产生任何影响）。</translation>
 <translation id="2433516903565257847">应在指定天数后更新的设备所占的百分比。</translation>
+<translation id="2433683038230070030">Web Audio 自适应缓冲可能会启用，具体取决于功能启动流程。</translation>
 <translation id="2435052056904485763">Kerberos 委派服务器许可名单</translation>
 <translation id="2436302465999055995">将 <ph name="LACROS_NAME" /> 设为唯一可用的浏览器（尚未实施）</translation>
 <translation id="2439187682308339104">不允许任何网站通过 WebHID API 请求对 HID 设备的访问权限</translation>
@@ -2486,7 +2494,7 @@ IPv4 地址的前缀为 0010；IPv6 地址的前缀为 0020。对于双栈网络
 <translation id="2866726566162790531">允许所有 HTTP 身份验证的来源列表</translation>
 <translation id="2868756546751652023">允许用户使用“即时网络共享”功能</translation>
 <translation id="286898786908566256">允许用户将电话号码从 Chrome 发送到 Android 设备</translation>
-<translation id="2872098849906555324">停用 Google 云端硬盘同步</translation>
+<translation id="2872098849906555324">停用 Google 云端硬盘同步功能</translation>
 <translation id="2872189563975139803">企业资料分离设置</translation>
 <translation id="2872961005593481000">关机</translation>
 <translation id="2872968825059227580">停用 GIF 支持。</translation>
@@ -2920,9 +2928,6 @@ IPv4 地址的前缀为 0010；IPv6 地址的前缀为 0020。对于双栈网络
       如需详细了解有效的<ph name="URL_LABEL" />格式，请访问 https://chromeenterprise.google/intl/zh_cn/policies/url-patterns/。允许使用通配符 <ph name="WILDCARD_VALUE" />。
 
       请注意，此政策会根据顶级文档的源（通常是地址栏中显示的网页网址）是否与任何格式匹配来阻止运行 JavaScript。因此，此政策不适合用于缓解网络供应链攻击。例如，提供格式“https://[*.]foo.com/”不会阻止托管在 https://example.com 上的网页运行从 https://www.foo.com/example.js 加载的脚本。此外，如果 https://example.com 上的文档不是顶级文档，而是作为子框架嵌入到由其他源（例如 https://www.bar.com）托管的网页中，则提供格式“https://example.com/”不会阻止该文档运行脚本。</translation>
-<translation id="3180671894201217988">如果此政策已启用或未设置，系统会禁止第三方软件将可执行代码注入到 <ph name="PRODUCT_NAME" /> 进程中。
-
-      如果此政策已停用，系统会允许第三方软件将此类代码注入到 <ph name="PRODUCT_NAME" /> 进程中。</translation>
 <translation id="3181114468897395940">PageUp/PageDown 设置使用包含 Alt 辅助键的快捷键</translation>
 <translation id="3182503302060513467">“新标签页”页面将会显示中间槽通知（若有）</translation>
 <translation id="3184161739683646075">控制 DNS-over-HTTPS 模式</translation>
@@ -3253,8 +3258,8 @@ IPv4 地址的前缀为 0010；IPv6 地址的前缀为 0020。对于双栈网络
 <translation id="3434932177006334880">在 Chrome 42 之前，此设置名为 EnableWebBasedSignin；Chrome 43 中将完全停止支持此设置。
 
       对于所用 SSO 解决方案与新的内嵌登录流程尚不兼容的企业客户来说，此设置非常有用。
-      如果您启用了此设置，系统将使用旧的基于网络的登录流程。
-      如果您停用了此设置或未对其进行设置，默认情况下，系统将使用新的内嵌登录流程。不过，用户仍可以通过命令行指令“--enable-web-based-signin”启用旧的基于网络的登录流程。
+      如果您启用了此设置，系统将使用旧的基于 Web 的登录流程。
+      如果您停用了此设置或未对其进行设置，默认情况下，系统将使用新的内嵌登录流程。不过，用户仍可以通过命令行指令“--enable-web-based-signin”启用旧的基于 Web 的登录流程。
 
       日后，当内嵌登录全面支持所有 SSO 登录流程时，该实验性设置将会取消。</translation>
 <translation id="3435796032110614169">允许删除打印任务记录</translation>
@@ -3551,6 +3556,7 @@ IPv4 地址的前缀为 0010；IPv6 地址的前缀为 0020。对于双栈网络
 
 通过设置此政策，您可针对所指定的遥测数据类型来控制网站遥测数据报告。
 如果此政策未设置，系统将不会报告任何网站遥测数据。</translation>
+<translation id="3651483357891254380">允许使用智能镜头叠加功能，但不改进 AI 模型。</translation>
 <translation id="3652670852519271837">允许网站通过 File System API 请求用户授予对文件和目录的读取权限</translation>
 <translation id="3653237928288822292">默认搜索服务提供商图标</translation>
 <translation id="3654906736796256792">允许音频沙盒运行</translation>
@@ -3577,6 +3583,9 @@ IPv4 地址的前缀为 0010；IPv6 地址的前缀为 0020。对于双栈网络
       如果您设置了此政策，用户便无法更改相关设置。如果您未设置此政策，“接入交流电时启动”会处于关闭状态，而且用户无法开启该功能。</translation>
 <translation id="3660562134618097814">在用户登录期间转移 SAML IdP Cookie</translation>
 <translation id="3662660961914441274">禁止在本地存储用户文件</translation>
+<translation id="3663124775601519286">如果此政策已启用或未经设置，系统将允许在 <ph name="PRODUCT_NAME" /> 中使用 Translator API。
+
+      如果此政策已停用，系统将禁止使用 Translator API。</translation>
 <translation id="3665437376055221832">仅当没有任何证书与自动选择政策匹配时才提示用户。</translation>
 <translation id="3667467644216039144">以列表形式配置，系统应在用户关闭所有浏览器窗口时删除哪些类型的浏览数据。
 
@@ -3866,6 +3875,7 @@ IPv4 地址的前缀为 0010；IPv6 地址的前缀为 0020。对于双栈网络
 
  如果此政策未设置或设为空值/无效值，系统将不会向打印任务请求中添加额外的<ph name="CLIENT_INFO_IPP_ATTRIBUTE" />值。
 </translation>
+<translation id="3896591584655529057">允许使用密码管理工具保存通行密钥</translation>
 <translation id="3897218615484393758">限制通过 SAML 验证身份的用户可在锁定屏幕上离线登录的时长</translation>
 <translation id="3897860452756794695">系统将使用新的 offsetParent 行为。</translation>
 <translation id="3898345958122666461">开启 NTLMv2</translation>
@@ -4699,6 +4709,7 @@ IPv4 地址的前缀为 0010；IPv6 地址的前缀为 0020。对于双栈网络
       如果您停用了或未设置此政策，网站将无法在导航的同时打开新窗口/新标签页。</translation>
 <translation id="4572577129745420844">不允许用户添加 Kerberos 账号</translation>
 <translation id="457430673056611745">OnPrint <ph name="PRODUCT_NAME" /> 企业版接口的配置政策</translation>
+<translation id="4575789820705765299">允许使用 Translator API</translation>
 <translation id="4576760454200781316">如果此政策已启用，“<ph name="PRODUCT_NAME" />”功能会使后台标签页中的 JavaScript 计时器受到过度节流并被聚合：当某个网页已在后台运行 5 分钟或更长时间后，这类计时器的运行频率不会超过每分钟 1 次。
 
           该功能符合 Web 标准，但可能会导致某些操作延迟 1 分钟之久，进而导致某些网站上的功能无法正常运作。不过，启用该功能可以大幅节省 CPU 占用量和电池耗电量。如需了解详情，请访问 https://bit.ly/30b1XR4。
@@ -6360,6 +6371,11 @@ IPv4 地址的前缀为 0010；IPv6 地址的前缀为 0020。对于双栈网络
 <translation id="5776485039795852974">每次网站尝试显示桌面通知时都询问</translation>
 <translation id="5783009211970309878">打印页眉和页脚</translation>
 <translation id="5790763087505467169">减少受管理访客会话的自动启动通知</translation>
+<translation id="5794205610250307906">此政策旨在控制浏览器是否对 Web Audio 应用自适应缓冲，该缓冲虽然可能有助于减少音频干扰，但可能会使延迟时间增加一个不定的量。
+
+如果此政策已启用，系统将始终使用自适应缓冲。
+
+如果此政策已停用或未设置，浏览器功能启动流程将决定是否使用自适应缓冲。</translation>
 <translation id="5800329278018669527">处于离线状态时不弹出网络配置提示</translation>
 <translation id="5802931736499687181">停用加密报告管道</translation>
 <translation id="5803715507113569033">此政策让管理员能够配置 <ph name="MICROSOFT_ONE_DRIVE_NAME" /> 的装载方式。
@@ -6928,6 +6944,7 @@ IPv4 地址的前缀为 0010；IPv6 地址的前缀为 0020。对于双栈网络
 如果此政策已停用，用户将无法锁定屏幕（只能退出用户会话）。</translation>
 <translation id="6265892395051519509">允许在这些网站上使用传感器</translation>
 <translation id="6266043141694454734">确定是否使用 Chrome 根存储区和内置的证书验证程序来验证服务器证书</translation>
+<translation id="6266686172120601139">为 Web Audio 启用自适应缓冲</translation>
 <translation id="6267130578410325007">此政策默认允许使用以源为键的代理集群。
 
 Origin-Agent-Cluster HTTP 标头可控制是将某个文档隔离在以源为键的代理集群中，还是隔离在以网站为键的代理集群中。这会对安全性造成影响，因为以源为键的代理集群允许按源隔离文档。对开发者来说，采用这种做法就无法再设置 document.domain 这一访问函数。
@@ -7216,6 +7233,13 @@ Origin-Agent-Cluster HTTP 标头可控制是将某个文档隔离在以源为键
 
       如需详细了解有效的<ph name="URL_LABEL" />格式，请访问 https://chromeenterprise.google/intl/zh_cn/policies/url-patterns/。允许使用通配符 <ph name="WILDCARD_VALUE" />。</translation>
 <translation id="6431446111529802555">欧洲。</translation>
+<translation id="6432641193840355112">此政策用于控制是否在“新标签页”页面上显示 SharePoint 文件卡片。只有在启用此政策且您的组织授权在浏览器中使用 SharePoint 文件数据时，此卡片才会显示在“新标签页”页面上。
+
+SharePoint 文件建议卡片会显示建议文件的列表。此功能旨在为用户提供打开最重要文档的快捷方式，从而解决上下文切换问题并提高工作效率。
+
+Microsoft SharePoint 卡片需要额外的管理员配置。如需详细了解如何将 Chrome“新标签页”页面卡片连接到 SharePoint，请参阅帮助文章。
+
+如果已停用 <ph name="NTPCARDSVISIBLE" />，系统将不会显示 SharePoint 卡片。如果已启用 <ph name="NTPCARDSVISIBLE" />，同时已启用此政策，且有待显示的数据，那么系统将显示 SharePoint 卡片。如果未设置 <ph name="NTPCARDSVISIBLE" />，但已启用此政策，同时用户已在“自定义 Chrome”中启用 SharePoint 卡片，且有待显示的数据，那么系统将显示 SharePoint 卡片。</translation>
 <translation id="6433697627431665375">阻止 <ph name="PRODUCT_NAME" /> 数据包含在备份中</translation>
 <translation id="6436052172226685535">LBS 的默认行为。</translation>
 <translation id="6438472072089952201"><ph name="PRODUCT_NAME" /> 会尽可能尝试将某些导航从 HTTP 升级到 HTTPS。此政策可用于停止该行为。如果此政策设为“true”或未设置，系统会默认启用该功能。
@@ -7716,6 +7740,9 @@ Origin-Agent-Cluster HTTP 标头可控制是将某个文档隔离在以源为键
 
       如果此政策设为 false 或未设置，系统不会为该用户启用 <ph name="PLUGIN_VM_NAME" />。
       如果此政策设为 true，系统会为该用户启用 <ph name="PLUGIN_VM_NAME" />，但前提是其他设置也允许该用户运行它。若要允许 <ph name="PLUGIN_VM_NAME" /> 运行，您需将 <ph name="PLUGIN_VM_ALLOWED_POLICY_NAME" /> 和 <ph name="USER_PLUGIN_VM_ALLOWED_POLICY_NAME" /> 设为 true，并设置 <ph name="PLUGIN_VM_LICENSE_KEY_POLICY_NAME" /> 或 <ph name="PLUGIN_VM_USER_ID_POLICY_NAME" />。</translation>
+<translation id="6741318452269220158">如果此政策设为 True，即使默认行为是已停用 Native Client，系统也会允许 Native Client 继续运行。
+如果此政策设为 False 或未设置，系统将使用默认行为。</translation>
+<translation id="6743006196954236593">不允许使用智能镜头叠加功能。</translation>
 <translation id="6749641778238480311">允许在不使用以往用户手势或要求用户确认的情况下调用 subApps API。</translation>
 <translation id="6750902920405577210">要针对信号强度变化事件报告的遥测数据列表。
 
@@ -8087,6 +8114,7 @@ Origin-Agent-Cluster HTTP 标头可控制是将某个文档隔离在以源为键
       <ph name="ENTERPRISE_CONNECTOR_CUSTOM_MESSAGES_FIELD" />、<ph name="ENTERPRISE_CONNECTOR_MESSAGE_FIELD" />、<ph name="ENTERPRISE_CONNECTOR_LEARN_MORE_URL_FIELD" />、<ph name="ENTERPRISE_CONNECTOR_LANGUAGE_FIELD" /> 和 <ph name="ENTERPRISE_CONNECTOR_TAG_FIELD" /> 字段用于配置系统在扫描完毕并判定数据有问题后向用户显示的警告消息。message 字段包含要向用户显示的文字，最多只能有 200 个字符。learn_more_url 字段包含管理员提供的网址，用户可点击该网址以从客户提供的信息中详细了解相应操作被禁止的原因。language 字段是可选字段，包含消息所用的语言。空 language 字段或“default”值用于指明要显示的消息不是以用户所用语言设定的。tag 字段用于指定要针对哪类扫描显示消息。custom_messages 列表可包含零个或多个条目，每个条目都必须具有非空的 message 和 tag 字段。
 
       此政策需要依靠额外的设置才能生效，请访问 https://support.google.com/chrome/a?p=chrome_enterprise_connector_policies_setting 了解详情。</translation>
+<translation id="7032323070729112362">禁止使用 Translator API</translation>
 <translation id="7032813174556919004">停用 DNS-over-HTTPS</translation>
 <translation id="703672323011778742">此政策已在 M88 中弃用，并且 Chrome 已不再支持 Flash。如果此政策设为 1，系统会允许您设置是否所有网站都能自动运行 <ph name="FLASH_PLUGIN_NAME" /> 插件。如果此政策设为 2，系统会禁止所有网站使用此插件。选中“Click to play”选项会允许 <ph name="FLASH_PLUGIN_NAME" /> 插件运行，但用户必须点击该插件才能启动它。
 
@@ -8331,6 +8359,11 @@ Origin-Agent-Cluster HTTP 标头可控制是将某个文档隔离在以源为键
       如果扩展程序不在此列表中或者此列表未设置，则会导致无法调用该 API 并返回错误代码。</translation>
 <translation id="718956142899066210">允许用于更新的连接类型</translation>
 <translation id="7190286937411178540">启用“键盘焦点突出显示”无障碍功能</translation>
+<translation id="7190595750461561896">此政策用于控制浏览器能否将通行密钥保存到内置的密码管理工具中。此政策不会限制对已保存在密码管理工具中的通行密钥的访问权限，也不会更改这些通行密钥的内容。一般来说，如果 <ph name="POLICY_NAME" /> 政策已停用，则禁止将通行密钥和密码等保存到内置密码管理工具中，因此此政策不适用。
+
+如果相应政策已启用或未设置，则用户登录 <ph name="PRODUCT_NAME" /> 后，便可将通行密钥保存到内置密码管理工具中。
+
+如果相应政策已停用，用户将无法把通行密钥保存到内置密码管理工具中，但先前保存的通行密钥仍可正常使用。</translation>
 <translation id="719398790886719721">停用对 Linux 虚拟机的 root 访问权限</translation>
 <translation id="7194407337890404814">默认搜索服务提供商名称</translation>
 <translation id="7196336906814426783">此政策设定了一系列每周间隔时间来安排自动暂停时间表。当间隔时间开始时，<ph name="PRODUCT_OS_NAME" /> 设备会进入暂停模式，并在间隔时间结束时唤醒。
@@ -8348,6 +8381,15 @@ Origin-Agent-Cluster HTTP 标头可控制是将某个文档隔离在以源为键
       系统会自动忽略这些政策，除非安装了 Chrome 远程桌面主机。</translation>
 <translation id="7202925763179776247">允许下载限制</translation>
 <translation id="7203243973351251622">录音机（自 130 版起受支持）</translation>
+<translation id="7205989349935313324">通过智能镜头叠加功能，用户可与当前网页的屏幕截图（叠加在实际 Web 内容上）进行互动，以发起 Google 搜索。此外，用户还可以根据当前网页的上下文发起 Google 搜索。为了提供符合上下文的答案，智能镜头叠加功能会将网页内容发送给 Google，以便系统根据用户所处网页的上下文回答用户的查询。
+
+此功能不受用户设置控制，通常面向所有将 Google 设为默认搜索引擎的用户提供，除非此政策已将其停用。
+
+0 表示为用户启用此功能，并向 Google 发送相关数据来帮助训练或改进 AI 模型。相关数据可能包括提示、输入、输出和来源资料，具体取决于相应功能。工作人员可能会仅出于改进 AI 模型的目的而审核这些数据。除非下文另有说明，否则默认值是 0。
+
+1 表示为用户启用此功能，但不向 Google 发送数据来训练或改进 AI 模型。对于受 <ph name="GOOGLE_ADMIN_CONSOLE_PRODUCT_NAME" />管理的企业用户和受 <ph name="GOOGLE_WORKSPACE_PRODUCT_NAME" /> 管理的教育版账号，默认值是 1。
+
+2 表示停用此功能。</translation>
 <translation id="7207095846245296855">强制启用 Google 安全搜索功能</translation>
 <translation id="7211368186050418507">一律不自动检测时区</translation>
 <translation id="721617466745658461">允许用户选择 <ph name="LACROS_NAME" /> 浏览器二进制文件</translation>
@@ -8363,6 +8405,7 @@ Origin-Agent-Cluster HTTP 标头可控制是将某个文档隔离在以源为键
 
       如果此政策未设置或为空，则用户可以将任何 Google 账号设置为 <ph name="PRODUCT_NAME" /> 中的浏览器主账号。</translation>
 <translation id="723103540848640830">设置锁定屏幕 PIN 码的长度下限</translation>
+<translation id="7232835921904883015">在“新标签页”页面上显示 SharePoint 文件卡片</translation>
 <translation id="7234280155140786597">被禁的本地消息传递主机的名称（用“*”则表示全部禁止）</translation>
 <translation id="723621412149834592">如果您将此政策设为 <ph name="BLOCK_WINDOW_PLACEMENT_POLICY_NAME" />（值 2），默认情况下，系统会自动拒绝向网站授予窗口放置权限。此设置会限制网站的以下功能：查看设备屏幕的相关信息，以及使用该信息在特定屏幕上打开并放置窗口或者请求进入全屏模式。
 
@@ -8830,6 +8873,7 @@ Origin-Agent-Cluster HTTP 标头可控制是将某个文档隔离在以源为键
 如果此政策已启用或未设置，您的用户将能够在其设备上开启或关闭 <ph name="PRIVACY_SANDBOX_NAME" /> 广告衡量设置。
 
 如果您设置了此政策，则必须停用 <ph name="PRIVACY_SANDBOX_PROMPT_ENABLED_POLICY_NAME" /> 政策。</translation>
+<translation id="7643824472046534064">启用 NTP SharePoint 文件卡片</translation>
 <translation id="7643883929273267746">限制可在<ph name="PRODUCT_NAME" />中显示的账号</translation>
 <translation id="7648664871086956188">此政策是一个通用开关，适用于在 DataLeakPreventionRulesList 政策中定义的所有规则。
       如果此政策设为 True，系统会开启关于数据泄露预防事件的实时报告。
@@ -9243,6 +9287,13 @@ Origin-Agent-Cluster HTTP 标头可控制是将某个文档隔离在以源为键
 <translation id="7962093600142350905">此政策用于控制是否在“打印预览”对话框中向用户显示任何可用的 Privet 打印机。
       如果此政策已启用，系统将会显示可用的 Privet 打印机。
       如果此政策已停用或未设置，系统将不会在“打印预览”对话框中显示 Privet 打印机，因为该打印方法已被弃用。</translation>
+<translation id="7962516520649791537">根据 https://w3c.github.io/ServiceWorker/#control-and-use-worker-client，worker 应继承 blob 网址的控制器。不过，现有代码仅允许 DedicatedWorker 继承控制器，而 SharedWorker 则不继承控制器。
+
+如果此政策已启用或未经设置，并且将 blob 网址用作 SharedWorker 网址，那么 <ph name="PRODUCT_NAME" /> 将继承控制器。
+
+停用此政策会导致行为与现有规范不一致。
+
+此政策只是暂时性措施，日后会被移除。</translation>
 <translation id="7969865441622729072">允许在专注模式下播放所有音乐。</translation>
 <translation id="7970660709107174905">第三方存储分区设置</translation>
 <translation id="7972223739742725350">禁止第三方使用 Save and Share API 控制 <ph name="PRODUCT_OS_NAME" />。</translation>
@@ -9336,6 +9387,7 @@ Origin-Agent-Cluster HTTP 标头可控制是将某个文档隔离在以源为键
 <translation id="802776363472387903"><ph name="PLUGIN_VM_NAME" /> 图片的 SHA-256 哈希值。</translation>
 <translation id="8028814157747157754">启用默认搜索服务提供商并允许用户修改搜索服务提供商列表</translation>
 <translation id="8029201909194194377">远程访问连接可达到的会话时长上限</translation>
+<translation id="8030228699677851043">使 SharedWorker blob 网址行为符合规范</translation>
 <translation id="8031651557770840616">不允许使用生成式 AI 壁纸</translation>
 <translation id="8035570672225663428">启用“自适应充电”模式以暂缓充电进程，进而延长电池寿命</translation>
 <translation id="8036284429246268475">如果此政策已启用，用户便可让 <ph name="PRODUCT_NAME" /> 检查所输入的用户名和密码是否已泄露。
@@ -9496,6 +9548,7 @@ Origin-Agent-Cluster HTTP 标头可控制是将某个文档隔离在以源为键
 <translation id="8173864651667424191">在 PDF 文档的打印预览中，“以图片形式打印”选项（若有）默认处于选中状态。</translation>
 <translation id="8175922758834816585">为登录屏幕启用语音反馈，并允许用户暂时停用它</translation>
 <translation id="8176035528522326671">当设定了多份个人资料时，只有企业用户才可以作为主用户（受企业管理的用户的默认行为）</translation>
+<translation id="817717947404114735">启用 Web Audio 自适应缓冲。</translation>
 <translation id="8179082421668183060">如果此政策设为一系列字符串，这些字符串会以空格连接，并作为命令行参数从 <ph name="IE_PRODUCT_NAME" /> 传递到 <ph name="PRODUCT_NAME" />。如果有参数包含 <ph name="URL_PLACEHOLDER" />，系统会将 <ph name="URL_PLACEHOLDER" /> 替换成要打开的网页对应的网址。如果没有参数包含 <ph name="URL_PLACEHOLDER" />，系统会将网址附加到命令行的末尾。
 
       系统会扩展环境变量。在 <ph name="MS_WIN_NAME" /> 上，<ph name="ENV_VARIABLE_WIN_EXAMPLE" /> 会被替换成 <ph name="ENV_VARIABLE_VALUE" /> 环境变量的值。
@@ -9554,6 +9607,13 @@ Origin-Agent-Cluster HTTP 标头可控制是将某个文档隔离在以源为键
 <translation id="8239143983379015783">强制启用永久配额</translation>
 <translation id="8244171102276095471">在 TLS 中启用 RC4 加密套件</translation>
 <translation id="8244525275280476362">政策失效后的最大提取延迟</translation>
+<translation id="8244828501034607035">此政策用于控制是否在“新标签页”页面上显示 Outlook 卡片。只有在启用此政策且您的组织授权在浏览器中使用 Outlook 日历数据时，此卡片才会显示在“新标签页”页面上。
+
+Outlook 卡片会显示下一个日历活动，并提供当天其余会议的概览。此功能旨在为用户提供查看下一场会议的快捷方式，从而解决上下文切换问题并提高工作效率。
+
+Microsoft Outlook 卡片需要额外的管理员配置。如需详细了解如何将 Chrome“新标签页”页面卡片连接到 Outlook，请参阅帮助文章。
+
+如果已停用 <ph name="NTPCARDSVISIBLE" />，系统将不会显示 Outlook 卡片。如果已启用 <ph name="NTPCARDSVISIBLE" />，同时已启用此政策，且有待显示的数据，那么系统将显示 Outlook 卡片。如果未设置 <ph name="NTPCARDSVISIBLE" />，但已启用此政策，同时用户已在“自定义 Chrome”中启用 Outlook 卡片，且有待显示的数据，那么系统将显示 Outlook 卡片。</translation>
 <translation id="8245574649143980200">如果此政策未设置或已启用，用户便可以在上下文菜单中查看和使用 <ph name="GOOGLE_LENS_PRODUCT_NAME" />区域搜索菜单项。如果此政策已停用，而且系统支持 <ph name="GOOGLE_LENS_PRODUCT_NAME" />区域搜索，用户将不会在上下文菜单中看到 <ph name="GOOGLE_LENS_PRODUCT_NAME" />区域搜索菜单项。</translation>
 <translation id="8247143534027746614">禁止用户在验证身份期间访问一系列网址格式</translation>
 <translation id="824818544897669723">禁止删除浏览器历史记录和下载记录</translation>
@@ -9699,15 +9759,6 @@ Origin-Agent-Cluster HTTP 标头可控制是将某个文档隔离在以源为键
 <translation id="8331479227794770304">启用粘滞键</translation>
 <translation id="8332822245414537447">停用 RSA 密钥用法检查</translation>
 <translation id="8334685561819743286">在用户输入内容时停用实体键盘自动更正功能</translation>
-<translation id="8336819406993366823">如果此政策设为 <ph name="ENABLED_VALUE_NAME" />，系统会允许在 JavaScript 中使用带前缀的视频专用全屏 API，例如 Video.webkitEnterFullscreen()。
-
-如果此政策设为 <ph name="DISABLED_VALUE_NAME" />，您将无法在 JavaScript 中使用带前缀的视频专用全屏 API，而只能使用标准全屏 API，例如 Element.requestFullscreen()。
-
-将此政策设为 <ph name="RUNTIME_ENABLED_VALUE_NAME" /> 可允许在运行时启用的 PrefixedFullscreenVideo 功能标志确定带前缀的视频专用全屏 API 是否可供网站使用。
-
-如果此政策未设置，行为将默认为 <ph name="RUNTIME_ENABLED_VALUE_NAME" />。
-
-注意：此政策只是一种临时解决方案，用于帮助弃用带有 webkit 前缀的全屏 API。我们将在 M130 或后续的几个版本中暂时将其移除。</translation>
 <translation id="8337114537412769126">如果 <ph name="DEFAULT_SEARCH_PROVIDER_ENABLED_POLICY_NAME" /> 已开启，您便可通过设置 <ph name="DEFAULT_SEARCH_PROVIDER_SUGGEST_URL_POST_PARAMS_POLICY_NAME" /> 来指定在借助 POST 搜索建议时应使用的参数。所指定的内容由一系列以英文逗号分隔的名称-值对组成。如果值为模板参数（例如<ph name="SEARCH_TERM_MARKER" />），系统会将其替换成真实的搜索字词数据。
 
       如果您不设置 <ph name="DEFAULT_SEARCH_PROVIDER_SUGGEST_URL_POST_PARAMS_POLICY_NAME" />，系统将使用 GET 方法发送建议搜索请求。</translation>
@@ -9723,6 +9774,17 @@ Origin-Agent-Cluster HTTP 标头可控制是将某个文档隔离在以源为键
           如果您未设置此政策，更具体政策的行为便不会受到影响。</translation>
 <translation id="8350643689940867542">停用关于政策数据的报告</translation>
 <translation id="835283681355955417">报告外围设备详情</translation>
+<translation id="8354001669131263433">从 M132 开始，此政策将被移除，同时带前缀的视频专用全屏 API 也将被移除。
+
+如果此政策设为 <ph name="ENABLED_VALUE_NAME" />，系统会允许在 JavaScript 中使用带前缀的视频专用全屏 API，例如 Video.webkitEnterFullscreen()。
+
+如果此政策设为 <ph name="DISABLED_VALUE_NAME" />，您将无法在 JavaScript 中使用带前缀的视频专用全屏 API，而只能使用标准全屏 API，例如 Element.requestFullscreen()。
+
+如果此政策设为 <ph name="RUNTIME_ENABLED_VALUE_NAME" />，系统会允许在运行时启用的 PrefixedFullscreenVideo 功能标志确定带前缀的视频专用全屏 API 是否可供网站使用。
+
+如果此政策未设置，行为将默认为 <ph name="RUNTIME_ENABLED_VALUE_NAME" />。
+
+注意：此政策只是一种临时解决方案，可帮助弃用带有 webkit 前缀的全屏 API。M131 是最后一个具有此政策的版本。</translation>
 <translation id="8356953698979920095">将此政策设为具体值后，系统便会在用户登录期间默认使用对应的设备键盘背光颜色。</translation>
 <translation id="8357681633047935212">限制用户会话的长度</translation>
 <translation id="8357989008292691856">登录用户许可名单</translation>
@@ -9836,6 +9898,7 @@ Origin-Agent-Cluster HTTP 标头可控制是将某个文档隔离在以源为键
 
       <ph name="MS_WIN_NAME" /> 管理员需要注意：只能在运行 Windows 7 的设备中开启此设置。在运行更高版本的设备中，您必须部署一个“默认应用关联”文件，使 <ph name="PRODUCT_NAME" /> 成为 <ph name="HTTPS_PROTOCOL" /> 和 <ph name="HTTP_PROTOCOL" /> 协议的处理程序（也可成为 <ph name="FTP_PROTOCOL" /> 协议和其他文件格式的处理程序）。请参阅 Chrome 帮助文章 ( https://support.google.com/chrome?p=make_chrome_default_win )。</translation>
 <translation id="8441105784056442638">启用“完全还原”功能</translation>
+<translation id="844322176712318428">允许使用 Translator API</translation>
 <translation id="8444157920689124099">启用应用绑定加密</translation>
 <translation id="8445576299806775661">每次实施完重大版本更新后，Chrome 都会为用户浏览数据的某些部分创建快照，以供日后执行紧急版本回滚时使用。如果对某个版本执行了紧急回滚，且用户拥有与此版本对应的快照，系统便会恢复相应快照中的数据。这就使得用户能够继续拥有自己的书签和自动填充数据等设置。
 
@@ -9893,6 +9956,11 @@ Origin-Agent-Cluster HTTP 标头可控制是将某个文档隔离在以源为键
 <translation id="8489964335640955763">PluginVm</translation>
 <translation id="8493645415242333585">停用保存浏览器历史记录的功能</translation>
 <translation id="8499172469244085141">默认设置（用户可以覆盖）</translation>
+<translation id="8499359456965625209">此政策已被弃用。
+
+如果此政策已启用或未经设置，系统会禁止第三方软件将可执行代码注入到 <ph name="PRODUCT_NAME" /> 进程中。
+
+      如果此政策已停用，系统会允许第三方软件将此类代码注入到 <ph name="PRODUCT_NAME" /> 进程中。</translation>
 <translation id="8503018573167958506">确定是否允许用户配置设备主机名。
 
       无论此政策设为何值，如果 <ph name="DEVICE_HOSTNAME_TEMPLATE_POLICY_NAME" /> 已设置，管理员会设置主机名，但用户无法选择。
@@ -10391,6 +10459,7 @@ Origin-Agent-Cluster HTTP 标头可控制是将某个文档隔离在以源为键
       新设备的初始时区设置是“美国太平洋”。值的格式须遵循 IANA 时区数据库 ( https://zh.wikipedia.org/wiki/Tz_database ) 中的时区名称格式。输入无效值会激活此政策，但时区会采用“GMT”。
 
       如果您不设置此政策，或者输入了空字符串，设备会使用当前有效的时区，但用户可以更改它。</translation>
+<translation id="8874071621901957187">在“新标签页”页面上显示 Outlook 日历卡片</translation>
 <translation id="8875202330803089599">如果设置此政策，用户便无法绕过下载安全性决策。
 
       Chrome 中有很多类型的下载警告，这些警告大致分为以下类别（如需详细了解“安全浏览”功能的判定结果，请访问 https://support.google.com/chrome/?p=ib_download_blocked）：
@@ -10442,6 +10511,7 @@ Origin-Agent-Cluster HTTP 标头可控制是将某个文档隔离在以源为键
 <translation id="8908294717014659003">允许您设置是否允许网站访问媒体捕获设备。系统默认为允许访问媒体捕获设备，否则，每次有网站要访问媒体捕获设备时都要征询用户同意。
 
           如果未设置该策略，那么系统会使用“PromptOnAccess”，且用户可以更改此设置。</translation>
+<translation id="8909400095164640684">企业搜索聚合器设置</translation>
 <translation id="8911348623012274122">设置 Chrome 实例可以占用的内存上限</translation>
 <translation id="8911736066340032670">报告与显示相关的信息（例如刷新频率）以及与图形相关的信息（例如驱动程序版本）。
 
@@ -10812,6 +10882,7 @@ Origin-Agent-Cluster HTTP 标头可控制是将某个文档隔离在以源为键
 
       此政策只是一项暂时性措施，会从 <ph name="PRODUCT_NAME" /> 的未来版本中移除。移除此政策后，<ph name="PRODUCT_NAME" /> 将始终都能查询其他 DNS 类型。</translation>
 <translation id="9167719789236691545">在 <ph name="PRODUCT_OS_NAME" />的“文件”应用中停用 Google 云端硬盘</translation>
+<translation id="9171359005568194889">允许将通行密钥保存到密码管理工具中</translation>
 <translation id="9172648973829444124">在平衡模式下强制启用 HTTPS-Only 模式</translation>
 <translation id="9172911925443428317">不允许显示弹出式提醒“App Store 评分”</translation>
 <translation id="9173133289347070466"><ph name="PRODUCT_NAME" /> 产品内调查问卷用于收集用户对浏览器的反馈。调查问卷回复不与用户账号关联。
@@ -10850,6 +10921,7 @@ Origin-Agent-Cluster HTTP 标头可控制是将某个文档隔离在以源为键
 <translation id="9221827710437832530">允许在登录屏幕上访问地理定位。</translation>
 <translation id="922540222991413931">配置扩展程序、应用和用户脚本安装源</translation>
 <translation id="924557436754151212">首次运行时，从默认浏览器导入保存的密码</translation>
+<translation id="925379810778921867">blob 网址 SharedWorker 继承控制器。</translation>
 <translation id="927384371566552478">如果此政策已启用或未设置，用户便可使用导出/导入界面。如果此政策已停用，用户便无法使用导出/导入界面。</translation>
 <translation id="929549405492388749">如果设为 true，即使 AppCache 在 Chrome 中默认不可用，此政策仍会强制启用 AppCache。
 

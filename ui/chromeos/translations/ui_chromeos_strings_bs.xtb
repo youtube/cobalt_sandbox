@@ -422,6 +422,7 @@
 <translation id="4387004326333427325">Potvrda za autentifikaciju je daljinski odbijena</translation>
 <translation id="4394214039309501350">Vanjski link</translation>
 <translation id="4394980935660306080">Ranije ove sedmice</translation>
+<translation id="4397435965699247285">OneDrive nije dostupan offline</translation>
 <translation id="4398096759193130964">Vratite stavke ili ih prevucite u novi folder izvan otpada</translation>
 <translation id="4401287888955153199">Izdvoji sve</translation>
 <translation id="4410695710508688828">Izdvajanje nije uspjelo. <ph name="ERROR_MESSAGE" /></translation>
@@ -582,7 +583,6 @@
 <translation id="5447680084201416734">Nema dovoljno prostora za pohranu.</translation>
 <translation id="5449551289610225147">Pogrešna lozinka</translation>
 <translation id="5459064203055649751">Već postoji fajl s nazivom "<ph name="FILENAME" />". Želite li ga zamijeniti fajlom koji premještate?</translation>
-<translation id="5462378611565326489">OneDrive nije dostupan offline.</translation>
 <translation id="5463231940765244860">Otvori</translation>
 <translation id="5469868506864199649">italijanski</translation>
 <translation id="5473333559083690127">Ponovo unesite novi PIN</translation>

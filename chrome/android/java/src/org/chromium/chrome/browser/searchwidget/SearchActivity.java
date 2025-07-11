@@ -11,6 +11,7 @@ import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.LayerDrawable;
 import android.net.Uri;
+import android.provider.Browser;
 import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
@@ -62,6 +63,7 @@ import org.chromium.chrome.browser.profiles.Profile;
 import org.chromium.chrome.browser.profiles.ProfileProvider;
 import org.chromium.chrome.browser.rlz.RevenueStats;
 import org.chromium.chrome.browser.search_engines.TemplateUrlServiceFactory;
+import org.chromium.chrome.browser.tab.Tab;
 import org.chromium.chrome.browser.toolbar.VoiceToolbarButtonController;
 import org.chromium.chrome.browser.ui.messages.snackbar.SnackbarManager;
 import org.chromium.chrome.browser.ui.messages.snackbar.SnackbarManager.SnackbarManageable;
@@ -73,6 +75,7 @@ import org.chromium.chrome.browser.ui.system.StatusBarColorController;
 import org.chromium.components.browser_ui.modaldialog.AppModalPresenter;
 import org.chromium.components.cached_flags.BooleanCachedFieldTrialParameter;
 import org.chromium.components.metrics.OmniboxEventProtos.OmniboxEventProto.PageClassification;
+import org.chromium.components.omnibox.OmniboxFeatures;
 import org.chromium.ui.base.ActivityKeyboardVisibilityDelegate;
 import org.chromium.ui.base.ActivityWindowAndroid;
 import org.chromium.ui.modaldialog.ModalDialogManager;
@@ -105,6 +108,9 @@ public class SearchActivity extends AsyncInitializationActivity
     @VisibleForTesting
     /* package */ static final String USED_LENS_FROM_SHORTCUTS_WIDGET =
             "QuickActionSearchWidget.LensQuery";
+
+    @VisibleForTesting
+    /* package */ static final String USED_TEXT_FROM_HUB_WIDGET = "HubSearchWidget.Query";
 
     @VisibleForTesting
     /* package */ static final String HISTOGRAM_LAUNCHED_WITH_QUERY =
@@ -155,6 +161,7 @@ public class SearchActivity extends AsyncInitializationActivity
 
     // NOTE: This is used to capture HISTOGRAM_SESSION_TERMINATION_REASON.
     // Do not shuffle or reassign values.
+    // LINT.IfChange(TerminationReason)
     @IntDef({
         TerminationReason.NAVIGATION,
         TerminationReason.UNSPECIFIED,
@@ -163,6 +170,8 @@ public class SearchActivity extends AsyncInitializationActivity
         TerminationReason.OMNIBOX_FOCUS_LOST,
         TerminationReason.ACTIVITY_FOCUS_LOST,
         TerminationReason.FRE_NOT_COMPLETED,
+        TerminationReason.CUSTOM_BACK_ARROW,
+        TerminationReason.BRING_TAB_TO_FRONT,
         TerminationReason.COUNT
     })
     @Retention(RetentionPolicy.SOURCE)
@@ -174,8 +183,12 @@ public class SearchActivity extends AsyncInitializationActivity
         int OMNIBOX_FOCUS_LOST = 4;
         int ACTIVITY_FOCUS_LOST = 5;
         int FRE_NOT_COMPLETED = 6;
-        int COUNT = 7;
+        int CUSTOM_BACK_ARROW = 7;
+        int BRING_TAB_TO_FRONT = 8;
+        int COUNT = 9;
     }
+
+    // LINT.ThenChange(/tools/metrics/histograms/metadata/android/enums.xml:SearchActivityTerminationReason)
 
     @VisibleForTesting /* package */ static final String CCT_CLIENT_PACKAGE_PREFIX = "app-cct-";
 
@@ -309,7 +322,7 @@ public class SearchActivity extends AsyncInitializationActivity
                         this::loadUrl,
                         /* backKeyBehavior= */ this,
                         /* pageInfoAction= */ (tab, pageInfoHighlight) -> {},
-                        IntentHandler::bringTabToFront,
+                        this::bringTabToFront,
                         /* saveOfflineButtonState= */ (tab) -> false,
                         /*omniboxUma*/ (url, transition, isNtp) -> {},
                         TabWindowManagerSingleton::getInstance,
@@ -395,7 +408,7 @@ public class SearchActivity extends AsyncInitializationActivity
 
         mSearchBoxDataProvider.setCurrentUrl(SearchActivityUtils.getIntentUrl(intent));
 
-        if (ChromeFeatureList.sAndroidHubSearch.isEnabled()
+        if (OmniboxFeatures.sAndroidHubSearch.isEnabled()
                 && mSearchBoxDataProvider.isIncognitoBranded()) {
             setIncognitoColorScheme();
         }
@@ -504,7 +517,7 @@ public class SearchActivity extends AsyncInitializationActivity
     private void finishNativeInitializationWithProfile(Profile profile) {
         refinePageClassWithProfile(profile);
 
-        if (ChromeFeatureList.sAndroidHubSearch.isEnabled() && mIntentOrigin == IntentOrigin.HUB) {
+        if (OmniboxFeatures.sAndroidHubSearch.isEnabled() && mIntentOrigin == IntentOrigin.HUB) {
             setHubSearchBoxUrlBarElements();
         }
 
@@ -656,6 +669,13 @@ public class SearchActivity extends AsyncInitializationActivity
             intent.putExtra(SearchWidgetProvider.EXTRA_FROM_SEARCH_WIDGET, true);
         }
 
+        if (OmniboxFeatures.sAndroidHubSearch.isEnabled()
+                && mSearchBoxDataProvider.isIncognitoBranded()) {
+            intent.putExtra(Browser.EXTRA_APPLICATION_ID, getApplicationContext().getPackageName());
+            intent.putExtra(IntentHandler.EXTRA_OPEN_NEW_INCOGNITO_TAB, true);
+            IntentUtils.addTrustedIntentExtras(intent);
+        }
+
         IntentUtils.safeStartActivity(
                 this,
                 intent,
@@ -674,10 +694,9 @@ public class SearchActivity extends AsyncInitializationActivity
         mLocationBarCoordinator
                 .getStatusCoordinator()
                 .setOnStatusIconNavigateBackButtonPress(
-                        (View v) ->
-                                finish(
-                                        TerminationReason.BACK_KEY_PRESSED,
-                                        /* loadUrlParams= */ null));
+                        (View v) -> {
+                            finish(TerminationReason.CUSTOM_BACK_ARROW, /* loadUrlParams= */ null);
+                        });
     }
 
     private void setIncognitoColorScheme() {
@@ -771,6 +790,7 @@ public class SearchActivity extends AsyncInitializationActivity
 
                         // Tracked by Custom Tabs.
                     case IntentOrigin.CUSTOM_TAB -> null;
+                    case IntentOrigin.HUB -> USED_TEXT_FROM_HUB_WIDGET;
                     default -> null;
                 };
 
@@ -830,10 +850,16 @@ public class SearchActivity extends AsyncInitializationActivity
                         case IntentOrigin.CUSTOM_TAB -> ".CustomTab";
                         case IntentOrigin.QUICK_ACTION_SEARCH_WIDGET -> ".ShortcutsWidget";
                         case IntentOrigin.LAUNCHER -> ".Launcher";
+                        case IntentOrigin.HUB -> ".Hub";
                         default -> ".SearchWidget";
                     };
             RecordHistogram.recordEnumeratedHistogram(histogramName + suffix, sample, max);
         }
+    }
+
+    private void bringTabToFront(Tab tab) {
+        finish(TerminationReason.BRING_TAB_TO_FRONT, /* loadUrlParams= */ null);
+        IntentHandler.bringTabToFront(tab);
     }
 
     /* package */ void setLocationBarCoordinatorForTesting(LocationBarCoordinator coordinator) {

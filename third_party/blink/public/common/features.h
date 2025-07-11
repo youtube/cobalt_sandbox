@@ -44,9 +44,6 @@ BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE_PARAM(int,
 BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(
     kAdInterestGroupAPIRestrictedPolicyByDefault);
 
-BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(
-    kAlwaysAllowFledgeDeprecatedRenderURLReplacements);
-
 BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kLowerHighResolutionTimerThreshold);
 
 // Allows running DevTools main thread debugger even when a renderer process
@@ -457,9 +454,7 @@ BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE_PARAM(bool,
 BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kFencedFrames);
 
 BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(
-    kFencedFramesCrossOriginEventReportingUnlabeledTraffic);
-BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(
-    kFencedFramesCrossOriginEventReportingAllTraffic);
+    kFencedFramesCrossOriginEventReporting);
 
 BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(
     kFencedFramesAutomaticBeaconCredentials);
@@ -560,17 +555,12 @@ BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE_PARAM(
 // If kFledgeNumberBidderWorkletGroupByOriginContextsToKeep is enabled,
 // kFledgeNumberBidderWorkletGroupByOriginContextsToKeepValue sets the number of
 // previously-used group-by-origin contexts to keep in case they can be reused
-// in a bidder worklet. Defaulted to 1. A non-default value will only
-// be used if kCookieDeprecationFacilitatedTesting is not enabled or if
-// kFledgeNumberBidderWorkletContextsIncludeFacilitedTesting is enabled.
+// in a bidder worklet. Defaulted to 1.
 BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(
     kFledgeNumberBidderWorkletGroupByOriginContextsToKeep);
 BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE_PARAM(
     int,
     kFledgeNumberBidderWorkletGroupByOriginContextsToKeepValue);
-BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE_PARAM(
-    bool,
-    kFledgeNumberBidderWorkletContextsIncludeFacilitedTesting);
 
 // Reuse a single V8 context to generate all bids in a bidder worklet.
 BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kFledgeAlwaysReuseBidderContext);
@@ -602,6 +592,8 @@ BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE_PARAM(
 
 BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(
     kFledgeEnforcePermissionPolicyContributeOnEvent);
+
+BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kFledgeNoWasmLazyCompilation);
 
 BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kForceWebContentsDarkMode);
 BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE_PARAM(ForceDarkInversionMethod,
@@ -646,6 +638,14 @@ BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kHiddenSelectionBounds);
 // If enabled, a fix for image loading prioritization based on visibility is
 // applied. See https://crbug.com/1369823.
 BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kImageLoadingPrioritizationFix);
+
+// Use Snappy to compress values for IndexedDB before wiring them to the
+// browser.
+BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kIndexedDBCompressValuesWithSnappy);
+// Defines the minimum uncompressed size to merit a compression attempt.
+// Values less than 0 will use the minimum threshold for value blob-wrapping.
+BLINK_COMMON_EXPORT extern const base::FeatureParam<int>
+    kIndexedDBCompressValuesWithSnappyCompressionThreshold;
 
 // This flag is used to set field parameters to choose predictor we use when
 // kResamplingInputEvents is disabled. It's used for gathering accuracy metrics
@@ -1218,8 +1218,7 @@ BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE_PARAM(
     kPartialLowEndModeExcludeCanvasFontCache);
 #endif
 
-BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(
-    kPartitionVisitedLinkDatabaseWithSelfLinks);
+BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kPartitionVisitedLinkDatabase);
 
 BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kPlzDedicatedWorker);
 
@@ -1589,19 +1588,6 @@ BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE_PARAM(
     bool,
     kSharedStorageExposeDebugMessageForSettingsStatus);
 
-// If enabled, limits the number of times per origin per pageload that
-// `sharedStorage.selectURL()` is allowed to be invoked.
-BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kSharedStorageSelectURLLimit);
-// Maximum number of bits of entropy per pageload that are allowed to leak via
-// `sharedStorage.selectURL()`, if `kSharedStorageSelectURLLimit` is enabled.
-BLINK_COMMON_EXPORT extern const base::FeatureParam<int>
-    kSharedStorageSelectURLBitBudgetPerPageLoad;
-// Maximum number of bits of entropy per site per pageload that are allowed to
-// leak via `sharedStorage.selectURL()`, if `kSharedStorageSelectURLLimit` is
-// enabled.
-BLINK_COMMON_EXPORT extern const base::FeatureParam<int>
-    kSharedStorageSelectURLBitBudgetPerSitePerPageLoad;
-
 // If enabled, the shared storage worklet threads (on the same renderer process)
 // will share the same backing thread; otherwise, each will own a dedicated
 // backing thread.
@@ -1668,6 +1654,11 @@ extern const char
 // enabled.
 BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kSpeculationRulesPrefetchFuture);
 
+// When enabled, some in-viewport images will initiate image decode immediately
+// upon load, rather than waiting for the next BeginMainFrame to trigger decode
+// as part of rasterization.
+BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kSpeculativeImageDecodes);
+
 // TODO(crbug/1431792): Speculatively warm-up service worker.
 BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kSpeculativeServiceWorkerWarmUp);
 BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE_PARAM(
@@ -1714,9 +1705,6 @@ BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kStylusRichGestures);
 // Apply touch adjustment for stylus pointer events. This feature allows
 // enabling functions like writing into a nearby input element.
 BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kStylusPointerAdjustment);
-
-// If enabled, regex match on script source to detect third party technologies.
-BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kThirdPartyScriptDetection);
 
 // If enabled, reads and decodes navigation body data off the main thread.
 BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kThreadedBodyLoader);
@@ -1842,6 +1830,11 @@ BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(
     kReleaseResourceStrongReferencesOnMemoryPressure);
 BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(
     kReleaseResourceDecodedDataOnMemoryPressure);
+
+BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kWorkerThreadSequentialShutdown);
+
+// Kill switch for https://crbug.com/415810136.
+BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kNoReferrerForPreloadFromSubresource);
 
 // When adding new features or constants for features, please keep the features
 // sorted by identifier name (e.g. `kAwesomeFeature`), and the constants for

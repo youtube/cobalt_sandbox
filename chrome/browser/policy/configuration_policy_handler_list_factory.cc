@@ -407,9 +407,6 @@ const PolicyToPreferenceMapEntry kSimplePolicyMap[] = {
   { key::kZstdContentEncodingEnabled,
     prefs::kZstdContentEncodingEnabled,
     base::Value::Type::BOOLEAN},
-  { key::kPrefixedVideoFullscreenApiAvailability,
-    prefs::kPrefixedVideoFullscreenApiAvailability,
-    base::Value::Type::STRING },
   { key::kQRCodeGeneratorEnabled,
     prefs::kQRCodeGeneratorEnabled,
     base::Value::Type::BOOLEAN },
@@ -417,8 +414,11 @@ const PolicyToPreferenceMapEntry kSimplePolicyMap[] = {
     prefs::kReportingEndpoints,
     base::Value::Type::DICT },
   { key::kDownloadRestrictions,
-    prefs::kDownloadRestrictions,
+    policy::policy_prefs::kDownloadRestrictions,
     base::Value::Type::INTEGER },
+  { key::kSharedWorkerBlobURLFixEnabled,
+    prefs::kSharedWorkerBlobURLFixEnabled,
+    base::Value::Type::BOOLEAN},
 // Policies for all platforms - End
 #if BUILDFLAG(IS_ANDROID)
   { key::kAccessibilityPerformanceFilteringAllowed,
@@ -854,6 +854,9 @@ const PolicyToPreferenceMapEntry kSimplePolicyMap[] = {
   { key::kWindowCaptureAllowedByOrigins,
     prefs::kWindowCaptureAllowedByOrigins,
     base::Value::Type::LIST },
+  { key::kPasswordManagerPasskeysEnabled,
+    password_manager::prefs::kCredentialsEnablePasskeys,
+    base::Value::Type::BOOLEAN },
 #endif // BUILDFLAG(IS_ANDROID)
   { key::kAlternateErrorPagesEnabled,
     embedder_support::kAlternateErrorPagesEnabled,
@@ -2039,9 +2042,6 @@ const PolicyToPreferenceMapEntry kSimplePolicyMap[] = {
   { key::kClientCertificateManagementAllowed,
     prefs::kClientCertificateManagementAllowed,
     base::Value::Type::INTEGER },
-  { key::kCACertificateManagementAllowed,
-    prefs::kCACertificateManagementAllowed,
-    base::Value::Type::INTEGER },
   { key::kDataLeakPreventionReportingEnabled,
     policy_prefs::kDlpReportingEnabled,
     base::Value::Type::BOOLEAN },
@@ -2074,8 +2074,8 @@ const PolicyToPreferenceMapEntry kSimplePolicyMap[] = {
     base::Value::Type::BOOLEAN },
   // We avoid checking for BUILDFLAG(ENABLE_NACL) since we may want the policy
   // to exist (deprecated) even if NACL is no longer being built.
-  { key::kNativeClientForceAllowed,
-    prefs::kNativeClientForceAllowed,
+  { key::kDeviceNativeClientForceAllowed,
+    prefs::kDeviceNativeClientForceAllowed,
     base::Value::Type::BOOLEAN },
   { key::kKioskActiveWiFiCredentialsScopeChangeEnabled,
     prefs::kKioskActiveWiFiCredentialsScopeChangeEnabled,
@@ -2284,6 +2284,11 @@ const PolicyToPreferenceMapEntry kSimplePolicyMap[] = {
   { key::kCAHintCertificates,
     prefs::kCAHintCertificates,
     base::Value::Type::LIST },
+#if !BUILDFLAG(IS_ANDROID)
+  { key::kCACertificateManagementAllowed,
+    prefs::kCACertificateManagementAllowed,
+    base::Value::Type::INTEGER },
+#endif  // !BUILDFLAG(IS_ANDROID)
 #if !BUILDFLAG(IS_CHROMEOS)
   { key::kCAPlatformIntegrationEnabled,
     prefs::kCAPlatformIntegrationEnabled,
@@ -2295,9 +2300,13 @@ const PolicyToPreferenceMapEntry kSimplePolicyMap[] = {
     client_certificates::prefs::kProvisionManagedClientCertificateForUserPrefs,
     base::Value::Type::INTEGER },
 #endif  // BUILDFLAG(ENTERPRISE_CLIENT_CERTIFICATES)
+
 #if !BUILDFLAG(IS_ANDROID)
   { key::kLensOverlaySettings,
     lens::prefs::kLensOverlaySettings,
+    base::Value::Type::INTEGER},
+  { key::kGenAiLensOverlaySettings,
+    lens::prefs::kGenAiLensOverlaySettings,
     base::Value::Type::INTEGER},
 #endif
 
@@ -2324,13 +2333,11 @@ void GetExtensionAllowedTypesMap(
     std::vector<std::unique_ptr<StringMappingListPolicyHandler::MappingEntry>>*
         result) {
   // Mapping from extension type names to Manifest::Type.
-  for (size_t index = 0;
-       index < extensions::schema_constants::kAllowedTypesMapSize; ++index) {
-    const extensions::schema_constants::AllowedTypesMapEntry& entry =
-        extensions::schema_constants::kAllowedTypesMap[index];
+  for (const auto& [name, manifest_type] :
+       extensions::schema_constants::kAllowedTypesMap) {
     result->push_back(
         std::make_unique<StringMappingListPolicyHandler::MappingEntry>(
-            entry.name, std::make_unique<base::Value>(entry.manifest_type)));
+            name, std::make_unique<base::Value>(manifest_type)));
   }
 }
 #endif  // BUILDFLAG(ENABLE_EXTENSIONS)
@@ -2981,9 +2988,6 @@ std::unique_ptr<ConfigurationPolicyHandlerList> BuildHandlerList(
   handlers->AddHandler(std::make_unique<DefaultGeolocationPolicyHandler>());
   handlers->AddHandler(
       std::make_unique<DeviceLoginScreenGeolocationAccessLevelPolicyHandler>());
-  handlers->AddHandler(std::make_unique<extensions::ExtensionListPolicyHandler>(
-      key::kNoteTakingAppsLockScreenAllowlist,
-      prefs::kNoteTakingAppsLockScreenAllowlist, false /*allow_wildcards*/));
   handlers->AddHandler(std::make_unique<BooleanDisablingPolicyHandler>(
       key::kSecondaryGoogleAccountSigninAllowed,
       ::account_manager::prefs::kSecondaryGoogleAccountSigninAllowed));
@@ -3251,6 +3255,8 @@ std::unique_ptr<ConfigurationPolicyHandlerList> BuildHandlerList(
   gen_ai_default_policies.emplace_back(
       key::kTabCompareSettings,
       optimization_guide::prefs::kProductSpecificationsEnterprisePolicyAllowed);
+  gen_ai_default_policies.emplace_back(key::kGenAiLensOverlaySettings,
+                                       lens::prefs::kGenAiLensOverlaySettings);
 #endif  // BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX) ||
         // BUILDFLAG(IS_CHROMEOS_ASH)
 #if BUILDFLAG(IS_CHROMEOS)

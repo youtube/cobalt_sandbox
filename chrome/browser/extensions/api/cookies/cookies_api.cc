@@ -188,7 +188,7 @@ void CookiesEventRouter::OnCookieChange(bool otr,
       break;
 
     case net::CookieChangeCause::UNKNOWN_DELETION:
-      NOTREACHED_IN_MIGRATION();
+      NOTREACHED();
   }
   dict.Set(kCauseKey, cause_dict_entry);
 
@@ -747,6 +747,15 @@ ExtensionFunction::ResponseAction CookiesGetPartitionKeyFunction::Run() {
     }
     render_frame_host = ExtensionApiFrameIdMap::GetRenderFrameHostById(
         web_contents, frame_id.value());
+  } else if (frame_id.has_value()) {
+    if (frame_id.value() == 0) {
+      return RespondNow(
+          Error("`frameId` may not be 0 if no `tabId` is present."));
+    }
+
+    render_frame_host =
+        ExtensionApiFrameIdMap::Get()->GetRenderFrameHostByFrameId(
+            frame_id.value());
   } else {
     return RespondNow(
         Error("Either `documentId` or `tabId` must be specified."));

@@ -73,6 +73,15 @@ public class EdgeToEdgeUtils {
                     PARAM_DISABLE_CCT_MEDIA_VIEWER_E2E,
                     false);
 
+    private static final String PARAM_DISABLE_RECENT_TABS_E2E = "disable_recent_tabs_e2e";
+
+    /** Cached param whether we disable e2e on the recent tabs page. */
+    public static BooleanCachedFieldTrialParameter DISABLE_RECENT_TABS_E2E =
+            ChromeFeatureList.newBooleanCachedFieldTrialParameter(
+                    ChromeFeatureList.DRAW_KEY_NATIVE_EDGE_TO_EDGE,
+                    PARAM_DISABLE_RECENT_TABS_E2E,
+                    false);
+
     private static final String PARAM_E2E_FIELD_TRIAL_OEM_LIST = "e2e_field_trial_oem_list";
     private static final String PARAM_E2E_FIELD_TRIAL_OEM_MIN_VERSIONS =
             "e2e_field_trial_oem_min_versions";
@@ -309,5 +318,10 @@ public class EdgeToEdgeUtils {
     public static void setAlwaysDrawWebEdgeToEdgeForTesting(boolean drawWebEdgeToEdge) {
         sAlwaysDrawWebEdgeToEdgeForTesting = drawWebEdgeToEdge;
         ResettersForTesting.register(() -> sAlwaysDrawWebEdgeToEdgeForTesting = false);
+    }
+
+    /** Whether push safe-area-insets-bottom to pages that's not using viewport-fit=cover. */
+    public static boolean pushSafeAreaInsetsForNonOptInPages() {
+        return ChromeFeatureList.sDynamicSafeAreaInsets.isEnabled();
     }
 }

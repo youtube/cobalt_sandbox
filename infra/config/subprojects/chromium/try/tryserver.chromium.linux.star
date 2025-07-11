@@ -143,6 +143,16 @@ try_.builder(
     gn_args = "ci/linux-cast-arm-rel",
     contact_team_email = "cast-eng@google.com",
     siso_remote_jobs = siso.remote_jobs.LOW_JOBS_FOR_CQ,
+    tryjob = try_.job(
+        location_filters = [
+            "chromecast/.+",
+            "components/cast/.+",
+            "components/cast_receiver/.+",
+            "components/cast_streaming/.+",
+            "third_party/cast_core/.+",
+            "third_party/openscreen/.+",
+        ],
+    ),
 )
 
 try_.builder(
@@ -411,16 +421,6 @@ try_.orchestrator_builder(
     ),
     compilator = "linux-rel-compilator",
     coverage_test_types = ["unit", "overall"],
-    custom_metrics = [
-        buildbucket.custom_metric(
-            name = "/chrome/infra/browser/builds/ran_tests_retry_shard_count",
-            predicates = ["has(build.output.properties.ran_tests_retry_shard)"],
-        ),
-        buildbucket.custom_metric(
-            name = "/chrome/infra/browser/builds/ran_tests_without_patch_count",
-            predicates = ["has(build.output.properties.ran_tests_without_patch)"],
-        ),
-    ],
     experiments = {
         # go/nplus1shardsproposal
         "chromium.add_one_test_shard": 10,

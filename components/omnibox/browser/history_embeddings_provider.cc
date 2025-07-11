@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <optional>
 #include <string>
+#include <vector>
 
 #include "base/check.h"
 #include "base/functional/bind.h"
@@ -102,8 +103,15 @@ void HistoryEmbeddingsProvider::Stop(bool clear_cached_results,
   //   controller that they expect a slow response and the controller to
   //   accommodate it by updating its stop, debounce, and cache timers'
   //   behaviors.
-  if (!due_to_user_inactivity)
+  if (!due_to_user_inactivity && !done_) {
     done_ = true;
+    size_t erased_count = std::erase_if(matches_, [&](const auto& match) {
+      return match.type == AutocompleteMatchType::HISTORY_EMBEDDINGS_ANSWER;
+    });
+    CHECK_LE(erased_count, 1u);
+    if (erased_count)
+      NotifyListeners(!matches_.empty());
+  }
 
   // TODO(b/333770460): Once `HistoryEmbeddingsService` has a stop API, we
   //   should call it here.
@@ -190,6 +198,7 @@ std::optional<AutocompleteMatch> HistoryEmbeddingsProvider::CreateAnswerMatch(
     case history_embeddings::ComputeAnswerStatus::kUnanswerable:
     case history_embeddings::ComputeAnswerStatus::kFiltered:
     case history_embeddings::ComputeAnswerStatus::kExecutionCancelled:
+    case history_embeddings::ComputeAnswerStatus::kModelUnavailable:
       return std::nullopt;
 
     case history_embeddings::ComputeAnswerStatus::kLoading: {
@@ -221,13 +230,6 @@ std::optional<AutocompleteMatch> HistoryEmbeddingsProvider::CreateAnswerMatch(
       answer_match.contents_class = {{0, ACMatchClassification::DIM}};
       return answer_match;
     }
-
-    case history_embeddings::ComputeAnswerStatus::kModelUnavailable:
-      return CreateAnswerMatchHelper(
-          score,
-          l10n_util::GetStringUTF16(IDS_HISTORY_EMBEDDINGS_ANSWER_HEADING),
-          l10n_util::GetStringUTF16(
-              IDS_HISTORY_EMBEDDINGS_ANSWERER_ERROR_MODEL_UNAVAILABLE));
 
     case history_embeddings::ComputeAnswerStatus::kExecutionFailure:
       return CreateAnswerMatchHelper(

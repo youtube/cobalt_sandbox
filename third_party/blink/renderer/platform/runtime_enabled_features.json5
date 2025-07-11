@@ -461,7 +461,7 @@
       name: "AudioVideoTracks",
       status: "experimental",
     },
-    // Killswitch activated for crbug.com/365405756; need to re-enable this.
+    // Re-enable this after crbug.com/378027651 is fixed.
     {
       name: "AuraScrollbarUsesNinePatchTrack",
       status: "test",
@@ -753,7 +753,7 @@
     },
     {
       name: "ClipboardItemWithDOMStringSupport",
-      status: "test",
+      status: "experimental",
     },
     {
       name: "ClipPathRejectEmptyPaths",
@@ -1193,7 +1193,7 @@
     {
       // crbug.com/359616070
       name: "CSSRelativeColorLateResolveAlways",
-      status: "stable",
+      status: "experimental",
     },
     {
       // crbug.com/365818844
@@ -1559,6 +1559,15 @@
       status: "stable",
     },
     {
+      // Enables DocumentIsolationPolicy.
+      // See https://https://github.com/WICG/document-isolation-policy.
+      name: "DocumentIsolationPolicy",
+      status: "experimental",
+      origin_trial_feature_name: "DocumentIsolationPolicy",
+      origin_trial_os: ["win", "mac", "linux", "chromeos"],
+      base_feature: "none",
+    },
+    {
       name: "DocumentOpenOriginAliasRemoval",
       status: "experimental",
       copied_from_base_feature_if: "overridden",
@@ -1662,8 +1671,7 @@
     },
     {
       name: "ElementCapture",
-      origin_trial_feature_name: "ElementCapture",
-      status: {"Android": "", "default": "experimental"},
+      status: {"Android": "", "default": "stable"},
     },
     {
       // TODO(crbug.fom/41492947) This is the "old" version of getInnerHTML()
@@ -1787,7 +1795,7 @@
       depends_on: ["FedCm"],
       public: true,
       browser_process_read_access: true,
-      status: "experimental",
+      status: "stable",
       base_feature: "none",
       origin_trial_feature_name: "FedCmContinueOnBundle",
       origin_trial_allows_third_party: true,
@@ -1803,7 +1811,7 @@
       name: "FedCmButtonMode",
       depends_on: ["FedCm"],
       public: true,
-      status: "experimental",
+      status: "stable",
       base_feature: "none",
       origin_trial_feature_name: "FedCmButtonMode",
       origin_trial_allows_third_party: true,
@@ -2005,7 +2013,7 @@
     {
       // crbug.com/40755728
       name: "FindRubyInPage",
-      status: "test",
+      status: "stable",
     },
     {
       name: "FindTextInReadonlyTextInput",
@@ -2033,6 +2041,7 @@
       origin_trial_feature_name: "FledgeBiddingAndAuctionServer",
       origin_trial_allows_third_party: true,
       base_feature: "none",
+      status: "stable",
     },
     {
       name: "FledgeCustomMaxAuctionAdComponents",
@@ -2050,41 +2059,8 @@
       status: "stable",
     },
     {
-      name: "FledgeFeatureDetectAll",
-      // FledgeFeatureDetectAll should be enabled by any feature-detectable
-      // experiment that enters trials after it got created; this makes it easy
-      // to polyfill by only checking older things, and makes it serve its
-      // purpose of modularly advertising new things.
-      implied_by: ["FledgeAuctionDealSupport",
-                   "FledgePermitCrossOriginTrustedSignals",
-                   "FledgeRealTimeReporting",
-                   "FledgeSellerNonce",
-                   "FledgeTrustedSignalsKVv2Support"],
-      base_feature: "none",
-    },
-    {
-      name: "FledgeFeatureDetection",
-      // FledgeFeatureDetection should be on if any of the features it aims
-      // to help detect is on.
-      implied_by: ["FledgeAuctionDealSupport",
-                   "FledgeCustomMaxAuctionAdComponents",
-                   "FledgeDeprecatedRenderURLReplacements",
-                   "FledgePermitCrossOriginTrustedSignals",
-                   "FledgeRealTimeReporting",
-                   "FledgeReportingTimeout",
-                   "FledgeSellerNonce",
-                   "FledgeTrustedSignalsKVv2Support"],
-      base_feature: "none",
-    },
-    {
       name: "FledgeMultiBid",
       public: true,
-      status: "stable",
-    },
-    {
-      // Permit trusted signals to come cross-origin, subject to CORS on the
-      // trusted server side and opt-in on the worklet script side.
-      name: "FledgePermitCrossOriginTrustedSignals",
       status: "stable",
     },
     {
@@ -2278,7 +2254,7 @@
     },
     {
       name: "HighlightInheritance",
-      status: "stable",
+      status: "experimental",
     },
     {
       name: "HighlightPointerEvents",
@@ -2403,6 +2379,10 @@
       status: {"Android": "stable"},
     },
     {
+      name: "IndexedDbGetAllRecords",
+      status: "experimental",
+    },
+    {
       name: "InertElementNonEditable",
       status: "stable",
     },
@@ -2462,6 +2442,10 @@
       status: {"Android": "test", "default": "stable"},
     },
     {
+      // Improved support for debugging CSSNestedDeclarations.
+      name: "InspectorGhostRules",
+    },
+    {
       name: "InstalledApp",
       public: true,
       status: "stable",
@@ -2490,6 +2474,11 @@
     {
       name: "InvisibleSVGAnimationThrottling",
       status: "stable",
+    },
+    {
+      name: "JavaScriptCompileHintsMagicAlwaysRuntime",
+      status: "experimental",
+      origin_trial_feature_name: "JavaScriptCompileHintsMagicAlways",
     },
     {
       name: "JavaScriptCompileHintsMagicRuntime",
@@ -2535,13 +2524,6 @@
     {
       // This is a killswitch for a bug fix that is shipping in M128.
       name: "LabelAndDelegatesFocusNewHandling",
-      status: "stable",
-    },
-    {
-      // This feature makes HTMLLabelElement::DefaultEventHandler always call
-      // HTMLElement::DefaultEventHandler instead of only doing so
-      // conditionally. Shipping in M123 so should be safe to remove in M127.
-      name: "LabelEventHandlerCallSuper",
       status: "stable",
     },
     {
@@ -2841,6 +2823,10 @@
     {
       name: "MoveToParagraphStartOrEndSkipsNonEditable",
       status: "stable",
+    },
+    {
+      name: "MultipleImportMaps",
+      status: "experimental",
     },
     {
       name: "MultiSelectDeselectWhenOnlyOption",
@@ -3188,7 +3174,7 @@
       status: "experimental",
     },
     {
-      name: "PartitionVisitedLinkDatabase",
+      name: "PartitionVisitedLinkDatabaseWithSelfLinks",
       status: {"iOS": "", "default": "experimental"},
     },
     // This is to add an option to enable the Reveal button on password inputs while waiting ::reveal gets standardized.
@@ -3264,7 +3250,7 @@
       name: "PermissionElement",
       origin_trial_feature_name: "PermissionElement",
       origin_trial_os: ["win", "mac", "linux", "fuchsia", "chromeos"],
-      status: "experimental",
+      status: {"Android": "", "default": "experimental"},
       public: true,
       base_feature_status: "enabled",
       copied_from_base_feature_if: "overridden",
@@ -3818,7 +3804,18 @@
       // SelectAudioOutput API
       // https://chromestatus.com/feature/5164535504437248
       name: "SelectAudioOutput",
-      status: "test",
+      status: {
+        "Android": "",
+        "default": "test",
+      },
+    },
+    {
+      // The selectedcontentelement attribute is for connecting select elements
+      // to arbitrary <selectedcontent> elements.
+      // https://github.com/openui/open-ui/issues/1063
+      name: "SelectedcontentelementAttribute",
+      status: "experimental",
+      depends_on: ["CustomizableSelect"],
     },
     {
       // Implement Selection API across shadow DOM
@@ -3835,6 +3832,13 @@
       status: "stable",
     },
     {
+      // Update HandleMousePressEvent to continue handling event, even after a
+      // focus slided from shadow host with delegatesFocus.
+      // See https://crbug.com/40622041
+      name: "SelectionOnShadowDOMWithDelegatesFocus",
+      status: "experimental",
+    },
+    {
       // Sets the minimum target size of <option> in <select> to 24x24 CSS
       // pixels to meet Accessibility standards.
       // https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html
@@ -3846,7 +3850,7 @@
       // only <option>, <optgroup>, and <hr>.
       // https://github.com/whatwg/html/issues/10310
       name: "SelectParserRelaxation",
-      status: "stable",
+      status: "experimental",
       public: true,
     },
     {
@@ -4152,6 +4156,10 @@
       status: "stable",
     },
     {
+      name: "SvgInlineRootPixelSnappingScaleAdjustment",
+      status: "test",
+    },
+    {
       name: "SvgNoPixelSnappingScaleAdjustment",
       status: "stable",
     },
@@ -4280,6 +4288,11 @@
       status: "experimental",
     },
     {
+      // crbug.com/379254069
+      name: "TextTransformAndSecurityFix",
+      status: "stable",
+    },
+    {
       // Support for the timeline-scope property.
       //
       // https://drafts.csswg.org/scroll-animations-1/#timeline-scope
@@ -4292,6 +4305,10 @@
       public: true,
       status: "stable",
       base_feature: "none",
+    },
+    {
+      name: "TimestampBasedCLSTracking",
+      status: "experimental"
     },
     {
       name: "TimeZoneChangeEvent",
@@ -4813,6 +4830,10 @@
       name: "WebGPUDeveloperFeatures",
       base_feature: "none",
       public: true,
+    },
+    {
+      name: "WebGPUDeviceAdapterInfo",
+      status: "stable",
     },
     {
       // WebGPU experimental features are meant for features that would

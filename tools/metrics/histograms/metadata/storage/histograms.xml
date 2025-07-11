@@ -359,6 +359,24 @@ chromium-metrics-reviews@google.com.
   </token>
 </histogram>
 
+<histogram name="IndexedDB.WrappedBlobLoadTime" units="ms"
+    expires_after="2025-04-20">
+  <owner>estade@chromium.org</owner>
+  <owner>chrome-owp-storage@google.com</owner>
+  <summary>
+    Logs the amount of time taken to load a blob from the IDB backing store.
+    This is measured from the renderer, starting when the bytes are requested
+    from the renderer process and finishing when loading is complete i.e. all
+    bytes are available in the renderer process. For simplicity's sake, this is
+    only logged for large values automatically wrapped in blobs, but the results
+    should be applicable to explicit Blobs as well.
+
+    If the blob bytes need to be unwrapped (decompressed), the time it takes to
+    do so is NOT taken into account. If interested in total time to receive the
+    uncompressed blob bytes, another histogram would need to be added.
+  </summary>
+</histogram>
+
 <histogram name="LevelDBEnv.DeleteTableBackupFile" enum="BooleanSuccess"
     expires_after="2025-04-27">
   <owner>ayui@chromium.org</owner>
@@ -438,6 +456,30 @@ chromium-metrics-reviews@google.com.
     Methods where leveldb's Mojo environment has IO errors. This histogram has
     expired between M87-106.
   </summary>
+</histogram>
+
+<histogram name="Sql.Database.Open.FirstAttempt.Error.{DatabaseTag}"
+    enum="SqliteResultCode" expires_after="2025-12-03">
+  <owner>anthonyvd@chromium.org</owner>
+  <owner>etienneb@chromium.org</owner>
+  <summary>
+    Reports sqlite errors triggered during the first attempt at opening the
+    {DatabaseTag} database.
+  </summary>
+  <token key="DatabaseTag" variants="DatabaseTag"/>
+</histogram>
+
+<histogram name="Sql.Database.Open.SecondAttempt.Error.{DatabaseTag}"
+    enum="SqliteResultCode" expires_after="2025-12-03">
+  <owner>anthonyvd@chromium.org</owner>
+  <owner>etienneb@chromium.org</owner>
+  <summary>
+    Reports sqlite errors triggered during the second attempt at opening the
+    {DatabaseTag} database. Databases can sometimes trigger a second open
+    attempt if the caller-provided error callback razes the database on open
+    failure.
+  </summary>
+  <token key="DatabaseTag" variants="DatabaseTag"/>
 </histogram>
 
 <histogram name="Sql.Recovery.Result" enum="SqlRecoveryResult"

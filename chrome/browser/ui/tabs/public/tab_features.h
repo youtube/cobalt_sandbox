@@ -13,12 +13,11 @@
 #include "base/memory/weak_ptr.h"
 
 class ChromeAutofillAiClient;
-class FedCmAccountSelectionViewController;
 class LensOverlayController;
+class PinnedTranslateActionListener;
 class Profile;
 class ReadAnythingSidePanelController;
 class SidePanelRegistry;
-class PinnedTranslateActionListener;
 
 namespace commerce {
 class CommerceUiTabHelper;
@@ -27,6 +26,10 @@ class CommerceUiTabHelper;
 namespace content {
 class WebContents;
 }  // namespace content
+
+namespace contextual_cueing {
+class ContextualCueingHelper;
+}  // namespace contextual_cueing
 
 namespace customize_chrome {
 class SidePanelController;
@@ -48,9 +51,9 @@ namespace privacy_sandbox {
 class PrivacySandboxTabObserver;
 }  // namespace privacy_sandbox
 
-namespace contextual_cueing {
-class ContextualCueingHelper;
-}  // namespace contextual_cueing
+namespace sync_sessions {
+class SyncSessionsRouterTabHelper;
+}  // namespace sync_sessions
 
 namespace tabs {
 
@@ -78,11 +81,6 @@ class TabFeatures {
   enterprise_data_protection::DataProtectionNavigationController*
   data_protection_controller() {
     return data_protection_controller_.get();
-  }
-
-  FedCmAccountSelectionViewController*
-  fedcm_account_selection_view_controller() {
-    return fedcm_account_selection_view_controller_.get();
   }
 
   permissions::PermissionIndicatorsTabData* permission_indicators_tab_data() {
@@ -154,8 +152,6 @@ class TabFeatures {
   std::unique_ptr<
       enterprise_data_protection::DataProtectionNavigationController>
       data_protection_controller_;
-  std::unique_ptr<FedCmAccountSelectionViewController>
-      fedcm_account_selection_view_controller_;
 
   std::unique_ptr<permissions::PermissionIndicatorsTabData>
       permission_indicators_tab_data_;
@@ -190,6 +186,10 @@ class TabFeatures {
   // window-scoped extension side-panel manager.
   std::unique_ptr<extensions::ExtensionSidePanelManager>
       extension_side_panel_manager_;
+
+  // Forwards tab-related events to sync.
+  std::unique_ptr<sync_sessions::SyncSessionsRouterTabHelper>
+      sync_sessions_router_;
 
   // Holds subscriptions for TabInterface callbacks.
   std::vector<base::CallbackListSubscription> tab_subscriptions_;

@@ -97,9 +97,9 @@ class IntegrationTests : public ::testing::Test {
  protected:
   // Launches the installed app.
   void LaunchApp() {
-    std::optional<base::FilePath> install_dir = GetInstallDirectory();
-    ASSERT_TRUE(install_dir);
-    base::CommandLine command_line(install_dir->AppendASCII(kExecutableName));
+    std::optional<base::FilePath> exe_path = FindExistingInstall();
+    ASSERT_TRUE(exe_path);
+    base::CommandLine command_line(*exe_path);
     // This will change the verification key to be used by the
     // CloudPolicyValidator. It will allow for the policy data provided by tests
     // to pass signature validation.
@@ -338,9 +338,9 @@ TEST_F(IntegrationTests, Uninstall) {
   ASSERT_NO_FATAL_FAILURE(LaunchApp());
   ASSERT_NO_FATAL_FAILURE(WaitForServerStart());
 
-  std::optional<base::FilePath> install_dir = GetInstallDirectory();
-  ASSERT_TRUE(install_dir);
-  base::CommandLine command_line(install_dir->AppendASCII(kExecutableName));
+  std::optional<base::FilePath> exe_path = FindExistingInstall();
+  ASSERT_TRUE(exe_path);
+  base::CommandLine command_line(*exe_path);
   command_line.AppendSwitch(kUninstallSwitch);
   base::Process uninstall_process = base::LaunchProcess(command_line, {});
   ASSERT_TRUE(uninstall_process.IsValid());
@@ -472,30 +472,27 @@ TEST_F(IntegrationTests, ReloadsTokens) {
   ASSERT_NO_FATAL_FAILURE(LaunchApp());
   ASSERT_NO_FATAL_FAILURE(WaitForServerStart());
 
-  // Attempt a registration with the invalid enrollment token, it should fail.
-  ASSERT_NO_FATAL_FAILURE(
-      StoreEnrollmentToken(policy::kInvalidEnrollmentToken));
   test_server_.ExpectOnce(
       {CreateEventLogMatcher(
           test_server_,
           {{proto::EnterpriseCompanionEvent::kBrowserEnrollmentEvent,
             EnterpriseCompanionStatus::FromDeviceManagementStatus(
-                policy::DM_STATUS_SERVICE_MANAGEMENT_TOKEN_INVALID)}})},
+                policy::DM_STATUS_SERVICE_MANAGEMENT_TOKEN_INVALID)},
+           {proto::EnterpriseCompanionEvent::kBrowserEnrollmentEvent,
+            EnterpriseCompanionStatus::Success()},
+           {proto::EnterpriseCompanionEvent::kPolicyFetchEvent,
+            EnterpriseCompanionStatus::Success()}})},
       CreateLogResponse());
+
+  // Attempt a registration with the invalid enrollment token, it should fail.
+  ASSERT_NO_FATAL_FAILURE(
+      StoreEnrollmentToken(policy::kInvalidEnrollmentToken));
   EXPECT_TRUE(CreateAppFetchPolicies()->Run().EqualsDeviceManagementStatus(
       policy::DM_STATUS_SERVICE_MANAGEMENT_TOKEN_INVALID));
 
   // Change the enrollment token externally and attempt enrollment again, it
   // should succeed.
   ASSERT_NO_FATAL_FAILURE(StoreEnrollmentToken(kFakeEnrollmentToken));
-  test_server_.ExpectOnce(
-      {CreateEventLogMatcher(
-          test_server_,
-          {{proto::EnterpriseCompanionEvent::kBrowserEnrollmentEvent,
-            EnterpriseCompanionStatus::Success()},
-           {proto::EnterpriseCompanionEvent::kPolicyFetchEvent,
-            EnterpriseCompanionStatus::Success()}})},
-      CreateLogResponse());
   EXPECT_TRUE(CreateAppFetchPolicies()->Run().ok());
 
   ASSERT_NO_FATAL_FAILURE(ExpectDefaultPolicyValuesPersisted());

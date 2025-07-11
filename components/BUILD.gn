@@ -9,6 +9,7 @@ import("//build/config/features.gni")
 import("//build/config/ui.gni")
 import("//components/compose/features.gni")
 import("//components/enterprise/buildflags/buildflags.gni")
+import("//components/guest_view/buildflags/buildflags.gni")
 import("//components/nacl/features.gni")
 import("//components/optimization_guide/features.gni")
 import("//components/safe_browsing/buildflags.gni")
@@ -222,7 +223,6 @@ test("components_unittests") {
     "//components/enterprise/common:unit_tests",
     "//components/enterprise/connectors/core:unit_tests",
     "//components/enterprise/obfuscation/core:unit_tests",
-    "//components/facilitated_payments/core/metrics:unit_tests",
     "//components/facilitated_payments/core/util:unit_tests",
     "//components/favicon/core:unit_tests",
     "//components/favicon_base:unit_tests",
@@ -646,6 +646,7 @@ test("components_unittests") {
       "//components/facilitated_payments/android/java",
       "//components/facilitated_payments/content/browser:unit_tests",
       "//components/facilitated_payments/core/browser:unit_tests",
+      "//components/facilitated_payments/core/metrics:unit_tests",
       "//components/gcm_driver/instance_id:test_support",
       "//components/gcm_driver/instance_id/android:instance_id_driver_java",
       "//components/gcm_driver/instance_id/android:instance_id_driver_test_support_java",
@@ -700,16 +701,16 @@ test("components_unittests") {
   if (!is_android && !is_ios) {
     deps += [
       "//components/access_code_cast/common:unit_tests",
-
-      # See comment in components / guest_view / browser / BUILD.gn for why
-      # guest_view is currently non - mobile.
-      "//components/guest_view/browser:unit_tests",
       "//components/live_caption:unit_tests",
       "//components/soda:unit_tests",
       "//components/storage_monitor:unit_tests",
       "//components/web_modal:unit_tests",
       "//components/zoom:unit_tests",
     ]
+  }
+
+  if (enable_guest_view) {
+    deps += [ "//components/guest_view/browser:unit_tests" ]
   }
 
   if (!is_android && !is_ios && (!is_fuchsia || !optimize_for_size)) {

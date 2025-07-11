@@ -110,12 +110,6 @@ BASE_FEATURE(kBackgroundModeAllowRestart,
              base::FEATURE_DISABLED_BY_DEFAULT);
 #endif  // BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 
-#if BUILDFLAG(IS_CHROMEOS)
-BASE_FEATURE(kQuickOfficeForceFileDownload,
-             "QuickOfficeForceFileDownload",
-             base::FEATURE_ENABLED_BY_DEFAULT);
-#endif  // BUILDFLAG(IS_CHROMEOS)
-
 #if BUILDFLAG(IS_ANDROID)
 // Enable boarding pass detector on Chrome Android.
 BASE_FEATURE(kBoardingPassDetector,
@@ -146,13 +140,11 @@ BASE_FEATURE(kEnableCertManagementUIV2Write,
              "EnableCertManagementUIV2Write",
              base::FEATURE_DISABLED_BY_DEFAULT);
 
-#if BUILDFLAG(IS_CHROMEOS_ASH)
-// Enables or disables "usm" service in the list of user services returned by
-// userInfo Gaia message.
-BASE_FEATURE(kCrOSEnableUSMUserService,
-             "CrOSEnableUSMUserService",
-             base::FEATURE_ENABLED_BY_DEFAULT);
+BASE_FEATURE(kEnableCertManagementUIV2EditCerts,
+             "EnableCertManagementUIV2EditCerts",
+             base::FEATURE_DISABLED_BY_DEFAULT);
 
+#if BUILDFLAG(IS_CHROMEOS_ASH)
 // Enable project Crostini, Linux VMs on Chrome OS.
 BASE_FEATURE(kCrostini, "Crostini", base::FEATURE_DISABLED_BY_DEFAULT);
 
@@ -340,6 +332,11 @@ BASE_FEATURE(kForcedAppRelaunchOnPlaceholderUpdate,
 // of languages.
 BASE_FEATURE(kGeoLanguage, "GeoLanguage", base::FEATURE_DISABLED_BY_DEFAULT);
 
+#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
+// Controls whether the Glic feature is enabled.
+BASE_FEATURE(kGlic, "Glic", base::FEATURE_DISABLED_BY_DEFAULT);
+#endif
+
 // Force Privacy Guide to be available even if it would be unavailable
 // otherwise. This is meant for development and test purposes only.
 BASE_FEATURE(kPrivacyGuideForceAvailable,
@@ -459,7 +456,7 @@ BASE_FEATURE(kHappinessTrackingSurveysForWallpaperSearch,
 // Enables or disables the Happiness Tracking System for Chrome What's New.
 BASE_FEATURE(kHappinessTrackingSurveysForDesktopWhatsNew,
              "HappinessTrackingSurveysForDesktopWhatsNew",
-             base::FEATURE_DISABLED_BY_DEFAULT);
+             base::FEATURE_ENABLED_BY_DEFAULT);
 const base::FeatureParam<base::TimeDelta>
     kHappinessTrackingSurveysForDesktopWhatsNewTime{
         &kHappinessTrackingSurveysForDesktopWhatsNew, "whats-new-time",
@@ -1051,6 +1048,17 @@ BASE_FEATURE(kSafetyHubFollowup,
              "SafetyHubFollowup",
              base::FEATURE_DISABLED_BY_DEFAULT);
 
+// Enables Safety Hub organic HaTS survey on Android.
+BASE_FEATURE(kSafetyHubAndroidOrganicSurvey,
+             "SafetyHubAndroidOrganicSurvey",
+             base::FEATURE_DISABLED_BY_DEFAULT);
+
+constexpr base::FeatureParam<std::string> kSafetyHubAndroidOrganicTriggerId(
+    &kSafetyHubAndroidOrganicSurvey,
+    "trigger_id",
+    /*default_value=*/
+    "");
+
 // Enables Safety Hub HaTS survey on Android.
 BASE_FEATURE(kSafetyHubAndroidSurvey,
              "SafetyHubAndroidSurvey",
@@ -1260,11 +1268,11 @@ BASE_FEATURE(kProcessPerSiteSkipEnterpriseUsers,
 // Enables the SkyVault (cloud-first) changes, some of which are also controlled
 // by policies: removing local storage, saving downloads and screen captures to
 // the cloud, and related UX changes, primarily in the Files App.
-BASE_FEATURE(kSkyVault, "SkyVault", base::FEATURE_DISABLED_BY_DEFAULT);
+BASE_FEATURE(kSkyVault, "SkyVault", base::FEATURE_ENABLED_BY_DEFAULT);
 
 // Enables the SkyVault V2 changes, which are also controlled by policies:
 // LocalUserFilesAllowed, DownloadDirectory and ScreenCaptureLocation.
-BASE_FEATURE(kSkyVaultV2, "SkyVaultV2", base::FEATURE_DISABLED_BY_DEFAULT);
+BASE_FEATURE(kSkyVaultV2, "SkyVaultV2", base::FEATURE_ENABLED_BY_DEFAULT);
 #endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(IS_CHROMEOS_ASH)

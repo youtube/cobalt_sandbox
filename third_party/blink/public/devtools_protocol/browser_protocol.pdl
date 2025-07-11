@@ -2322,6 +2322,9 @@ experimental domain CSS
   # Starts tracking the given node for the computed style updates
   # and whenever the computed style is updated for node, it queues
   # a `computedStyleUpdated` event with throttling.
+  # There can only be 1 node tracked for computed style updates
+  # so passing a new node id removes tracking from the previous node.
+  # Pass `undefined` to disable tracking.
   experimental command trackComputedStyleUpdatesForNode
     parameters
       optional DOM.NodeId nodeId
@@ -5704,7 +5707,9 @@ domain Network
   # Unique loader identifier.
   type LoaderId extends string
 
-  # Unique request identifier.
+  # Unique network request identifier.
+  # Note that this does not identify individual HTTP requests that are part of
+  # a network request.
   type RequestId extends string
 
   # Unique intercepted request identifier.
@@ -6218,6 +6223,7 @@ domain Network
         preflight
         other
       # Initiator JavaScript stack trace, set for Script only.
+      # Requires the Debugger domain to be enabled.
       optional Runtime.StackTrace stack
       # Initiator URL, set for Parser type or for Script type (when script is importing module) or for SignedExchange type.
       optional string url
@@ -6397,6 +6403,10 @@ domain Network
       # The cookie's name/value pair size exceeded the size limit defined in
       # RFC6265bis.
       NameValuePairExceedsMaxSize
+      # The cookie's source port value does not match the request origin's port.
+      PortMismatch
+      # The cookie's source scheme value does not match the request origin's scheme.
+      SchemeMismatch
 
   # Types of reasons why a cookie should have been blocked by 3PCD but is exempted for the request.
   experimental type CookieExemptionReason extends string
@@ -9397,7 +9407,8 @@ domain Page
       # Default dialog prompt.
       optional string defaultPrompt
 
-  # Fired for top level page lifecycle events such as navigation, load, paint, etc.
+  # Fired for lifecycle events (navigation, load, paint, etc) in the current
+  # target (including local frames).
   event lifecycleEvent
     parameters
       # Id of the frame.
@@ -10859,6 +10870,7 @@ experimental domain Storage
       excessiveReportingOrigins
       noHistograms
       insufficientBudget
+      insufficientNamedBudget
       noMatchingSourceFilterData
       notRegistered
       prohibitedByBrowserPolicy
@@ -11497,6 +11509,8 @@ domain Fetch
   depends on Page
 
   # Unique request identifier.
+  # Note that this does not identify individual HTTP requests that are part of
+  # a network request.
   type RequestId extends string
 
   # Stages of the request to handle. Request will intercept before the request is

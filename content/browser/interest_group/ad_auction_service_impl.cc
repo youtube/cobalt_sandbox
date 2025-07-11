@@ -240,9 +240,7 @@ void AdAuctionServiceImpl::JoinInterestGroup(
 
   // If the group is allowed, we also do a permissions/attestation check on
   // trusted bidding signals URL, in case it's 3rd party.
-  if (!report_result_only && group.trusted_bidding_signals_url.has_value() &&
-      base::FeatureList::IsEnabled(
-          blink::features::kFledgePermitCrossOriginTrustedSignals)) {
+  if (!report_result_only && group.trusted_bidding_signals_url.has_value()) {
     url::Origin trusted_bidding_signals_origin =
         url::Origin::Create(group.trusted_bidding_signals_url.value());
     if (!trusted_bidding_signals_origin.IsSameOriginWith(group.owner) &&
@@ -730,9 +728,9 @@ void AdAuctionServiceImpl::PreconnectSocket(
   render_frame_host()
       .GetStoragePartition()
       ->GetNetworkContext()
-      ->PreconnectSockets(/*num_streams=*/1, url,
-                          network::mojom::CredentialsMode::kOmit,
-                          network_anonymization_key);
+      ->PreconnectSockets(
+          /*num_streams=*/1, url, network::mojom::CredentialsMode::kOmit,
+          network_anonymization_key, net::MutableNetworkTrafficAnnotationTag());
 }
 
 scoped_refptr<network::SharedURLLoaderFactory>
@@ -1214,7 +1212,8 @@ void AdAuctionServiceImpl::OnGotAuctionDataAndKey(base::Uuid request_id) {
           network::mojom::CredentialsMode::kInclude,
           render_frame_host()
               .GetIsolationInfoForSubresources()
-              .network_anonymization_key());
+              .network_anonymization_key(),
+          net::MutableNetworkTrafficAnnotationTag());
 
   AdAuctionPageData* ad_auction_page_data = GetAdAuctionPageData();
   if (!ad_auction_page_data) {

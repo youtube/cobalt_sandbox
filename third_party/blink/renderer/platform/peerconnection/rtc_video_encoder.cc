@@ -41,6 +41,7 @@
 #include "media/base/media_switches.h"
 #include "media/base/media_util.h"
 #include "media/base/platform_features.h"
+#include "media/base/supported_types.h"
 #include "media/base/svc_scalability_mode.h"
 #include "media/base/video_bitrate_allocation.h"
 #include "media/base/video_frame.h"
@@ -98,8 +99,7 @@ class SignaledValue {
 
   ~SignaledValue() {
     if (IsValid() && !event->IsSignaled()) {
-      NOTREACHED_IN_MIGRATION() << "never signaled";
-      event->Signal();
+      NOTREACHED() << "never signaled";
     }
   }
 
@@ -591,9 +591,7 @@ webrtc::VideoCodecType ProfileToWebRtcVideoCodecType(
       return webrtc::kVideoCodecH265;
 #endif
     default:
-      NOTREACHED_IN_MIGRATION()
-          << "Invalid profile " << GetProfileName(profile);
-      return webrtc::kVideoCodecGeneric;
+      NOTREACHED() << "Invalid profile " << GetProfileName(profile);
   }
 }
 
@@ -1164,7 +1162,7 @@ void RTCVideoEncoder::Impl::Enqueue(FrameChunk frame_chunk) {
     // |use_native_input_| state. As a result we don't toggle
     // |use_native_input_| flag here for them.
     if (frame_buffer->type() == webrtc::VideoFrameBuffer::Type::kNative) {
-      frame = static_cast<WebRtcVideoFrameAdapter*>(frame_buffer.get())
+      frame = static_cast<WebRtcVideoFrameAdapterInterface*>(frame_buffer.get())
                   ->getMediaVideoFrame();
       if (frame->storage_type() == media::VideoFrame::STORAGE_UNOWNED_MEMORY) {
         if (use_native_input_) {
@@ -1947,8 +1945,8 @@ void RTCVideoEncoder::Impl::EncodeOneFrame(FrameChunk frame_chunk) {
   bool requires_copy_or_scale =
       frame_buffer->type() != webrtc::VideoFrameBuffer::Type::kNative;
   if (!requires_copy_or_scale) {
-    const WebRtcVideoFrameAdapter* frame_adapter =
-        static_cast<WebRtcVideoFrameAdapter*>(frame_buffer.get());
+    const WebRtcVideoFrameAdapterInterface* frame_adapter =
+        static_cast<WebRtcVideoFrameAdapterInterface*>(frame_buffer.get());
     frame = frame_adapter->getMediaVideoFrame();
     frame->set_timestamp(timestamp);
     const media::VideoFrame::StorageType storage = frame->storage_type();
@@ -2122,7 +2120,7 @@ void RTCVideoEncoder::Impl::EncodeOneFrameWithNativeInput(
         black_frame_, black_frame_->format(), black_frame_->visible_rect(),
         black_frame_->natural_size());
   } else {
-    frame = static_cast<WebRtcVideoFrameAdapter*>(frame_buffer.get())
+    frame = static_cast<WebRtcVideoFrameAdapterInterface*>(frame_buffer.get())
                 ->getMediaVideoFrame();
   }
   frame->set_timestamp(base::Microseconds(frame_chunk.timestamp_us));
@@ -2513,8 +2511,13 @@ int32_t RTCVideoEncoder::InitEncode(
       if (support_profile->scalability_modes.end() ==
           base::ranges::find_if(
               support_profile->scalability_modes,
-              [scalability_mode](const media::SVCScalabilityMode& value) {
-                return value == scalability_mode;
+              [&support_profile,
+               scalability_mode](const media::SVCScalabilityMode& value) {
+                return (value == scalability_mode) &&
+                       (!support_profile->is_software_codec ||
+                        media::MayHaveAndAllowSelectOSSoftwareEncoder(
+                            media::VideoCodecProfileToVideoCodec(
+                                support_profile->profile)));
               })) {
         return initialization_error_message;
       }
@@ -2526,19 +2529,30 @@ int32_t RTCVideoEncoder::InitEncode(
     const auto vea_supported_profiles =
         gpu_factories_->GetVideoEncodeAcceleratorSupportedProfiles().value_or(
             media::VideoEncodeAccelerator::SupportedProfiles());
+    auto it = std::find_if(
+        vea_supported_profiles.begin(), vea_supported_profiles.end(),
+        [this, &input_visible_size](
+            const media::VideoEncodeAccelerator::SupportedProfile&
+                vea_profile) {
+          return vea_profile.profile == profile_ &&
+                 (!vea_profile.is_software_codec ||
+                  media::MayHaveAndAllowSelectOSSoftwareEncoder(
+                      media::VideoCodecProfileToVideoCodec(
+                          vea_profile.profile))) &&
+                 input_visible_size.width() <=
+                     vea_profile.max_resolution.width() &&
+                 input_visible_size.height() <=
+                     vea_profile.max_resolution.height() &&
+                 input_visible_size.width() >=
+                     vea_profile.min_resolution.width() &&
+                 input_visible_size.height() >=
+                     vea_profile.min_resolution.height();
+        });
 
-    for (const auto& vea_profile : vea_supported_profiles) {
-      if (vea_profile.profile == profile_ &&
-          (input_visible_size.width() > vea_profile.max_resolution.width() ||
-           input_visible_size.height() > vea_profile.max_resolution.height() ||
-           input_visible_size.width() < vea_profile.min_resolution.width() ||
-           input_visible_size.height() < vea_profile.min_resolution.height())) {
-        LOG(ERROR) << "Requested dimensions (" << input_visible_size.ToString()
-                   << ") beyond accelerator limits ("
-                   << vea_profile.min_resolution.ToString() << " - "
-                   << vea_profile.max_resolution.ToString() << ")";
-        return initialization_error_message;
-      }
+    if (!vea_supported_profiles.empty() && it == vea_supported_profiles.end()) {
+      LOG(ERROR) << "Requested dimensions (" << input_visible_size.ToString()
+                 << ") beyond accelerator limits.";
+      return initialization_error_message;
     }
   }
 
@@ -2587,15 +2601,13 @@ int32_t RTCVideoEncoder::InitEncode(
   vea_config.inter_layer_pred = inter_layer_pred;
   vea_config.drop_frame_thresh_percentage =
       GetDropFrameThreshold(codec_settings_);
-  // When we don't have built in H264 software encoding, allow usage of any
+  // When we don't have built in H264/H265 software encoding, allow usage of any
   // software encoders provided by the platform.
-#if !BUILDFLAG(ENABLE_OPENH264) && BUILDFLAG(RTC_USE_H264)
-  if (profile_ >= media::H264PROFILE_MIN &&
-      profile_ <= media::H264PROFILE_MAX) {
+  if (media::MayHaveAndAllowSelectOSSoftwareEncoder(
+          media::VideoCodecProfileToVideoCodec(profile_))) {
     vea_config.required_encoder_type =
         media::VideoEncodeAccelerator::Config::EncoderType::kNoPreference;
   }
-#endif
 
   int32_t initialization_ret = InitializeEncoder(vea_config);
   if (initialization_ret != WEBRTC_VIDEO_CODEC_OK) {

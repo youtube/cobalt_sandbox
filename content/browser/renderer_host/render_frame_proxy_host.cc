@@ -16,6 +16,7 @@
 #include "base/hash/hash.h"
 #include "base/lazy_instance.h"
 #include "base/no_destructor.h"
+#include "base/timer/elapsed_timer.h"
 #include "base/trace_event/typed_macros.h"
 #include "base/types/optional_util.h"
 #include "content/browser/bad_message.h"
@@ -539,6 +540,7 @@ void RenderFrameProxyHost::RouteMessageEvent(
     const url::Origin& source_origin,
     const std::u16string& target_origin,
     blink::TransferableMessage message) {
+  base::ElapsedTimer timer;
   RenderFrameHostImpl* target_rfh = frame_tree_node()->current_frame_host();
   if (!target_rfh->IsRenderFrameLive()) {
     // Check if there is an inner delegate involved; if so target its main
@@ -600,9 +602,14 @@ void RenderFrameProxyHost::RouteMessageEvent(
   SiteInstanceGroup* target_group = target_rfh->GetSiteInstance()->group();
 
   bool is_embedder_to_guest_communication = false;
+  // An embedder could only target a guest's main frame, so it's enough to check
+  // for the `target_rfh` having an embedder RFH.
   if (!target_rfh->GetParentOrOuterDocument()) {
     RenderFrameHostImpl* target_embedder_rfh =
         target_rfh->GetParentOrOuterDocumentOrEmbedder();
+    // Note that this is not checking that the source and target are related,
+    // but that the source is related to the embedder, allowing frames related
+    // to the embedder to also message the guest.
     if (target_embedder_rfh &&
         site_instance_group()->IsCoopRelatedSiteInstanceGroup(
             target_embedder_rfh->GetSiteInstance()->group())) {
@@ -619,6 +626,8 @@ void RenderFrameProxyHost::RouteMessageEvent(
           source_rfh->GetOutermostMainFrame();
       RenderFrameHostImpl* source_embedder_rfh =
           source_outermost_rfh->GetParentOrOuterDocumentOrEmbedder();
+      // Note that this is not checking that the source and target are related,
+      // but that the target is related to the embedder.
       if (source_embedder_rfh &&
           target_group->IsCoopRelatedSiteInstanceGroup(
               source_embedder_rfh->GetSiteInstance()->group())) {
@@ -679,6 +688,9 @@ void RenderFrameProxyHost::RouteMessageEvent(
         // We create a RenderFrameProxyHost for the embedder in the guest's
         // render process but we intentionally do not expose the embedder's
         // opener chain to it.
+        // TODO(crbug.com/40261772): Using the main frame will lead to a null
+        // event.source if a subframe posts a message to the guest. See also
+        // https://crbug.com/41172969
         CHECK(target_rfh->is_main_frame());
         source_rfh->GetMainFrame()
             ->frame_tree_node()
@@ -689,24 +701,45 @@ void RenderFrameProxyHost::RouteMessageEvent(
       } else if (is_guest_to_embedder_communication) {
         // A RenderFrameProxyHost was already created when the guest was
         // attached.
+        // We do not create proxies for the subframes of a guest. Note that the
+        // computation of `is_embedder_to_guest_communication` above assumes
+        // that guest subframes are not targetable.
       } else {
-        // Ensure that we have a swapped-out RVH and proxy for the source frame
-        // in the target SiteInstance. If it doesn't exist, create it on demand
-        // and also create its opener chain, since that will also be accessible
-        // to the target page.
-        // TODO(crbug.com/40261772): Using the main frame here disregards
-        // the possibility of postMessaging an iframe. This is broken, and
-        // sometimes leads to null event.source.
-        // This also looks wrong if the source posted a message as it entered
-        // bfcache, such as in a pagehide handler. Could this be related to
-        // https://crbug.com/354382462 ?
-        source_rfh->frame_tree_node()->render_manager()->CreateOpenerProxies(
-            target_rfh->GetOutermostMainFrame()
-                ->frame_tree_node()
-                ->current_frame_host()
-                ->GetSiteInstance()
-                ->group(),
-            nullptr, source_rfh->browsing_context_state());
+        // Ensure that we have a proxy for the source frame in the target
+        // SiteInstance. If it doesn't exist, create it on demand and also
+        // create its opener chain, since that will also be accessible to the
+        // target page. This may be needed in rare cases such as a popup sending
+        // a postMessage to a subframe of its opener, where the subframe has no
+        // prior references to the popup.
+        //
+        // Subtle: postMessages may be sent between frames after their page has
+        // entered the back-forward cache (e.g., when dispatched from pagehide
+        // events) - see BackForwardCacheBrowserTest.PostMessageDelivered.
+        // (These messages are subsequently deferred by the target renderer
+        // until the cached page is re-activated.) In that case, it's neither
+        // correct nor possible to create proxies, as that requires going
+        // through FrameTreeNode and RenderFrameHostManager, where the current
+        // RenderFrameHost is no longer `source_rfh` but rather some other RFH
+        // in an unrelated SiteInstance. Fortunately, back-forward cache
+        // restricts GetRelatedActiveContentsCount to 1, and new on-demand
+        // proxies shouldn't ever be needed within a single FrameTree, where all
+        // frames already have references to one another. So, this case can
+        // simply be skipped. The same constraint would also apply to pending
+        // deletion RenderFrameHosts where messages could be sent from unload
+        // handlers, where it's also incorrect to create proxies in a
+        // FrameTreeNode that has moved on to some other unrelated RFH.
+        if (!source_rfh->IsInBackForwardCache() &&
+            !source_rfh->IsPendingDeletion()) {
+          // After skipping back-forward cache and pending deletion cases, we
+          // should only get here when source_rfh is the current RFH in its
+          // FrameTreeNode, since we shouldn't receive messages from
+          // speculative or pending-commit RenderFrameHosts.
+          CHECK_EQ(source_rfh,
+                   source_rfh->frame_tree_node()->current_frame_host());
+          source_rfh->frame_tree_node()->render_manager()->CreateOpenerProxies(
+              target_rfh->GetSiteInstance()->group(), nullptr,
+              source_rfh->browsing_context_state());
+        }
       }
 
       // If the message source is a cross-process subframe, its proxy will only
@@ -728,6 +761,9 @@ void RenderFrameProxyHost::RouteMessageEvent(
 
   target_rfh->PostMessageEvent(translated_source_token, source_origin_string,
                                target_origin, std::move(message));
+
+  base::UmaHistogramMicrosecondsTimes(
+      "SiteIsolation.CrossProcessPostMessageTime", timer.Elapsed());
 }
 
 void RenderFrameProxyHost::PrintCrossProcessSubframe(const gfx::Rect& rect,

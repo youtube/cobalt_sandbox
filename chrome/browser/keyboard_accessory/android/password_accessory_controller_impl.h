@@ -79,7 +79,8 @@ class PasswordAccessoryControllerImpl
   void RegisterPlusProfilesProvider(
       base::WeakPtr<AffiliatedPlusProfilesProvider> provider) override;
   void RefreshSuggestionsForField(
-      autofill::mojom::FocusedFieldType focused_field_type) override;
+      autofill::mojom::FocusedFieldType focused_field_type,
+      bool is_field_eligible_for_manual_generation) override;
   void OnGenerationRequested(
       autofill::password_generation::PasswordGenerationType type) override;
   void UpdateCredManReentryUi(
@@ -139,11 +140,12 @@ class PasswordAccessoryControllerImpl
   friend class content::WebContentsUserData<PasswordAccessoryControllerImpl>;
 
   // This struct is used to remember the meta information about the last focused
-  // field.
-  struct LastFocusedFieldInfo {
-    LastFocusedFieldInfo(url::Origin focused_origin,
-                         autofill::mojom::FocusedFieldType focused_field,
-                         bool manual_generation_available);
+  // field and the frame.
+  struct LastFocusInfo {
+    LastFocusInfo(url::Origin focused_origin,
+                  autofill::mojom::FocusedFieldType focused_field,
+                  bool generation_allowed_in_frame,
+                  bool field_eligible_for_manual_generation);
 
     // Records the origin at the time of focusing the field to double-check that
     // the frame origin hasn't changed.
@@ -154,8 +156,19 @@ class PasswordAccessoryControllerImpl
     autofill::mojom::FocusedFieldType focused_field_type =
         autofill::mojom::FocusedFieldType::kUnknown;
 
-    // If true, manual generation will be available for the focused field.
-    bool is_manual_generation_available = false;
+    // If true, password generation is available in the frame.
+    bool is_generation_allowed_in_frame = false;
+
+    // True in one of the following cases:
+    // 1) The field has type="password".
+    // 2) The field was type="password" field at some point of time.
+    // 3) The field has a variation of the word "password" in name/id
+    // attributes.
+    // 4) The server predicts the field as new password field.
+    // If true, manual password generation is allowed on the field.
+    // This, however, does not affect manual filling on the field.
+    // If false, no manual password generation should be offered on the field.
+    bool is_field_eligible_for_manual_generation = false;
   };
 
   // WebContentsObserver:
@@ -261,11 +274,12 @@ class PasswordAccessoryControllerImpl
   // null, if there is no ongoing authentication.
   std::unique_ptr<device_reauth::DeviceAuthenticator> authenticator_;
 
-  // Information about the currently focused field. This is the only place
-  // allowed to store frame-specific data. If a new field is focused or focus is
-  // lost, this data needs to be reset to std::nullopt to make sure that data
-  // related to a former frame isn't displayed incorrectly in a different one.
-  std::optional<LastFocusedFieldInfo> last_focused_field_info_ = std::nullopt;
+  // Information about the currently focused field and frame. This is the only
+  // place allowed to store frame-specific data. If a new field is focused or
+  // focus is lost, this data needs to be reset to std::nullopt to make sure
+  // that data related to a former frame isn't displayed incorrectly in a
+  // different one.
+  std::optional<LastFocusInfo> last_focus_info_ = std::nullopt;
 
   // The observer to notify if available suggestions change.
   FillingSourceObserver source_observer_;

@@ -173,9 +173,6 @@ namespace media {
 
 MEDIA_EXPORT BASE_DECLARE_FEATURE(kAudioFocusDuckFlash);
 MEDIA_EXPORT BASE_DECLARE_FEATURE(kAudioFocusLossSuspendMediaSession);
-MEDIA_EXPORT BASE_DECLARE_FEATURE(kAudioRendererAlgorithmParameters);
-MEDIA_EXPORT extern const base::FeatureParam<base::TimeDelta>
-    kAudioRendererAlgorithmStartingCapacityForEncrypted;
 MEDIA_EXPORT BASE_DECLARE_FEATURE(kAutoPictureInPictureForVideoPlayback);
 MEDIA_EXPORT BASE_DECLARE_FEATURE(kAutoplayDisableSettings);
 MEDIA_EXPORT BASE_DECLARE_FEATURE(kAVDColorSpaceChanges);
@@ -205,12 +202,14 @@ MEDIA_EXPORT BASE_DECLARE_FEATURE(kCastStreamingMacHardwareH264);
 MEDIA_EXPORT BASE_DECLARE_FEATURE(kCastStreamingWinHardwareH264);
 #endif
 MEDIA_EXPORT BASE_DECLARE_FEATURE(kCdmHostVerification);
-MEDIA_EXPORT BASE_DECLARE_FEATURE(kCdmProcessSiteIsolation);
 MEDIA_EXPORT BASE_DECLARE_FEATURE(kContextMenuCopyVideoFrame);
 MEDIA_EXPORT BASE_DECLARE_FEATURE(kContextMenuSaveVideoFrameAs);
 MEDIA_EXPORT BASE_DECLARE_FEATURE(kContextMenuSearchForVideoFrame);
 #if BUILDFLAG(CHROME_WIDE_ECHO_CANCELLATION)
 MEDIA_EXPORT BASE_DECLARE_FEATURE(kChromeWideEchoCancellation);
+#endif
+#if BUILDFLAG(IS_MAC)
+MEDIA_EXPORT BASE_DECLARE_FEATURE(kEnforceSystemEchoCancellation);
 #endif
 #if BUILDFLAG(IS_CHROMEOS)
 MEDIA_EXPORT BASE_DECLARE_FEATURE(kCrOSSystemAEC);
@@ -390,21 +389,17 @@ MEDIA_EXPORT BASE_DECLARE_FEATURE(kMediaDrmPersistentLicense);
 MEDIA_EXPORT BASE_DECLARE_FEATURE(kMediaDrmPreprovisioning);
 MEDIA_EXPORT BASE_DECLARE_FEATURE(kMediaDrmPreprovisioningAtStartup);
 MEDIA_EXPORT BASE_DECLARE_FEATURE(kMediaDrmGetStatusForPolicy);
-MEDIA_EXPORT BASE_DECLARE_FEATURE(kHlsPlayer);
 MEDIA_EXPORT BASE_DECLARE_FEATURE(kRequestSystemAudioFocus);
 MEDIA_EXPORT BASE_DECLARE_FEATURE(kUseAudioLatencyFromHAL);
-MEDIA_EXPORT BASE_DECLARE_FEATURE(kUsePooledSharedImageVideoProvider);
 MEDIA_EXPORT BASE_DECLARE_FEATURE(kAllowMediaCodecSoftwareDecoder);
 MEDIA_EXPORT BASE_DECLARE_FEATURE(kAllowMediaCodecCallsInSeparateProcess);
 #endif  // BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(ENABLE_HLS_DEMUXER)
-// The feature |kHlsPlayer| enables the use of Android's builtin media-player
-// based HLS implementation, which chrome currently relies on when playing
-// on android, while this feature enabled chrome's built-in HLS parser and
-// demuxer. When this feature is enabled, the media-player based HLS player
-// will NOT be used. This will roll out first on android, but will eventually
-// land in desktop chrome as well.
+// This feature enables chrome's built-in HLS parser and demuxer instead of
+// Android's MediaPlayer based implementation. When this feature is enabled,
+// the media-player based HLS player will NOT be used. This will roll out first
+// on android, but will eventually land in desktop chrome as well.
 MEDIA_EXPORT BASE_DECLARE_FEATURE(kBuiltInHlsPlayer);
 
 // This feature enables the buildin hls player to play and demux additional
@@ -439,7 +434,6 @@ MEDIA_EXPORT BASE_DECLARE_FEATURE(kEnableArmHwdrm);
 MEDIA_EXPORT BASE_DECLARE_FEATURE(kDirectShowGetPhotoState);
 MEDIA_EXPORT BASE_DECLARE_FEATURE(kIncludeIRCamerasInDeviceEnumeration);
 MEDIA_EXPORT BASE_DECLARE_FEATURE(kMediaFoundationVideoCapture);
-MEDIA_EXPORT BASE_DECLARE_FEATURE(kMediaFoundationVP8Decoding);
 MEDIA_EXPORT BASE_DECLARE_FEATURE(kMediaFoundationUseSoftwareRateCtrl);
 
 // For feature check of kMediaFoundationD3D11VideoCapture at runtime,
@@ -554,6 +548,7 @@ MEDIA_EXPORT std::string GetEffectiveAutoplayPolicy(
     const base::CommandLine& command_line);
 
 MEDIA_EXPORT bool IsChromeWideEchoCancellationEnabled();
+MEDIA_EXPORT bool IsSystemEchoCancellationEnforced();
 MEDIA_EXPORT bool IsDedicatedMediaServiceThreadEnabled(
     gl::ANGLEImplementation impl);
 MEDIA_EXPORT bool IsHardwareSecureDecryptionEnabled();

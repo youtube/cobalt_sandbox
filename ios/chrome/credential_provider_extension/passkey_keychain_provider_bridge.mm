@@ -5,6 +5,7 @@
 #import "ios/chrome/credential_provider_extension/passkey_keychain_provider_bridge.h"
 
 #import "base/functional/callback.h"
+#import "ios/chrome/credential_provider_extension/passkey_util.h"
 
 typedef void (^CheckEnrolledCompletionBlock)(BOOL is_enrolled, NSError* error);
 typedef void (^ErrorCompletionBlock)(NSError* error);
@@ -23,6 +24,15 @@ NSArray<NSData*>* GetSecurityDomainSecret(
                                                       length:key.size()]];
   }
   return security_domain_secrets;
+}
+
+// Returns whether there's at least one valid key in the keys array.
+bool ContainsValidKey(const PasskeyKeychainProvider::SharedKeyList keys,
+                      id<Credential> credential) {
+  NSArray<NSData*>* security_domain_secrets = GetSecurityDomainSecret(keys);
+  std::string private_key =
+      DecryptPrivateKey(credential, security_domain_secrets);
+  return !private_key.empty();
 }
 
 }  // namespace
@@ -61,6 +71,7 @@ NSArray<NSData*>* GetSecurityDomainSecret(
 }
 
 - (void)fetchSecurityDomainSecretForGaia:(NSString*)gaia
+                              credential:(id<Credential>)credential
                                  purpose:(PasskeyKeychainProvider::
                                               ReauthenticatePurpose)purpose
                               completion:
@@ -70,6 +81,7 @@ NSArray<NSData*>* GetSecurityDomainSecret(
     __weak __typeof(self) weakSelf = self;
     auto checkEnrolledCompletion = ^(BOOL is_enrolled, NSError* error) {
       [weakSelf onIsEnrolledForGaia:gaia
+                         credential:credential
                             purpose:purpose
                          completion:fetchSecurityDomainSecretCompletion
                          isEnrolled:is_enrolled
@@ -80,20 +92,25 @@ NSArray<NSData*>* GetSecurityDomainSecret(
     // If there's no valid navigation controller to show the enrollment UI, it
     // won't be possible to enroll, so only attempt to fetch keys.
     [self fetchKeysForGaia:gaia
+                credential:credential
+        canMarkKeysAsStale:YES
                    purpose:purpose
+         canReauthenticate:YES
                 completion:fetchSecurityDomainSecretCompletion
                      error:nil];
   }
 }
 
+#pragma mark - Private
+
+// Marks the security domain secret vault keys as stale and calls the completion
+// block.
 - (void)markKeysAsStaleForGaia:(NSString*)gaia
                     completion:(ProceduralBlock)completion {
   _passkeyKeychainProvider->MarkKeysAsStale(gaia, base::BindOnce(^() {
                                               completion();
                                             }));
 }
-
-#pragma mark - Private
 
 // Checks if the account associated with the provided gaia ID is enrolled and
 // calls the completion block.
@@ -109,6 +126,7 @@ NSArray<NSData*>* GetSecurityDomainSecret(
 // gaia ID. If enrolled, fetches the keys for that account. If not, enrolls the
 // account.
 - (void)onIsEnrolledForGaia:(NSString*)gaia
+                 credential:(id<Credential>)credential
                     purpose:
                         (PasskeyKeychainProvider::ReauthenticatePurpose)purpose
                  completion:(FetchSecurityDomainSecretCompletionBlock)
@@ -123,14 +141,20 @@ NSArray<NSData*>* GetSecurityDomainSecret(
     }
 
     [self fetchKeysForGaia:gaia
+                credential:credential
+        canMarkKeysAsStale:YES
                    purpose:purpose
+         canReauthenticate:YES
                 completion:fetchSecurityDomainSecretCompletion
                      error:nil];
   } else {
     __weak __typeof(self) weakSelf = self;
     auto enrollCompletion = ^(NSError* enroll_error) {
       [weakSelf fetchKeysForGaia:gaia
+                      credential:credential
+              canMarkKeysAsStale:YES
                          purpose:purpose
+               canReauthenticate:NO
                       completion:fetchSecurityDomainSecretCompletion
                            error:enroll_error];
     };
@@ -152,9 +176,15 @@ NSArray<NSData*>* GetSecurityDomainSecret(
 }
 
 // Attempts to fetch the keys for the account associated with the provided gaia
-// ID if no error occured at the previous stage.
+// ID if no error occured at the previous stage. `canReauthenticate` indicates
+// whether the user can be asked to reauthenticate by entering their GPM PIN.
+// This argument should only be set to `NO` if the user has already been asked
+// to reauthenticate.
 - (void)fetchKeysForGaia:(NSString*)gaia
+              credential:(id<Credential>)credential
+      canMarkKeysAsStale:(BOOL)canMarkKeysAsStale
                  purpose:(PasskeyKeychainProvider::ReauthenticatePurpose)purpose
+       canReauthenticate:(BOOL)canReauthenticate
               completion:(FetchSecurityDomainSecretCompletionBlock)
                              fetchSecurityDomainSecretCompletion
                    error:(NSError*)error {
@@ -168,10 +198,12 @@ NSArray<NSData*>* GetSecurityDomainSecret(
   auto fetchKeysCompletion =
       ^(const PasskeyKeychainProvider::SharedKeyList& key_list) {
         [weakSelf onKeysFetchedForGaia:gaia
+                            credential:credential
+                    canMarkKeysAsStale:canMarkKeysAsStale
                                purpose:purpose
                             completion:fetchSecurityDomainSecretCompletion
                                keyList:key_list
-                     canReauthenticate:YES];
+                     canReauthenticate:canReauthenticate];
       };
   [self fetchKeysForGaia:gaia purpose:purpose completion:fetchKeysCompletion];
 }
@@ -193,12 +225,32 @@ NSArray<NSData*>* GetSecurityDomainSecret(
 // If not, triggers the `completion`.
 - (void)
     onKeysFetchedForGaia:(NSString*)gaia
+              credential:(id<Credential>)credential
+      canMarkKeysAsStale:(BOOL)canMarkKeysAsStale
                  purpose:(PasskeyKeychainProvider::ReauthenticatePurpose)purpose
               completion:(FetchSecurityDomainSecretCompletionBlock)completion
                  keyList:(const PasskeyKeychainProvider::SharedKeyList&)keyList
        canReauthenticate:(BOOL)canReauthenticate {
   __weak __typeof(self) weakSelf = self;
   if (!keyList.empty()) {
+    if (purpose == PasskeyKeychainProvider::ReauthenticatePurpose::kDecrypt &&
+        canMarkKeysAsStale && credential &&
+        !ContainsValidKey(keyList, credential)) {
+      // Mark keys as stale and try again. `canMarkKeysAsStale` is set to `NO`
+      // to avoid getting into an infinite loop.
+      [self markKeysAsStaleForGaia:gaia
+                        completion:^() {
+                          [weakSelf fetchKeysForGaia:gaia
+                                          credential:credential
+                                  canMarkKeysAsStale:NO
+                                             purpose:purpose
+                                   canReauthenticate:canReauthenticate
+                                          completion:completion
+                                               error:nil];
+                        }];
+      return;
+    }
+
     const PasskeyKeychainProvider::SharedKeyList keys = std::move(keyList);
     // On success, check degraded recoverability.
     auto degradedRecoverabilityCompletion = ^(NSError* error) {
@@ -220,6 +272,8 @@ NSArray<NSData*>* GetSecurityDomainSecret(
       // UI. Otherwise, it won't be possible to perform reauthentication.
       [self.delegate showReauthenticationWelcomeScreen:^{
         [weakSelf reauthenticateForGaia:gaia
+                             credential:credential
+                     canMarkKeysAsStale:canMarkKeysAsStale
                                 purpose:purpose
                              completion:completion];
       }];
@@ -232,6 +286,8 @@ NSArray<NSData*>* GetSecurityDomainSecret(
 // Starts the reauthentication process for the account associated with the
 // provided gaia ID and calls the completion block.
 - (void)reauthenticateForGaia:(NSString*)gaia
+                   credential:(id<Credential>)credential
+           canMarkKeysAsStale:(BOOL)canMarkKeysAsStale
                       purpose:(PasskeyKeychainProvider::ReauthenticatePurpose)
                                   purpose
                    completion:
@@ -240,6 +296,8 @@ NSArray<NSData*>* GetSecurityDomainSecret(
       gaia, _navigationController, _navigationItemTitleView, purpose,
       base::BindOnce(^(const PasskeyKeychainProvider::SharedKeyList& key_list) {
         [self onKeysFetchedForGaia:gaia
+                        credential:credential
+                canMarkKeysAsStale:canMarkKeysAsStale
                            purpose:purpose
                         completion:completion
                            keyList:key_list

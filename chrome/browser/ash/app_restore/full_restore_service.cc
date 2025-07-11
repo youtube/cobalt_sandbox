@@ -27,12 +27,11 @@
 #include "ash/wm/window_restore/window_restore_metrics.h"
 #include "ash/wm/window_restore/window_restore_util.h"
 #include "base/barrier_callback.h"
+#include "base/check_is_test.h"
 #include "base/command_line.h"
-#include "base/files/file_util.h"
 #include "base/metrics/histogram_functions.h"
 #include "base/ranges/algorithm.h"
 #include "base/strings/string_util.h"
-#include "base/task/thread_pool.h"
 #include "base/trace_event/trace_event.h"
 #include "base/version.h"
 #include "base/version_info/version_info.h"
@@ -68,6 +67,7 @@
 #include "components/app_restore/restore_data.h"
 #include "components/app_restore/window_info.h"
 #include "components/prefs/pref_service.h"
+#include "components/session_manager/core/session_manager.h"
 #include "components/strings/grit/components_strings.h"
 #include "components/user_manager/user.h"
 #include "components/user_manager/user_manager.h"
@@ -153,10 +153,6 @@ CollectRestoreIDsForNormalBrowserWindows(
     }
   }
   return app_restore_ids;
-}
-
-bool IsFactoryTestRunningMayBlock() {
-  return base::PathExists(base::FilePath("/usr/local/factory/enabled"));
 }
 
 }  // namespace
@@ -336,6 +332,11 @@ void FullRestoreService::Init(bool& show_notification) {
     return;
   }
 
+  const bool is_primary_user = ProfileHelper::IsPrimaryProfile(profile_);
+  const RestoreOption restore_pref = static_cast<RestoreOption>(
+      prefs->GetInteger(prefs::kRestoreAppsAndPagesPrefName));
+  const bool restore_automatically = restore_pref == RestoreOption::kAlways;
+
   // If either OS pref setting nor Chrome pref setting exist, that means we
   // don't have restore data, so we don't need to consider restoration, and call
   // NewUserRestorePrefHandler to set OS pref setting.
@@ -344,11 +345,28 @@ void FullRestoreService::Init(bool& show_notification) {
         std::make_unique<NewUserRestorePrefHandler>(profile_);
     ::full_restore::FullRestoreSaveHandler::GetInstance()->AllowSave();
     MaybeInitiateAdminTemplateAutoLaunch();
+
+    if (session_manager::SessionManager::Get() &&
+        session_manager::SessionManager::Get()->session_state() ==
+            session_manager::SessionState::RMA) {
+      // RMA browser tests load stub user profile and get here. In production,
+      // RMA should run with the sign-in profile and `FullRestoreService` should
+      // be not be created.
+      CHECK_IS_TEST();
+    } else {
+      // Notifies `LoginUnlockThroughputRecorder` so that it does not wait for
+      // restore data and can start deferred post-login tasks when shelf icon
+      // animation finishes and the login metrics concludes.
+      if (is_primary_user && Shell::HasInstance() &&
+          Shell::Get()->login_unlock_throughput_recorder()) {
+        Shell::Get()
+            ->login_unlock_throughput_recorder()
+            ->FullSessionRestoreDataLoaded({}, restore_automatically);
+      }
+    }
     return;
   }
 
-  RestoreOption restore_pref = static_cast<RestoreOption>(
-      prefs->GetInteger(prefs::kRestoreAppsAndPagesPrefName));
   base::UmaHistogramEnumeration(kRestoreInitSettingHistogramName, restore_pref);
 
   ::app_restore::RestoreData* restore_data =
@@ -369,13 +387,13 @@ void FullRestoreService::Init(bool& show_notification) {
 
   // LoginUnlockThroughputRecorder needs to track when session
   // restore is done. Here we notify it of the set of normal browser windows.
-  if (ProfileHelper::IsPrimaryProfile(profile_) && Shell::HasInstance() &&
+  if (is_primary_user && Shell::HasInstance() &&
       Shell::Get()->login_unlock_throughput_recorder()) {
     Shell::Get()
         ->login_unlock_throughput_recorder()
         ->FullSessionRestoreDataLoaded(
             CollectRestoreIDsForNormalBrowserWindows(restore_data),
-            /*restore_automatically=*/restore_pref == RestoreOption::kAlways);
+            restore_automatically);
   }
 
   switch (restore_pref) {
@@ -1006,22 +1024,10 @@ void FullRestoreService::MaybeShowInformedRestoreOnboarding(bool restore_on) {
     return;
   }
 
-  base::ThreadPool::PostTaskAndReplyWithResult(
-      FROM_HERE, {base::MayBlock()},
-      base::BindOnce(&IsFactoryTestRunningMayBlock),
-      base::BindOnce(&FullRestoreService::OnShouldShowInformedRestoreOnboarding,
-                     weak_ptr_factory_.GetWeakPtr(), restore_on));
-}
-
-void FullRestoreService::OnShouldShowInformedRestoreOnboarding(
-    bool restore_on,
-    bool factory_test_running) {
-  if (!factory_test_running) {
-    CHECK(Shell::Get()->informed_restore_controller());
-    Shell::Get()
-        ->informed_restore_controller()
-        ->MaybeShowInformedRestoreOnboarding(restore_on);
-  }
+  auto* informed_restore_controller =
+      Shell::Get()->informed_restore_controller();
+  CHECK(informed_restore_controller);
+  informed_restore_controller->MaybeShowInformedRestoreOnboarding(restore_on);
 }
 
 ScopedRestoreForTesting::ScopedRestoreForTesting() {

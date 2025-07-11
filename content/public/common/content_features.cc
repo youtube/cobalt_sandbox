@@ -8,6 +8,7 @@
 
 #include "base/feature_list.h"
 #include "base/time/time.h"
+#include "build/android_buildflags.h"
 #include "build/build_config.h"
 #include "build/chromeos_buildflags.h"
 #include "build/config/chromebox_for_meetings/buildflags.h"
@@ -53,6 +54,12 @@ const base::FeatureParam<int> kAndroidSpareRendererCreationDelayMs{
 const base::FeatureParam<int> kAndroidSpareRendererTimeoutSeconds{
     &kAndroidWarmUpSpareRendererWithTimeout, "spare_renderer_timeout_seconds",
     60};
+
+// The lower memory limit to create a spare renderer after each navigation on
+// Android.
+const base::FeatureParam<int> kAndroidSpareRendererMemoryThreshold{
+    &kAndroidWarmUpSpareRendererWithTimeout, "spare_renderer_memory_threshold",
+    1077};
 
 // Launches the audio service on the browser startup.
 BASE_FEATURE(kAudioServiceLaunchOnStartup,
@@ -191,6 +198,19 @@ BASE_FEATURE(kCapturedSurfaceControlStickyPermissions,
              "CapturedSurfaceControlStickyPermissions",
              base::FEATURE_ENABLED_BY_DEFAULT);
 
+// If enabled, render processes associated only with tabs in unfocused windows
+// will be downgraded to "vis" priority, rather than remaining at "fg". This
+// will allow tabs in unfocused windows to be prioritized for OOM kill in
+// low-memory scenarios.
+BASE_FEATURE(kChangeUnfocusedPriority,
+             "ChangeUnfocusedPriority",
+#if BUILDFLAG(IS_DESKTOP_ANDROID)
+             base::FEATURE_ENABLED_BY_DEFAULT
+#else
+             base::FEATURE_DISABLED_BY_DEFAULT
+#endif  // BUILDFLAG(IS_DESKTOP_ANDROID)
+);
+
 // Clear the window.name property for the top-level cross-site navigations that
 // swap BrowsingContextGroups(BrowsingInstances).
 BASE_FEATURE(kClearCrossSiteCrossBrowsingContextGroupWindowName,
@@ -289,6 +309,10 @@ BASE_FEATURE(kDigitalGoodsApi,
 // behavior (database persistence, DIPS deletion) will be gated by params.
 BASE_FEATURE(kDIPS, "DIPS", base::FEATURE_ENABLED_BY_DEFAULT);
 
+// Flag used to control |interaction_ttl| separately from the kDIPS feature
+// flag.
+BASE_FEATURE(kDIPSTtl, "DIPSTtl", base::FEATURE_ENABLED_BY_DEFAULT);
+
 // Set whether DIPS persists its database to disk.
 const base::FeatureParam<bool> kDIPSPersistedDatabaseEnabled{
     &kDIPS, "persist_database", true};
@@ -317,7 +341,7 @@ const base::FeatureParam<base::TimeDelta> kDIPSTimerDelay{&kDIPS, "timer_delay",
 // NOTE: Updating this param name (to reflect WAA) is deemed unnecessary as far
 // as readability is concerned.
 const base::FeatureParam<base::TimeDelta> kDIPSInteractionTtl{
-    &kDIPS, "interaction_ttl", base::Days(45)};
+    &kDIPSTtl, "interaction_ttl", base::Days(45)};
 
 constexpr base::FeatureParam<content::DIPSTriggeringAction>::Option
     kDIPSTriggeringActionOptions[] = {
@@ -373,6 +397,11 @@ BASE_FEATURE(kWebContentsDiscard,
 // enters BFCache.
 BASE_FEATURE(kDisconnectExtensionMessagePortWhenPageEntersBFCache,
              "DisconnectExtensionMessagePortWhenPageEntersBFCache",
+             base::FEATURE_ENABLED_BY_DEFAULT);
+
+// Enables the Origin Trial of Document-Isolation-Policy.
+BASE_FEATURE(kDocumentIsolationPolicyOriginTrial,
+             "DocumentIsolationPolicyOriginTrial",
              base::FEATURE_ENABLED_BY_DEFAULT);
 
 // Enable drawing under System Bars within DisplayCutout.
@@ -923,6 +952,19 @@ constexpr base::FeatureParam<double> kProcessPerSiteMainFrameTotalMemoryLimit{
     &kProcessPerSiteUpToMainFrameThreshold,
     "ProcessPerSiteMainFrameTotalMemoryLimit", 2 * 1024 * 1024 * 1024u};
 
+// Enables auto preloading for fetch requests before invoking the fetch handler
+// in ServiceWorker. The fetch request inside the fetch handler is resolved with
+// this preload response. If the fetch handler result is fallback, uses this
+// preload request as a fallback network request.
+//
+// Unlike navigation preload, this preloading is applied to subresources. Also,
+// it doesn't require a developer opt-in.
+//
+// crbug.com/1472634 for more details.
+BASE_FEATURE(kServiceWorkerAutoPreload,
+             "ServiceWorkerAutoPreload",
+             base::FEATURE_DISABLED_BY_DEFAULT);
+
 // Enables ServiceWorker static routing API.
 // https://github.com/WICG/service-worker-static-routing-api
 BASE_FEATURE(kServiceWorkerStaticRouter,
@@ -1414,7 +1456,8 @@ const base::FeatureParam<CapturingState>::Option kNavigationCapturingParams[] =
     {{CapturingState::kDefaultOn, "on_by_default"},
      {CapturingState::kDefaultOff, "off_by_default"},
      {CapturingState::kReimplDefaultOn, "reimpl_default_on"},
-     {CapturingState::kReimplDefaultOff, "reimpl_default_off"}};
+     {CapturingState::kReimplDefaultOff, "reimpl_default_off"},
+     {CapturingState::kReimplOnViaClientMode, "reimpl_on_via_client_mode"}};
 
 const base::FeatureParam<CapturingState> kNavigationCapturingDefaultState{
     &kPwaNavigationCapturing, "link_capturing_state",

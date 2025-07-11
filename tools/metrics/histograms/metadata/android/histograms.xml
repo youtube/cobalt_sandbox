@@ -140,6 +140,7 @@ chromium-metrics-reviews@google.com.
   <variant name=".AdsBlocked"/>
   <variant name=".ArCoreUpgrade"/>
   <variant name=".AutoDarkWebContents"/>
+  <variant name=".CctAccountMismatchNotice"/>
   <variant name=".ChromeSurvey"/>
   <variant name=".CollaborationMemberAdded"/>
   <variant name=".CollaborationRemoved"/>
@@ -204,6 +205,7 @@ chromium-metrics-reviews@google.com.
 <variants name="SearchActivityIntentOriginVariants">
   <variant name="" summary="overall"/>
   <variant name=".CustomTab" summary="Chrome Custom Tab"/>
+  <variant name=".Hub" summary="Hub search feature"/>
   <variant name=".Launcher" summary="Launcher / Jump-start Omnibox"/>
   <variant name=".SearchWidget" summary="(old) Search widget"/>
   <variant name=".ShortcutsWidget" summary="(new) Shortcuts widget"/>
@@ -810,6 +812,45 @@ chromium-metrics-reviews@google.com.
     ChildProcessConnections that were dropped due to the BindingManager reaching
     the connection limit. This value accumulates while the app is running and is
     emitted upong the app being backgrounded at which time the counter is reset.
+  </summary>
+</histogram>
+
+<histogram name="Android.BrowserControls.OutstandingChangedOnFinish"
+    enum="BooleanChanged" expires_after="2025-02-23">
+  <owner>skym@chromium.org</owner>
+  <owner>pnoland@chromium.org</owner>
+  <summary>
+    Records if the outstanding navigations set changed when a navigation is
+    finished. This means the navigation id was not previously tracked, either
+    because it never started or it already finished once. When things are
+    working correctly, this should always be true. There are known tests and
+    likely some real scenarios that currently violate this.
+  </summary>
+</histogram>
+
+<histogram name="Android.BrowserControls.OutstandingChangedOnStart"
+    enum="BooleanChanged" expires_after="2025-02-23">
+  <owner>skym@chromium.org</owner>
+  <owner>pnoland@chromium.org</owner>
+  <summary>
+    Records if the outstanding navigations set changed when a navigation is
+    started. This means the navigation id was previously tracked and then the
+    same id was claimed to be started again. If things are working correctly,
+    this metric should always be true. No existing violations of this are
+    currently known.
+  </summary>
+</histogram>
+
+<histogram name="Android.BrowserControls.OutstandingNavigationsOnFinish"
+    units="navigations" expires_after="2025-02-23">
+  <owner>skym@chromium.org</owner>
+  <owner>pnoland@chromium.org</owner>
+  <summary>
+    Records the number of outstanding navigations that are blocking the browser
+    controls from being scrollable. Recorded when a navigation completes.
+    Typically the value should be 0 or maybe 1 for a very short amount of time.
+    Large numbers here indicate there's a bug that's keeping the controls
+    visible.
   </summary>
 </histogram>
 
@@ -1849,7 +1890,7 @@ chromium-metrics-reviews@google.com.
 
 <histogram base="true"
     name="Android.GridTabSwitcher.Animation.FirstFrameLatency" units="ms"
-    expires_after="2024-12-20">
+    expires_after="2025-12-20">
   <owner>ckitagawa@chromium.org</owner>
   <owner>clank-isochron-team@google.com</owner>
   <summary>
@@ -1861,7 +1902,7 @@ chromium-metrics-reviews@google.com.
 </histogram>
 
 <histogram base="true" name="Android.GridTabSwitcher.Animation.TotalDuration"
-    units="ms" expires_after="2024-12-20">
+    units="ms" expires_after="2025-12-20">
   <owner>ckitagawa@chromium.org</owner>
   <owner>clank-isochron-team@google.com</owner>
   <summary>
@@ -1937,6 +1978,18 @@ chromium-metrics-reviews@google.com.
     programmatic pane switches triggered as a side effect of other user actions
     such as the back button, Incognito reauth dialog, etc. See
     &quot;Android.Hub.PaneFocused&quot; for all pane focus events.
+  </summary>
+</histogram>
+
+<histogram name="Android.HubSearch.SearchBoxEntrypointV2"
+    enum="HubSearchEntrypoint" expires_after="2025-03-30">
+  <owner>bjfong@google.com</owner>
+  <owner>wylieb@chromium.org</owner>
+  <owner>clank-hub-dev@google.com</owner>
+  <summary>
+    Reports under which context (incognito or non-incognito) and visual
+    component (search box or loupe) Hub Search is entered through. This includes
+    tablet specific data which only has the loupe icon enabled.
   </summary>
 </histogram>
 
@@ -2153,18 +2206,34 @@ chromium-metrics-reviews@google.com.
 
   <owner>cduvall@chromium.org</owner>
   <owner>agrieve@chromium.org</owner>
+  <owner>smaier@chromium.org</owner>
   <summary>
     Amount of time it takes to create a new Context for a split. This will only
     be recorded if isolated splits are enabled.
   </summary>
 </histogram>
 
-<histogram base="true" name="Android.IsolatedSplits.PreloadWaitTime" units="ms"
-    expires_after="2025-04-06">
+<histogram base="true" name="Android.IsolatedSplits.ContextCreateTime2"
+    units="ms" expires_after="2025-08-27">
 <!-- Name completed by histogram_suffixes name="AndroidFeatureModuleName" -->
 
   <owner>cduvall@chromium.org</owner>
   <owner>agrieve@chromium.org</owner>
+  <owner>smaier@chromium.org</owner>
+  <summary>
+    Amount of time it takes to create a new Context for a split. This will only
+    be recorded if isolated splits are enabled. Different from ContextCreateTime
+    as only the first load of a split will be counted.
+  </summary>
+</histogram>
+
+<histogram base="true" name="Android.IsolatedSplits.PreloadWaitTime" units="ms"
+    expires_after="2025-08-06">
+<!-- Name completed by histogram_suffixes name="AndroidFeatureModuleName" -->
+
+  <owner>cduvall@chromium.org</owner>
+  <owner>agrieve@chromium.org</owner>
+  <owner>smaier@chromium.org</owner>
   <summary>
     Amount of time spent waiting for a split preload task to finish. This will
     only be recorded if isolated splits are enabled. This histogram was expired
@@ -3673,6 +3742,18 @@ chromium-metrics-reviews@google.com.
   </summary>
 </histogram>
 
+<histogram name="Android.Pdf.DocumentLoadResult.Detail"
+    enum="AndroidPdfLoadResult" expires_after="2025-05-04">
+  <owner>shuyng@google.com</owner>
+  <owner>clank-large-form-factors@google.com</owner>
+  <summary>
+    Records the pdf document load result details. Recorded when the pdf load is
+    completed or aborted. Only record when there is a paired
+    Android.Pdf.DocumentLoad. Only record the first load result for each pdf
+    load.
+  </summary>
+</histogram>
+
 <histogram name="Android.Pdf.DocumentLoadResult.Paired" enum="Boolean"
     expires_after="2025-03-02">
   <owner>shuyng@google.com</owner>
@@ -3692,6 +3773,17 @@ chromium-metrics-reviews@google.com.
     Records the pdf document load time. Recorded when the pdf load is complete.
     Records successful pdf loads only. May be recorded when there is no paired
     Android.Pdf.DocumentLoad, e.g. the pdf document is restored by OS.
+  </summary>
+</histogram>
+
+<histogram name="Android.Pdf.DocumentLoadTime.FirstPaired" units="ms"
+    expires_after="2025-05-11">
+  <owner>shuyng@google.com</owner>
+  <owner>clank-large-form-factors@google.com</owner>
+  <summary>
+    Records the pdf document load time. Recorded when the pdf load is complete.
+    Records the first successful load for each explicit pdf load. Only record
+    when there is a paired Android.Pdf.DocumentLoad.
   </summary>
 </histogram>
 
@@ -4041,6 +4133,22 @@ chromium-metrics-reviews@google.com.
     The version code for Google Play Services if it is installed on the device,
     or 0 if it is not. Recorded during deferred startup.
   </summary>
+</histogram>
+
+<histogram name="Android.PredictiveGestureNavigation{Transition}"
+    enum="PredictiveNavTransitionPhase" expires_after="M135">
+  <owner>lazzzis@google.com</owner>
+  <owner>clank-app-team@google.com</owner>
+  <summary>
+    Record the phase when a gesture nav is triggered {Transition} by user's
+    gesture and when the predictive back gesture is on.
+  </summary>
+  <token key="Transition">
+    <variant name="" summary="no matter if a transition is activated"/>
+    <variant name=".WithoutTransition"
+        summary="without transition is activated"/>
+    <variant name=".WithTransition" summary="with transition is activated"/>
+  </token>
 </histogram>
 
 <histogram name="Android.PrepareMenu.OpenWebApkVisibilityCheck" units="ms"
@@ -4662,6 +4770,17 @@ chromium-metrics-reviews@google.com.
     The result of the group color and title selections made when accepting the
     TabGroupCreation dialog. Record once per user attempt to create a new tab
     group through the TabGroupCreation modal dialog.
+  </summary>
+</histogram>
+
+<histogram name="Android.TabGroupSync.WindowStateOnFailedOpen"
+    enum="TabGroupCreationFinalSelections" expires_after="2025-11-07">
+  <owner>skym@chromium.org</owner>
+  <owner>clank-tab-dev@google.com</owner>
+  <summary>
+    When a tab group open from the tab group pane failes because there is no
+    local id, this metric is emitted with the state that the tab is in. This
+    should help narrow down why this is happening.
   </summary>
 </histogram>
 

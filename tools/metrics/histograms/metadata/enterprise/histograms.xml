@@ -2196,6 +2196,34 @@ chromium-metrics-reviews@google.com.
   </summary>
 </histogram>
 
+<histogram name="Enterprise.EnrollmentRemoteDeployment"
+    enum="EnterpriseEnrollmentType" expires_after="2025-11-01">
+  <owner>jacksontadie@google.com</owner>
+  <owner>drcrash@google.com</owner>
+  <owner>cros-onboarding-team@google.com</owner>
+  <owner>chromeos-commercial-remote-management@google.com</owner>
+  <summary>
+    Events related to Remote Deployment enrollments, a subset of token-based
+    enrollment. As of writing, only Flex devices use Remote Deployment.
+
+    Events are recorded in response to a successful or failed enrollment.
+  </summary>
+</histogram>
+
+<histogram name="Enterprise.EnrollmentRemoteDeploymentManualFallback"
+    enum="EnterpriseEnrollmentType" expires_after="2025-11-01">
+  <owner>jacksontadie@google.com</owner>
+  <owner>drcrash@google.com</owner>
+  <owner>cros-onboarding-team@google.com</owner>
+  <owner>chromeos-commercial-remote-management@google.com</owner>
+  <summary>
+    Events related to manual fallback from Remote Deployment enrollment, a
+    subset of token-based enrollment.
+
+    Events are recorded in response to a successful or failed enrollment.
+  </summary>
+</histogram>
+
 <histogram name="Enterprise.EnrollmentRollbackAttestation"
     enum="EnterpriseEnrollmentType" expires_after="2025-06-01">
   <owner>crisguerrero@chromium.org</owner>
@@ -3024,6 +3052,16 @@ chromium-metrics-reviews@google.com.
   </summary>
 </histogram>
 
+<histogram name="Enterprise.SkyVault.Migration.Retry" units="count"
+    expires_after="2025-10-01">
+  <owner>aidazolic@google.com</owner>
+  <owner>src/chrome/browser/ash/policy/skyvault/OWNERS</owner>
+  <summary>
+    Recorded when SkyVault migration of local files is retried after some
+    non-fatal errors.
+  </summary>
+</histogram>
+
 <histogram name="Enterprise.SkyVault.Migration.WriteAccessError" enum="Boolean"
     expires_after="2025-10-01">
   <owner>aidazolic@google.com</owner>
@@ -3041,6 +3079,7 @@ chromium-metrics-reviews@google.com.
     Records user interactions with the migration dialog displayed 24 hours
     before the scheduled migration of local files to {CloudProvider}.
   </summary>
+  <token key="CloudProvider" variants="Enterprise_SkyVaultCloudProvider"/>
 </histogram>
 
 <histogram name="Enterprise.SkyVault.Migration.{CloudProvider}.DialogShown"
@@ -3053,6 +3092,7 @@ chromium-metrics-reviews@google.com.
     value of &quot;false&quot; indicates the dialog was not shown, typically
     because a previous dialog was already displayed.
   </summary>
+  <token key="CloudProvider" variants="Enterprise_SkyVaultCloudProvider"/>
 </histogram>
 
 <histogram name="Enterprise.SkyVault.Migration.{CloudProvider}.Enabled"
@@ -3100,6 +3140,17 @@ chromium-metrics-reviews@google.com.
     Recorded when SkyVault migration of local files to {CloudProvider} is
     stopped due to policy update to allow local storage, disable migration, or
     change the target cloud provider.
+  </summary>
+  <token key="CloudProvider" variants="Enterprise_SkyVaultCloudProvider"/>
+</histogram>
+
+<histogram name="Enterprise.SkyVault.Migration.{CloudProvider}.UploadError"
+    enum="EnterpriseSkyVaultMigrationUploadError" expires_after="2025-10-01">
+  <owner>aidazolic@google.com</owner>
+  <owner>src/chrome/browser/ash/policy/skyvault/OWNERS</owner>
+  <summary>
+    Records upload errors that occur during SkyVault migration of local files to
+    {CloudProvider}.
   </summary>
   <token key="CloudProvider" variants="Enterprise_SkyVaultCloudProvider"/>
 </histogram>

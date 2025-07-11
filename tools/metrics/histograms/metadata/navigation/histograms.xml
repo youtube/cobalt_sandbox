@@ -27,6 +27,17 @@ chromium-metrics-reviews@google.com.
   <variant name="Subframe"/>
 </variants>
 
+<variants name="Initiator">
+  <variant name=".BrowserInitiated" summary="browser initiated"/>
+  <variant name=".RendererInitiated" summary="renderer initiated"/>
+</variants>
+
+<variants name="InitiatorType">
+  <variant name="All" summary="any"/>
+  <variant name="FromAd" summary="ad-initiated"/>
+  <variant name="NotFromAd" summary="non-ad-initiated"/>
+</variants>
+
 <variants name="NavigationMode">
   <variant name="" summary="both gesture nav mode and 3 button mode"/>
   <variant name=".3ButtonMode" summary="only 3-button mode"/>
@@ -1187,17 +1198,6 @@ chromium-metrics-reviews@google.com.
   </summary>
 </histogram>
 
-<histogram name="Navigation.IsDuplicate" enum="Boolean"
-    expires_after="2025-02-10">
-  <owner>rakina@chromium.org</owner>
-  <owner>chrome-navigation@google.com</owner>
-  <summary>
-    Whether a new navigation is a duplicate of a currently ongoing navigation,
-    where the destination and params are the same. Logged when the new
-    navigation is triggered and about to take the place of the old navigation.
-  </summary>
-</histogram>
-
 <histogram name="Navigation.IsGuest" enum="NavigationIsGuest"
     expires_after="2025-04-13">
   <owner>alexmos@chromium.org</owner>
@@ -1918,17 +1918,6 @@ chromium-metrics-reviews@google.com.
   <token key="FrameType" variants="FrameTypes"/>
 </histogram>
 
-<histogram name="Navigation.RendererInitiated.IsDuplicate" enum="Boolean"
-    expires_after="2025-02-10">
-  <owner>rakina@chromium.org</owner>
-  <owner>chrome-navigation@google.com</owner>
-  <summary>
-    Whether a new renderer-initiated navigation is a duplicate of a currently
-    ongoing navigation, where the destination and params are the same. Logged
-    when the new navigation is triggered on the renderer side.
-  </summary>
-</histogram>
-
 <histogram
     name="Navigation.RendererRunLoopStartToFirstCommitNavigation2.{FrameType}"
     units="ms" expires_after="2025-03-23">
@@ -2179,6 +2168,18 @@ chromium-metrics-reviews@google.com.
   <token key="Event" variants="NavigationThrottleEvents"/>
 </histogram>
 
+<histogram
+    name="Navigation.Throttles.PolicyBlocklist.CacheHit.GoogleSearch.SafeSitesFilterEnabled"
+    enum="BooleanCacheHit" expires_after="2025-04-06">
+  <owner>toyoshim@chromium.org</owner>
+  <owner>chrome-loading@google.com</owner>
+  <summary>
+    Records cache hit distribution that PolicyBlocklistNavigationThrottle uses
+    for the Safe Sites Filter check. Recorded at OnCommit() if the Safe Sites
+    Filter is enabled.
+  </summary>
+</histogram>
+
 <histogram name="Navigation.Throttles.PolicyBlocklist.DeferDurationTime2"
     units="ms" expires_after="2025-04-06">
   <owner>toyoshim@chromium.org</owner>
@@ -2187,6 +2188,17 @@ chromium-metrics-reviews@google.com.
     Measures duration times that PolicyBlocklistNavigationThrottles asks to
     defer navigation request. The time is accumulated on resuming request each
     time, and recorded on destructing the throttle for the request.
+  </summary>
+</histogram>
+
+<histogram
+    name="Navigation.Throttles.PolicyBlocklist.RedirectCount.GoogleSearch.SafeSitesFilterEnabled"
+    units="times" expires_after="2025-04-06">
+  <owner>toyoshim@chromium.org</owner>
+  <owner>chrome-loading@google.com</owner>
+  <summary>
+    Measures redirect counts that PolicyBlocklistNavigationThrottles recognize.
+    Recorded at OnCommit() if the Safe Sites Filter is enabled.
   </summary>
 </histogram>
 
@@ -2202,14 +2214,32 @@ chromium-metrics-reviews@google.com.
   </summary>
 </histogram>
 
-<histogram name="Navigation.Throttles.PolicyBlocklist.RequestToResponseTime2"
-    units="ms" expires_after="2025-04-06">
+<histogram
+    name="Navigation.Throttles.PolicyBlocklist.RequestToResponseTime2{Condition}"
+    units="ms" expires_after="2025-06-01">
   <owner>toyoshim@chromium.org</owner>
   <owner>chrome-loading@google.com</owner>
   <summary>
     Measures duration times from the time PolicyBlocklistNavigationThrottles
     observes the first WillStartRequest() to the time it observes the
-    WillProcessResponse(). Recorded when the WillProcessResponse() is handled.
+    WillProcessResponse(). Recorded {Condition}.
+  </summary>
+  <token key="Condition">
+    <variant name="" summary="when the WillProcessResponse() is handled"/>
+    <variant name=".GoogleSearch.SafeSitesFilterEnabled"
+        summary="at OnCommit() if the Safe Sites Filter is enabled"/>
+  </token>
+</histogram>
+
+<histogram
+    name="Navigation.Throttles.PolicyBlocklist.ResponseDeferDuration.GoogleSearch.SafeSitesFilterEnabled"
+    units="ms" expires_after="2025-04-06">
+  <owner>toyoshim@chromium.org</owner>
+  <owner>chrome-loading@google.com</owner>
+  <summary>
+    Measures duration times from the time PolicyBlocklistNavigationThrottles
+    defers WillProcessResponse() to the time it calls Resume(). Recorded at
+    OnCommit() if the Safe Sites Filter is enabled.
   </summary>
 </histogram>
 
@@ -2313,6 +2343,95 @@ chromium-metrics-reviews@google.com.
     reduction feature kReduceUserAgentMinorVersion is enabled. This histogram is
     recorded when a NavigationRequest is constructed, prior to sending the
     request to the network stack.
+  </summary>
+</histogram>
+
+<histogram
+    name="Navigation.{InitiatorType}.WastedSpeculativeRFH.CrossOriginIsolationDiffers"
+    enum="Boolean" expires_after="2025-03-01">
+  <owner>rakina@chromium.org</owner>
+  <owner>chrome-security-architecture@google.com</owner>
+  <summary>
+    For {InitiatorType} navigations that result in wasting a speculative RFH
+    that's previously created for the navigation (i.e. when the
+    WastedSpeculativeRFHCase metric records kWasted_NowUseCurrentRFH or
+    kWasted_NowUseNewSpeculativeRFH), records whether the cross-origin isolation
+    state for the wasted speculative RFH and the new RFH differs.
+
+    Recorded on RenderFrameHostManager::GetFrameHostNavigation(), for
+    {InitiatorType} navigations that picked a RenderFrameHost that is different
+    from the speculative RFH previously created for the navigation.
+  </summary>
+</histogram>
+
+<histogram
+    name="Navigation.{InitiatorType}.WastedSpeculativeRFH.ProcessDiffers"
+    enum="Boolean" expires_after="2025-03-01">
+  <owner>rakina@chromium.org</owner>
+  <owner>chrome-security-architecture@google.com</owner>
+  <summary>
+    For {InitiatorType} navigations that result in wasting a speculative RFH
+    that's previously created for the navigation (i.e. when the
+    WastedSpeculativeRFHCase metric records kWasted_NowUseCurrentRFH or
+    kWasted_NowUseNewSpeculativeRFH), records whether the renderer process for
+    the wasted speculative RFH and the new RFH differ.
+
+    Recorded on RenderFrameHostManager::GetFrameHostNavigation(), for
+    {InitiatorType} navigations that picked a RenderFrameHost that is different
+    from a speculative RFH previously created for the navigation.
+  </summary>
+</histogram>
+
+<histogram
+    name="Navigation.{InitiatorType}.WastedSpeculativeRFH.ReplacementRFHCreatedNewProcess"
+    enum="Boolean" expires_after="2025-03-01">
+  <owner>rakina@chromium.org</owner>
+  <owner>chrome-security-architecture@google.com</owner>
+  <summary>
+    For {InitiatorType} navigations that result in wasting a speculative RFH
+    that's previously created for the navigation (i.e. when the
+    WastedSpeculativeRFHCase metric records kWasted_NowUseCurrentRFH or
+    kWasted_NowUseNewSpeculativeRFH), records whether a new renderer process is
+    created by the RFH that replaces the wasted speculative RFH. These cases add
+    latency while waiting for a new process at commit time.
+
+    Recorded on RenderFrameHostManager::GetFrameHostNavigation(), for
+    {InitiatorType} navigations that picked a RenderFrameHost that is different
+    from the speculative RFH previously created for the navigation.
+  </summary>
+</histogram>
+
+<histogram
+    name="Navigation.{InitiatorType}.WastedSpeculativeRFH.WastedRFHLikelyCreatedNewProcess"
+    enum="Boolean" expires_after="2025-03-01">
+  <owner>rakina@chromium.org</owner>
+  <owner>chrome-security-architecture@google.com</owner>
+  <summary>
+    For {InitiatorType} navigations that result in wasting a speculative RFH
+    that's previously created for the navigation (i.e. when the
+    WastedSpeculativeRFHCase metric records kWasted_NowUseCurrentRFH or
+    kWasted_NowUseNewSpeculativeRFH), records whether a new renderer process was
+    likely created when creating the wasted speculative RFH. These cases
+    indicate a fair amount of work was wasted.
+
+    Recorded on RenderFrameHostManager::GetFrameHostNavigation(), for
+    {InitiatorType} navigations that picked a RenderFrameHost that is different
+    from the speculative RFH previously created for the navigation.
+  </summary>
+</histogram>
+
+<histogram name="Navigation.{InitiatorType}.WastedSpeculativeRFHCase"
+    enum="WastedSpeculativeRFHCase" expires_after="2025-03-01">
+  <owner>rakina@chromium.org</owner>
+  <owner>chrome-security-architecture@google.com</owner>
+  <summary>
+    Records whether a call to RenderFrameHostManager::GetFrameHostNavigation()
+    for {InitiatorType} navigation resulted in &quot;wasting&quot; a speculative
+    RFH previously created for the navigation.
+
+    Recorded on {InitiatorType} navigations after picking its RenderFrameHost in
+    RenderFrameHostManager::GetFrameHostNavigation(). Note that this can be
+    called multiple times for each navigation.
   </summary>
 </histogram>
 
@@ -2453,9 +2572,58 @@ chromium-metrics-reviews@google.com.
   </summary>
 </histogram>
 
+<histogram name="Navigation{Initiator}.DuplicateNavIsUnderThreshold"
+    enum="Boolean" expires_after="2025-05-18">
+  <owner>rakina@chromium.org</owner>
+  <owner>chrome-navigation@google.com</owner>
+  <summary>
+    When a new navigation is a duplicate of a currently ongoing navigation,
+    where the destination and params are the same, records whether the
+    difference between the new navigation's start time and the previous
+    navigation's start time is under the threshold defined by
+    kDuplicateNavThreshold (defaults to 2s).
+
+    Logged when the new navigation is triggered and about to take the place of
+    the old navigation.
+  </summary>
+  <token key="Initiator" variants="Initiator"/>
+</histogram>
+
+<histogram name="Navigation{Initiator}.DuplicateNavStartTimeDiff" units="ms"
+    expires_after="2025-05-18">
+  <owner>rakina@chromium.org</owner>
+  <owner>bfcache-dev@chromium.org</owner>
+  <summary>
+    When a new navigation is a duplicate of a currently ongoing navigation,
+    where the destination and params are the same, records the difference
+    between the new navigation's start time and the previous navigation's start
+    time.
+
+    Logged when the new navigation is triggered and about to take the place of
+    the old navigation.
+  </summary>
+  <token key="Initiator" variants="Initiator"/>
+</histogram>
+
+<histogram name="Navigation{Initiator}.IsDuplicateWithoutThresholdCheck"
+    enum="Boolean" expires_after="2025-05-18">
+  <owner>rakina@chromium.org</owner>
+  <owner>chrome-navigation@google.com</owner>
+  <summary>
+    Whether a new navigation is a duplicate of a currently ongoing navigation,
+    where the destination and params are the same. This does not do a navigation
+    start threshold check, so this will be true even if the new navigation
+    started a long time after the previous navigation.
+
+    Logged when the new navigation is triggered and about to take the place of
+    the old navigation.
+  </summary>
+  <token key="Initiator" variants="Initiator"/>
+</histogram>
+
 <histogram
     name="Prerender.CanceledForInactivePageRestriction.DisallowActivationReason{PreloadingTriggerType}"
-    enum="InactiveFrameDisallowActivationReason" expires_after="2024-12-01">
+    enum="InactiveFrameDisallowActivationReason" expires_after="2024-03-01">
   <owner>lingqi@chromium.org</owner>
   <owner>chrome-prerendering@chromium.org</owner>
   <summary>
@@ -2553,7 +2721,7 @@ chromium-metrics-reviews@google.com.
 <histogram
     name="Prerender.Experimental.CrossOriginRedirectionProtocolChange{PreloadingTriggerType}"
     enum="PrerenderCrossOriginRedirectionProtocolChange"
-    expires_after="2024-12-01">
+    expires_after="2025-03-01">
   <owner>lingqi@chromium.org</owner>
   <owner>nhiroki@chromium.org</owner>
   <owner>src/content/browser/preloading/prerender/OWNERS</owner>
@@ -2681,7 +2849,7 @@ chromium-metrics-reviews@google.com.
 
 <histogram
     name="Prerender.Experimental.PrerenderCrossOriginRedirectionMismatch{PreloadingTriggerType}"
-    enum="PrerenderCrossOriginRedirectionMismatch" expires_after="2024-12-01">
+    enum="PrerenderCrossOriginRedirectionMismatch" expires_after="2025-03-01">
   <owner>lingqi@chromium.org</owner>
   <owner>nhiroki@chromium.org</owner>
   <owner>src/content/browser/preloading/prerender/OWNERS</owner>

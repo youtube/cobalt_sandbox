@@ -133,7 +133,12 @@ public class SafetyHubFetchService implements SigninManager.SignInStateObserver,
 
     /** Schedules the next fetch job to run after a delay. */
     private void scheduleNextFetchJob() {
-        long nextFetchDelayMs = TimeUnit.DAYS.toMillis(SAFETY_HUB_JOB_INTERVAL_IN_DAYS);
+        int nextFetchDelayInDays =
+                ChromeFeatureList.getFieldTrialParamByFeatureAsInt(
+                        ChromeFeatureList.SAFETY_HUB,
+                        "background-password-check-interval-in-days",
+                        SAFETY_HUB_JOB_INTERVAL_IN_DAYS);
+        long nextFetchDelayMs = TimeUnit.DAYS.toMillis(nextFetchDelayInDays);
 
         // Cancel existing job if it wasn't already stopped.
         cancelFetchJob();
@@ -203,6 +208,12 @@ public class SafetyHubFetchService implements SigninManager.SignInStateObserver,
      * signed-in profile.
      */
     private void fetchWeakCredentialsCount(Callback<Boolean> onFinishedCallback) {
+        if (!ChromeFeatureList.isEnabled(ChromeFeatureList.SAFETY_HUB_WEAK_AND_REUSED_PASSWORDS)) {
+            mWeakCredentialsCountFetched = true;
+            onFetchCredentialsFinished(onFinishedCallback);
+            return;
+        }
+
         PasswordManagerHelper passwordManagerHelper = PasswordManagerHelper.getForProfile(mProfile);
         PrefService prefService = UserPrefs.get(mProfile);
 
@@ -226,6 +237,12 @@ public class SafetyHubFetchService implements SigninManager.SignInStateObserver,
      * signed-in profile.
      */
     private void fetchReusedCredentialsCount(Callback<Boolean> onFinishedCallback) {
+        if (!ChromeFeatureList.isEnabled(ChromeFeatureList.SAFETY_HUB_WEAK_AND_REUSED_PASSWORDS)) {
+            mReusedCredentialsCountFetched = true;
+            onFetchCredentialsFinished(onFinishedCallback);
+            return;
+        }
+
         PasswordManagerHelper passwordManagerHelper = PasswordManagerHelper.getForProfile(mProfile);
         PrefService prefService = UserPrefs.get(mProfile);
 

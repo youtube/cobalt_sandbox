@@ -11,6 +11,7 @@
 #include "base/check.h"
 #include "base/functional/bind.h"
 #include "base/location.h"
+#include "base/logging.h"
 #include "base/task/sequenced_task_runner.h"
 #include "base/time/clock.h"
 #include "base/time/default_clock.h"
@@ -111,13 +112,18 @@ void GraduationManagerImpl::OnUserSessionStarted(bool is_primary) {
     return;
   }
 
+  SystemWebAppManager* swa_manager = SystemWebAppManager::Get(profile_);
+  if (!swa_manager) {
+    LOG(WARNING) << "Graduation: System Web App manager does not exist on user "
+                    "session start; skipping setup.";
+    return;
+  }
+
   nudge_controller_ =
       std::make_unique<GraduationNudgeController>(profile_->GetPrefs());
 
   midnight_timer_ = std::make_unique<base::WallClockTimer>(clock_, tick_clock_);
 
-  SystemWebAppManager* swa_manager = SystemWebAppManager::Get(profile_);
-  CHECK(swa_manager);
   swa_manager->on_apps_synchronized().Post(
       FROM_HERE, base::BindOnce(&GraduationManagerImpl::OnAppsSynchronized,
                                 weak_ptr_factory_.GetWeakPtr()));

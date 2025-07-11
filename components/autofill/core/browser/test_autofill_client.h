@@ -68,8 +68,6 @@
 #include "components/autofill/core/browser/ml_model/field_classification_model_handler.h"
 #endif
 
-using ::autofill::test::AutofillTestingPrefService;
-
 namespace autofill {
 
 // This class is for easier writing of tests. There are two instances of the
@@ -138,7 +136,7 @@ class TestAutofillClientTemplate : public T {
     return mock_autofill_ai_delegate_.get();
   }
 
-  AutocompleteHistoryManager* GetAutocompleteHistoryManager() override {
+  MockAutocompleteHistoryManager* GetAutocompleteHistoryManager() override {
     return &mock_autocomplete_history_manager_;
   }
 
@@ -146,14 +144,14 @@ class TestAutofillClientTemplate : public T {
     return plus_address_delegate_.get();
   }
 
-  AutofillTestingPrefService* GetPrefs() override {
+  test::AutofillTestingPrefService* GetPrefs() override {
     if (!prefs_) {
       prefs_ = autofill::test::PrefServiceForTesting();
     }
     return prefs_.get();
   }
 
-  const AutofillTestingPrefService* GetPrefs() const override {
+  const test::AutofillTestingPrefService* GetPrefs() const override {
     return const_cast<TestAutofillClientTemplate*>(this)->GetPrefs();
   }
 
@@ -213,12 +211,22 @@ class TestAutofillClientTemplate : public T {
 #if BUILDFLAG(BUILD_WITH_TFLITE_LIB)
   FieldClassificationModelHandler* GetAutofillFieldClassificationModelHandler()
       override {
-    return ml_prediction_model_handler_.get();
+    return autofill_ml_prediction_model_handler_.get();
   }
 
-  void set_ml_prediction_model_handler(
+  void set_autofill_ml_prediction_model_handler(
       std::unique_ptr<FieldClassificationModelHandler> handler) {
-    ml_prediction_model_handler_ = std::move(handler);
+    autofill_ml_prediction_model_handler_ = std::move(handler);
+  }
+
+  FieldClassificationModelHandler*
+  GetPasswordManagerFieldClassificationModelHandler() override {
+    return password_ml_prediction_model_handler_.get();
+  }
+
+  void set_password_ml_prediction_model_handler(
+      std::unique_ptr<FieldClassificationModelHandler> handler) {
+    password_ml_prediction_model_handler_ = std::move(handler);
   }
 #endif
 
@@ -386,7 +394,7 @@ class TestAutofillClientTemplate : public T {
     return test_addresses_;
   }
 
-  void SetPrefs(std::unique_ptr<AutofillTestingPrefService> prefs) {
+  void SetPrefs(std::unique_ptr<test::AutofillTestingPrefService> prefs) {
     prefs_ = std::move(prefs);
   }
 
@@ -446,10 +454,6 @@ class TestAutofillClientTemplate : public T {
   void set_format_for_large_keyboard_accessory(
       bool format_for_large_keyboard_accessory) {
     format_for_large_keyboard_accessory_ = format_for_large_keyboard_accessory;
-  }
-
-  MockAutocompleteHistoryManager* GetMockAutocompleteHistoryManager() {
-    return &mock_autocomplete_history_manager_;
   }
 
   void set_channel_for_testing(const version_info::Channel channel) {
@@ -512,11 +516,14 @@ class TestAutofillClientTemplate : public T {
       device_authenticator_ = nullptr;
 
 #if BUILDFLAG(BUILD_WITH_TFLITE_LIB)
-  std::unique_ptr<FieldClassificationModelHandler> ml_prediction_model_handler_;
+  std::unique_ptr<FieldClassificationModelHandler>
+      autofill_ml_prediction_model_handler_;
+  std::unique_ptr<FieldClassificationModelHandler>
+      password_ml_prediction_model_handler_;
 #endif
 
   // NULL by default.
-  std::unique_ptr<AutofillTestingPrefService> prefs_;
+  std::unique_ptr<test::AutofillTestingPrefService> prefs_;
   std::unique_ptr<TestStrikeDatabase> test_strike_database_;
 
   std::unique_ptr<TestPersonalDataManager> test_personal_data_manager_;

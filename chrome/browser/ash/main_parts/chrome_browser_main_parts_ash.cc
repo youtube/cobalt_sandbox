@@ -106,7 +106,6 @@
 #include "chrome/browser/ash/input_method/input_method_configuration.h"
 #include "chrome/browser/ash/lobster/lobster_client_factory_impl.h"
 #include "chrome/browser/ash/locale/startup_settings_cache.h"
-#include "chrome/browser/ash/lock_screen_apps/state_controller.h"
 #include "chrome/browser/ash/logging/logging.h"
 #include "chrome/browser/ash/login/demo_mode/demo_session.h"
 #include "chrome/browser/ash/login/helper.h"
@@ -990,11 +989,9 @@ void ChromeBrowserMainPartsAsh::PreProfileInit() {
                                     ->GetDeviceNamePolicyHandler());
   }
 
-  if (base::FeatureList::IsEnabled(features::kEnableLocalSearchService)) {
-    // Set |local_state| for LocalSearchServiceProxyFactory.
-    local_search_service::LocalSearchServiceProxyFactory::GetInstance()
-        ->SetLocalState(g_browser_process->local_state());
-  }
+  // Set |local_state| for LocalSearchServiceProxyFactory.
+  local_search_service::LocalSearchServiceProxyFactory::GetInstance()
+      ->SetLocalState(g_browser_process->local_state());
 
   // Make sure that wallpaper boot transition and other delays in OOBE
   // are disabled for tests and kiosk app launch by default.
@@ -1034,10 +1031,6 @@ void ChromeBrowserMainPartsAsh::PreProfileInit() {
   // Initialize the keyboard before any session state changes (i.e. before
   // loading the default profile).
   keyboard::InitializeKeyboardResources();
-
-  lock_screen_apps_state_controller_ =
-      std::make_unique<lock_screen_apps::StateController>();
-  lock_screen_apps_state_controller_->Initialize();
 
   // Always construct BrowserManager, even if the lacros flag is disabled, so
   // it can do cleanup work if needed. Initialized in PreProfileInit because the
@@ -1526,10 +1519,6 @@ void ChromeBrowserMainPartsAsh::PostMainMessageLoopRun() {
   // ChromeBrowserMainPartsLinux::PostMainMessageLoopRun, because the
   // SessionControllerClientImpl is destroyed there.
   browser_manager_->RemoveObserver(SessionControllerClientImpl::Get());
-
-  if (lock_screen_apps_state_controller_) {
-    lock_screen_apps_state_controller_->Shutdown();
-  }
 
   // This must be shut down before |arc_service_launcher_|.
   if (pre_profile_init_called_) {

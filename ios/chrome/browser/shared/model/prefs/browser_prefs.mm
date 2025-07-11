@@ -778,6 +778,9 @@ void RegisterLocalStatePrefs(PrefRegistrySimple* registry) {
 
   registry->RegisterIntegerPref(prefs::kAddressBarSettingsNewBadgeShownCount,
                                 0);
+
+  registry->RegisterIntegerPref(
+      prefs::kProminenceNotificationAlertImpressionCount, 0);
 }
 
 void RegisterProfilePrefs(user_prefs::PrefRegistrySyncable* registry) {
@@ -964,6 +967,9 @@ void RegisterProfilePrefs(user_prefs::PrefRegistrySyncable* registry) {
   registry->RegisterIntegerPref(
       prefs::kIosSaveToDriveDownloadManagerPolicySettings,
       static_cast<int>(SaveToDrivePolicySettings::kEnabled));
+
+  // Preferences related to download restrictions enterprise policy.
+  registry->RegisterIntegerPref(policy::policy_prefs::kDownloadRestrictions, 0);
 
   // Preferences related to parcel tracking.
   registry->RegisterBooleanPref(

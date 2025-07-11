@@ -17,7 +17,7 @@
   bottom: 0;
   border-radius: 28px 28px 0 0;
   display: flex;
-  padding: 4px 10px;
+  padding: 8px;
   position: absolute;
 }
 
@@ -40,4 +40,12 @@ ink-brush-selector {
 
 ink-color-selector {
   padding: 20px;
+}
+
+#color-chip {
+  background: var(--ink-brush-color, magenta);
+  border: 1px solid var(--viewer-icon-ink-background-color);
+  border-radius: 50%;
+  height: 20px;
+  width: 20px;
 }

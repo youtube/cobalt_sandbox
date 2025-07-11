@@ -227,13 +227,6 @@ BASE_FEATURE(kOmniboxAssistantVoiceSearch,
              "OmniboxAssistantVoiceSearch",
              DISABLED);
 
-// Android only flag that controls whether the new security indicator should be
-// used, on non-Android platforms this is controlled through the
-// ChromeRefresh2023 flag.
-BASE_FEATURE(kUpdatedConnectionSecurityIndicators,
-             "OmniboxUpdatedConnectionSecurityIndicators",
-             ENABLED);
-
 // Feature used to default typed navigations to use HTTPS instead of HTTP.
 // This only applies to navigations that don't have a scheme such as
 // "example.com". Presently, typing "example.com" in a clean browsing profile
@@ -389,6 +382,11 @@ BASE_FEATURE(kSuppressIntermediateACUpdatesOnLowEndDevices,
              "SuppressIntermediateACUpdatesOnLowEndDevices",
              DISABLED);
 
+// (Android only) Show the search feature in the hub.
+BASE_FEATURE(kAndroidHubSearch,
+             "AndroidHubSearch",
+             base::FEATURE_DISABLED_BY_DEFAULT);
+
 namespace android {
 static jlong JNI_OmniboxFeatureMap_GetNativeMap(JNIEnv* env) {
   static base::NoDestructor<base::android::FeatureMap> kFeatureMap(
@@ -397,7 +395,7 @@ static jlong JNI_OmniboxFeatureMap_GetNativeMap(JNIEnv* env) {
            &kOmniboxTouchDownTriggerForPrefetch, &kOmniboxAsyncViewInflation,
            &kRichAutocompletion, &kUseFusedLocationProvider,
            &kOmniboxElegantTextHeight, &kRetainOmniboxOnFocus,
-           &kJumpStartOmnibox}});
+           &kJumpStartOmnibox, &kAndroidHubSearch}});
 
   return reinterpret_cast<jlong>(kFeatureMap.get());
 }

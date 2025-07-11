@@ -534,7 +534,9 @@ void SetCustomizedRuntimeFeaturesFromCombinedArgs(
 
   // These checks are custom wrappers around base::FeatureList::IsEnabled
   // They're moved here to distinguish them from actual base checks
+#if !BUILDFLAG(IS_CHROMEOS)
   WebRuntimeFeatures::EnableOverlayScrollbars(ui::IsOverlayScrollbarEnabled());
+#endif
   WebRuntimeFeatures::EnableFluentScrollbars(ui::IsFluentScrollbarEnabled());
   WebRuntimeFeatures::EnableFluentOverlayScrollbars(
       ui::IsFluentOverlayScrollbarEnabled());
@@ -701,18 +703,6 @@ void ResolveInvalidConfigurations() {
         << blink::features::kInterestGroupStorage.name << " in addition.";
     WebRuntimeFeatures::EnableAdInterestGroupAPI(false);
     WebRuntimeFeatures::EnableFledge(false);
-  }
-
-  if (base::FeatureList::IsEnabled(
-          features::kCookieDeprecationFacilitatedTesting)) {
-    WebRuntimeFeatures::EnableFledgeMultiBid(false);
-    WebRuntimeFeatures::EnableFledgeRealTimeReporting(false);
-
-    if (!base::FeatureList::IsEnabled(
-            blink::features::
-                kAlwaysAllowFledgeDeprecatedRenderURLReplacements)) {
-      WebRuntimeFeatures::EnableFledgeDeprecatedRenderURLReplacements(false);
-    }
   }
 
   // PermissionElement cannot be enabled without the support of the

@@ -10,6 +10,8 @@
 #import "base/check.h"
 #import "base/command_line.h"
 #import "base/ios/block_types.h"
+#import "base/not_fatal_until.h"
+#import "base/notreached.h"
 #import "components/webauthn/core/browser/passkey_model_utils.h"
 #import "ios/chrome/common/app_group/app_group_constants.h"
 #import "ios/chrome/common/app_group/app_group_metrics.h"
@@ -22,6 +24,7 @@
 #import "ios/chrome/common/ui/colors/semantic_color_names.h"
 #import "ios/chrome/common/ui/confirmation_alert/confirmation_alert_action_handler.h"
 #import "ios/chrome/common/ui/reauthentication/reauthentication_module.h"
+#import "ios/chrome/common/ui/util/constraints_ui_util.h"
 #import "ios/chrome/credential_provider_extension/account_verification_provider.h"
 #import "ios/chrome/credential_provider_extension/font_provider.h"
 #import "ios/chrome/credential_provider_extension/metrics_util.h"
@@ -33,10 +36,14 @@
 #import "ios/chrome/credential_provider_extension/ui/credential_list_coordinator.h"
 #import "ios/chrome/credential_provider_extension/ui/credential_response_handler.h"
 #import "ios/chrome/credential_provider_extension/ui/feature_flags.h"
+#import "ios/chrome/credential_provider_extension/ui/generic_error_view_controller.h"
 #import "ios/chrome/credential_provider_extension/ui/passkey_welcome_screen_view_controller.h"
 #import "ios/chrome/credential_provider_extension/ui/saving_enterprise_disabled_view_controller.h"
+#import "ios/chrome/credential_provider_extension/ui/signed_out_user_view_controller.h"
 #import "ios/chrome/credential_provider_extension/ui/stale_credentials_view_controller.h"
 #import "ios/components/credential_provider_extension/password_util.h"
+
+using credential_provider_extension::AccountInfo;
 
 namespace {
 UIColor* BackgroundColor() {
@@ -48,7 +55,9 @@ UIColor* BackgroundColor() {
     ConfirmationAlertActionHandler,
     CredentialResponseHandler,
     PasskeyKeychainProviderBridgeDelegate,
-    SuccessfulReauthTimeAccessor>
+    PasskeyWelcomeScreenViewControllerDelegate,
+    SuccessfulReauthTimeAccessor,
+    UIAdaptivePresentationControllerDelegate>
 
 // Interface for the persistent credential store.
 @property(nonatomic, strong) id<CredentialStore> credentialStore;
@@ -99,9 +108,14 @@ UIColor* BackgroundColor() {
   ASPasskeyCredentialRequestParameters* _requestParameters
       API_AVAILABLE(ios(17.0));
 
-  // Stores whether or not user verficiation should be performed for passkey
+  // Stores whether or not user verification should be performed for passkey
   // creation or assertion.
   BOOL _userVerificationRequired;
+
+  // Stores whether or not the credential list is about to be shown for
+  // passkeys. Used to determine which reauthentication reason to provide to the
+  // user.
+  BOOL _nextCredentialListIsForPasskeys;
 }
 
 + (void)initialize {
@@ -113,6 +127,12 @@ UIColor* BackgroundColor() {
 - (void)viewDidLoad {
   [super viewDidLoad];
   self.view.backgroundColor = BackgroundColor();
+
+  UINavigationBar* navigationBar = [self createNavigationBar];
+  [self.view addSubview:navigationBar];
+  AddSameConstraintsToSides(
+      navigationBar, self.view.safeAreaLayoutGuide,
+      LayoutSides::kTrailing | LayoutSides::kTop | LayoutSides::kLeading);
 }
 
 - (void)viewWillAppear:(BOOL)animated {
@@ -124,20 +144,28 @@ UIColor* BackgroundColor() {
     NSArray<ASCredentialServiceIdentifier*>* serviceIdentifiers =
         self.serviceIdentifiers;
     self.serviceIdentifiers = nil;
+    BOOL isAccessingPasskeys = _nextCredentialListIsForPasskeys;
+    _nextCredentialListIsForPasskeys = NO;
+
     __weak __typeof__(self) weakSelf = self;
     [self validateUserWithCompletion:^(BOOL userIsValid) {
       if (!userIsValid) {
         [weakSelf showStaleCredentials];
         return;
       }
-      [weakSelf reauthenticateIfNeededWithCompletionHandler:^(
-                    ReauthenticationResult result) {
-        if (result != ReauthenticationResult::kFailure) {
-          [weakSelf showCredentialListForServiceIdentifiers:serviceIdentifiers];
-        } else {
-          [weakSelf exitWithErrorCode:ASExtensionErrorCodeFailed];
-        }
-      }];
+      [weakSelf
+          reauthenticateIfNeededToAccessPasskeys:isAccessingPasskeys
+                           withCompletionHandler:^(
+                               ReauthenticationResult result) {
+                             if (result != ReauthenticationResult::kFailure) {
+                               [weakSelf
+                                   showCredentialListForServiceIdentifiers:
+                                       serviceIdentifiers];
+                             } else {
+                               [weakSelf exitWithErrorCode:
+                                             ASExtensionErrorCodeFailed];
+                             }
+                           }];
     }];
 
     return;
@@ -153,6 +181,7 @@ UIColor* BackgroundColor() {
   // authenticating and showing the credentials, store the list of
   // identifiers and authenticate once the extension is visible.
   self.serviceIdentifiers = serviceIdentifiers;
+  _nextCredentialListIsForPasskeys = NO;
 }
 
 // Only available in iOS 17.0+.
@@ -166,6 +195,7 @@ UIColor* BackgroundColor() {
     API_AVAILABLE(ios(17.0)) {
   self.serviceIdentifiers = serviceIdentifiers;
   _requestParameters = requestParameters;
+  _nextCredentialListIsForPasskeys = _requestParameters != nil;
 }
 
 // Deprecated in iOS 17.0+.
@@ -254,14 +284,18 @@ UIColor* BackgroundColor() {
       [weakSelf showStaleCredentials];
       return;
     }
-    [weakSelf reauthenticateIfNeededWithCompletionHandler:^(
-                  ReauthenticationResult result) {
-      if (result != ReauthenticationResult::kFailure) {
-        [weakSelf provideCredentialForRequest:credentialRequest];
-      } else {
-        [weakSelf exitWithErrorCode:ASExtensionErrorCodeUserCanceled];
-      }
-    }];
+    [weakSelf
+        reauthenticateIfNeededToAccessPasskeys:NO
+                         withCompletionHandler:^(
+                             ReauthenticationResult result) {
+                           if (result != ReauthenticationResult::kFailure) {
+                             [weakSelf
+                                 provideCredentialForRequest:credentialRequest];
+                           } else {
+                             [weakSelf exitWithErrorCode:
+                                           ASExtensionErrorCodeUserCanceled];
+                           }
+                         }];
   }];
 }
 
@@ -288,7 +322,23 @@ UIColor* BackgroundColor() {
   }
 
   if (!IsPasswordCreationUserEnabled()) {
-    [self showSavingDisabledByEnterpriseAlert];
+    if (IsPasswordCreationManaged()) {
+      [self showSavingDisabledByEnterpriseAlert];
+    } else {
+      // TODO(crbug.com/379247744): Replace this generic error with a more
+      // appropriate one. Users in this state have manually disabled the "Offer
+      // to save passwords" option, and need to enable it to complete saving a
+      // passkey.
+      [self showGenericErrorAlert];
+    }
+    return;
+  }
+
+  if (!IsPasswordSyncEnabled()) {
+    // TODO(crbug.com/379247744): Replace this generic error with a more
+    // appropriate one. Users in this state have disabled saving passwords to
+    // their account (sync).
+    [self showGenericErrorAlert];
     return;
   }
 
@@ -296,7 +346,7 @@ UIColor* BackgroundColor() {
   if ([gaia length] == 0) {
     // If we don't have a gaia, either the user is signed out of Chrome or has
     // never opened Chrome. Passkeys require the user to be signed in to Chrome.
-    [self exitWithErrorCode:ASExtensionErrorCodeFailed];
+    [self showSignedOutUserAlert];
     return;
   }
 
@@ -411,7 +461,6 @@ UIColor* BackgroundColor() {
 - (void)userSelectedPasskey:(id<Credential>)credential
               clientDataHash:(NSData*)clientDataHash
           allowedCredentials:(NSArray<NSData*>*)allowedCredentials
-                  allowRetry:(BOOL)allowRetry
     userVerificationRequired:(BOOL)userVerificationRequired
     API_AVAILABLE(ios(17.0)) {
   __weak __typeof(self) weakSelf = self;
@@ -419,11 +468,11 @@ UIColor* BackgroundColor() {
     [weakSelf passkeyAssertionWithCredential:credential
                               clientDataHash:clientDataHash
                           allowedCredentials:allowedCredentials
-                       securityDomainSecrets:securityDomainSecrets
-                                  allowRetry:allowRetry];
+                       securityDomainSecrets:securityDomainSecrets];
   };
 
   [self fetchSecurityDomainSecretForGaia:credential.gaia
+                              credential:credential
                                  purpose:PasskeyKeychainProvider::
                                              ReauthenticatePurpose::kDecrypt
                 userVerificationRequired:userVerificationRequired
@@ -440,8 +489,15 @@ UIColor* BackgroundColor() {
   [self.extensionContext completeExtensionConfigurationRequest];
 }
 
+// Loads and returns the account information (gaia and email) from the Keychain
+// Services.
+- (AccountInfo)accountInfo {
+  return credential_provider_extension::LoadAccountInfoFromKeychain();
+}
+
+// Returns the gaia ID associated with the current account.
 - (NSString*)gaia {
-  NSString* gaia = credential_provider_extension::LoadGaiaFromKeychain();
+  NSString* gaia = [self accountInfo].gaia;
   if (gaia.length > 0) {
     return gaia;
   }
@@ -457,6 +513,11 @@ UIColor* BackgroundColor() {
                                        : nil;
 }
 
+// Returns the email address associated with the current account.
+- (NSString*)userEmail {
+  return [self accountInfo].email;
+}
+
 #pragma mark - PasskeyKeychainProviderBridgeDelegate
 
 - (void)performUserVerificationIfNeeded:(ProceduralBlock)completion {
@@ -466,14 +527,16 @@ UIColor* BackgroundColor() {
   }
 
   __weak __typeof(self) weakSelf = self;
-  [self reauthenticateIfNeededWithCompletionHandler:^(
-            ReauthenticationResult result) {
-    if (result != ReauthenticationResult::kFailure) {
-      completion();
-    } else {
-      [weakSelf exitWithErrorCode:ASExtensionErrorCodeFailed];
-    }
-  }];
+  [self
+      reauthenticateIfNeededToAccessPasskeys:YES
+                       withCompletionHandler:^(ReauthenticationResult result) {
+                         if (result != ReauthenticationResult::kFailure) {
+                           completion();
+                         } else {
+                           [weakSelf
+                               exitWithErrorCode:ASExtensionErrorCodeFailed];
+                         }
+                       }];
 }
 
 - (void)showEnrollmentWelcomeScreen:(ProceduralBlock)enrollBlock {
@@ -496,6 +559,17 @@ UIColor* BackgroundColor() {
                                    primaryButtonAction:reauthenticateBlock];
 }
 
+#pragma mark - PasskeyWelcomeScreenViewControllerDelegate
+
+- (void)passkeyWelcomeScreenViewControllerShouldBeDismissed:
+    (id)passkeyWelcomeScreenViewController {
+  if (self.passkeyNavigationController.topViewController ==
+      passkeyWelcomeScreenViewController) {
+    [self.passkeyNavigationController popViewControllerAnimated:YES];
+  }
+  [self exitWithErrorCode:ASExtensionErrorCodeUserCanceled];
+}
+
 #pragma mark - SuccessfulReauthTimeAccessor
 
 - (void)updateSuccessfulReauthTime {
@@ -503,13 +577,25 @@ UIColor* BackgroundColor() {
   UpdateUMACountForKey(app_group::kCredentialExtensionReauthCount);
 }
 
+#pragma mark - UIAdaptivePresentationControllerDelegate
+
+- (void)presentationControllerDidDismiss:
+    (UIPresentationController*)presentationController {
+  [self exitWithErrorCode:ASExtensionErrorCodeUserCanceled];
+}
+
 #pragma mark - Private
 
-- (void)reauthenticateIfNeededWithCompletionHandler:
-    (void (^)(ReauthenticationResult))completionHandler {
-  [self.reauthenticationHandler
-      verifyUserWithCompletionHandler:completionHandler
-      presentReminderOnViewController:self];
+// Asks user for hardware reauthentication if needed. `forPasskeys` indicates
+// whether the reauthentication is guarding an access to passkeys (when `YES`)
+// or an access to passwords (when `NO`).
+- (void)reauthenticateIfNeededToAccessPasskeys:(BOOL)forPasskeys
+                         withCompletionHandler:
+                             (void (^)(ReauthenticationResult))
+                                 completionHandler {
+  [self.reauthenticationHandler verifyUserToAccessPasskeys:(BOOL)forPasskeys
+                                     withCompletionHandler:completionHandler
+                           presentReminderOnViewController:self];
 }
 
 // Returns whether or not the user should be asked to re-authenticate depending
@@ -545,14 +631,18 @@ UIColor* BackgroundColor() {
       [weakSelf showStaleCredentials];
       return;
     }
-    [weakSelf reauthenticateIfNeededWithCompletionHandler:^(
-                  ReauthenticationResult result) {
-      if (result != ReauthenticationResult::kFailure) {
-        [weakSelf provideCredentialForIdentifier:identifier];
-      } else {
-        [weakSelf exitWithErrorCode:ASExtensionErrorCodeUserCanceled];
-      }
-    }];
+    [weakSelf
+        reauthenticateIfNeededToAccessPasskeys:NO
+                         withCompletionHandler:^(
+                             ReauthenticationResult result) {
+                           if (result != ReauthenticationResult::kFailure) {
+                             [weakSelf
+                                 provideCredentialForIdentifier:identifier];
+                           } else {
+                             [weakSelf exitWithErrorCode:
+                                           ASExtensionErrorCodeUserCanceled];
+                           }
+                         }];
   }];
 }
 
@@ -592,7 +682,6 @@ UIColor* BackgroundColor() {
       [self userSelectedPasskey:credential
                     clientDataHash:passkeyCredentialRequest.clientDataHash
                 allowedCredentials:nil
-                        allowRetry:YES
           userVerificationRequired:
               [self shouldPerformUserVerificationForPreference:
                         passkeyCredentialRequest.userVerificationPreference]];
@@ -693,6 +782,7 @@ UIColor* BackgroundColor() {
   staleCredentialsViewController.modalPresentationStyle =
       UIModalPresentationOverCurrentContext;
   staleCredentialsViewController.actionHandler = self;
+  staleCredentialsViewController.presentationController.delegate = self;
   [self presentViewController:staleCredentialsViewController
                      animated:YES
                    completion:nil];
@@ -772,7 +862,32 @@ UIColor* BackgroundColor() {
       savingEnterpriseDisabledViewController =
           [[SavingEnterpriseDisabledViewController alloc] init];
   savingEnterpriseDisabledViewController.actionHandler = self;
+  savingEnterpriseDisabledViewController.presentationController.delegate = self;
   [self presentViewController:savingEnterpriseDisabledViewController
+                     animated:YES
+                   completion:nil];
+}
+
+// Displays sheet with information that the user is signed out ans needs to sign
+// in to Chrome.
+- (void)showSignedOutUserAlert {
+  SignedOutUserViewController* signedOutUserViewController =
+      [[SignedOutUserViewController alloc] init];
+  signedOutUserViewController.actionHandler = self;
+  signedOutUserViewController.presentationController.delegate = self;
+  [self presentViewController:signedOutUserViewController
+                     animated:YES
+                   completion:nil];
+}
+
+// Displays sheet with a generic error message. Should not be used if a more
+// specific error could be shown instead.
+- (void)showGenericErrorAlert {
+  GenericErrorViewController* genericErrorViewController =
+      [[GenericErrorViewController alloc] init];
+  genericErrorViewController.actionHandler = self;
+  genericErrorViewController.presentationController.delegate = self;
+  [self presentViewController:genericErrorViewController
                      animated:YES
                    completion:nil];
 }
@@ -816,6 +931,7 @@ UIColor* BackgroundColor() {
   };
 
   [self fetchSecurityDomainSecretForGaia:gaia
+                              credential:nil
                                  purpose:PasskeyKeychainProvider::
                                              ReauthenticatePurpose::kEncrypt
                 userVerificationRequired:userVerificationRequired
@@ -827,33 +943,17 @@ UIColor* BackgroundColor() {
                         clientDataHash:(NSData*)clientDataHash
                     allowedCredentials:(NSArray<NSData*>*)allowedCredentials
                  securityDomainSecrets:(NSArray<NSData*>*)securityDomainSecrets
-                            allowRetry:(BOOL)allowRetry
     API_AVAILABLE(ios(17.0)) {
   ASPasskeyAssertionCredential* passkeyCredential = PerformPasskeyAssertion(
       credential, clientDataHash, allowedCredentials, securityDomainSecrets);
-  if (passkeyCredential || !allowRetry) {
-    [self userSelectedPasskey:passkeyCredential];
-  } else {
-    // If we failed to perform the passkey assertion on the first attempt, try
-    // to mark the security domain secret vault keys as stale and retry.
-    __weak __typeof(self) weakSelf = self;
-    [self.passkeyKeychainProviderBridge
-        markKeysAsStaleForGaia:credential.gaia
-                    completion:^() {
-                      [weakSelf userSelectedPasskey:credential
-                                     clientDataHash:clientDataHash
-                                 allowedCredentials:allowedCredentials
-                                         allowRetry:NO
-                           userVerificationRequired:NO];  // User verification
-                                                          // would have happen
-                                                          // already if needed.
-                    }];
-  }
+  [self userSelectedPasskey:passkeyCredential];
 }
 
 // Triggers the process to fetch the security domain secret and calls the
 // completion block with the security domain secret as input.
+// "credential" will be used to validate the security domain secret.
 - (void)fetchSecurityDomainSecretForGaia:(NSString*)gaia
+                              credential:(id<Credential>)credential
                                  purpose:(PasskeyKeychainProvider::
                                               ReauthenticatePurpose)purpose
                 userVerificationRequired:(BOOL)userVerificationRequired
@@ -865,6 +965,7 @@ UIColor* BackgroundColor() {
   _userVerificationRequired = userVerificationRequired;
   [self.passkeyKeychainProviderBridge
       fetchSecurityDomainSecretForGaia:gaia
+                            credential:credential
                                purpose:purpose
                             completion:completion];
 }
@@ -874,6 +975,21 @@ UIColor* BackgroundColor() {
   // If it is not set, metrics are disabled.
   return [app_group::GetGroupUserDefaults()
              objectForKey:@(app_group::kChromeAppClientID)] != nil;
+}
+
+// Creates and configures the navigation bar for this view controller.
+- (UINavigationBar*)createNavigationBar {
+  UINavigationItem* navigationItem = [[UINavigationItem alloc] init];
+  navigationItem.titleView = self.passkeyNavigationItemTitleView;
+
+  UINavigationBar* navigationBar = [[UINavigationBar alloc] init];
+  navigationBar.translatesAutoresizingMaskIntoConstraints = NO;
+  navigationBar.translucent = NO;
+  [navigationBar setShadowImage:[[UIImage alloc] init]];
+  [navigationBar setBarTintColor:BackgroundColor()];
+  [navigationBar setItems:@[ navigationItem ]];
+
+  return navigationBar;
 }
 
 // Returns the view currently being presented, which should therefore be the new
@@ -887,30 +1003,74 @@ UIColor* BackgroundColor() {
             (PasskeyWelcomeScreenPurpose)purpose
                                    primaryButtonAction:
                                        (ProceduralBlock)primaryButtonAction {
+  // Early return if the `passkeyNavigationController` is already visible. This
+  // early return shouldn't be triggered, but was added to monitor a crash fix.
+  // This check should be removed if no crash reports are observed. See
+  // crbug.com/377712051.
+  if (self.passkeyNavigationController.visibleViewController) {
+    NOTREACHED(base::NotFatalUntil::M135);
+    return;
+  }
+
+  if (!self.presentingView.view.window) {
+    // If the view of the presenting view controller doesn't have any window, it
+    // means that it is currently not visible and that the CPE hasn't been
+    // prepared to show some UI.
+    [self exitWithErrorCode:ASExtensionErrorCodeUserInteractionRequired];
+    return;
+  }
+
   ProceduralBlock action;
-  if (_userVerificationRequired) {
+  // With the `kReauthenticate` purpose, the user will be asked to enter their
+  // Google Passowrd Manager PIN, so no need to also do a device
+  // reauthentication before showing the UI.
+  if (purpose != PasskeyWelcomeScreenPurpose::kReauthenticate &&
+      _userVerificationRequired) {
     __weak __typeof(self) weakSelf = self;
     action = ^{
-      [weakSelf reauthenticateIfNeededWithCompletionHandler:^(
-                    ReauthenticationResult result) {
-        if (result != ReauthenticationResult::kFailure) {
-          primaryButtonAction();
-        } else {
-          [weakSelf exitWithErrorCode:ASExtensionErrorCodeFailed];
-        }
-      }];
+      [weakSelf
+          reauthenticateIfNeededToAccessPasskeys:YES
+                           withCompletionHandler:^(
+                               ReauthenticationResult result) {
+                             if (result != ReauthenticationResult::kFailure) {
+                               primaryButtonAction();
+                             } else {
+                               [weakSelf exitWithErrorCode:
+                                             ASExtensionErrorCodeFailed];
+                             }
+                           }];
     };
   } else {
     action = primaryButtonAction;
   }
+  // Now that the need to perform a device reauthentication has been evaluated
+  // and handled, set `_userVerificationRequired` to `NO` so that the user won't
+  // be asked to reauthenticate at a later time in the process of handling the
+  // passkey request.
+  _userVerificationRequired = NO;
+
+  NSString* userEmail;
+  if (purpose == PasskeyWelcomeScreenPurpose::kEnroll) {
+    userEmail = [self userEmail];
+    if (!userEmail) {
+      // TODO(crbug.com/381284523): When on M135, show generic alert screen
+      // instead.
+      [self showSignedOutUserAlert];
+      return;
+    }
+  }
 
   PasskeyWelcomeScreenViewController* welcomeScreen =
-      [[PasskeyWelcomeScreenViewController alloc] initForPurpose:purpose
-                                             primaryButtonAction:action];
+      [[PasskeyWelcomeScreenViewController alloc]
+                   initForPurpose:purpose
+          navigationItemTitleView:self.passkeyNavigationItemTitleView
+                        userEmail:userEmail
+                         delegate:self
+              primaryButtonAction:action];
   [self.passkeyNavigationController pushViewController:welcomeScreen
                                               animated:NO];
   [self.presentingView presentViewController:self.passkeyNavigationController
-                                    animated:YES
+                                    animated:NO
                                   completion:nil];
 }
 

@@ -58,7 +58,7 @@
 <translation id="2004697686368036666">କିଛି ସାଇଟରେ ଫିଚରଗୁଡ଼ିକ କାମ କରିନପାରେ</translation>
 <translation id="2025115093177348061">ଅଗମେଣ୍ଟେଡ୍ ରିଆଲିଟୀ</translation>
 <translation id="2030769033451695672"><ph name="URL_OF_THE_CURRENT_TAB" />କୁ ଫେରିବା ପାଇଁ ଟାପ୍ କରନ୍ତୁ</translation>
-<translation id="2079545284768500474">ପୂର୍ବବତ୍</translation>
+<translation id="2079545284768500474">ଅନଡୁ କରନ୍ତୁ</translation>
 <translation id="2091887806945687916">ଧ୍ୱନି</translation>
 <translation id="2096716221239095980">ସମସ୍ତ ଡାଟାକୁ ଡିଲିଟ କରନ୍ତୁ</translation>
 <translation id="2117655453726830283">ପରବର୍ତ୍ତୀ ସ୍ଲାଇଡ</translation>
@@ -78,10 +78,8 @@
 <translation id="228293613124499805">ପ୍ରାୟତଃ ଆପଣଙ୍କ ପସନ୍ଦ କିମ୍ବା ଆପଣ ସାଇଟ ସହ ସେୟାର କରୁଥିବା ସୂଚନାକୁ ସେଭ କରି ଆପଣଙ୍କର ଅନୁଭୂତିକୁ ଉନ୍ନତ କରିବା ପାଇଁ, ଆପଣ ଭିଜିଟ କରୁଥିବା ଅଧିକାଂଶ ସାଇଟ ସମ୍ଭବତଃ ଆପଣଙ୍କ ଡିଭାଇସରେ ଡାଟା ସେଭ କରିଥାନ୍ତି। ଏହି ସେଟିଂ ଚାଲୁ ରଖିବାକୁ ଆମେ ସୁପାରିଶ କରୁ।</translation>
 <translation id="2289270750774289114">ଯେତେବେଳେ ଏକ ସାଇଟ୍ ଆଖପାଖର ବ୍ଲୁଟୂଥ୍ ଡିଭାଇସ୍‍ଗୁଡ଼ିକୁ ଖୋଜିବାକୁ ଚାହୁଁଛି, ସେତେବେଳେ ପଚାରନ୍ତୁ (ସୁପାରିଶ କରାଯାଇଛି)</translation>
 <translation id="2315043854645842844">କ୍ଲାଏଣ୍ଟ ସାଇଡ୍ ସାର୍ଟିଫିକେଟ୍ ଚୟନ ଅପରେଟିଂ ସିଷ୍ଟମ୍‍ ଦ୍ବାରା ସପୋର୍ଟ କରୁନାହିଁ।</translation>
-<translation id="2321958826496381788">ସ୍ଲାଇଡର୍‍କୁ ସେପର୍ଯ୍ୟନ୍ତ ଟାଣନ୍ତୁ, ଯେପର୍ଯ୍ୟନ୍ତ ଆପଣ ଏହାକୁ ଭଲ ଭାବରେ ପଢ଼ିନାହାନ୍ତି। ପାରାଗ୍ରାଫ୍‍‍ରେ ଦୁଇଥର ଟାପ୍ କରିବା ପରେ ଟେକ୍ସଟ୍ ଅତି କମ୍‍‍ରେ ଏତେ ବଡ଼ ଦେଖାଯିବା ଆବଶ୍ୟକ।</translation>
 <translation id="2359808026110333948">ଜାରି ରଖନ୍ତୁ</translation>
 <translation id="2379925928934107488">ଯେତେବେଳେ ସମ୍ଭବ, Chrome ଗାଢ଼ା ଥିମ ବ୍ୟବହାର କରିବା ସମୟରେ ସାଇଟଗୁଡ଼ିକରେ ଗାଢ଼ା ଥିମ ଲାଗୁ କରନ୍ତୁ</translation>
-<translation id="2387895666653383613">ଟେକ୍ସଟ୍‌ ସ୍କେଲିଂ</translation>
 <translation id="2390272837142897736">ଜୁମ ବଢ଼ାନ୍ତୁ</translation>
 <translation id="2402980924095424747"><ph name="MEGABYTES" /> MB</translation>
 <translation id="2404630663942400771">{PERMISSIONS_SUMMARY_ALLOWED,plural, =1{<ph name="PERMISSION_1" />, <ph name="PERMISSION_2" />, ଏବଂ ଅଧିକ <ph name="NUM_MORE" />ଟିକୁ ଅନୁମତି ଦିଆଯାଇଛି}other{<ph name="PERMISSION_1" />, <ph name="PERMISSION_2" />, ଏବଂ ଅଧିକ <ph name="NUM_MORE" />ଟିକୁ ଅନୁମତି ଦିଆଯାଇଛି}}</translation>
@@ -106,7 +104,6 @@
 <translation id="2621115761605608342">ଏକ ନିର୍ଦ୍ଦିଷ୍ଟ ସାଇଟ୍ ପାଇଁ JavaScriptକୁ ଅନୁମତି ଦିଏ।</translation>
 <translation id="2653659639078652383">ଉପସ୍ଥାପନ</translation>
 <translation id="2677748264148917807">ଛାଡ଼ନ୍ତୁ</translation>
-<translation id="2678468611080193228">ତୃତୀୟ-ପକ୍ଷ କୁକୀଗୁଡ଼ିକୁ ଅସ୍ଥାୟୀ ଭାବରେ ଅନୁମତି ଦେବାକୁ ଚେଷ୍ଟା କରନ୍ତୁ, ଯାହାର ଅର୍ଥ ହେଉଛି କମ ସୁରକ୍ଷା କିନ୍ତୁ ସାଇଟ ଫିଚରଗୁଡ଼ିକ କାମ କରିବାର ସମ୍ଭାବନା ଅଧିକ</translation>
 <translation id="2682367912565197520">ସେଭ କରାଯାଇଥିବା ଜୁମ ଲେଭେଲକୁ ଡିଲିଟ କରନ୍ତୁ</translation>
 <translation id="2683434792633810741">ଡିଲିଟ କରି ରିସେଟ କରିବେ?</translation>
 <translation id="2713106313042589954">କ୍ୟାମେରା ବନ୍ଦ କରନ୍ତୁ</translation>
@@ -158,7 +155,6 @@
 <translation id="3403537308306431953"><ph name="ZOOM_LEVEL" /> %%</translation>
 <translation id="344449859752187052">ତୃତୀୟ-ପକ୍ଷ କୁକୀଗୁଡ଼ିକୁ ବ୍ଲକ କରାଯାଇଛି</translation>
 <translation id="3448554387819310837">ଚାଲୁ ଥିବା ସମୟରେ, ସାଇଟଗୁଡ଼ିକ ଆପଣଙ୍କ କେମେରାକୁ ବ୍ୟବହାର କରିବା ପାଇଁ ପଚାରିପାରିବ। ବନ୍ଦ ଥିବା ସମୟରେ, ସାଇଟଗୁଡ଼ିକ ଆପଣଙ୍କ କେମେରାକୁ ବ୍ୟବହାର କରିପାରିବ ନାହିଁ।</translation>
-<translation id="3465378418721443318">{DAYS,plural, =1{Chrome କାଲି ପୁଣି କୁକୀଗୁଡ଼ିକୁ ବ୍ଲକ କରିବ}other{Chrome # ଦିନରେ ପୁଣି କୁକୀଗୁଡ଼ିକୁ ବ୍ଲକ କରିବ}}</translation>
 <translation id="3521663503435878242"><ph name="DOMAIN" /> ଅଧୀନରେ ଥିବା ସାଇଟଗୁଡ଼ିକ</translation>
 <translation id="3523447078673133727">ଆପଣଙ୍କ ହାତକୁ ଟ୍ରାକ କରିବା ପାଇଁ ସାଇଟଗୁଡ଼ିକୁ ଅନୁମତି ଦିଅନ୍ତୁ ନାହିଁ</translation>
 <translation id="3536227077203206203">ଏହି ଥର ଅନୁମତି ଦିଆଯାଇଛି</translation>
@@ -174,6 +170,7 @@
 <translation id="3669841141196828854">{COUNT,plural, =1{<ph name="RWS_OWNER" />ର ସାଇଟଗୁଡ଼ିକର ଗୋଷ୍ଠୀରେ ଥିବା <ph name="RWS_MEMBERS_COUNT" /> ସାଇଟ ଆପଣଙ୍କ କାର୍ଯ୍ୟକଳାପକୁ ଗୋଷ୍ଠୀରେ ଦେଖିପାରିବ}other{<ph name="RWS_OWNER" />ର ସାଇଟଗୁଡ଼ିକର ଗୋଷ୍ଠୀରେ ଥିବା <ph name="RWS_MEMBERS_COUNT" /> ସାଇଟ ଆପଣଙ୍କ କାର୍ଯ୍ୟକଳାପକୁ ଗୋଷ୍ଠୀରେ ଦେଖିପାରିବ}}</translation>
 <translation id="3697164069658504920">ଚାଲୁ ଥିବା ସମୟରେ, ସାଇଟଗୁଡ଼ିକ USB ଡିଭାଇସଗୁଡ଼ିକୁ ବ୍ୟବହାର କରିବା ପାଇଁ ପଚାରିପାରିବ। ବନ୍ଦ ଥିବା ସମୟରେ, ସାଇଟଗୁଡ଼ିକ USB ଡିଭାଇସଗୁଡ଼ିକୁ ବ୍ୟବହାର କରିପାରିବ ନାହିଁ।</translation>
 <translation id="3707034683772193706">ଆପଣ ଭିଜିଟ କରୁଥିବା ଏକ ସାଇଟ ମୁଖ୍ୟତଃ ଆପଣ ଏକ ବୋଟ ନୁହଁନ୍ତି ବୋଲି ବୈଧ କରିବାକୁ Chromeରେ କିଛି ସୂଚନା ସେଭ କରିପାରିବ</translation>
+<translation id="3709818294139939629">ଫାଇଲକୁ ସାଇଟର ଆକ୍ସେସକୁ କଢ଼ାଯାଇଛି</translation>
 <translation id="3721953990244350188">ଖାରଜ କରି ପରବର୍ତ୍ତୀ ଉପଲବ୍ଧ କାର୍ଯ୍ୟ ଦେଖାନ୍ତୁ</translation>
 <translation id="3744111561329211289">ପୃଷ୍ଠପଟ ସିଙ୍କ୍‌</translation>
 <translation id="3763247130972274048">10 ସେକେଣ୍ଡ ବାଦ୍ ଦେବାକୁ ଭିଡିଓର ବାମ କିମ୍ବା ଡାହାଣକୁ ଦୁଇ ଥର ଟାପ୍ କରନ୍ତୁ</translation>
@@ -321,7 +318,7 @@
 <translation id="5876056640971328065">ଭିଡିଓ ବିରତ କରନ୍ତୁ</translation>
 <translation id="5877248419911025165">ସମସ୍ତ ଅନୁରୋଧକୁ ସଙ୍କୁଚିତ କରନ୍ତୁ</translation>
 <translation id="5884085660368669834">ସାଇଟ ପସନ୍ଦଗୁଡ଼ିକ</translation>
-<translation id="5887687176710214216">ଗତକାଲି ଶେଷଥର ଭିଜିଟ୍ କରାଯାଇଛି</translation>
+<translation id="5887687176710214216">ଗତକାଲି ଶେଷଥର ଭିଜିଟ କରାଯାଇଛି</translation>
 <translation id="5916664084637901428">ଚାଲୁ</translation>
 <translation id="5922853908706496913">ଆପଣଙ୍କ ସ୍କ୍ରିନ୍ ସେୟାର୍ କରାଯାଉଛି</translation>
 <translation id="5922967540311291836">ତୃତୀୟ-ପକ୍ଷ କୁକୀଗୁଡ଼ିକୁ ବ୍ଲକ କରନ୍ତୁ:</translation>
@@ -436,6 +433,7 @@
 <translation id="7425915948813553151">ସାଇଟଗୁଡ଼ିକ ପାଇଁ ଗାଢ଼ା ଥିମ</translation>
 <translation id="7521387064766892559">JavaScript</translation>
 <translation id="7547989957535180761">ଚାଲୁ ଥିବା ସମୟରେ, ସାଇଟଗୁଡ଼ିକ ସାଇନ-ଇନ ପ୍ରମ୍ପ୍ଟ ଦେଖାଇପାରିବ। ବନ୍ଦ ଥିବା ସମୟରେ, ସାଇଟଗୁଡ଼ିକ ସାଇନ-ଇନ ପ୍ରମ୍ପ୍ଟ ଦେଖାଇପାରିବ ନାହିଁ।</translation>
+<translation id="7553211568594248088">ହବ ସର୍ଚ୍ଚରୁ ବାହାରି ଯାଆନ୍ତୁ</translation>
 <translation id="7554752735887601236">କୌଣସି ସାଇଟ୍ ଆପଣଙ୍କ ମାଇକ୍ରୋଫୋନକୁ ବ୍ୟବହାର କରୁଛି</translation>
 <translation id="7561196759112975576">ସର୍ବଦା</translation>
 <translation id="757524316907819857">ସୁରକ୍ଷିତ ଥିବା ବିଷୟବସ୍ତୁ ଚଲାଇବାରୁ ସାଇଟ୍‌ଗୁଡ଼ିକୁ ବ୍ଲକ୍ କରନ୍ତୁ</translation>
@@ -444,7 +442,6 @@
 <translation id="7649070708921625228">ସହାୟତା</translation>
 <translation id="7658239707568436148">ବାତିଲ</translation>
 <translation id="7667547420449112975">ଦି ୱାଣ୍ଡରଫୁଲ ୱିଜାର୍ଡ ଅଫ ଓଜ</translation>
-<translation id="7684642910516280563">ତୃତୀୟ-ପକ୍ଷ କୁକୀଗୁଡ଼ିକୁ ବ୍ୟବହାର କରିବା ପାଇଁ ଏକ ସାଇଟକୁ ଅନୁମତି ଦିଅନ୍ତୁ ନାହିଁ</translation>
 <translation id="7688240020069572972">Chrome ଟିପ୍ସ କାର୍ଡ ଲୁଚାନ୍ତୁ</translation>
 <translation id="7719367874908701697">ପୃଷ୍ଠାର ଜୁମ୍</translation>
 <translation id="7759147511335618829">MIDI ଡିଭାଇସ ନିୟନ୍ତ୍ରଣ କରି ପୁଣି ପ୍ରୋଗ୍ରାମ କରନ୍ତୁ</translation>
@@ -478,6 +475,7 @@
 <translation id="813082847718468539">ସାଇଟ୍‍ର ସୂଚନା ଦେଖନ୍ତୁ</translation>
 <translation id="8131740175452115882">ନିଶ୍ଚିତ କରନ୍ତୁ</translation>
 <translation id="8168435359814927499">ବିଷୟବସ୍ତୁ</translation>
+<translation id="818487310457576362">ପୂର୍ଣ୍ଣ ସ୍କ୍ରିନରୁ ବାହାରିଯିବା ପାଇଁ ସ୍କ୍ରିନର ପାର୍ଶ୍ୱରୁ ଡ୍ରାଗ କରନ୍ତୁ।</translation>
 <translation id="8186479265534291036">ସାଇଟ କାମ କରୁନାହିଁ? ତୃତୀୟ-ପକ୍ଷ କୁକୀଗୁଡ଼ିକୁ ବ୍ଲକ କରାଯାଇଛି</translation>
 <translation id="8197286292360124385">ଅନୁମତି ଦିଆଯାଇଛି (<ph name="PERMISSION_1" />)</translation>
 <translation id="8200772114523450471">ସାରାଶଂ</translation>

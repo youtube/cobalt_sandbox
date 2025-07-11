@@ -1363,7 +1363,8 @@ void RenderProcessHost::SetMaxRendererProcessCount(size_t count) {
   if (RenderProcessHostImpl::GetProcessCount() > count) {
     // TODO(pmonette): Only cleanup n spares, where n is the count of processes
     // that is over the limit.
-    SpareRenderProcessHostManagerImpl::Get().CleanupSpares();
+    SpareRenderProcessHostManagerImpl::Get().CleanupSpares(
+        SpareRendererDispatchResult::kDestroyedProcessLimit);
   }
 }
 
@@ -3041,7 +3042,8 @@ bool RenderProcessHostImpl::IsSpareProcessKeptAtAllTimes() {
   // The comparison below is using 1077 rather than 1024 because this helps
   // ensure that devices with exactly 1GB of RAM won't get included because of
   // inaccuracies or off-by-one errors.
-  if (base::SysInfo::AmountOfPhysicalMemoryMB() <= 1077) {
+  if (base::SysInfo::AmountOfPhysicalMemoryMB() <=
+      features::kAndroidSpareRendererMemoryThreshold.Get()) {
     return false;
   }
 
@@ -3599,7 +3601,9 @@ bool RenderProcessHostImpl::ShutdownRequested() {
 }
 
 bool RenderProcessHostImpl::FastShutdownIfPossible(size_t page_count,
-                                                   bool skip_unload_handlers) {
+                                                   bool skip_unload_handlers,
+                                                   bool ignore_workers,
+                                                   bool ignore_keep_alive) {
   base::UmaHistogramBoolean(
       "BrowserRenderProcessHost.FastShutdownIfPossible.Total", true);
   // Do not shut down the process if there are active or pending views other
@@ -3631,13 +3635,13 @@ bool RenderProcessHostImpl::FastShutdownIfPossible(size_t page_count,
   }
 
   // TODO(crbug.com/40236167): Remove this block once the migration is launched.
-  if (keep_alive_ref_count_ != 0) {
+  if (!ignore_keep_alive && keep_alive_ref_count_ != 0) {
     CHECK(IsKeepAliveRefCountAllowed());
     LogDelayReasonForFastShutdown(DelayShutdownReason::kFetchKeepAlive);
     return false;
   }
 
-  if (worker_ref_count_ != 0) {
+  if (!ignore_workers && worker_ref_count_ != 0) {
     LogDelayReasonForFastShutdown(DelayShutdownReason::kWorker);
     return false;
   }

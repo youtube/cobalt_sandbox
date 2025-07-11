@@ -449,8 +449,7 @@ bool RenderViewHostImpl::CreateRenderView(
 
   mojom::CreateViewParamsPtr params = mojom::CreateViewParams::New();
 
-  params->renderer_preferences = delegate_->GetRendererPrefs();
-  RenderViewHostImpl::GetPlatformSpecificPrefs(&params->renderer_preferences);
+  params->renderer_preferences = delegate_->GetRendererPrefs(this);
   params->web_preferences = delegate_->GetOrCreateWebPreferences();
   params->color_provider_colors = delegate_->GetColorProviderColorMaps();
   params->opener_frame_token = opener_frame_token;
@@ -471,9 +470,12 @@ bool RenderViewHostImpl::CreateRenderView(
           prerender_host->GetHistogramSuffix();
       prerender_param->should_warm_up_compositor =
           prerender_host->should_warm_up_compositor();
+      prerender_param->should_prepare_paint_tree =
+          prerender_host->should_prepare_paint_tree();
     } else {
       prerender_param->page_metric_suffix = ".Preview";
       prerender_param->should_warm_up_compositor = false;
+      prerender_param->should_prepare_paint_tree = false;
     }
     params->prerender_param = std::move(prerender_param);
   }
@@ -608,19 +610,12 @@ bool RenderViewHostImpl::CreateRenderView(
   // We must send access information relative to the popin opener in order for
   // the renderer to properly conduct checks.
   // See https://explainers-by-googlers.github.io/partitioned-popins/
-  // TODO(crbug.com/340606651): Move into a function to share.
-  if (!frame_tree_->GetMainFrame()->IsNestedWithinFencedFrame() &&
-      frame_tree_->GetMainFrame()->delegate()->IsPartitionedPopin()) {
+  if (frame_tree_->GetMainFrame()->ShouldPartitionAsPopin()) {
     params->partitioned_popin_params =
-        blink::mojom::PartitionedPopinParams::New(
-            frame_tree_->GetMainFrame()
-                ->delegate()
-                ->GetPartitionedPopinOpenerProperties()
-                .top_frame_origin,
-            frame_tree_->GetMainFrame()
-                ->delegate()
-                ->GetPartitionedPopinOpenerProperties()
-                .site_for_cookies);
+        frame_tree_->GetMainFrame()
+            ->delegate()
+            ->GetPartitionedPopinOpenerProperties()
+            .AsMojom();
   }
 
   // The renderer process's `blink::WebView` is owned by this lifecycle of

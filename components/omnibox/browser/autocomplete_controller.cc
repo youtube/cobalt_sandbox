@@ -395,7 +395,7 @@ std::string AutocompleteController::UpdateTypeToDebugString(
     case UpdateType::kMatchDeletion:
       return "Match deletion";
   }
-  NOTREACHED_IN_MIGRATION();
+  NOTREACHED();
 }
 
 // static
@@ -1048,10 +1048,16 @@ bool AutocompleteController::ShouldRunProvider(
            provider->type() == AutocompleteProvider::TYPE_ZERO_SUGGEST;
   }
 
+#if BUILDFLAG(IS_ANDROID)
   if (omnibox::IsAndroidHub(input_.current_page_classification())) {
     return provider->type() == AutocompleteProvider::TYPE_SEARCH ||
-           provider->type() == AutocompleteProvider::TYPE_OPEN_TAB;
+           provider->type() == AutocompleteProvider::TYPE_OPEN_TAB ||
+           (OmniboxFieldTrial::kAndroidHubSearchEnableBookmarkProvider.Get() &&
+            provider->type() == AutocompleteProvider::TYPE_BOOKMARK) ||
+           (OmniboxFieldTrial::kAndroidHubSearchEnableHistoryProvider.Get() &&
+            provider->type() == AutocompleteProvider::TYPE_HISTORY_QUICK);
   }
+#endif
 
   if (input_.InKeywordMode()) {
     // Only a subset of providers are run when we're in a starter pack keyword
@@ -1329,7 +1335,7 @@ void AutocompleteController::UpdateResult(UpdateType update_type,
       break;
 
     case UpdateType::kNone:
-      NOTREACHED_IN_MIGRATION();
+      NOTREACHED();
   }
 #endif  // DCHECK_IS_ON()
 
@@ -1461,7 +1467,7 @@ void AutocompleteController::MlRerank(OldResult& old_result) {
     RunBatchUrlScoringModel(old_result);
   }
 #else
-  NOTREACHED_IN_MIGRATION();
+  NOTREACHED();
 #endif  // BUILDFLAG(BUILD_WITH_TFLITE_LIB)
 }
 
@@ -2076,8 +2082,7 @@ void AutocompleteController::RunBatchUrlScoringModel(OldResult& old_result) {
   }
 
   if (ml_scores.size() != eligible_match_itrs.size()) {
-    NOTREACHED_IN_MIGRATION();
-    return;
+    NOTREACHED();
   }
 
   // Record how many eligible matches the model was executed for.
@@ -2191,8 +2196,7 @@ void AutocompleteController::RunBatchUrlScoringModelMappedSearchBlending(
   }
 
   if (ml_scores.size() != scored_positions.size()) {
-    NOTREACHED_IN_MIGRATION();
-    return;
+    NOTREACHED();
   }
 
   // Record how many eligible matches the model was executed for.
@@ -2332,8 +2336,7 @@ void AutocompleteController::
   }
 
   if (ml_scores.size() != scored_positions.size()) {
-    NOTREACHED_IN_MIGRATION();
-    return;
+    NOTREACHED();
   }
 
   // Record how many eligible matches the model was executed for.

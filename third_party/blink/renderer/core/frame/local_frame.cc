@@ -991,6 +991,12 @@ void LocalFrame::OnFirstPaint(bool text_painted, bool image_painted) {
   }
 }
 
+void LocalFrame::OnFirstContentfulPaint() {
+  if (IsOutermostMainFrame()) {
+    GetPage()->GetChromeClient().OnFirstContentfulPaint();
+  }
+}
+
 bool LocalFrame::CanAccessEvent(
     const WebInputEventAttribution& attribution) const {
   switch (attribution.type()) {
@@ -1284,8 +1290,7 @@ SuddenTerminationDisablerTypeForEventType(const AtomicString& event_type) {
     return mojom::blink::SuddenTerminationDisablerType::
         kVisibilityChangeHandler;
   }
-  NOTREACHED_IN_MIGRATION();
-  return mojom::blink::SuddenTerminationDisablerType::kUnloadHandler;
+  NOTREACHED();
 }
 
 int NumberOfSuddenTerminationEventListeners(const EventTarget& event_target,

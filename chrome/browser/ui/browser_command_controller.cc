@@ -239,7 +239,7 @@ BrowserCommandController::BrowserCommandController(Browser* browser)
                           base::Unretained(this)));
 #endif  // BUILDFLAG(ENABLE_PRINTING)
   profile_pref_registrar_.Add(
-      prefs::kDownloadRestrictions,
+      policy::policy_prefs::kDownloadRestrictions,
       base::BindRepeating(&BrowserCommandController::UpdateSaveAsState,
                           base::Unretained(this)));
 #if !BUILDFLAG(IS_MAC)
@@ -1515,6 +1515,16 @@ void BrowserCommandController::UpdateCommandsForIncognitoAvailability() {
     return;
 
   UpdateSharedCommandsForIncognitoAvailability(&command_updater_, profile());
+  // Update the new incognito window ActionItem enabled state. Note, this cannot
+  // be done in UpdateSharedCommandsForIncognitoAvailability as the method is
+  // static to also handle states for NSApplication where no browser window are
+  // open.
+  if (auto* incognito_action = actions::ActionManager::Get().FindAction(
+          kActionNewIncognitoWindow,
+          browser_->GetActions()->root_action_item())) {
+    incognito_action->SetEnabled(
+        IncognitoModePrefs::IsIncognitoAllowed(profile()));
+  }
 
   if (!IsShowingMainUI()) {
     command_updater_.UpdateCommandEnabled(IDC_IMPORT_SETTINGS, false);

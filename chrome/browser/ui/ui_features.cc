@@ -90,13 +90,6 @@ bool IsExtensionMenuInRootAppMenu() {
   return base::FeatureList::IsEnabled(kExtensionsMenuInAppMenu);
 }
 
-#if !defined(ANDROID)
-// Enables "Access Code Cast" UI.
-BASE_FEATURE(kAccessCodeCastUI,
-             "AccessCodeCastUI",
-             base::FEATURE_ENABLED_BY_DEFAULT);
-#endif
-
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_LINUX)
 // Enables the feature to remove the last confirmation dialog when relaunching
 // to update Chrome.
@@ -126,16 +119,17 @@ BASE_FEATURE(kIOSPromoPaymentBubble,
 
 const base::FeatureParam<std::string> kIOSPromoPasswordBubbleQRCodeURL{
     &kIOSPromoRefreshedPasswordBubble, "password_promo_qr_code_url",
-    "https://apps.apple.com/app/apple-store/"
-    "id535886823?pt=9008&ct=desktop-chr-passwords&mt=8"};
+    "https://www.google.com/chrome/go-mobile/"
+    "?ios-campaign=desktop-chr-passwords&android-campaign=desktop-chr-"
+    "passwords"};
 const base::FeatureParam<std::string> kIOSPromoAddressBubbleQRCodeURL{
     &kIOSPromoAddressBubble, "address_promo_qr_code_url",
-    "https://apps.apple.com/app/apple-store/"
-    "id535886823?pt=9008&ct=desktop-chr-address&mt=8"};
+    "https://www.google.com/chrome/go-mobile/"
+    "?ios-campaign=desktop-chr-address&android-campaign=desktop-chr-address"};
 const base::FeatureParam<std::string> kIOSPromoPaymentBubbleQRCodeURL{
     &kIOSPromoPaymentBubble, "payment_promo_qr_code_url",
-    "https://apps.apple.com/app/apple-store/"
-    "id535886823?pt=9008&ct=desktop-chr-payment&mt=8"};
+    "https://www.google.com/chrome/go-mobile/"
+    "?ios-campaign=desktop-chr-payment&android-campaign=desktop-chr-payment"};
 #endif  // !BUILDFLAG(IS_ANDROID) && BUILDFLAG(GOOGLE_CHROME_BRANDING)
 
 #if !BUILDFLAG(IS_ANDROID)
@@ -424,6 +418,10 @@ BASE_FEATURE(kEnterpriseManagementDisclaimerUsesCustomLabel,
 
 BASE_FEATURE(kEnterpriseUpdatedProfileCreationScreen,
              "EnterpriseUpdatedProfileCreationScreen",
+             base::FEATURE_DISABLED_BY_DEFAULT);
+
+BASE_FEATURE(kManagedProfileRequiredInterstitial,
+             "ManagedProfileRequiredInterstitial",
              base::FEATURE_DISABLED_BY_DEFAULT);
 
 // Enables a web-based tab strip. See https://crbug.com/989131. Note this

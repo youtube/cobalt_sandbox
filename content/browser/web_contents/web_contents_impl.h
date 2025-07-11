@@ -30,6 +30,7 @@
 #include "base/types/pass_key.h"
 #include "build/build_config.h"
 #include "components/download/public/common/download_url_parameters.h"
+#include "components/input/render_input_router.mojom.h"
 #include "components/input/render_widget_host_input_event_router.h"
 #include "content/browser/media/audio_stream_monitor.h"
 #include "content/browser/media/forwarding_audio_stream_factory.h"
@@ -206,7 +207,8 @@ class CONTENT_EXPORT WebContentsImpl
       public ui::NativeThemeObserver,
       public ui::ColorProviderSourceObserver,
       public SlowWebPreferenceCacheObserver,
-      public input::RenderWidgetHostInputEventRouter::Delegate {
+      public input::RenderWidgetHostInputEventRouter::Delegate,
+      public input::mojom::RenderInputRouterDelegateClient {
  public:
   class FriendWrapper;
 
@@ -615,6 +617,7 @@ class CONTENT_EXPORT WebContentsImpl
   bool HasRecentInteraction() override;
   [[nodiscard]] ScopedIgnoreInputEvents IgnoreInputEvents(
       std::optional<WebInputEventAuditCallback> audit_callback) override;
+  bool ShouldIgnoreInputEventsForTesting() override;
   bool HasActiveEffectivelyFullscreenVideo() override;
   void WriteIntoTrace(perfetto::TracedValue context) override;
   const base::Location& GetCreatorLocation() override;
@@ -915,6 +918,7 @@ class CONTENT_EXPORT WebContentsImpl
                             int error_code) override;
   void DraggableRegionsChanged(
       const std::vector<blink::mojom::DraggableRegionPtr>& regions) override;
+  void OnFirstContentfulPaintInPrimaryMainFrame() override;
 
   // RenderViewHostDelegate ----------------------------------------------------
   RenderViewHostDelegateView* GetDelegateView() override;
@@ -930,7 +934,8 @@ class CONTENT_EXPORT WebContentsImpl
       int32_t line_no,
       const std::u16string& source_id,
       const std::optional<std::u16string>& untrusted_stack_trace) override;
-  const blink::RendererPreferences& GetRendererPrefs() const override;
+  const blink::RendererPreferences& GetRendererPrefs(
+      RenderViewHostImpl* render_view_host) override;
   void DidReceiveInputEvent(RenderWidgetHostImpl* render_widget_host,
                             const blink::WebInputEvent& event) override;
   bool ShouldIgnoreWebInputEvents(const blink::WebInputEvent& event) override;
@@ -947,6 +952,10 @@ class CONTENT_EXPORT WebContentsImpl
       override;
   void RequestMediaAccessPermission(const MediaStreamRequest& request,
                                     MediaResponseCallback callback) override;
+
+  void ProcessSelectAudioOutput(const SelectAudioOutputRequest& request,
+                                SelectAudioOutputCallback callback) override;
+
   bool CheckMediaAccessPermission(RenderFrameHostImpl* render_frame_host,
                                   const url::Origin& security_origin,
                                   blink::mojom::MediaStreamType type) override;
@@ -967,6 +976,7 @@ class CONTENT_EXPORT WebContentsImpl
       const std::string& embedder_histogram_suffix,
       ui::PageTransition page_transition,
       bool should_warm_up_compositor,
+      bool should_prepare_paint_tree,
       PreloadingHoldbackStatus holdback_status_override,
       PreloadingAttempt* preloading_attempt,
       base::RepeatingCallback<bool(const GURL&,
@@ -1208,6 +1218,18 @@ class CONTENT_EXPORT WebContentsImpl
 
   //  RenderWidgetHostInputEventRouter::Delegate -------------------------------
   input::TouchEmulator* GetTouchEmulator(bool create_if_necessary) override;
+
+  // input::mojom::RenderInputRouterDelegateClient -----------------------------
+  void NotifyObserversOfInputEvent(
+      const viz::FrameSinkId& frame_sink_id,
+      std::unique_ptr<blink::WebCoalescedInputEvent> event) override;
+  void NotifyObserversOfInputEventAcks(
+      const viz::FrameSinkId& frame_sink_id,
+      blink::mojom::InputEventResultSource ack_source,
+      blink::mojom::InputEventResultState ack_result,
+      std::unique_ptr<blink::WebCoalescedInputEvent> event) override;
+  void OnInvalidInputEventSource(
+      const viz::FrameSinkId& frame_sink_id) override;
 
   // Invoked before a form repost warning is shown.
   void NotifyBeforeFormRepostWarningShow() override;
@@ -1714,7 +1736,8 @@ class CONTENT_EXPORT WebContentsImpl
     // T1 must be a pointer to a WebContentsObserver method.
     template <typename T1, typename... P1>
     void NotifyObservers(T1 func, P1&&... args) {
-      TRACE_EVENT0("content", "WebContentsObserverList::NotifyObservers");
+      TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("content.verbose"),
+                   "WebContentsObserverList::NotifyObservers");
       base::AutoReset<bool> scope(&is_notifying_observers_, true);
       for (WebContentsObserver& observer : observers_) {
         TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("content.verbose"),
@@ -2309,11 +2332,11 @@ class CONTENT_EXPORT WebContentsImpl
   std::unique_ptr<ColorChooserHolder> color_chooser_holder_;
 #endif
 
-  bool web_contents_has_focus_{false};
-
   // All live RenderWidgetHostImpls that are created by this object and may
   // outlive it.
-  std::set<raw_ptr<RenderWidgetHostImpl, SetExperimental>> created_widgets_;
+  base::flat_map<viz::FrameSinkId,
+                 raw_ptr<RenderWidgetHostImpl, SetExperimental>>
+      created_widgets_;
 
   // Process id of the shown fullscreen widget, or kInvalidUniqueID if there is
   // no fullscreen widget.
@@ -2595,6 +2618,9 @@ class CONTENT_EXPORT WebContentsImpl
   // WebContents(concept in browser) to allow grouping CompositorFrameSinks for
   // input event routing with InputVizard.
   const uint32_t compositor_frame_sink_grouping_id_;
+
+  mojo::Receiver<input::mojom::RenderInputRouterDelegateClient>
+      rir_delegate_client_receiver_{this};
 
   // Indicates if the instance is hosted in a preview window.
   // This will be set in Init() and will be reset in WillActivatePreviewPage().

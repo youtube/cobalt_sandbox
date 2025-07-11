@@ -353,9 +353,10 @@ struct NetworkContextParams {
   // On Windows, whether or not the cookie database should be opened with
   // the sqlite3 flag `exclusive=true` which asks the sqlite VFS to open them
   // without file sharing enabled. This has the consequence that other processes
-  // should not be able to open the cookie database file.
+  // should not be able to open the cookie database file. If left unspecified
+  // then a feature-determined default value will be used.
   [EnableIf=is_win]
-  bool enable_locking_cookie_database = false;
+  bool? enable_locking_cookie_database;
 
   // If the cookie file is given, this controls whether previously written
   // session cookies are restored. Otherwise it should be false.
@@ -1419,14 +1420,17 @@ interface NetworkContext {
   // configuration summary written out at the end of the log.
   CreateNetLogExporter(pending_receiver<NetLogExporter> receiver);
 
-  // Tries to preconnect to |url|. |num_streams| may be used to request more
+  // Tries to preconnect to `url`. `num_streams` may be used to request more
   // than one connection be established in parallel.
   // The sockets will only be used for requests which share the same values for
-  // |credentials_mode| and |network_anonymization_key|.
+  // `credentials_mode` and `network_anonymization_key`.
+  // `traffic_annotation` will be used to distinguish where the preconnect was
+  // initiated from.
   PreconnectSockets(uint32 num_streams,
                     url.mojom.Url url,
                     network.mojom.CredentialsMode credentials_mode,
-                    NetworkAnonymizationKey network_anonymization_key);
+                    NetworkAnonymizationKey network_anonymization_key,
+                    MutableNetworkTrafficAnnotationTag traffic_annotation);
 
   // Creates a P2PSocketManager instance, used for WebRTC.
   // `network_anonymization_key` is the network cache shard to associate with

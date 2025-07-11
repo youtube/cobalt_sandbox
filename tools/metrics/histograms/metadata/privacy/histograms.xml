@@ -1664,6 +1664,15 @@ reviewer.
   </summary>
 </histogram>
 
+<histogram name="PrivacySandbox.SentimentSurvey.Status"
+    enum="PrivacySandboxSentimentSurveyStatus" expires_after="2025-11-04">
+  <owner>alvingo@google.com</owner>
+  <owner>koilos@google.com</owner>
+  <summary>
+    Records the status when attempting to surface the sentiment survey.
+  </summary>
+</histogram>
+
 <histogram
     name="PrivacySandbox.TrackingProtection.OnboardingStartup.AckedSince"
     units="ms" expires_after="2024-09-30">
@@ -1775,14 +1784,14 @@ reviewer.
         summary="IsAttributionReportingAllowed"/>
     <variant name="IsAttributionReportingEverAllowed"
         summary="IsAttributionReportingEverAllowed"/>
+    <variant name="IsFencedStorageReadAllowed"
+        summary="IsFencedStorageReadAllowed"/>
     <variant name="IsFledgeBuyAllowed" summary="IsFledgeBuyAllowed"/>
     <variant name="IsFledgeJoinAllowed" summary="IsFledgeJoinAllowed"/>
     <variant name="IsFledgeLeaveAllowed" summary="IsFledgeLeaveAllowed"/>
     <variant name="IsFledgeReadAllowed" summary="IsFledgeReadAllowed"/>
     <variant name="IsFledgeSellAllowed" summary="IsFledgeSellAllowed"/>
     <variant name="IsFledgeUpdateAllowed" summary="IsFledgeUpdateAllowed"/>
-    <variant name="IsLocalUnpartitionedDataAccessAllowed"
-        summary="IsLocalUnpartitionedDataAccessAllowed"/>
     <variant name="IsPrivacySandboxReportingDestinationAttested"
         summary="IsPrivacySandboxReportingDestinationAttested"/>
     <variant name="IsPrivateAggregationAllowed"

@@ -148,7 +148,6 @@ void ChromeTracingDelegate::OnBrowserAdded(Browser* browser) {
 #endif  // BUILDFLAG(IS_ANDROID)
 
 bool ChromeTracingDelegate::IsActionAllowed(
-    BackgroundScenarioAction action,
     bool requires_anonymized_data) const {
   // If the background tracing is specified on the command-line, we allow
   // any scenario to be traced and uploaded.
@@ -157,21 +156,9 @@ bool ChromeTracingDelegate::IsActionAllowed(
   }
 
   if (requires_anonymized_data &&
-      (incognito_launched_ || chrome::IsOffTheRecordSessionActive())) {
+      (incognito_launched_ || IsOffTheRecordSessionActive())) {
     tracing::RecordDisallowedMetric(
         tracing::TracingFinalizationDisallowedReason::kIncognitoLaunched);
-    return false;
-  }
-
-  BackgroundTracingStateManager& state =
-      BackgroundTracingStateManager::GetInstance();
-
-  // Don't start a new trace if the previous trace did not end.
-  if (action == BackgroundScenarioAction::kStartTracing &&
-      state.DidLastSessionEndUnexpectedly()) {
-    tracing::RecordDisallowedMetric(
-        tracing::TracingFinalizationDisallowedReason::
-            kLastTracingSessionDidNotEnd);
     return false;
   }
 
@@ -183,8 +170,7 @@ bool ChromeTracingDelegate::OnBackgroundTracingActive(
   BackgroundTracingStateManager& state =
       BackgroundTracingStateManager::GetInstance();
 
-  if (!IsActionAllowed(BackgroundScenarioAction::kStartTracing,
-                       requires_anonymized_data)) {
+  if (!IsActionAllowed(requires_anonymized_data)) {
     return false;
   }
 
@@ -192,14 +178,14 @@ bool ChromeTracingDelegate::OnBackgroundTracingActive(
   return true;
 }
 
-bool ChromeTracingDelegate::OnBackgroundTracingIdle(
-    bool requires_anonymized_data) {
+void ChromeTracingDelegate::OnBackgroundTracingIdle() {
   BackgroundTracingStateManager& state =
       BackgroundTracingStateManager::GetInstance();
   state.OnTracingStopped();
+}
 
-  return IsActionAllowed(BackgroundScenarioAction::kUploadTrace,
-                         requires_anonymized_data);
+bool ChromeTracingDelegate::CanFinalizeTrace(bool requires_anonymized_data) {
+  return IsActionAllowed(requires_anonymized_data);
 }
 
 bool ChromeTracingDelegate::ShouldSaveUnuploadedTrace() const {

@@ -2288,34 +2288,6 @@ be describing additional metrics about the same event.
   <summary>
     Recorded when a credit card form is autofilled.
   </summary>
-  <metric name="Fillable.AfterSecurity.Bitmask"
-      enum="AutofillCreditCardSeamlessnessBitmask">
-    <summary>
-      Logs the field types which Autofill would have filled if the credit card
-      on file was complete.
-    </summary>
-  </metric>
-  <metric name="Fillable.AfterSecurity.Qualitative"
-      enum="CreditCardSeamlessFill">
-    <summary>
-      Logs a qualitative summary of the field types which Autofill would have
-      filled if the credit card on file was complete.
-    </summary>
-  </metric>
-  <metric name="Fillable.AfterSecurity.Visible.Bitmask"
-      enum="AutofillCreditCardSeamlessnessBitmask">
-    <summary>
-      Logs the field types which Autofill would have filled into visible fields
-      if the credit card on file was complete.
-    </summary>
-  </metric>
-  <metric name="Fillable.AfterSecurity.Visible.Qualitative"
-      enum="CreditCardSeamlessFill">
-    <summary>
-      Logs a qualitative summary of the field types which Autofill would have
-      filled into visible fields if the credit card on file was complete.
-    </summary>
-  </metric>
   <metric name="Fillable.BeforeSecurity.Bitmask"
       enum="AutofillCreditCardSeamlessnessBitmask">
     <summary>
@@ -2775,86 +2747,6 @@ be describing additional metrics about the same event.
   </metric>
 </event>
 
-<event name="Autofill.RepeatedServerTypePredictionRationalized">
-  <owner>parastoog@chromium.org</owner>
-  <summary>
-    Recorded when a field type predicted by server is rationalized because of
-    repetition.
-  </summary>
-  <metric name="FieldNewOverallType">
-    <summary>
-      Field's overall |FieldType| after rationalization. See
-      |AutofillField.GetStorableType()|.
-    </summary>
-  </metric>
-  <metric name="FieldOldOverallType">
-    <summary>
-      Field's overall |FieldType| before rationalization. See
-      |AutofillField.GetStorableType()|.
-    </summary>
-  </metric>
-  <metric name="FieldSignature">
-    <summary>
-      The signature of the field (mod 1021). This is the hash identifier used to
-      denote this field for query and voting purposes. See
-      components/autofill/core/common/signatures.cc for more details.
-    </summary>
-  </metric>
-  <metric name="FieldTypeGroup">
-    <summary>
-      Field's |FieldTypeGroup|. See |AutofillType.group()|.
-    </summary>
-  </metric>
-  <metric name="FormSignature">
-    <summary>
-      The signature of the form (mod 1021). This is the hash identifier used to
-      denote this form for query and voting purposes. See
-      components/autofill/core/common/signatures.cc for more details.
-    </summary>
-  </metric>
-  <metric name="HeuristicType">
-    <summary>
-      Field's |FieldType| based on heuristics. See
-      |AutofillField.heuristic_type()|.
-    </summary>
-  </metric>
-  <metric name="HtmlFieldMode">
-    <summary>
-      Whether the field's autocomplete hint specified 'billing' or 'shipping'.
-      See |AutofillField.html_mode()|.
-    </summary>
-  </metric>
-  <metric name="HtmlFieldType">
-    <summary>
-      Field's autocomplete field type hint. See |AutofillField.html_type()|.
-    </summary>
-  </metric>
-  <metric name="ServerType">
-    <summary>
-      Field's |FieldType| returned by server. See |AutofillField.server_type()|.
-    </summary>
-  </metric>
-</event>
-
-<event name="Autofill.Sectioning">
-  <owner>fleimgruber@google.com</owner>
-  <owner>schwering@google.com</owner>
-  <summary>
-    Recorded after sectioning is performed when the server classification
-    arrived, and only when `AutofillUseParameterizedSectioning` is enabled.
-  </summary>
-  <metric name="FormSignature">
-    <summary>
-      A 10-bit hash of the form's signature.
-    </summary>
-  </metric>
-  <metric name="SectioningSignature">
-    <summary>
-      A 10-bit hash of the form's computed sections.
-    </summary>
-  </metric>
-</event>
-
 <event name="Autofill.SuggestionFilled">
   <owner>jsaul@google.com</owner>
   <summary>
@@ -3046,7 +2938,8 @@ be describing additional metrics about the same event.
   <owner>chrome-autofill-team@google.com</owner>
   <summary>
     All information about a specific field, recorded at form submission or form
-    destruction time (whatever comes first).
+    destruction time (whatever comes first). (As of M132) Info are recorded only
+    for fields that have at most `autofill::kMaxLogEventsPerField` events.
   </summary>
   <metric name="AutocompleteState" enum="AutofillAutocompleteState">
     <summary>
@@ -7109,6 +7002,27 @@ be describing additional metrics about the same event.
   </metric>
 </event>
 
+<event name="Cookies.Blocked.DueToOriginMismatch">
+  <owner>amarjotgill@chromium.org</owner>
+  <owner>bingler@chromium.org</owner>
+  <summary>
+    A collection of metrics which are recorded for cookies which will be blocked
+    due to an origin mismatch, this means either the port or scheme it is being
+    accessed by does not match that of the origin which originally set the
+    cookie.
+  </summary>
+  <metric name="PortMismatch" enum="Boolean">
+    <summary>
+      True if the cookie was accessed by port which was mismatched.
+    </summary>
+  </metric>
+  <metric name="SchemeMismatch" enum="Boolean">
+    <summary>
+      True if the cookie was accessed by scheme which was mismatched.
+    </summary>
+  </metric>
+</event>
+
 <event name="Cookies.FirstPartyPartitionedInCrossSiteContextV3">
   <owner>selya@chromium.org</owner>
   <owner>dylancutler@google.com</owner>
@@ -7573,6 +7487,25 @@ be describing additional metrics about the same event.
     <summary>
       True for sites wrote to the browser's storage since the last time the DIPS
       instance attempted to clear site storage.
+    </summary>
+  </metric>
+</event>
+
+<event name="DIPS.TrustIndicator.InFlowInteraction">
+  <owner>svend@google.com</owner>
+  <owner>dc-komics@google.com</owner>
+  <summary>
+    When a tab's primary main frame is navigated to three consecutive URLs
+    A-&gt;B-&gt;C, B accesses cookies or storage, the eTLD+1 for B is different
+    from the eTLD+1s of A and C, A, B, and C commit (become the primary main
+    page), the navigations A-&gt;B and B-&gt;C were content-initiated but not
+    user-initiated, and B receives user activation (click, scroll, etc.), then
+    this event is recorded for URL B.
+  </summary>
+  <metric name="FlowId">
+    <summary>
+      A randomly-generated 32-bit id to connect this event with its matching
+      DIPS.SuspectedTrackerFlowEntrypoint event.
     </summary>
   </metric>
 </event>
@@ -8123,6 +8056,61 @@ be describing additional metrics about the same event.
   </metric>
 </event>
 
+<event name="FacilitatedPayments.Pix.FopSelectorResult">
+  <owner>vishwasuppoor@google.com</owner>
+  <owner>siashah@google.com</owner>
+  <owner>rouslan@chromium.org</owner>
+  <owner>payments-autofill-team@google.com</owner>
+  <summary>
+    An event that is logged when the FoP selector UI for Pix is closed.
+  </summary>
+  <metric name="Result" enum="Boolean">
+    <summary>
+      Set to true after user accepted the FoP selector UI and selected a FoP to
+      use, and to false after user rejected/dismissed the FoP selector UI.
+    </summary>
+  </metric>
+</event>
+
+<event name="FacilitatedPayments.Pix.FopSelectorShown">
+  <owner>vishwasuppoor@google.com</owner>
+  <owner>siashah@google.com</owner>
+  <owner>rouslan@chromium.org</owner>
+  <owner>payments-autofill-team@google.com</owner>
+  <summary>
+    An event that is logged after the FoP selector UI is shown.
+  </summary>
+  <metric name="Shown" enum="Boolean">
+    <summary>
+      Always set to true. So acts as a counter for the number of times a FoP
+      selector is shown for Pix.
+    </summary>
+  </metric>
+</event>
+
+<event name="FacilitatedPayments.Pix.InitiatePurchaseActionResult">
+  <owner>vishwasuppoor@google.com</owner>
+  <owner>siashah@google.com</owner>
+  <owner>rouslan@chromium.org</owner>
+  <owner>payments-autofill-team@google.com</owner>
+  <summary>
+    An event that is logged after getting response from the
+    InitiatePurchaseAction call to the server.
+  </summary>
+  <metric name="Result" enum="FacilitatedPayments.InitiatePurchaseActionResult">
+    <summary>
+      The result of the InitiatePurchaseAction call.
+    </summary>
+    <aggregation>
+      <history>
+        <statistics>
+          <enumeration/>
+        </statistics>
+      </history>
+    </aggregation>
+  </metric>
+</event>
+
 <event name="FacilitatedPayments.Pix.Transaction">
   <owner>vishwasuppoor@google.com</owner>
   <owner>siashah@google.com</owner>
@@ -8154,6 +8142,23 @@ be describing additional metrics about the same event.
         </statistics>
       </history>
     </aggregation>
+  </metric>
+</event>
+
+<event name="FacilitatedPayments.PixCodeCopied">
+  <owner>vishwasuppoor@google.com</owner>
+  <owner>siashah@google.com</owner>
+  <owner>rouslan@chromium.org</owner>
+  <owner>payments-autofill-team@google.com</owner>
+  <summary>
+    An event that is logged after a likely Pix code is copied to the clipboard
+    on an allowlisted website.
+  </summary>
+  <metric name="PixCodeCopied" enum="Boolean">
+    <summary>
+      Always set to true. So acts as a counter for the number of times a likely
+      Pix code is copied.
+    </summary>
   </metric>
 </event>
 
@@ -11531,6 +11536,184 @@ be describing additional metrics about the same event.
   </metric>
 </event>
 
+<event name="Lens.Overlay.ContextualSearchbox.FocusedInSession">
+  <owner>niharm@google.com</owner>
+  <owner>lens-chrome@google.com</owner>
+  <summary>
+    Recorded once when the Lens Overlay feature is dismissed, sliced by page
+    content type. Records whether the contextual searchbox was focused at least
+    once in sessions in which it was shown.
+  </summary>
+  <metric name="FocusedInSession" enum="Boolean">
+    <summary>
+      Whether the searchbox was focused in the session.
+    </summary>
+    <aggregation>
+      <history>
+        <statistics>
+          <enumeration/>
+        </statistics>
+      </history>
+    </aggregation>
+  </metric>
+  <metric name="PageContentType" enum="MimeType">
+    <summary>
+      Focused in session sliced by page content type.
+    </summary>
+    <aggregation>
+      <history>
+        <statistics>
+          <enumeration/>
+        </statistics>
+      </history>
+    </aggregation>
+  </metric>
+</event>
+
+<event name="Lens.Overlay.ContextualSearchBox.ShownInSession">
+  <owner>mercerd@google.com</owner>
+  <owner>lens-chrome@google.com</owner>
+  <summary>
+    Recorded once when the Lens Overlay feature is dismissed. Records whether
+    the contextual searchbox was shown in the session.
+  </summary>
+  <metric name="PageContentType" enum="MimeType">
+    <summary>
+      The page content type the contextual searchbox was shown on.
+    </summary>
+    <aggregation>
+      <history>
+        <statistics>
+          <enumeration/>
+        </statistics>
+      </history>
+    </aggregation>
+  </metric>
+  <metric name="WasShown" enum="Boolean">
+    <summary>
+      Whether the search box was shown.
+    </summary>
+    <aggregation>
+      <history>
+        <statistics>
+          <enumeration/>
+        </statistics>
+      </history>
+    </aggregation>
+  </metric>
+</event>
+
+<event name="Lens.Overlay.ContextualSuggest.QueryIssuedInSession">
+  <owner>niharm@google.com</owner>
+  <owner>lens-chrome@google.com</owner>
+  <summary>
+    Recorded once when the Lens Overlay feature is dismissed, sliced by page
+    content type. Records whether at least one contextual query was issued in
+    sessions in which the contextual searchbox was shown (includes zero prefix
+    suggest queries and typed queries). The page content type is the intial page
+    type when the lens overlay is invoked, not necessarily the same as the page
+    type as when ZPS is shown.
+  </summary>
+  <metric name="PageContentType" enum="MimeType">
+    <summary>
+      Query issued in session sliced by page content type.
+    </summary>
+    <aggregation>
+      <history>
+        <statistics>
+          <enumeration/>
+        </statistics>
+      </history>
+    </aggregation>
+  </metric>
+  <metric name="QueryIssuedInSession" enum="Boolean">
+    <summary>
+      Whether a query was issued in the session.
+    </summary>
+    <aggregation>
+      <history>
+        <statistics>
+          <enumeration/>
+        </statistics>
+      </history>
+    </aggregation>
+  </metric>
+</event>
+
+<event name="Lens.Overlay.ContextualSuggest.ZPS.ShownInSession">
+  <owner>niharm@google.com</owner>
+  <owner>lens-chrome@google.com</owner>
+  <summary>
+    Recorded once when the Lens Overlay feature is dismissed, sliced by page
+    content type. Records whether any zero prefix contextual suggestions were
+    shown in sessions in which the contextual searchbox was shown. The page
+    content type is the intial page content type when the lens overlay is
+    invoked, not necessarily the same as the page content type as when ZPS is
+    shown.
+  </summary>
+  <metric name="PageContentType" enum="MimeType">
+    <summary>
+      ZPS shown in session sliced by page content type.
+    </summary>
+    <aggregation>
+      <history>
+        <statistics>
+          <enumeration/>
+        </statistics>
+      </history>
+    </aggregation>
+  </metric>
+  <metric name="ShownInSession" enum="Boolean">
+    <summary>
+      Whether ZPS was shown in the session.
+    </summary>
+    <aggregation>
+      <history>
+        <statistics>
+          <enumeration/>
+        </statistics>
+      </history>
+    </aggregation>
+  </metric>
+</event>
+
+<event name="Lens.Overlay.ContextualSuggest.ZPS.SuggestionUsedInSession">
+  <owner>niharm@google.com</owner>
+  <owner>lens-chrome@google.com</owner>
+  <summary>
+    Recorded once when the Lens Overlay feature is dismissed, sliced by page
+    content type. Records whether at least one contextual zero prefix suggestion
+    was used in sessions in which the contextual searchbox was shown. The page
+    content type is the intial page content type when the lens overlay is
+    invoked, not necessarily the same as the page content type as when ZPS
+    suggestion was used.
+  </summary>
+  <metric name="PageContentType" enum="MimeType">
+    <summary>
+      ZPS used in session sliced by page content type.
+    </summary>
+    <aggregation>
+      <history>
+        <statistics>
+          <enumeration/>
+        </statistics>
+      </history>
+    </aggregation>
+  </metric>
+  <metric name="SuggestionUsedInSession" enum="Boolean">
+    <summary>
+      Whether ZPS was used in the session.
+    </summary>
+    <aggregation>
+      <history>
+        <statistics>
+          <enumeration/>
+        </statistics>
+      </history>
+    </aggregation>
+  </metric>
+</event>
+
 <event name="Lens.Overlay.Overlay.UserAction">
   <owner>jdonnelly@google.com</owner>
   <owner>lens-chrome@google.com</owner>
@@ -11567,6 +11750,18 @@ be describing additional metrics about the same event.
       searches are also opened in a new tab. Additionally the user can open tabs
       in the background through the web context menu.
     </summary>
+  </metric>
+  <metric name="InvocationDocumentType" enum="MimeType">
+    <summary>
+      The type of document the Lens Overlay was invoked on.
+    </summary>
+    <aggregation>
+      <history>
+        <statistics>
+          <enumeration/>
+        </statistics>
+      </history>
+    </aggregation>
   </metric>
   <metric name="InvocationResultedInSearch" enum="Boolean">
     <summary>
@@ -16133,10 +16328,9 @@ be describing additional metrics about the same event.
   </metric>
   <metric name="ThirdPartyCookieBlockingEnabledForSite" enum="Boolean">
     <owner>dullweber@chromium.org</owner>
-    <owner>huanzhong@chromium.org</owner>
     <summary>
       Records whether third party cookie blocking was enabled for a site. Only
-      recorded for users who enabled the cookie controls ui.
+      recorded when third party cookies are bocked in general.
     </summary>
     <aggregation>
       <history>
@@ -17717,6 +17911,35 @@ be describing additional metrics about the same event.
     <summary>
       An enum of type ContentSettingsType.
     </summary>
+  </metric>
+</event>
+
+<event name="PermissionUsage.NotificationShown">
+  <owner>skrakowi@chromium.org</owner>
+  <owner>chrome-counter-abuse-core@google.com</owner>
+  <summary>
+    Recorded when the notification content detection model is ran on
+    notification contents, which happens on a request to display a persistent
+    notification.
+  </summary>
+  <metric name="IsAllowlisted" enum="Boolean">
+    <summary>
+      A boolean signaling whether the URL is on the high confidence allowlist or
+      not.
+    </summary>
+  </metric>
+  <metric name="SuspiciousScore">
+    <summary>
+      The 'suspicious' score given to notification contents that came from the
+      URL. Ranges from 0 to 100.
+    </summary>
+    <aggregation>
+      <history>
+        <statistics>
+          <quantiles type="std-percentiles"/>
+        </statistics>
+      </history>
+    </aggregation>
   </metric>
 </event>
 
@@ -20529,6 +20752,29 @@ be describing additional metrics about the same event.
     <summary>
       Always true. Recorded when users have visited cart page from Chrome cart
       module.
+    </summary>
+  </metric>
+</event>
+
+<event name="Shopping.Compare.ClusterIdenfitiedByClient">
+  <owner>yuezhanggg@chromium.org</owner>
+  <owner>chrome-shopping-eng@google.com</owner>
+  <summary>
+    Recorded when we identified a set of URLs that users might be doing
+    comparison in using the client-side heuristics, and after checking if these
+    URLs are comparable based on a server call. This event is recorded one per
+    URL for all URLs in the set.
+  </summary>
+  <metric name="ComparableByServer" enum="Boolean">
+    <summary>
+      Whether the URL in this client-identified cluster is also comparable based
+      on the response from querying the server.
+    </summary>
+  </metric>
+  <metric name="CompareEventID">
+    <summary>
+      An ID corresponding to the event that will enable joining all active tabs
+      for this event together.
     </summary>
   </metric>
 </event>

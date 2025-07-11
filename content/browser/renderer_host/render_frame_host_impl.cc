@@ -1390,7 +1390,7 @@ enum class WindowProxyPageContext {
 };
 
 WindowProxyPageContext GetWindowProxyPageContext(RenderFrameHostImpl* frame) {
-  if (frame->delegate()->IsPartitionedPopin()) {
+  if (frame->ShouldPartitionAsPopin()) {
     return WindowProxyPageContext::kPartitionedPopin;
   } else if (frame->delegate()->IsPopup()) {
     return WindowProxyPageContext::kPopup;
@@ -1447,27 +1447,11 @@ WindowProxyUserActivationState GetWindowProxyUserActivationState(
 class DiscardedRFHProcessHelper : public base::SupportsUserData::Data,
                                   public ServiceWorkerContextObserver {
  public:
-  explicit DiscardedRFHProcessHelper(RenderProcessHost* host) : host_(host) {
-    if (host_->IsInitializedAndNotDead() && !host_->IsDeletingSoon()) {
-      service_worker_context_observation_.Observe(
-          host_->GetStoragePartition()->GetServiceWorkerContext());
-    }
-  }
+  explicit DiscardedRFHProcessHelper(RenderProcessHost* host) : host_(host) {}
   DiscardedRFHProcessHelper(const DiscardedRFHProcessHelper&) = delete;
   DiscardedRFHProcessHelper& operator=(const DiscardedRFHProcessHelper&) =
       delete;
   ~DiscardedRFHProcessHelper() override = default;
-
-  // ServiceWorkerContextObserver:
-  void OnVersionStoppedRunning(int64_t version_id) override {
-    // Service workers may outlive the documents of their discarded rfh if
-    // executing pre-existing tasks. Attempt a shutdown if any associated worker
-    // has stopped to clear away the process if possible.
-    ShutdownForDiscardIfPossible();
-  }
-  void OnDestruct(ServiceWorkerContext* context) override {
-    service_worker_context_observation_.Reset();
-  }
 
   static DiscardedRFHProcessHelper* GetForRenderProcessHost(
       RenderProcessHost* host) {
@@ -1487,9 +1471,13 @@ class DiscardedRFHProcessHelper : public base::SupportsUserData::Data,
     shutdown_attempt_timer_.Stop();
     retries_ = 0;
     shutdown_attempt_timer_.Start(
-        FROM_HERE, /*delay=*/base::TimeDelta(),
+        FROM_HERE, /*delay=*/kUnloadTimeout,
         base::BindRepeating(&DiscardedRFHProcessHelper::ShutdownIfPossible,
                             base::Unretained(this)));
+  }
+
+  void SimulateKeepAliveTimeoutForTesting() {
+    keep_alive_timeout_for_testing_ = true;
   }
 
  private:
@@ -1497,8 +1485,6 @@ class DiscardedRFHProcessHelper : public base::SupportsUserData::Data,
   // discarded frames remain.
   void ShutdownIfPossible() {
     if (!host_->IsInitializedAndNotDead() || host_->IsDeletingSoon()) {
-      shutdown_attempt_timer_.Stop();
-      retries_ = 0;
       return;
     }
 
@@ -1506,7 +1492,7 @@ class DiscardedRFHProcessHelper : public base::SupportsUserData::Data,
     // continue until a maximum delay of kKeepAliveHandleFactoryTimeout is
     // reached.
     constexpr base::TimeDelta kProcessShutdownRetryDelay =
-        base::Milliseconds(5000);
+        base::Milliseconds(500);
 
     // Attempt a fast shutdown if only discarded frames remain in the process. A
     // render process may host both speculative and non-speculative frames,
@@ -1527,14 +1513,32 @@ class DiscardedRFHProcessHelper : public base::SupportsUserData::Data,
           }
         });
 
-    // Attempt shutdown without running unload handlers, the discard operation
-    // has been acknowledged by the render process at this point.
-    if (discarded_widgets.size() > 0 && only_discarded_frames &&
-        (retries_ * kProcessShutdownRetryDelay <=
-         RenderProcessHostImpl::kKeepAliveHandleFactoryTimeout) &&
-        !host_->FastShutdownIfPossible(
+    // Attempt a shutdown if the the renderer is hosting only discarded frames.
+    if (discarded_widgets.empty() || !only_discarded_frames) {
+      return;
+    }
+
+    // If shutdown re-attempts have exceeded the kKeepAliveHandleFactoryTimeout
+    // then attempt a final shutdown ignoring any active keep-alive refs.
+    if (keep_alive_timeout_for_testing_ ||
+        retries_ * kProcessShutdownRetryDelay >=
+            RenderProcessHostImpl::kKeepAliveHandleFactoryTimeout) {
+      host_->FastShutdownIfPossible(
+          /*page_count=*/discarded_widgets.size(),
+          /*skip_unload_handlers=*/true,
+          /*ignore_workers=*/true,
+          /*ignore_keep_alive=*/true);
+      return;
+    }
+
+    // If re-attempts have not yet reached kKeepAliveHandleFactoryTimeout
+    // attempt a shutdown honoring any existing keep-alive refs. Schedule a
+    // retry if fast shutdown is blocked.
+    if (!host_->FastShutdownIfPossible(
             /*page_count=*/discarded_widgets.size(),
-            /*skip_unload_handlers=*/true)) {
+            /*skip_unload_handlers=*/true,
+            /*ignore_workers=*/true,
+            /*ignore_keep_alive=*/false)) {
       retries_++;
       shutdown_attempt_timer_.Start(
           FROM_HERE, kProcessShutdownRetryDelay,
@@ -1552,8 +1556,7 @@ class DiscardedRFHProcessHelper : public base::SupportsUserData::Data,
   // Owns this.
   const raw_ptr<RenderProcessHost> host_;
 
-  base::ScopedObservation<ServiceWorkerContext, ServiceWorkerContextObserver>
-      service_worker_context_observation_{this};
+  bool keep_alive_timeout_for_testing_ = false;
 };
 
 }  // namespace
@@ -4705,7 +4708,7 @@ const url::Origin& RenderFrameHostImpl::ComputeTopFrameOrigin(
   // If this frame is in a partitioned popin, we consider the opener's top-frame
   // to be this frame's top-frame as long as we aren't in a fenced-frame.
   // See: https://explainers-by-googlers.github.io/partitioned-popins/
-  if (delegate_->IsPartitionedPopin() && !IsNestedWithinFencedFrame()) {
+  if (ShouldPartitionAsPopin()) {
     return delegate_->GetPartitionedPopinOpenerProperties().top_frame_origin;
   }
 
@@ -4745,8 +4748,7 @@ net::IsolationInfo RenderFrameHostImpl::ComputeIsolationInfoForNavigation(
   // fenced frame). Otherwise this is a sub frame request.
   // See: https://explainers-by-googlers.github.io/partitioned-popins/
   net::IsolationInfo::RequestType request_type =
-      (is_main_frame() &&
-       (!delegate()->IsPartitionedPopin() || IsNestedWithinFencedFrame()))
+      (is_main_frame() && !ShouldPartitionAsPopin())
           ? net::IsolationInfo::RequestType::kMainFrame
           : net::IsolationInfo::RequestType::kSubFrame;
   return ComputeIsolationInfoInternal(url::Origin::Create(destination),
@@ -4782,7 +4784,7 @@ net::IsolationInfo RenderFrameHostImpl::ComputeIsolationInfoInternal(
   // must set site_for_cookies relative to the popin opener in order for the
   // renderer to properly conduct checks.
   // See https://explainers-by-googlers.github.io/partitioned-popins/
-  if (delegate_->IsPartitionedPopin() && !IsNestedWithinFencedFrame()) {
+  if (ShouldPartitionAsPopin()) {
     candidate_site_for_cookies =
         delegate_->GetPartitionedPopinOpenerProperties().site_for_cookies;
   }
@@ -4858,7 +4860,7 @@ bool RenderFrameHostImpl::IsThirdPartyStoragePartitioningEnabled(
   // partitioned popin as they are partitioned as an iframe would be.
   // See: https://explainers-by-googlers.github.io/partitioned-popins/
   if (main_frame_for_storage_partitioning == this &&
-      (!delegate()->IsPartitionedPopin() || IsNestedWithinFencedFrame())) {
+      !ShouldPartitionAsPopin()) {
     return false;
   }
 
@@ -4892,7 +4894,7 @@ bool RenderFrameHostImpl::IsThirdPartyStoragePartitioningEnabled(
   } else {
     // `rfs_document_data_for_storage_key` should be available unless we are in
     // a popin examining the main frame's data
-    DCHECK(delegate()->IsPartitionedPopin() && !IsNestedWithinFencedFrame() &&
+    DCHECK(ShouldPartitionAsPopin() &&
            main_frame_for_storage_partitioning == this);
   }
 
@@ -4984,7 +4986,7 @@ blink::StorageKey RenderFrameHostImpl::CalculateStorageKey(
   // If this frame is in a partitioned popin, we must use the top-site
   // of the popin opener as our point of comparison.
   // See: https://explainers-by-googlers.github.io/partitioned-popins/
-  if (delegate()->IsPartitionedPopin() && !IsNestedWithinFencedFrame()) {
+  if (ShouldPartitionAsPopin()) {
     top_level_site = net::SchemefulSite(
         delegate()->GetPartitionedPopinOpenerProperties().top_frame_origin);
   }
@@ -5008,7 +5010,7 @@ blink::StorageKey RenderFrameHostImpl::CalculateStorageKey(
   // If this frame is in a partitioned popin, we may need to fixup the ancestor
   // chain bit based on whether the popin was opened from a cross-site context.
   // See: https://explainers-by-googlers.github.io/partitioned-popins/
-  if (delegate()->IsPartitionedPopin() && !IsNestedWithinFencedFrame()) {
+  if (ShouldPartitionAsPopin()) {
     if (delegate()->GetPartitionedPopinOpenerProperties().ancestor_chain_bit ==
         blink::mojom::AncestorChainBit::kCrossSite) {
       ancestor_chain_bit = blink::mojom::AncestorChainBit::kCrossSite;
@@ -6044,16 +6046,17 @@ void RenderFrameHostImpl::ProcessBeforeUnloadCompleted(
   if (!initiator)
     return;
 
+  if (on_process_before_unload_completed_for_testing_) [[unlikely]] {
+    std::move(on_process_before_unload_completed_for_testing_).Run();
+  }
+
   // Continue processing the ACK in the frame that triggered beforeunload in
   // this frame.  This could be either this frame itself or an ancestor frame.
   initiator->ProcessBeforeUnloadCompletedFromFrame(
       proceed, treat_as_final_completion_callback, this,
       /*is_frame_being_destroyed=*/false, renderer_before_unload_start_time,
       renderer_before_unload_end_time, for_legacy);
-
-  if (on_process_before_unload_completed_for_testing_) [[unlikely]] {
-    std::move(on_process_before_unload_completed_for_testing_).Run();
-  }
+  // DO NOT add code after this. `this` can be deleted at this point.
 }
 
 void RenderFrameHostImpl::ProcessBeforeUnloadCompletedFromFrame(
@@ -6286,6 +6289,15 @@ void RenderFrameHostImpl::OnUnloaded() {
 
 void RenderFrameHostImpl::DisableUnloadTimerForTesting() {
   unload_event_monitor_timeout_.reset();
+}
+
+bool RenderFrameHostImpl::ShouldPartitionAsPopin() const {
+  return !IsNestedWithinFencedFrame() && delegate_->IsPartitionedPopin();
+}
+
+void RenderFrameHostImpl::SimulateDiscardShutdownKeepAliveTimeoutForTesting() {
+  DiscardedRFHProcessHelper::GetForRenderProcessHost(GetProcess())
+      ->SimulateKeepAliveTimeoutForTesting();
 }
 
 bool RenderFrameHostImpl::IsBackForwardCacheEvictionTimeRunningForTesting()
@@ -7449,6 +7461,15 @@ void RenderFrameHostImpl::DidInferColorScheme(
     blink::mojom::PreferredColorScheme color_scheme) {
   if (is_main_frame()) {
     GetPage().DidInferColorScheme(color_scheme);
+  }
+}
+
+void RenderFrameHostImpl::OnFirstContentfulPaint() {
+  GetPage().set_did_first_contentful_paint_in_main_document();
+  if (IsInPrimaryMainFrame()) {
+    // Notify the delegates of the FCP. Note that the notifications for
+    // prerendering pages will be deferred until activation.
+    delegate_->OnFirstContentfulPaintInPrimaryMainFrame();
   }
 }
 
@@ -9092,7 +9113,7 @@ void RenderFrameHostImpl::CreateNewWindow(
           "Partitioned popins not permitted.");
       return;
     }
-    if (delegate()->IsPartitionedPopin()) {
+    if (ShouldPartitionAsPopin()) {
       frame_host_associated_receiver_.ReportBadMessage(
           "Partitioned popins cannot open their own popin.");
       return;
@@ -9326,17 +9347,11 @@ void RenderFrameHostImpl::CreateNewWindow(
   // We must send access information relative to the popin opener in order for
   // the renderer to properly conduct checks.
   // See https://explainers-by-googlers.github.io/partitioned-popins/
-  // TODO(crbug.com/340606651): Move into a function to share.
   blink::mojom::PartitionedPopinParamsPtr partitioned_popin_params = nullptr;
-  if (new_main_rfh->delegate()->IsPartitionedPopin() &&
-      !IsNestedWithinFencedFrame()) {
-    partitioned_popin_params = blink::mojom::PartitionedPopinParams::New(
-        new_main_rfh->delegate()
-            ->GetPartitionedPopinOpenerProperties()
-            .top_frame_origin,
-        new_main_rfh->delegate()
-            ->GetPartitionedPopinOpenerProperties()
-            .site_for_cookies);
+  if (new_main_rfh->ShouldPartitionAsPopin()) {
+    partitioned_popin_params = new_main_rfh->delegate()
+                                   ->GetPartitionedPopinOpenerProperties()
+                                   .AsMojom();
   }
 
   mojom::CreateNewWindowReplyPtr reply = mojom::CreateNewWindowReply::New(
@@ -9824,25 +9839,10 @@ bool RenderFrameHostImpl::IsFencedFrameReportingFromRendererAllowed(
 
   if (cross_origin_exposed &&
       !base::FeatureList::IsEnabled(
-          blink::features::
-              kFencedFramesCrossOriginEventReportingUnlabeledTraffic) &&
-      !base::FeatureList::IsEnabled(
-          blink::features::kFencedFramesCrossOriginEventReportingAllTraffic)) {
+          blink::features::kFencedFramesCrossOriginEventReporting)) {
     mojo::ReportBadMessage(
         "Request to send cross-origin reporting beacons received while feature "
         "not enabled.");
-    return false;
-  }
-
-  if (cross_origin_exposed &&
-      !base::FeatureList::IsEnabled(
-          blink::features::kFencedFramesCrossOriginEventReportingAllTraffic) &&
-      base::FeatureList::IsEnabled(
-          features::kCookieDeprecationFacilitatedTesting)) {
-    AddMessageToConsole(
-        blink::mojom::ConsoleMessageLevel::kError,
-        "Cross-origin reporting beacons are not supported with Mode A/B "
-        "Chrome-facilitated testing traffic.");
     return false;
   }
 
@@ -12687,6 +12687,19 @@ void RenderFrameHostImpl::UpdatePermissionsForNavigation(
   // earlier, when they are received from the renderer.
   if (request->common_params().post_data)
     GrantFileAccessFromResourceRequestBody(*request->common_params().post_data);
+
+  // Add the origin that will be committed by this navigation to the list of
+  // committed origins. We choose to do this at ready-to-commit time so that
+  // subsequent code can check that the new origin is valid for this
+  // RenderFrameHost's process prior to DidCommit time. For example,
+  // RenderFrameHostImpl::CommitNavigation() has code that checks
+  // CanAccessDataForOrigin while setting up storage interfaces.
+  //
+  // Note that GetOriginToCommit() internally CHECKs that the origin to commit
+  // is valid for this process, using CanAccessOrigin() to perform jail and
+  // citadel process lock checks, so this origin should to be safe to add.
+  ChildProcessSecurityPolicyImpl::GetInstance()->AddCommittedOrigin(
+      GetProcess()->GetID(), request->GetOriginToCommit().value());
 }
 
 mojo::AssociatedRemote<mojom::NavigationClient>
@@ -14576,6 +14589,21 @@ bool RenderFrameHostImpl::DidCommitNavigationInternal(
         same_document_params &&
             same_document_params->same_document_navigation_type ==
                 blink::mojom::SameDocumentNavigationType::kHistoryApi);
+
+    // Add the origin from this navigation to the list of committed origins. In
+    // the common case, this is done in UpdatePermissionsForNavigation() at
+    // ready-to-commit time. However, synchronous renderer commits do not go
+    // through that flow, and it is possible that they legitimately introduce a
+    // new origin into a renderer process. Namely, this happens when adding a
+    // sandboxed about:blank frame, where the browser process will only hear
+    // about the new opaque origin here.
+    //
+    // Note that `params.origin` is safe to add since it's already been
+    // validated in ValidateDidCommitParams() above prior to getting here.
+    if (is_synchronous_about_blank_commit) {
+      ChildProcessSecurityPolicyImpl::GetInstance()->AddCommittedOrigin(
+          GetProcess()->GetID(), params->origin);
+    }
   }
 
   DCHECK(navigation_request);
@@ -17720,6 +17748,42 @@ bool RenderFrameHostImpl::HasPolicyContainerHost() const {
 void RenderFrameHostImpl::GetBoundInterfacesForTesting(
     std::vector<std::string>& out) {
   broker_.GetBinderMapInterfacesForTesting(out);  // IN-TEST
+}
+
+std::optional<base::flat_map<blink::mojom::PermissionName,
+                             blink::mojom::PermissionStatus>>
+RenderFrameHostImpl::GetCachedPermissionStatuses() {
+// `GetCombinedPermissionStatus` on Android is not fully supported for now.
+#if BUILDFLAG(IS_ANDROID)
+  return std::nullopt;
+#else
+  using blink::PermissionType;
+  using blink::mojom::PermissionName;
+  static constexpr auto kPermissions =
+      std::to_array<std::pair<PermissionName, PermissionType>>(
+          {{PermissionName::VIDEO_CAPTURE, PermissionType::VIDEO_CAPTURE},
+           {PermissionName::AUDIO_CAPTURE, PermissionType::AUDIO_CAPTURE},
+           {PermissionName::GEOLOCATION, PermissionType::GEOLOCATION}});
+
+  base::flat_map<PermissionName, PermissionStatus> permission_map;
+  for (const auto& permission : kPermissions) {
+    PermissionStatus status = GetCombinedPermissionStatus(permission.second);
+    // Default value is ASK, we don't need add the permission status in this
+    // case.
+    if (status != PermissionStatus::ASK) {
+      permission_map.emplace(permission.first, status);
+    }
+  }
+
+  return permission_map;
+#endif  // !BUILDFLAG(IS_ANDROID)
+}
+
+blink::mojom::PermissionStatus RenderFrameHostImpl::GetCombinedPermissionStatus(
+    blink::PermissionType permission_type) {
+  return GetBrowserContext()
+      ->GetPermissionController()
+      ->GetCombinedPermissionAndDeviceStatus(permission_type, this);
 }
 
 }  // namespace content

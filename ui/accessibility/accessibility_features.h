@@ -9,7 +9,6 @@
 #include "base/feature_list.h"
 #include "base/metrics/field_trial_params.h"
 #include "build/build_config.h"
-#include "build/chromeos_buildflags.h"
 #include "ui/accessibility/ax_base_export.h"
 
 // This file declares base::Features related to the ui/accessibility code.
@@ -137,7 +136,7 @@ AX_BASE_EXPORT bool IsSelectiveUIAEnablementEnabled();
 AX_BASE_EXPORT BASE_DECLARE_FEATURE(kUiaProvider);
 #endif  // BUILDFLAG(IS_WIN)
 
-#if BUILDFLAG(IS_CHROMEOS_ASH)
+#if BUILDFLAG(IS_CHROMEOS)
 // TODO(accessibility): Should this be moved to ash_features.cc?
 AX_BASE_EXPORT bool IsDictationOfflineAvailable();
 
@@ -185,8 +184,8 @@ AX_BASE_EXPORT bool IsAccessibilityMouseKeysEnabled();
 AX_BASE_EXPORT BASE_DECLARE_FEATURE(kAccessibilityShakeToLocate);
 AX_BASE_EXPORT bool IsAccessibilityShakeToLocateEnabled();
 
-// Controls whether the disable trackpad feature is enabled.
-AX_BASE_EXPORT BASE_DECLARE_FEATURE(kAccessibilityDisableTrackpad);
+// Controls whether the disable touchpad feature is enabled.
+AX_BASE_EXPORT BASE_DECLARE_FEATURE(kAccessibilityDisableTouchpad);
 AX_BASE_EXPORT bool IsAccessibilityDisableTouchpadEnabled();
 
 // Controls whether the flash screen for notifications feature is available.
@@ -197,7 +196,7 @@ AX_BASE_EXPORT bool IsAccessibilityFlashScreenFeatureEnabled();
 AX_BASE_EXPORT BASE_DECLARE_FEATURE(kAccessibilityFilterKeys);
 AX_BASE_EXPORT bool IsAccessibilityFilterKeysEnabled();
 
-#endif  // BUILDFLAG(IS_CHROMEOS_ASH)
+#endif  // BUILDFLAG(IS_CHROMEOS)
 
 #if BUILDFLAG(IS_ANDROID)
 // Disable max node and timeout limits on the

@@ -8,7 +8,9 @@
 #include <memory>
 
 #include "ash/constants/ash_constants.h"
+#include "ash/constants/ash_features.h"
 #include "ash/public/cpp/network_config_service.h"
+#include "base/metrics/histogram_functions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/time/time.h"
 #include "chromeos/ash/components/boca/boca_app_client.h"
@@ -35,6 +37,15 @@ BocaSessionManager::BocaSessionManager(SessionClientImpl* session_client_impl,
     : is_producer_(is_producer),
       account_id_(std::move(account_id)),
       session_client_impl_(std::move(session_client_impl)) {
+  in_session_polling_interval_ =
+      features::IsBocaCustomPollingEnabled()
+          ? ash::features::kBocaInSessionPeriodicJobIntervalInSeconds.Get()
+          : base::Seconds(kDefaultPollingIntervalInSeconds);
+  indefinite_polling_interval_ =
+      features::IsBocaCustomPollingEnabled()
+          ? ash::features::kBocaIndefinitePeriodicJobIntervalInSeconds.Get()
+          : base::Seconds(kDefaultPollingIntervalInSeconds);
+
   GetNetworkConfigService(cros_network_config_.BindNewPipeAndPassReceiver());
   cros_network_config_->AddObserver(
       cros_network_config_observer_.BindNewPipeAndPassRemote());
@@ -50,6 +61,7 @@ BocaSessionManager::BocaSessionManager(SessionClientImpl* session_client_impl,
     user_manager::UserManager::Get()->AddSessionStateObserver(this);
   }
   LoadInitialNetworkState();
+  LoadCurrentSession(/*from_polling=*/false);
   StartSessionPolling(/*in_session=*/false);
 }
 
@@ -96,7 +108,7 @@ void BocaSessionManager::OnNetworkStateChanged(
       // Other network change may trigger this events too, only handle when
       // flipped from offline to online.
       is_network_connected_ = true;
-      LoadCurrentSession();
+      LoadCurrentSession(/*from_polling=*/false);
     }
   } else {
     is_network_connected_ = false;
@@ -115,19 +127,25 @@ void BocaSessionManager::RemoveObserver(Observer* observer) {
 
 void BocaSessionManager::StartSessionPolling(bool in_session) {
   if (in_session) {
+    if (in_session_polling_interval_ == base::Seconds(0)) {
+      return;
+    }
     if (indefinite_timer_.IsRunning()) {
       indefinite_timer_.Stop();
     }
     if (!in_session_timer_.IsRunning()) {
-      in_session_timer_.Start(FROM_HERE, kInSessionPollingInterval, this,
+      in_session_timer_.Start(FROM_HERE, in_session_polling_interval_, this,
                               &BocaSessionManager::MaybeLoadCurrentSession);
     }
   } else {
+    if (indefinite_polling_interval_ == base::Seconds(0)) {
+      return;
+    }
     if (in_session_timer_.IsRunning()) {
       in_session_timer_.Stop();
     }
     if (!indefinite_timer_.IsRunning()) {
-      indefinite_timer_.Start(FROM_HERE, kIndefinitePollingInterval, this,
+      indefinite_timer_.Start(FROM_HERE, indefinite_polling_interval_, this,
                               &BocaSessionManager::MaybeLoadCurrentSession);
     }
   }
@@ -136,13 +154,14 @@ void BocaSessionManager::StartSessionPolling(bool in_session) {
 void BocaSessionManager::MaybeLoadCurrentSession() {
   // Only skip session load for scheduled polling if there is any load since
   // last schedule, we should never skip it for invalidation.
-  if (base::TimeTicks::Now() - last_session_load_ < kInSessionPollingInterval) {
+  if (base::TimeTicks::Now() - last_session_load_ <
+      in_session_polling_interval_) {
     return;
   }
-  LoadCurrentSession();
+  LoadCurrentSession(/*from_polling=*/true);
 }
 
-void BocaSessionManager::LoadCurrentSession() {
+void BocaSessionManager::LoadCurrentSession(bool from_polling) {
   // TODO(crbug.com/374788934): Currently always try fetching regardless of
   // network status as we've seen inconsistent behavior between machines
   // regarding network config, revisit this.
@@ -155,16 +174,22 @@ void BocaSessionManager::LoadCurrentSession() {
   auto request = std::make_unique<GetSessionRequest>(
       session_client_impl_->sender(), is_producer_, account_id_.GetGaiaId(),
       base::BindOnce(&BocaSessionManager::ParseSessionResponse,
-                     weak_factory_.GetWeakPtr()));
+                     weak_factory_.GetWeakPtr(), from_polling));
   session_client_impl_->GetSession(std::move(request));
 }
 
 void BocaSessionManager::ParseSessionResponse(
+    bool from_polling,
     base::expected<std::unique_ptr<::boca::Session>, google_apis::ApiErrorCode>
         result) {
   if (!result.has_value()) {
     return;
   }
+
+  if (from_polling) {
+    RecordPollingResult(current_session_.get(), result.value().get());
+  }
+
   UpdateCurrentSession(std::move(result.value()), true);
 }
 
@@ -172,15 +197,17 @@ void BocaSessionManager::UpdateCurrentSession(
     std::unique_ptr<::boca::Session> session,
     bool dispatch_event) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+
+  if (IsSessionTakeOver(current_session_.get(), session.get())) {
+    HandleTakeOver(dispatch_event, std::move(session));
+    return;
+  }
   previous_session_ = std::move(current_session_);
   current_session_ = std::move(session);
   last_session_load_ = base::TimeTicks::Now();
+
   if (dispatch_event) {
-    NotifySessionUpdate();
-    NotifyOnTaskUpdate();
-    NotifySessionCaptionConfigUpdate();
-    NotifyRosterUpdate();
-    NotifyConsumerActivityUpdate();
+    DispatchEvent();
   }
 }
 
@@ -275,7 +302,7 @@ void BocaSessionManager::OnRefreshTokenUpdatedForAccount(
   if (info.email != account_id_.GetUserEmail()) {
     return;
   }
-  LoadCurrentSession();
+  LoadCurrentSession(/*from_polling=*/false);
 }
 
 void BocaSessionManager::OnIdentityManagerShutdown(
@@ -288,7 +315,7 @@ void BocaSessionManager::ActiveUserChanged(user_manager::User* active_user) {
   if (!active_user || active_user->GetAccountId() != account_id_) {
     return;
   }
-  LoadCurrentSession();
+  LoadCurrentSession(/*from_polling=*/false);
 }
 
 bool BocaSessionManager::IsProfileActive() {
@@ -298,8 +325,60 @@ bool BocaSessionManager::IsProfileActive() {
              account_id_;
 }
 
-bool BocaSessionManager::IsSessionActive(::boca::Session* session) {
-  return session && session->session_state() == ::boca::Session::ACTIVE;
+bool BocaSessionManager::IsSessionActive(const ::boca::Session* session) {
+  return session && session->session_state() == ::boca::Session::ACTIVE &&
+         !session->session_id().empty();
+}
+
+bool BocaSessionManager::IsSessionTakeOver(
+    const ::boca::Session* previous_session,
+    const ::boca::Session* current_session) {
+  if (!IsSessionActive(previous_session) || !IsSessionActive(current_session)) {
+    return false;
+  }
+  return previous_session->session_id() != current_session->session_id();
+}
+
+void BocaSessionManager::RecordPollingResult(
+    const ::boca::Session* previous_session,
+    const ::boca::Session* current_session) {
+  BocaPollingResult polling_result;
+  if (!previous_session && !current_session) {
+    polling_result = BocaPollingResult::kNoUpdate;
+  } else if (!previous_session) {
+    polling_result = BocaPollingResult::kSessionStart;
+  } else if (!current_session) {
+    polling_result = BocaPollingResult::kSessionEnd;
+  } else if (previous_session->SerializeAsString() !=
+             current_session->SerializeAsString()) {
+    polling_result = BocaPollingResult::kInSessionUpdate;
+  } else {
+    polling_result = BocaPollingResult::kNoUpdate;
+  }
+  base::UmaHistogramEnumeration(kPollingResultHistName, polling_result);
+}
+
+void BocaSessionManager::HandleTakeOver(
+    bool dispatch_event,
+    std::unique_ptr<::boca::Session> session) {
+  previous_session_ = std::move(current_session_);
+  current_session_ = nullptr;
+  if (dispatch_event) {
+    DispatchEvent();
+  }
+  previous_session_ = nullptr;
+  current_session_ = std::move(session);
+  if (dispatch_event) {
+    DispatchEvent();
+  }
+}
+
+void BocaSessionManager::DispatchEvent() {
+  NotifySessionUpdate();
+  NotifyOnTaskUpdate();
+  NotifySessionCaptionConfigUpdate();
+  NotifyRosterUpdate();
+  NotifyConsumerActivityUpdate();
 }
 
 void BocaSessionManager::NotifySessionUpdate() {

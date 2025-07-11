@@ -85,6 +85,12 @@ class CONTENT_EXPORT FileSystemAccessDirectoryHandleImpl
       storage::FileSystemURL* result);
 
  private:
+#if BUILDFLAG(IS_ANDROID)
+  void OnGetFileContentUri(std::string basename,
+                           bool create,
+                           GetFileCallback callback,
+                           base::FilePath child_path);
+#endif
   void GetFileResolved(
       const std::string& basename,
       bool create,
@@ -96,13 +102,22 @@ class CONTENT_EXPORT FileSystemAccessDirectoryHandleImpl
   void GetFileWithWritePermission(const storage::FileSystemURL& child_url,
                                   GetFileCallback callback);
   void DoGetFile(bool create,
-                 storage::FileSystemURL url,
+                 storage::FileSystemURL child_url,
                  GetFileCallback callback,
                  FileSystemAccessPermissionContext::SensitiveEntryResult
                      sensitive_entry_result);
-  void DidGetFile(const storage::FileSystemURL& url,
+#if BUILDFLAG(IS_ANDROID)
+  void DidGetFileQueryUri(GetFileCallback callback, base::FilePath child_path);
+#endif
+  void DidGetFile(storage::FileSystemURL child_url,
                   GetFileCallback callback,
                   base::File::Error result);
+#if BUILDFLAG(IS_ANDROID)
+  void OnGetDirectoryContentUri(std::string basename,
+                                bool create,
+                                GetDirectoryCallback callback,
+                                base::FilePath child_path);
+#endif
   void GetDirectoryResolved(
       const std::string& basename,
       bool create,
@@ -113,7 +128,11 @@ class CONTENT_EXPORT FileSystemAccessDirectoryHandleImpl
   // is the implementation for passing create=true to GetDirectory.
   void GetDirectoryWithWritePermission(const storage::FileSystemURL& child_url,
                                        GetDirectoryCallback callback);
-  void DidGetDirectory(const storage::FileSystemURL& url,
+#if BUILDFLAG(IS_ANDROID)
+  void DidGetDirectoryQueryUri(GetDirectoryCallback callback,
+                               base::FilePath child_path);
+#endif
+  void DidGetDirectory(storage::FileSystemURL child_url,
                        GetDirectoryCallback callback,
                        base::File::Error result);
   void DidReadDirectory(
@@ -122,6 +141,12 @@ class CONTENT_EXPORT FileSystemAccessDirectoryHandleImpl
       base::File::Error result,
       std::vector<filesystem::mojom::DirectoryEntry> file_list,
       bool has_more_entries);
+#if BUILDFLAG(IS_ANDROID)
+  void OnRemoveEntryContentUri(std::string basename,
+                               bool recurse,
+                               RemoveEntryCallback callback,
+                               base::FilePath child_path);
+#endif
   void RemoveEntryResolved(
       const std::string& basename,
       bool recurse,
@@ -149,6 +174,8 @@ class CONTENT_EXPORT FileSystemAccessDirectoryHandleImpl
       base::OnceCallback<void(
           std::vector<blink::mojom::FileSystemAccessEntryPtr>)> final_callback,
       std::vector<blink::mojom::FileSystemAccessEntryPtr> entries);
+
+  storage::FileSystemURL CreateChildURL(const base::FilePath& child_path);
 
   // Helper to create a blink::mojom::FileSystemAccessEntry struct.
   blink::mojom::FileSystemAccessEntryPtr CreateEntry(

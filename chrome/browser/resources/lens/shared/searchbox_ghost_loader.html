@@ -1,6 +1,6 @@
 <style include="searchbox-shared-style cr-spinner-style">
 #content {
-  background-color: var(--color-searchbox-background);
+  background-color: var(--color-searchbox-results-background);
   border-radius: calc(0.5 * var(--cr-searchbox-height));
   box-shadow: var(--cr-searchbox-shadow);
   margin-bottom: 8px;
@@ -24,9 +24,9 @@
 .status-container {
   display: none;
   align-items: center;
-  color: var(--color-searchbox-results-foreground);
+  color: var(--color-searchbox-placeholder);
   height: 48px;
-  padding-inline-start: 18px;
+  padding-inline-start: 12px;
   padding-inline-end: 14px;
   padding-top: 4px;
 }
@@ -70,7 +70,8 @@
 }
 
 #loadingState,
-:host([show-error-state]) #errorState  {
+:host([show-error-state]) #errorState,
+#hintState {
   display: flex;
 }
 
@@ -80,7 +81,17 @@
 }
 
 #errorState {
-  height: 64px;
+  height: 72px;
+}
+
+#errorIconContainer {
+  background-color: var(--color-searchbox-results-icon-container-background);
+  border-radius: 40px;
+  height: 28px;
+  width: 28px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 #errorIcon {
@@ -89,21 +100,34 @@
   mask-position: center;
   mask-repeat: no-repeat;
   mask-image: url('/lens/shared/info.svg');
-  background-color: var(--color-searchbox-search-icon-background);
+  mask-size: 20px;
+  background-color: var(--color-searchbox-results-icon);
 }
 </style>
 <div id="content">
-  <div id="loadingState" class="status-container">
-    <div class="spinner"></div>
-    <span id="hint-text1" class="loader-text">
-      $i18n{searchboxGhostLoaderHintTextPrimary}
-    </span>
-    <span id="hint-text2" class="loader-text">
-      $i18n{searchboxGhostLoaderHintTextSecondary}
-    </span>
-  </div>
-  <div id="errorState" class="status-container">
-    <div id="errorIcon"></div>
-    <span class="loader-text">$i18n{searchboxGhostLoaderErrorText}</span>
-  </div>
+  <template is="dom-if" if="[[showContextualSearchboxLoadingState]]">
+    <div id="loadingState" class="status-container">
+      <div class="spinner"></div>
+      <span id="hint-text1" class="loader-text">
+        $i18n{searchboxGhostLoaderHintTextPrimary}
+      </span>
+      <span id="hint-text2" class="loader-text">
+        $i18n{searchboxGhostLoaderHintTextSecondary}
+      </span>
+    </div>
+    <div id="errorState" class="status-container">
+      <div id="errorIconContainer">
+        <div id="errorIcon"></div>
+      </div>
+      <span class="loader-text">$i18n{searchboxGhostLoaderErrorText}</span>
+    </div>
+  </template>
+  <template is="dom-if" if="[[!showContextualSearchboxLoadingState]]">
+    <div id="hintState" class="status-container">
+      <div id="errorIconContainer">
+        <div id="errorIcon"></div>
+      </div>
+      <span class="loader-text">$i18n{searchboxGhostLoaderNoSuggestText}</span>
+    </div>
+  </template>
 </div>

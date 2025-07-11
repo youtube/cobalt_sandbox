@@ -388,6 +388,9 @@ public final class ProductionSupportedFlagList {
                 ContentFeatures.COMPOSITE_BG_COLOR_ANIMATION,
                 "When enabled, the background-color animation runs on the compositor thread."),
         Flag.baseFeature(
+                CcFeatures.DEFER_IMPL_INVALIDATION,
+                "Allow main thread additional time to respond before creating a pending tree"),
+        Flag.baseFeature(
                 AwFeatures.WEBVIEW_USE_METRICS_UPLOAD_SERVICE,
                 "Upload UMA metrics logs through MetricsUploadService not via GMS-core"
                         + " directly."),
@@ -779,7 +782,6 @@ public final class ProductionSupportedFlagList {
         Flag.baseFeature("V8IncrementalMarkingStartUserVisible"),
         Flag.baseFeature("V8ExternalMemoryAccountedInGlobalLimit"),
         Flag.baseFeature("V8GCSpeedUsesCounters"),
-        Flag.baseFeature("WebAssemblyMoreAggressiveCodeCaching"),
         Flag.baseFeature("WebAssemblyTurboshaft"),
         Flag.baseFeature("WebAssemblyTurboshaftInstructionSelection"),
         Flag.baseFeature("WebAssemblyInlining"),
@@ -1090,6 +1092,7 @@ public final class ProductionSupportedFlagList {
                 "LCPTimingPredictorPrerender2",
                 "When enabled, Prerender2 by Speculation Rules API is delayed until LCP is"
                         + " finished."),
+        Flag.baseFeature("SyntheticResponseReportUnexpectedHeader"),
         // Add new commandline switches and features above. The final entry should have a
         // trailing comma for cleaner diffs.
     };

@@ -10,6 +10,7 @@
 #include "testing/gtest/include/gtest/gtest.h"
 #include "ui/accessibility/accessibility_features.h"
 #include "ui/accessibility/platform/ax_platform_node_unittest.h"
+#include "ui/accessibility/platform/test_ax_node_wrapper.h"
 
 namespace {
 
@@ -35,6 +36,13 @@ class AXPlatformNodeCocoaTest
     } else {
       features_.InitAndDisableFeature(features::kMacAccessibilityAPIMigration);
     }
+  }
+
+  AXPlatformNodeCocoa* GetCocoaNode(const AXNodeID id) const {
+    TestAXNodeWrapper* wrapper =
+        TestAXNodeWrapper::GetOrCreate(GetTree(), GetNode(id));
+    return [[AXPlatformNodeCocoa alloc]
+        initWithNode:(ui::AXPlatformNodeBase*)wrapper->ax_platform_node()];
   }
 
  private:
@@ -77,7 +85,8 @@ TEST_P(AXPlatformNodeCocoaTest, TestCocoaActionListLayout) {
 TEST_P(AXPlatformNodeCocoaTest, TestRespondsToSelector) {
   NSArray<NSString*>* array = @[
     @"accessibilityDisclosedByRow", @"accessibilityDisclosedRows",
-    @"accessibilityDisclosureLevel", @"isAccessibilityDisclosed",
+    @"accessibilityDisclosureLevel", @"accessibilitySortDirection",
+    @"isAccessibilityDisclosed", @"isAccessibilityExpanded",
     @"isAccessibilityFocused"
   ];
 
@@ -118,4 +127,261 @@ TEST_P(AXPlatformNodeCocoaTestNewAPI,
         isAttributeAvailableThroughNewAccessibilityAPI:attributeName]);
   }
 }
+
+// accessibilityColumnIndexRange on a table cell.
+TEST_P(AXPlatformNodeCocoaTest, AccessibilityColumnIndexRange) {
+  ui::TestAXTreeUpdate update(std::string(R"HTML(
+    ++1 kTable
+    ++++2 kRow
+    ++++++3 kCell
+  )HTML"));
+  Init(update);
+
+  AXPlatformNodeCocoa* cell = GetCocoaNode(3);
+  NSRange range = [cell accessibilityColumnIndexRange];
+  EXPECT_EQ(range.location, 0UL);  // Column index should start at 0
+  EXPECT_EQ(range.length, 1UL);    // Only one column in this simple setup
+}
+
+// accessibilityRowIndexRange on a table cell.
+TEST_P(AXPlatformNodeCocoaTest, AccessibilityRowIndexRange) {
+  ui::TestAXTreeUpdate update(std::string(R"HTML(
+    ++1 kTable
+    ++++2 kRow
+    ++++++3 kCell
+  )HTML"));
+  Init(update);
+
+  AXPlatformNodeCocoa* cell = GetCocoaNode(3);
+  NSRange range = [cell accessibilityRowIndexRange];
+  EXPECT_EQ(range.location, 0UL);  // Row index should start at 0
+  EXPECT_EQ(range.length, 1UL);    // Only one row in this simple setup
+}
+
+// Non-header cells should not support accessibilitySortDirection, even if
+// there's a sort direction in the AXNodeData. Their sort order is "unknown".
+TEST_P(AXPlatformNodeCocoaTest, AccessibilitySortDirectionOnCell) {
+  AXNodeData root = AXNodeData();
+  root.id = 1;
+  root.role = ax::mojom::Role::kCell;
+  root.AddIntAttribute(ax::mojom::IntAttribute::kSortDirection,
+                       static_cast<int>(ax::mojom::SortDirection::kAscending));
+  Init(root);
+  TestAXNodeWrapper* wrapper =
+      TestAXNodeWrapper::GetOrCreate(GetTree(), GetRoot());
+  AXPlatformNodeCocoa* node = [[AXPlatformNodeCocoa alloc]
+      initWithNode:(ui::AXPlatformNodeBase*)wrapper->ax_platform_node()];
+  EXPECT_TRUE(
+      [[node accessibilityRole] isEqualToString:NSAccessibilityCellRole]);
+  EXPECT_EQ([node internalRole], ax::mojom::Role::kCell);
+  EXPECT_EQ([node accessibilitySortDirection],
+            NSAccessibilitySortDirectionUnknown);
+}
+
+// A row header whose AXNodeData lacks a sort order has an "unknown" sort order.
+TEST_P(AXPlatformNodeCocoaTest,
+       AccessibilitySortDirectionUnspecifiedOnRowHeader) {
+  AXNodeData root = AXNodeData();
+  root.id = 1;
+  root.role = ax::mojom::Role::kRowHeader;
+  Init(root);
+  TestAXNodeWrapper* wrapper =
+      TestAXNodeWrapper::GetOrCreate(GetTree(), GetRoot());
+  AXPlatformNodeCocoa* node = [[AXPlatformNodeCocoa alloc]
+      initWithNode:(ui::AXPlatformNodeBase*)wrapper->ax_platform_node()];
+  EXPECT_TRUE(
+      [[node accessibilityRole] isEqualToString:NSAccessibilityCellRole]);
+  EXPECT_EQ([node internalRole], ax::mojom::Role::kRowHeader);
+  EXPECT_EQ([node accessibilitySortDirection],
+            NSAccessibilitySortDirectionUnknown);
+}
+
+// A column header whose AXNodeData lacks a sort order has an "unknown" sort
+// order.
+TEST_P(AXPlatformNodeCocoaTest,
+       AccessibilitySortDirectionUnspecifiedOnColumnHeader) {
+  AXNodeData root = AXNodeData();
+  root.id = 1;
+  root.role = ax::mojom::Role::kColumnHeader;
+  Init(root);
+  TestAXNodeWrapper* wrapper =
+      TestAXNodeWrapper::GetOrCreate(GetTree(), GetRoot());
+  AXPlatformNodeCocoa* node = [[AXPlatformNodeCocoa alloc]
+      initWithNode:(ui::AXPlatformNodeBase*)wrapper->ax_platform_node()];
+
+  EXPECT_TRUE(
+      [[node accessibilityRole] isEqualToString:NSAccessibilityCellRole]);
+  EXPECT_EQ([node internalRole], ax::mojom::Role::kColumnHeader);
+  EXPECT_EQ([node accessibilitySortDirection],
+            NSAccessibilitySortDirectionUnknown);
+}
+
+// A row header whose AXNodeData contains an "ascending" sort order has an
+// "ascending" sort order.
+TEST_P(AXPlatformNodeCocoaTest,
+       AccessibilitySortDirectionAscendingOnRowHeader) {
+  AXNodeData root = AXNodeData();
+  root.id = 1;
+  root.role = ax::mojom::Role::kRowHeader;
+  root.AddIntAttribute(ax::mojom::IntAttribute::kSortDirection,
+                       static_cast<int>(ax::mojom::SortDirection::kAscending));
+  Init(root);
+  TestAXNodeWrapper* wrapper =
+      TestAXNodeWrapper::GetOrCreate(GetTree(), GetRoot());
+  AXPlatformNodeCocoa* node = [[AXPlatformNodeCocoa alloc]
+      initWithNode:(ui::AXPlatformNodeBase*)wrapper->ax_platform_node()];
+  EXPECT_TRUE(
+      [[node accessibilityRole] isEqualToString:NSAccessibilityCellRole]);
+  EXPECT_EQ([node internalRole], ax::mojom::Role::kRowHeader);
+  EXPECT_EQ([node accessibilitySortDirection],
+            NSAccessibilitySortDirectionAscending);
+}
+
+// A column header whose AXNodeData contains an "ascending" sort order has an
+// "ascending" sort order.
+TEST_P(AXPlatformNodeCocoaTest,
+       AccessibilitySortDirectionAscendingOnColumnHeader) {
+  AXNodeData root = AXNodeData();
+  root.id = 1;
+  root.role = ax::mojom::Role::kColumnHeader;
+  root.AddIntAttribute(ax::mojom::IntAttribute::kSortDirection,
+                       static_cast<int>(ax::mojom::SortDirection::kAscending));
+  Init(root);
+  TestAXNodeWrapper* wrapper =
+      TestAXNodeWrapper::GetOrCreate(GetTree(), GetRoot());
+  AXPlatformNodeCocoa* node = [[AXPlatformNodeCocoa alloc]
+      initWithNode:(ui::AXPlatformNodeBase*)wrapper->ax_platform_node()];
+  EXPECT_TRUE(
+      [[node accessibilityRole] isEqualToString:NSAccessibilityCellRole]);
+  EXPECT_EQ([node internalRole], ax::mojom::Role::kColumnHeader);
+  EXPECT_EQ([node accessibilitySortDirection],
+            NSAccessibilitySortDirectionAscending);
+}
+
+// A row header whose AXNodeData contains a "descending" sort order has an
+// "descending" sort order.
+TEST_P(AXPlatformNodeCocoaTest,
+       AccessibilitySortDirectionDescendingOnRowHeader) {
+  AXNodeData root = AXNodeData();
+  root.id = 1;
+  root.role = ax::mojom::Role::kRowHeader;
+  root.AddIntAttribute(ax::mojom::IntAttribute::kSortDirection,
+                       static_cast<int>(ax::mojom::SortDirection::kDescending));
+  Init(root);
+  TestAXNodeWrapper* wrapper =
+      TestAXNodeWrapper::GetOrCreate(GetTree(), GetRoot());
+  AXPlatformNodeCocoa* node = [[AXPlatformNodeCocoa alloc]
+      initWithNode:(ui::AXPlatformNodeBase*)wrapper->ax_platform_node()];
+  EXPECT_TRUE(
+      [[node accessibilityRole] isEqualToString:NSAccessibilityCellRole]);
+  EXPECT_EQ([node internalRole], ax::mojom::Role::kRowHeader);
+  EXPECT_EQ([node accessibilitySortDirection],
+            NSAccessibilitySortDirectionDescending);
+}
+
+// A column header whose AXNodeData contains a "descending" sort order has an
+// "descending" sort order.
+TEST_P(AXPlatformNodeCocoaTest,
+       AccessibilitySortDirectionDescendingOnColumnHeader) {
+  AXNodeData root = AXNodeData();
+  root.id = 1;
+  root.role = ax::mojom::Role::kColumnHeader;
+  root.AddIntAttribute(ax::mojom::IntAttribute::kSortDirection,
+                       static_cast<int>(ax::mojom::SortDirection::kDescending));
+  Init(root);
+  TestAXNodeWrapper* wrapper =
+      TestAXNodeWrapper::GetOrCreate(GetTree(), GetRoot());
+  AXPlatformNodeCocoa* node = [[AXPlatformNodeCocoa alloc]
+      initWithNode:(ui::AXPlatformNodeBase*)wrapper->ax_platform_node()];
+  EXPECT_TRUE(
+      [[node accessibilityRole] isEqualToString:NSAccessibilityCellRole]);
+  EXPECT_EQ([node internalRole], ax::mojom::Role::kColumnHeader);
+  EXPECT_EQ([node accessibilitySortDirection],
+            NSAccessibilitySortDirectionDescending);
+}
+
+// A row header whose AXNodeData contains an "other" sort order has an "unknown"
+// sort order.
+TEST_P(AXPlatformNodeCocoaTest, AccessibilitySortDirectionOtherOnRowHeader) {
+  AXNodeData root = AXNodeData();
+  root.id = 1;
+  root.role = ax::mojom::Role::kRowHeader;
+  root.AddIntAttribute(ax::mojom::IntAttribute::kSortDirection,
+                       static_cast<int>(ax::mojom::SortDirection::kOther));
+  Init(root);
+  TestAXNodeWrapper* wrapper =
+      TestAXNodeWrapper::GetOrCreate(GetTree(), GetRoot());
+  AXPlatformNodeCocoa* node = [[AXPlatformNodeCocoa alloc]
+      initWithNode:(ui::AXPlatformNodeBase*)wrapper->ax_platform_node()];
+  EXPECT_TRUE(
+      [[node accessibilityRole] isEqualToString:NSAccessibilityCellRole]);
+  EXPECT_EQ([node internalRole], ax::mojom::Role::kRowHeader);
+  EXPECT_EQ([node accessibilitySortDirection],
+            NSAccessibilitySortDirectionUnknown);
+}
+
+// A column header whose AXNodeData contains an "other" sort order has an
+// "unknown" sort order.
+TEST_P(AXPlatformNodeCocoaTest, AccessibilitySortDirectionOtherOnColumnHeader) {
+  AXNodeData root = AXNodeData();
+  root.id = 1;
+  root.role = ax::mojom::Role::kColumnHeader;
+  root.AddIntAttribute(ax::mojom::IntAttribute::kSortDirection,
+                       static_cast<int>(ax::mojom::SortDirection::kOther));
+  Init(root);
+  TestAXNodeWrapper* wrapper =
+      TestAXNodeWrapper::GetOrCreate(GetTree(), GetRoot());
+  AXPlatformNodeCocoa* node = [[AXPlatformNodeCocoa alloc]
+      initWithNode:(ui::AXPlatformNodeBase*)wrapper->ax_platform_node()];
+  EXPECT_TRUE(
+      [[node accessibilityRole] isEqualToString:NSAccessibilityCellRole]);
+  EXPECT_EQ([node internalRole], ax::mojom::Role::kColumnHeader);
+  EXPECT_EQ([node accessibilitySortDirection],
+            NSAccessibilitySortDirectionUnknown);
+}
+
+// A menu item with the expanded state should return true for
+// `isAccessibilityExpanded`.
+TEST_P(AXPlatformNodeCocoaTest, IsAccessibilityExpandedSetToExpanded) {
+  AXNodeData root = AXNodeData();
+  root.id = 1;
+  root.role = ax::mojom::Role::kMenuItem;
+  root.AddState(ax::mojom::State::kExpanded);
+  Init(root);
+  TestAXNodeWrapper* wrapper =
+      TestAXNodeWrapper::GetOrCreate(GetTree(), GetRoot());
+  AXPlatformNodeCocoa* node = [[AXPlatformNodeCocoa alloc]
+      initWithNode:(ui::AXPlatformNodeBase*)wrapper->ax_platform_node()];
+  EXPECT_TRUE([node isAccessibilityExpanded]);
+}
+
+// A menu item with the collpased state should return false for
+// `isAccessibilityExpanded`.
+TEST_P(AXPlatformNodeCocoaTest, IsAccessibilityExpandedSetToCollapsed) {
+  AXNodeData root = AXNodeData();
+  root.id = 1;
+  root.role = ax::mojom::Role::kMenuItem;
+  root.AddState(ax::mojom::State::kCollapsed);
+  Init(root);
+  TestAXNodeWrapper* wrapper =
+      TestAXNodeWrapper::GetOrCreate(GetTree(), GetRoot());
+  AXPlatformNodeCocoa* node = [[AXPlatformNodeCocoa alloc]
+      initWithNode:(ui::AXPlatformNodeBase*)wrapper->ax_platform_node()];
+  EXPECT_FALSE([node isAccessibilityExpanded]);
+}
+
+// A menu item without the expanded or collapsed state should return false for
+// `isAccessibilityExpanded`.
+TEST_P(AXPlatformNodeCocoaTest, IsAccessibilityExpandedNotSet) {
+  AXNodeData root = AXNodeData();
+  root.id = 1;
+  root.role = ax::mojom::Role::kMenuItem;
+  Init(root);
+  TestAXNodeWrapper* wrapper =
+      TestAXNodeWrapper::GetOrCreate(GetTree(), GetRoot());
+  AXPlatformNodeCocoa* node = [[AXPlatformNodeCocoa alloc]
+      initWithNode:(ui::AXPlatformNodeBase*)wrapper->ax_platform_node()];
+  EXPECT_FALSE([node isAccessibilityExpanded]);
+}
+
 }  // namespace ui

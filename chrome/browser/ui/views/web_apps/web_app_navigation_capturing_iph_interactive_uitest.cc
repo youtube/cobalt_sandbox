@@ -21,9 +21,11 @@
 #include "chrome/browser/web_applications/test/os_integration_test_override_impl.h"
 #include "chrome/browser/web_applications/test/web_app_install_test_utils.h"
 #include "chrome/browser/web_applications/web_app_command_scheduler.h"
+#include "chrome/browser/web_applications/web_app_install_info.h"
 #include "chrome/browser/web_applications/web_app_provider.h"
 #include "chrome/test/interaction/dom_message_observer.h"
 #include "chrome/test/user_education/interactive_feature_promo_test.h"
+#include "components/feature_engagement/public/feature_constants.h"
 #include "components/user_education/views/help_bubble_view.h"
 #include "components/webapps/common/web_app_id.h"
 #include "content/public/browser/web_contents.h"
@@ -50,6 +52,7 @@ constexpr char kToSiteBTargetBlankNoOpener[] = "id-LINK-A_TO_B-BLANK-NO_OPENER";
 constexpr char kToSiteBTargetBlankWithOpener[] = "id-LINK-A_TO_B-BLANK-OPENER";
 
 DEFINE_LOCAL_ELEMENT_IDENTIFIER_VALUE(kStartPageId);
+DEFINE_LOCAL_ELEMENT_IDENTIFIER_VALUE(kNewPageId);
 DEFINE_LOCAL_ELEMENT_IDENTIFIER_VALUE(kAppPageId);
 DEFINE_LOCAL_ELEMENT_IDENTIFIER_VALUE(kDestinationPageId);
 DEFINE_LOCAL_STATE_IDENTIFIER_VALUE(LatestDomMessageObserver,
@@ -63,7 +66,8 @@ class WebAppNavigationCapturingIphUiTest
  public:
   WebAppNavigationCapturingIphUiTest()
       : InteractiveFeaturePromoTestT(UseDefaultTrackerAllowingPromos(
-            {feature_engagement::kIPHDesktopPWAsLinkCapturingLaunch})) {
+            {feature_engagement::kIPHDesktopPWAsLinkCapturingLaunch,
+             feature_engagement::kIPHDesktopPWAsLinkCapturingLaunchAppInTab})) {
     base::FieldTrialParams params;
     params["link_capturing_state"] = "reimpl_default_on";
     scoped_feature_list_.InitAndEnableFeatureWithParameters(
@@ -171,23 +175,35 @@ class WebAppNavigationCapturingIphUiTest
             .SetDescription("ClickLaunchLink()"));
   }
 
+  auto TriggerNavigateExisting(
+      const std::string& element_id,
+      ui_controls::MouseButton button,
+      ui_controls::AcceleratorState accel = ui_controls::kNoAccelerator) {
+    auto steps = Steps(ClickLaunchLink(element_id, button, accel),
+                       InAnyContext(WaitForShow(kDestinationPageId)));
+    AddDescription(steps, "TriggerNavigateExisting( %s )");
+    return steps;
+  }
+
   // Clicks on `element_id` in the start page, which must be open in at least
   // one browser, launching a new app window. The context of the last step is
   // the window in which the link was opened.
   auto TriggerAppLaunch(
       const std::string& element_id,
       ui_controls::MouseButton button,
-      ui_controls::AcceleratorState accel = ui_controls::kNoAccelerator) {
+      ui_controls::AcceleratorState accel = ui_controls::kNoAccelerator,
+      bool expect_new_browser = false) {
     // Note: on Mac, the web contents for a new app can become "visible" well
     // before the browser itself does, which can cause a race condition.
     // Therefore, throughout, we wait for the web contents and not the browser
     // to enforce consistency.
-    auto steps = Steps(InstrumentNextTab(kDestinationPageId, AnyBrowser()),
-                       ClickLaunchLink(element_id, button, accel),
-                       InAnyContext(WaitForShow(kDestinationPageId)),
-                       InSameContext(CheckViewProperty(
-                           kBrowserViewElementId, &BrowserView::browser,
-                           testing::Ne(browser()))));
+    auto steps =
+        Steps(InstrumentNextTab(kDestinationPageId, AnyBrowser()),
+              ClickLaunchLink(element_id, button, accel),
+              InAnyContext(WaitForShow(kDestinationPageId)),
+              InSameContext(CheckViewProperty(
+                  kBrowserViewElementId, &BrowserView::browser,
+                  testing::Ne(expect_new_browser ? browser() : nullptr))));
     AddDescription(steps, "TriggerAppLaunch( %s )");
     return steps;
   }
@@ -326,6 +342,52 @@ IN_PROC_BROWSER_TEST_F(WebAppNavigationCapturingIphUiTest,
           WaitForPromo(feature_engagement::kIPHDesktopPWAsLinkCapturingLaunch),
           PressDefaultPromoButton(),
           CheckActionCount("LinkCapturingIPHAppBubbleNotAccepted", 1))));
+}
+
+IN_PROC_BROWSER_TEST_F(WebAppNavigationCapturingIphUiTest,
+                       IPHShownForNavigateExistingAppInTab) {
+  webapps::AppId app_id = test::InstallWebApp(
+      browser()->profile(),
+      WebAppInstallInfo::CreateForTesting(
+          GetDestinationUrl(), blink::mojom::DisplayMode::kBrowser,
+          mojom::UserDisplayMode::kBrowser,
+          blink::mojom::ManifestLaunchHandler_ClientMode::kNavigateExisting));
+  RunTestSequence(
+      OpenStartPage(),
+      TriggerAppLaunch(kToSiteBTargetBlankNoOpener, ui_controls::LEFT,
+                       ui_controls::kNoAccelerator,
+                       /* expect_new_browser= */ false),
+      // The second launch is required to trigger the kNavigateExisting behavior
+      // and show the IPH.
+      TriggerNavigateExisting(kToSiteBTargetBlankNoOpener, ui_controls::LEFT,
+                              ui_controls::kNoAccelerator),
+      InSameContext(WaitForPromo(
+          feature_engagement::kIPHDesktopPWAsLinkCapturingLaunchAppInTab)));
+}
+
+IN_PROC_BROWSER_TEST_F(WebAppNavigationCapturingIphUiTest,
+                       IPHForAppInTabDisappearsOnNewTabOpen) {
+  webapps::AppId app_id = test::InstallWebApp(
+      browser()->profile(),
+      WebAppInstallInfo::CreateForTesting(
+          GetDestinationUrl(), blink::mojom::DisplayMode::kBrowser,
+          mojom::UserDisplayMode::kBrowser,
+          blink::mojom::ManifestLaunchHandler_ClientMode::kNavigateExisting));
+  RunTestSequence(
+      OpenStartPage(),
+      TriggerAppLaunch(kToSiteBTargetBlankNoOpener, ui_controls::LEFT,
+                       ui_controls::kNoAccelerator,
+                       /* expect_new_browser= */ false),
+      TriggerNavigateExisting(kToSiteBTargetBlankNoOpener, ui_controls::LEFT,
+                              ui_controls::kNoAccelerator),
+      WaitForWebContentsReady(kDestinationPageId),
+      InSameContext(WaitForPromo(
+          feature_engagement::kIPHDesktopPWAsLinkCapturingLaunchAppInTab)),
+      AddInstrumentedTab(kNewPageId, GURL("https://www.example.com")),
+      WaitForWebContentsReady(kNewPageId),
+      InSameContext(CheckPromoIsActive(
+          feature_engagement::kIPHDesktopPWAsLinkCapturingLaunchAppInTab,
+          false)));
 }
 
 }  // namespace

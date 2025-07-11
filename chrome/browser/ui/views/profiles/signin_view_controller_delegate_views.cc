@@ -11,6 +11,7 @@
 #include "build/build_config.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/enterprise/profile_management/profile_management_features.h"
+#include "chrome/browser/enterprise/signin/managed_profile_required_navigation_throttle.h"
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/profiles/profile_avatar_icon_util.h"
 #include "chrome/browser/profiles/profile_manager.h"
@@ -36,6 +37,7 @@
 #include "components/constrained_window/constrained_window_views.h"
 #include "components/signin/public/base/signin_metrics.h"
 #include "components/web_modal/web_contents_modal_dialog_host.h"
+#include "content/public/browser/navigation_handle.h"
 #include "content/public/browser/render_widget_host_view.h"
 #include "content/public/browser/web_contents.h"
 #include "google_apis/gaia/core_account_id.h"
@@ -223,6 +225,7 @@ bool SigninViewControllerDelegateViews::ShouldShowCloseButton() const {
 }
 
 void SigninViewControllerDelegateViews::CloseModalSignin() {
+  on_closed_callback_.RunAndReset();
   NotifyModalDialogClosed();
   // Either `this` is owned by the view hierarchy through `modal_signin_widget_`
   // or `modal_signin_widget_` is nullptr and then `this` is self-owned.
@@ -300,11 +303,13 @@ SigninViewControllerDelegateViews::SigninViewControllerDelegateViews(
     ui::mojom::ModalType dialog_modal_type,
     bool wait_for_size,
     bool should_show_close_button,
-    bool delete_profile_on_cancel)
+    bool delete_profile_on_cancel,
+    base::ScopedClosureRunner on_closed_callback)
     : content_view_(content_view.get()),
       web_contents_(content_view->GetWebContents()),
       browser_(browser),
-      should_show_close_button_(should_show_close_button) {
+      should_show_close_button_(should_show_close_button),
+      on_closed_callback_(std::move(on_closed_callback)) {
   DCHECK(web_contents_);
   DCHECK(browser_);
   DCHECK(browser_->tab_strip_model()->GetActiveWebContents())
@@ -504,10 +509,92 @@ SigninViewControllerDelegate::CreateManagedUserNoticeDelegate(
     Browser* browser,
     std::unique_ptr<signin::EnterpriseProfileCreationDialogParams>
         create_param) {
+  bool profile_creation_required_by_policy =
+      create_param->profile_creation_required_by_policy;
+
+  if (profile_creation_required_by_policy &&
+      base::FeatureList::IsEnabled(
+          features::kManagedProfileRequiredInterstitial)) {
+    if (std::holds_alternative<signin::SigninChoiceWithConfirmAndRetryCallback>(
+            create_param->process_user_choice_callback)) {
+      create_param->process_user_choice_callback = base::BindOnce(
+          [](base::WeakPtr<content::BrowserContext> browser_context,
+             signin::SigninChoiceWithConfirmAndRetryCallback callback,
+             signin::SigninChoice signin_choice,
+             signin::SigninChoiceOperationDoneCallback done_callback,
+             signin::SigninChoiceOperationRetryCallback retry_callback) {
+            if (!browser_context.WasInvalidated()) {
+              ManagedProfileRequiredNavigationThrottle::SetReloadRequired(
+                  browser_context.get(),
+                  signin_choice ==
+                          signin::SigninChoice::SIGNIN_CHOICE_CONTINUE ||
+                      signin_choice ==
+                          signin::SigninChoice::SIGNIN_CHOICE_NEW_PROFILE);
+            }
+            std::move(callback).Run(signin_choice, std::move(done_callback),
+                                    std::move(retry_callback));
+          },
+          browser->profile()->GetWeakPtr(),
+          std::move(std::get<signin::SigninChoiceWithConfirmAndRetryCallback>(
+              create_param->process_user_choice_callback)));
+    }
+
+    if (std::holds_alternative<signin::SigninChoiceCallback>(
+            create_param->process_user_choice_callback)) {
+      create_param->process_user_choice_callback = base::BindOnce(
+          [](base::WeakPtr<content::BrowserContext> browser_context,
+             signin::SigninChoiceCallback callback,
+             signin::SigninChoice signin_choice) {
+            if (!browser_context.WasInvalidated()) {
+              ManagedProfileRequiredNavigationThrottle::SetReloadRequired(
+                  browser_context.get(),
+                  signin_choice ==
+                          signin::SigninChoice::SIGNIN_CHOICE_CONTINUE ||
+                      signin_choice ==
+                          signin::SigninChoice::SIGNIN_CHOICE_NEW_PROFILE);
+            }
+            std::move(callback).Run(signin_choice);
+          },
+          browser->profile()->GetWeakPtr(),
+          std::move(std::get<signin::SigninChoiceCallback>(
+              create_param->process_user_choice_callback)));
+    }
+  }
+
+  auto web_view = SigninViewControllerDelegateViews::
+      CreateManagedUserNoticeConfirmationWebView(browser,
+                                                 std::move(create_param));
+  auto* dialog_web_contents = web_view->GetWebContents();
+  base::ScopedClosureRunner on_closed_callback;
+
+  // Block all navigations to avoid users bypassing the dialog using another
+  // window.
+  if (profile_creation_required_by_policy &&
+      base::FeatureList::IsEnabled(
+          features::kManagedProfileRequiredInterstitial)) {
+    content::WebContents* active_contents =
+        browser->tab_strip_model()->GetActiveWebContents();
+    // Reload the active web contents so that the managed profile required
+    // interstitial is shown there.
+    CHECK(active_contents);
+    on_closed_callback = ManagedProfileRequiredNavigationThrottle::
+        BlockNavigationUntilEnterpriseActionTaken(
+            browser->profile(), active_contents, dialog_web_contents);
+
+    content::OpenURLParams params(active_contents->GetVisibleURL(),
+                                  content::Referrer(),
+                                  WindowOpenDisposition::CURRENT_TAB,
+                                  ui::PAGE_TRANSITION_AUTO_TOPLEVEL, false);
+
+    base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+        FROM_HERE,
+        base::BindOnce(base::IgnoreResult(&content::WebContents::OpenURL),
+                       active_contents->GetWeakPtr(), std::move(params),
+                       /*navigation_handle_callback=*/base::DoNothing()));
+  }
+
   return new SigninViewControllerDelegateViews(
-      SigninViewControllerDelegateViews::
-          CreateManagedUserNoticeConfirmationWebView(browser,
-                                                     std::move(create_param)),
-      browser, ui::mojom::ModalType::kWindow, true, false);
+      std::move(web_view), browser, ui::mojom::ModalType::kWindow, true, false,
+      false, std::move(on_closed_callback));
 }
 #endif

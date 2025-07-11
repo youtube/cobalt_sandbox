@@ -1674,8 +1674,9 @@ fyi_reclient_comparison_builder(
         ),
     },
     builderless = True,
-    cores = 32,
+    cores = 16,
     os = os.WINDOWS_DEFAULT,
+    ssd = True,
     free_space = builders.free_space.high,
     console_view_entry = consoles.console_view_entry(
         category = "win",
@@ -1958,8 +1959,9 @@ ci.builder(
         ],
     ),
     builderless = True,
-    cores = 32,
+    cores = 16,
     os = os.WINDOWS_DEFAULT,
+    ssd = True,
     console_view_entry = consoles.console_view_entry(
         category = "win",
         short_name = "re",
@@ -2009,8 +2011,9 @@ ci.builder(
         ],
     ),
     builderless = True,
-    cores = 32,
+    cores = 16,
     os = os.WINDOWS_DEFAULT,
+    ssd = True,
     console_view_entry = consoles.console_view_entry(
         category = "win",
         short_name = "re",

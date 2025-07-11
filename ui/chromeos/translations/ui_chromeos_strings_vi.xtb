@@ -422,6 +422,7 @@
 <translation id="4387004326333427325">Chứng chỉ xác thực bị từ chối từ xa</translation>
 <translation id="4394214039309501350">Đường liên kết ngoài</translation>
 <translation id="4394980935660306080">Đầu tuần này</translation>
+<translation id="4397435965699247285">OneDrive không hoạt động khi không có kết nối mạng</translation>
 <translation id="4398096759193130964">Khôi phục hoặc kéo các mục này vào một thư mục mới bên ngoài thùng rác</translation>
 <translation id="4401287888955153199">Trích xuất tất cả</translation>
 <translation id="4410695710508688828">Thao tác trích xuất không thành công. <ph name="ERROR_MESSAGE" /></translation>
@@ -582,7 +583,6 @@
 <translation id="5447680084201416734">Không đủ bộ nhớ.</translation>
 <translation id="5449551289610225147">Mật khẩu không hợp lệ</translation>
 <translation id="5459064203055649751">Đã có một tệp có tên "<ph name="FILENAME" />". Bạn có muốn thay thế tệp này bằng tệp mà bạn đang di chuyển không?</translation>
-<translation id="5462378611565326489">OneDrive không hoạt động khi không có kết nối mạng.</translation>
 <translation id="5463231940765244860">Nhập</translation>
 <translation id="5469868506864199649">Tiếng Ý</translation>
 <translation id="5473333559083690127">Nhập lại mã PIN mới</translation>
@@ -664,7 +664,7 @@
 <translation id="6096979789310008754">Đã xóa nội dung tìm kiếm, đang hiển thị tất cả các tệp và thư mục.</translation>
 <translation id="610101264611565198">Đang di chuyển <ph name="FILE_NAME" /> sang <ph name="FOLDER_NAME" /></translation>
 <translation id="61118516107968648">Văn bản CSV</translation>
-<translation id="6129953537138746214">Dấu cách</translation>
+<translation id="6129953537138746214">Phím cách</translation>
 <translation id="6133173853026656527">Đang di chuyển <ph name="FILE_NAME" />...</translation>
 <translation id="6133877453787250710">Quản trị viên sẽ giám sát:</translation>
 <translation id="613750717151263950">Tiếng Nhật bằng bàn phím Anh-Mỹ</translation>

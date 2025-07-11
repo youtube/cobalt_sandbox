@@ -368,6 +368,24 @@ chromium-metrics-reviews@google.com.
   </summary>
 </histogram>
 
+<histogram name="Accessibility.Android.PageZoom.Usage"
+    enum="AccessibilityPageZoomUsageType" expires_after="2025-05-04">
+  <owner>mschillaci@google.com</owner>
+  <owner>aldietz@google.com</owner>
+  <owner>chrome-a11y-core@google.com</owner>
+  <summary>
+    Tracks what type of user the current user is considered for the
+    Accessibility Page Zoom feature. The user can be in one of four buckets: a
+    user that has saved a custom zoom level on at least one site; a user that
+    has a default zoom level choice for all sites; a user that has both; a user
+    that has none. Any of the former three is considered an active user of the
+    feature. This is tracked once on browser start up.
+
+    Note: Users can move between these groups, although they can only be in one
+    group at a time.
+  </summary>
+</histogram>
+
 <histogram name="Accessibility.Android.UpdateAccessibilityServices.DidPoll"
     enum="BooleanHit" expires_after="2025-05-04">
   <owner>mschillaci@google.com</owner>
@@ -786,6 +804,19 @@ chromium-metrics-reviews@google.com.
   </summary>
 </histogram>
 
+<histogram name="Accessibility.CrosDisableTouchpad" enum="BooleanEnabled"
+    expires_after="2025-10-30">
+  <owner>lkupo@chromium.org</owner>
+  <owner>chrome-a11y-core@google.com</owner>
+  <summary>
+    Whether the built-in touchpad is enabled or disabled. It logs when the
+    touchpad is disabled, i.e. setting the internal touchpad mode to
+    &quot;Always disabled&quot; or &quot;Disabled on mouse connected&quot;, and
+    when the touchpad is enabled, which occurs when the internal touchpad mode
+    is set to &quot;Never disabled&quot;.
+  </summary>
+</histogram>
+
 <histogram name="Accessibility.CrosLargeCursorSize2" units="dip"
     expires_after="2025-05-04">
   <owner>katie@chromium.org</owner>
@@ -1127,6 +1158,7 @@ chromium-metrics-reviews@google.com.
     <variant name="AlwaysShowScrollbar"/>
     <variant name="Autoclick"/>
     <variant name="CursorColor"/>
+    <variant name="DisableTouchpad"/>
     <variant name="FlashNotifications"/>
     <variant name="LiveCaption"/>
     <variant name="MonoAudio"/>
@@ -1774,6 +1806,17 @@ even if they fit the naming pattern. -->
     Whether the Live Caption feature is enabled. This is logged once when the
     Live Caption controller is initialized on platforms that support Live
     Caption.
+  </summary>
+</histogram>
+
+<histogram name="Accessibility.LiveTranslate.Ash.Boca.Babelorca.TargetLanguage"
+    enum="LocaleCodeISO639" expires_after="2025-04-04">
+  <owner>caott@google.com</owner>
+  <owner>cros-edu-eng@google.com</owner>
+  <summary>
+    Records the target language of a translation of live captions from the
+    student in School Tools app. Records once per translation requested for live
+    captions from the student in School Tools app.
   </summary>
 </histogram>
 

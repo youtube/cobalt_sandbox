@@ -22,9 +22,9 @@
 #include "components/autofill/core/common/form_field_data.h"
 #include "components/autofill_ai/core/browser/autofill_ai_client.h"
 #include "components/autofill_ai/core/browser/autofill_ai_features.h"
-#include "components/autofill_ai/core/browser/autofill_ai_filling_engine.h"
 #include "components/autofill_ai/core/browser/autofill_ai_manager_test_api.h"
 #include "components/autofill_ai/core/browser/mock_autofill_ai_client.h"
+#include "components/autofill_ai/core/browser/suggestion/autofill_ai_model_executor.h"
 #include "components/autofill_ai/core/browser/suggestion/autofill_ai_suggestions.h"
 #include "components/optimization_guide/core/mock_optimization_guide_decider.h"
 #include "components/optimization_guide/core/model_execution/model_execution_features.h"
@@ -40,7 +40,7 @@ using ::autofill::Suggestion;
 using ::autofill::SuggestionType;
 using enum SuggestionType;
 using PredictionImprovementsPayload = Suggestion::PredictionImprovementsPayload;
-using PredictionsByGlobalId = AutofillAiFillingEngine::PredictionsByGlobalId;
+using PredictionsByGlobalId = AutofillAiModelExecutor::PredictionsByGlobalId;
 using ::base::test::RunOnceCallback;
 using ::testing::_;
 using ::testing::AllOf;
@@ -93,7 +93,7 @@ auto HasLabel(const std::u16string& expected_label) {
                                              expected_label))));
 }
 
-class MockAutofillAiFillingEngine : public AutofillAiFillingEngine {
+class MockAutofillAiModelExecutor : public AutofillAiModelExecutor {
  public:
   MOCK_METHOD(
       void,
@@ -128,7 +128,7 @@ class BaseAutofillAiManagerTest : public testing::Test {
   optimization_guide::MockOptimizationGuideDecider& decider() {
     return decider_;
   }
-  MockAutofillAiFillingEngine& filling_engine() { return filling_engine_; }
+  MockAutofillAiModelExecutor& model_executor() { return model_executor_; }
   MockAutofillAiClient& client() { return client_; }
   AutofillAiManager& manager() { return manager_; }
   autofill::TestStrikeDatabase& strike_database() { return strike_database_; }
@@ -138,7 +138,7 @@ class BaseAutofillAiManagerTest : public testing::Test {
   autofill::test::AutofillUnitTestEnvironment autofill_test_env_;
   autofill::TestAutofillClient autofill_client_;
   NiceMock<optimization_guide::MockOptimizationGuideDecider> decider_;
-  NiceMock<MockAutofillAiFillingEngine> filling_engine_;
+  NiceMock<MockAutofillAiModelExecutor> model_executor_;
   NiceMock<MockAutofillAiClient> client_;
   autofill::TestStrikeDatabase strike_database_;
   AutofillAiManager manager_{&client(), &decider(), &strike_database_};
@@ -151,8 +151,8 @@ class AutofillAiManagerTest : public BaseAutofillAiManagerTest {
         kAutofillAi, {{"skip_allowlist", "true"},
                       {"extract_ax_tree_for_predictions", "true"},
                       {"send_title_url", "false"}});
-    ON_CALL(client(), GetFillingEngine)
-        .WillByDefault(Return(&filling_engine()));
+    ON_CALL(client(), GetModelExecutor)
+        .WillByDefault(Return(&model_executor()));
     ON_CALL(client(), GetLastCommittedOrigin)
         .WillByDefault(ReturnRef(origin()));
     ON_CALL(client(), GetTitle).WillByDefault(Return("title"));
@@ -225,7 +225,7 @@ TEST_F(AutofillAiManagerTest, RetrievalFailed_ShowError) {
     EXPECT_CALL(client(), GetAXTree)
         .WillOnce(
             RunOnceCallback<0>(optimization_guide::proto::AXTreeUpdate()));
-    EXPECT_CALL(filling_engine(), GetPredictions)
+    EXPECT_CALL(model_executor(), GetPredictions)
         .WillOnce(RunOnceCallback<4>(PredictionsByGlobalId{}, ""));
     EXPECT_CALL(update_suggestions_callback,
                 Run(ElementsAre(HasType(kPredictionImprovementsError),
@@ -265,7 +265,7 @@ TEST_F(AutofillAiManagerTest, RetrievalFailed_FallbackToAutofill) {
     EXPECT_CALL(client(), GetAXTree)
         .WillOnce(
             RunOnceCallback<0>(optimization_guide::proto::AXTreeUpdate()));
-    EXPECT_CALL(filling_engine(), GetPredictions)
+    EXPECT_CALL(model_executor(), GetPredictions)
         .WillOnce(RunOnceCallback<4>(PredictionsByGlobalId{}, ""));
     EXPECT_CALL(update_suggestions_callback,
                 Run(ElementsAre(HasType(kAddressEntry), HasType(kSeparator),
@@ -288,7 +288,7 @@ TEST_F(AutofillAiManagerTest, EndToEnd) {
       .fields = {{.role = autofill::NAME_FIRST,
                   .heuristic_type = autofill::NAME_FIRST}}};
   autofill::FormData form = autofill::test::GetFormData(form_description);
-  // Filled form, as returned by the filling engine.
+  // Filled form, as returned by the model executor.
   form_description.host_frame = form.host_frame();
   form_description.renderer_id = form.renderer_id();
   form_description.fields[0].value = u"John";
@@ -296,7 +296,7 @@ TEST_F(AutofillAiManagerTest, EndToEnd) {
   form_description.fields[0].renderer_id = form.fields().front().renderer_id();
   autofill::FormData filled_form =
       autofill::test::GetFormData(form_description);
-  AutofillAiFillingEngine::PredictionsReceivedCallback
+  AutofillAiModelExecutor::PredictionsReceivedCallback
       predictions_received_callback;
   base::MockCallback<AutofillAiManager::UpdateSuggestionsCallback>
       update_suggestions_callback;
@@ -310,7 +310,7 @@ TEST_F(AutofillAiManagerTest, EndToEnd) {
     EXPECT_CALL(client(), GetAXTree)
         .WillOnce(
             RunOnceCallback<0>(optimization_guide::proto::AXTreeUpdate()));
-    EXPECT_CALL(filling_engine(), GetPredictions)
+    EXPECT_CALL(model_executor(), GetPredictions)
         .WillOnce(MoveArg<4>(&predictions_received_callback));
     EXPECT_CALL(
         update_suggestions_callback,
@@ -364,7 +364,7 @@ TEST_F(AutofillAiManagerTest, AutofillSuggestionsAreCachedOnMultipleFocus) {
                   .heuristic_type = autofill::NAME_LAST}}};
   autofill::FormData form = autofill::test::GetFormData(form_description);
 
-  AutofillAiFillingEngine::PredictionsReceivedCallback
+  AutofillAiModelExecutor::PredictionsReceivedCallback
       predictions_received_callback;
   base::MockCallback<AutofillAiManager::UpdateSuggestionsCallback>
       update_suggestions_callback;
@@ -377,7 +377,7 @@ TEST_F(AutofillAiManagerTest, AutofillSuggestionsAreCachedOnMultipleFocus) {
     EXPECT_CALL(client(), GetAXTree)
         .WillOnce(
             RunOnceCallback<0>(optimization_guide::proto::AXTreeUpdate()));
-    EXPECT_CALL(filling_engine(), GetPredictions)
+    EXPECT_CALL(model_executor(), GetPredictions)
         .WillOnce(MoveArg<4>(&predictions_received_callback));
     EXPECT_CALL(update_suggestions_callback,
                 Run(ElementsAre(HasType(kPredictionImprovementsError),
@@ -822,11 +822,11 @@ TEST_F(AutofillAiManagerTest,
               Optional(ElementsAre(
                   Pair(form.fields()[0].global_id(),
                        Field("Prediction::is_focusable",
-                             &AutofillAiFillingEngine::Prediction::is_focusable,
+                             &AutofillAiModelExecutor::Prediction::is_focusable,
                              form.fields()[0].IsFocusable())),
                   Pair(form.fields()[1].global_id(),
                        Field("Prediction::is_focusable",
-                             &AutofillAiFillingEngine::Prediction::is_focusable,
+                             &AutofillAiModelExecutor::Prediction::is_focusable,
                              form.fields()[1].IsFocusable())))));
 }
 
@@ -1131,8 +1131,8 @@ class AutofillAiManagerTriggerAutomaticallyTest
          {"extract_ax_tree_for_predictions", GetParam() ? "true" : "false"}});
     ON_CALL(client(), GetLastCommittedOrigin)
         .WillByDefault(ReturnRef(origin()));
-    ON_CALL(client(), GetFillingEngine)
-        .WillByDefault(Return(&filling_engine()));
+    ON_CALL(client(), GetModelExecutor)
+        .WillByDefault(Return(&model_executor()));
   }
 
  private:
@@ -1209,8 +1209,8 @@ TEST_F(IsFormAndFieldEligibleAutofillAiTest, IsNotEligibleIfFlagDisabled) {
   std::unique_ptr<autofill::FormStructure> form = CreateEligibleForm();
   autofill::AutofillField* prediction_improvement_field = form->field(0);
 
-  EXPECT_FALSE(manager().IsPredictionImprovementsEligible(
-      *form, *prediction_improvement_field));
+  EXPECT_FALSE(
+      manager().IsEligibleForAutofillAi(*form, *prediction_improvement_field));
 }
 
 TEST_F(IsFormAndFieldEligibleAutofillAiTest, IsNotEligibleIfDeciderIsNull) {
@@ -1221,8 +1221,8 @@ TEST_F(IsFormAndFieldEligibleAutofillAiTest, IsNotEligibleIfDeciderIsNull) {
   std::unique_ptr<autofill::FormStructure> form = CreateEligibleForm();
   autofill::AutofillField* prediction_improvement_field = form->field(0);
 
-  EXPECT_FALSE(manager.IsPredictionImprovementsEligible(
-      *form, *prediction_improvement_field));
+  EXPECT_FALSE(
+      manager.IsEligibleForAutofillAi(*form, *prediction_improvement_field));
 }
 
 TEST_F(IsFormAndFieldEligibleAutofillAiTest, IsEligibleIfSkipAllowlistIsTrue) {
@@ -1233,8 +1233,8 @@ TEST_F(IsFormAndFieldEligibleAutofillAiTest, IsEligibleIfSkipAllowlistIsTrue) {
   std::unique_ptr<autofill::FormStructure> form = CreateEligibleForm();
   autofill::AutofillField* prediction_improvement_field = form->field(0);
 
-  EXPECT_TRUE(manager().IsPredictionImprovementsEligible(
-      *form, *prediction_improvement_field));
+  EXPECT_TRUE(
+      manager().IsEligibleForAutofillAi(*form, *prediction_improvement_field));
 }
 
 TEST_F(IsFormAndFieldEligibleAutofillAiTest, IsNotEligibleIfPrefIsDisabled) {
@@ -1247,8 +1247,8 @@ TEST_F(IsFormAndFieldEligibleAutofillAiTest, IsNotEligibleIfPrefIsDisabled) {
   std::unique_ptr<autofill::FormStructure> form = CreateEligibleForm();
   autofill::AutofillField* prediction_improvement_field = form->field(0);
 
-  EXPECT_FALSE(manager().IsPredictionImprovementsEligible(
-      *form, *prediction_improvement_field));
+  EXPECT_FALSE(
+      manager().IsEligibleForAutofillAi(*form, *prediction_improvement_field));
 }
 
 TEST_F(IsFormAndFieldEligibleAutofillAiTest,
@@ -1263,8 +1263,8 @@ TEST_F(IsFormAndFieldEligibleAutofillAiTest,
   std::unique_ptr<autofill::FormStructure> form = CreateEligibleForm();
   autofill::AutofillField* prediction_improvement_field = form->field(0);
 
-  EXPECT_FALSE(manager().IsPredictionImprovementsEligible(
-      *form, *prediction_improvement_field));
+  EXPECT_FALSE(
+      manager().IsEligibleForAutofillAi(*form, *prediction_improvement_field));
 }
 
 TEST_F(IsFormAndFieldEligibleAutofillAiTest,
@@ -1278,8 +1278,8 @@ TEST_F(IsFormAndFieldEligibleAutofillAiTest,
   std::unique_ptr<autofill::FormStructure> form = CreateEligibleForm();
   autofill::AutofillField* prediction_improvement_field = form->field(0);
 
-  EXPECT_TRUE(manager().IsPredictionImprovementsEligible(
-      *form, *prediction_improvement_field));
+  EXPECT_TRUE(
+      manager().IsEligibleForAutofillAi(*form, *prediction_improvement_field));
 }
 
 TEST_F(IsFormAndFieldEligibleAutofillAiTest, IsNotEligibleForNotHttps) {
@@ -1291,8 +1291,8 @@ TEST_F(IsFormAndFieldEligibleAutofillAiTest, IsNotEligibleForNotHttps) {
       CreateEligibleForm(GURL("http://http.com"));
   autofill::AutofillField* prediction_improvement_field = form->field(0);
 
-  EXPECT_FALSE(manager().IsPredictionImprovementsEligible(
-      *form, *prediction_improvement_field));
+  EXPECT_FALSE(
+      manager().IsEligibleForAutofillAi(*form, *prediction_improvement_field));
 }
 
 TEST_F(IsFormAndFieldEligibleAutofillAiTest, IsNotEligibleOnEmptyForm) {
@@ -1304,7 +1304,7 @@ TEST_F(IsFormAndFieldEligibleAutofillAiTest, IsNotEligibleOnEmptyForm) {
   autofill::FormStructure form(form_data);
   autofill::AutofillField field;
 
-  EXPECT_FALSE(manager().IsPredictionImprovementsEligible(form, field));
+  EXPECT_FALSE(manager().IsEligibleForAutofillAi(form, field));
 }
 
 TEST_F(IsFormAndFieldEligibleAutofillAiTest,
@@ -1316,8 +1316,8 @@ TEST_F(IsFormAndFieldEligibleAutofillAiTest,
   std::unique_ptr<autofill::FormStructure> form = CreateEligibleForm();
   autofill::AutofillField* prediction_improvement_field = form->field(0);
 
-  EXPECT_TRUE(manager().IsPredictionImprovementsEligible(
-      *form, *prediction_improvement_field));
+  EXPECT_TRUE(
+      manager().IsEligibleForAutofillAi(*form, *prediction_improvement_field));
 }
 
 TEST_F(IsFormAndFieldEligibleAutofillAiTest, IsNotEligibleForNonEligibleUser) {
@@ -1329,8 +1329,8 @@ TEST_F(IsFormAndFieldEligibleAutofillAiTest, IsNotEligibleForNonEligibleUser) {
   autofill::AutofillField* prediction_improvement_field = form->field(0);
 
   ON_CALL(client(), IsUserEligible).WillByDefault(Return(false));
-  EXPECT_FALSE(manager().IsPredictionImprovementsEligible(
-      *form, *prediction_improvement_field));
+  EXPECT_FALSE(
+      manager().IsEligibleForAutofillAi(*form, *prediction_improvement_field));
 }
 
 }  // namespace

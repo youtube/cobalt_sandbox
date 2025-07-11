@@ -97,15 +97,6 @@ constexpr base::TimeDelta kWaitTimeForOptionsChanges = base::Milliseconds(50);
 
 using FormAndField = std::pair<FormData, raw_ref<const FormFieldData>>;
 
-std::string GetButtonTitlesString(const ButtonTitleList& titles_list) {
-  std::vector<std::string> titles;
-  titles.reserve(titles_list.size());
-  base::ranges::transform(
-      titles_list, std::back_inserter(titles),
-      [](const auto& list_item) { return base::UTF16ToUTF8(list_item.first); });
-  return base::JoinString(titles, ",");
-}
-
 // For each field in the |form| sets the title to include the field's heuristic
 // type, server type, and signature; as well as the form's signature and the
 // experiment id for the server predictions.
@@ -184,8 +175,8 @@ bool ShowPredictions(const WebDocument& document,
         "\nform id: ",
         base::UTF16ToUTF8(form.data.id_attribute()),
         "\nform button titles: ",
-        GetButtonTitlesString(form_util::GetButtonTitles(
-            form_element, /*button_titles_cache=*/nullptr)),
+        base::UTF16ToUTF8(GetButtonTitlesString(form_util::GetButtonTitles(
+            form_element, /*button_titles_cache=*/nullptr))),
         "\nfield frame token: ",
         frame_token.ToString(),
         "\nform renderer id: ",
@@ -883,9 +874,7 @@ void AutofillAgent::BatchDataListOptionChange(FieldRendererId element_id) {
   if (!element || !element.GetDocument()) {
     return;
   }
-
-  OnProvisionallySaveForm(form_util::GetOwningForm(element), element,
-                          SaveFormReason::kTextFieldChanged);
+  OnTextFieldDidChange(element);
 }
 
 void AutofillAgent::UserGestureObserved() {
@@ -911,19 +900,14 @@ void AutofillAgent::ApplyFieldsAction(
   } else {
     was_last_action_fill_ = true;
 
-    std::vector<std::pair<FieldRef, WebAutofillState>> filled_fields =
-        form_util::ApplyFieldsAction(document, fields, action_type,
-                                     action_persistence, field_data_manager());
-
-    // Notify Password Manager of filled fields.
-    for (const auto& [filled_field, field_autofill_state] : filled_fields) {
-      if (WebInputElement input_element =
-              form_util::GetFormControlByRendererId(filled_field.GetId())
-                  .DynamicTo<WebInputElement>()) {
-        password_autofill_agent_->UpdatePasswordStateForTextChange(
-            input_element);
-      }
-    }
+    base::flat_set<FieldRendererId> filled_field_ids =
+        base::MakeFlatSet<FieldRendererId>(
+            form_util::ApplyFieldsAction(document, fields, action_type,
+                                         action_persistence,
+                                         field_data_manager()),
+            {}, [](const std::pair<FieldRef, WebAutofillState>& filled_field) {
+              return filled_field.first.GetId();
+            });
 
     auto host_form_is_connected = [](const FormFieldData::FillData& fill_data) {
       return !form_util::GetFormByRendererId(fill_data.host_form_id).IsNull();
@@ -936,9 +920,9 @@ void AutofillAgent::ApplyFieldsAction(
                 form_util::GetFormControlByRendererId(it->renderer_id))
           : UpdateLastInteractedElement(it->host_form_id);
     } else {
-      for (const auto& [filled_field, state] : filled_fields) {
+      for (FieldRendererId filled_field_id : filled_field_ids) {
         if (WebFormControlElement control_element =
-                form_util::GetFormControlByRendererId(filled_field.GetId())) {
+                form_util::GetFormControlByRendererId(filled_field_id)) {
           // `filled_fields` was populated at the same time where multiple focus
           // and blur events were dispatched. This means that many fields in the
           // list could have been removed from the DOM. Updating inside this
@@ -953,15 +937,17 @@ void AutofillAgent::ApplyFieldsAction(
       }
     }
 
-    formless_elements_were_autofilled_ |= std::ranges::any_of(
-        filled_fields, [](const std::pair<FieldRef, WebAutofillState>& field) {
-          WebFormControlElement element = field.first.GetField();
+    formless_elements_were_autofilled_ |=
+        std::ranges::any_of(filled_field_ids, [](FieldRendererId field_id) {
+          WebFormControlElement element =
+              form_util::GetFormControlByRendererId(field_id);
           return element && !form_util::GetOwningForm(element);
         });
 
     base::flat_set<FormRendererId> extracted_form_ids;
     std::vector<FormData> filled_forms;
     for (const FormFieldData::FillData& field : fields) {
+      // Inform the browser about all forms that were autofilled.
       if (extracted_form_ids.insert(field.host_form_id).second) {
         std::optional<FormData> form = form_util::ExtractFormData(
             document, form_util::GetFormByRendererId(field.host_form_id),
@@ -977,6 +963,22 @@ void AutofillAgent::ApplyFieldsAction(
         }
       }
     }
+
+    // Notify Password Manager of filled fields.
+    for (const FormFieldData::FillData& field : fields) {
+      if (WebInputElement input_element =
+              form_util::GetFormControlByRendererId(field.renderer_id)
+                  .DynamicTo<WebInputElement>();
+          input_element && filled_field_ids.contains(field.renderer_id)) {
+        if (auto form_it = std::ranges::find(filled_forms, field.host_form_id,
+                                             &FormData::renderer_id);
+            form_it != filled_forms.end()) {
+          password_autofill_agent_->UpdatePasswordStateForTextChange(
+              input_element, *form_it);
+        }
+      }
+    }
+
     if (auto* autofill_driver = unsafe_autofill_driver();
         autofill_driver && !filled_forms.empty()) {
       CHECK_EQ(action_persistence, mojom::ActionPersistence::kFill);
@@ -1374,7 +1376,7 @@ void AutofillAgent::DoFillFieldWithValue(std::u16string_view value,
   element.SetAutofillValue(WebString::FromUTF16(value), autofill_state);
   UpdateStateForTextChange(element,
                            autofill_state == WebAutofillState::kAutofilled
-                               ? FieldPropertiesFlags::kAutofilled
+                               ? FieldPropertiesFlags::kAutofilledOnUserTrigger
                                : FieldPropertiesFlags::kUserTyped);
 }
 
@@ -1732,7 +1734,8 @@ void AutofillAgent::JavaScriptChangedValue(WebFormControlElement element,
   }
 
   const auto input_element = element.DynamicTo<WebInputElement>();
-  if (input_element && !element.Value().IsEmpty() &&
+  if (input_element && input_element.IsTextField() &&
+      !element.Value().IsEmpty() &&
       (input_element.FormControlTypeForAutofill() ==
            blink::mojom::FormControlType::kInputPassword ||
        password_autofill_agent_->IsUsernameInputField(input_element))) {
@@ -1781,13 +1784,12 @@ void AutofillAgent::OnProvisionallySaveForm(
       UpdateLastInteractedElement(form_util::GetFormRendererId(form_element));
       return;
     }
-    std::erase_if(formless_elements_user_edited_,
-                  [](const FieldRendererId field_id) {
-                    WebFormControlElement field =
-                        form_util::GetFormControlByRendererId(field_id);
-                    return field &&
-                           form_util::IsWebElementFocusableForAutofill(field);
-                  });
+    std::erase_if(
+        formless_elements_user_edited_, [](const FieldRendererId field_id) {
+          WebFormControlElement field =
+              form_util::GetFormControlByRendererId(field_id);
+          return field && form_util::IsWebElementFocusableForAutofill(field);
+        });
     formless_elements_user_edited_.insert(
         form_util::GetFieldRendererId(element));
     UpdateLastInteractedElement(form_util::GetFieldRendererId(element));

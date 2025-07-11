@@ -263,7 +263,7 @@
 #include "components/lens/buildflags.h"
 #include "components/live_caption/caption_util.h"
 #include "components/media_device_salt/media_device_salt_service.h"
-#include "components/media_router/browser/presentation/presentation_service_delegate_impl.h"
+#include "components/media_router/browser/presentation/controller_presentation_service_delegate_impl.h"
 #include "components/media_router/browser/presentation/receiver_presentation_service_delegate_impl.h"
 #include "components/media_router/browser/presentation/web_contents_presentation_manager.h"
 #include "components/metrics/client_info.h"
@@ -841,20 +841,12 @@ using web_apps::ChromeContentBrowserClientIsolatedWebAppsPart;
 
 namespace {
 
-#if BUILDFLAG(IS_ANDROID)
-// Kill switch that allows falling back to the legacy behavior on Android when
-// it comes to site isolation for Gaia's origin (|GaiaUrls::gaia_origin()|).
-BASE_FEATURE(kAllowGaiaOriginIsolationOnAndroid,
-             "AllowGaiaOriginIsolationOnAndroid",
-             base::FEATURE_ENABLED_BY_DEFAULT);
-
-BASE_FEATURE(kPrivateNetworkAccessRestrictionsForAutomotive,
-             "PrivateNetworkAccessRestrictionsForAutomotive",
-             base::FEATURE_ENABLED_BY_DEFAULT);
-#endif  // BUILDFLAG(IS_ANDROID)
-
 BASE_FEATURE(kSkipPagehideInCommitForDSENavigation,
              "SkipPagehideInCommitForDSENavigation",
+             base::FEATURE_DISABLED_BY_DEFAULT);
+
+BASE_FEATURE(kDisableJavascriptOptimizerByDefault,
+             "DisableJavascriptOptimizerByDefault",
              base::FEATURE_DISABLED_BY_DEFAULT);
 
 // A small ChromeBrowserMainExtraParts that invokes a callback when threads are
@@ -1008,7 +1000,7 @@ blink::mojom::AutoplayPolicy GetAutoplayPolicyForWebContents(
              switches::autoplay::kDocumentUserActivationRequiredPolicy) {
     result = blink::mojom::AutoplayPolicy::kDocumentUserActivationRequired;
   } else {
-    NOTREACHED_IN_MIGRATION();
+    NOTREACHED();
   }
 
 #if !BUILDFLAG(IS_ANDROID)
@@ -1100,12 +1092,14 @@ bool IsExtensionIdAllowedToUseIsolatedContext(std::string_view extension_id) {
 
 #endif  // BUILDFLAG(ENABLE_EXTENSIONS_CORE)
 
-mojo::PendingRemote<prerender::mojom::PrerenderCanceler> GetPrerenderCanceler(
+mojo::PendingRemote<prerender::mojom::NoStatePrefetchCanceler>
+GetNoStatePrefetchCanceler(
     base::OnceCallback<content::WebContents*()> wc_getter) {
-  mojo::PendingRemote<prerender::mojom::PrerenderCanceler> canceler;
+  mojo::PendingRemote<prerender::mojom::NoStatePrefetchCanceler> canceler;
   prerender::ChromeNoStatePrefetchContentsDelegate::FromWebContents(
       std::move(wc_getter).Run())
-      ->AddPrerenderCancelerReceiver(canceler.InitWithNewPipeAndPassReceiver());
+      ->AddNoStatePrefetchCancelerReceiver(
+          canceler.InitWithNewPipeAndPassReceiver());
   return canceler;
 }
 
@@ -1572,6 +1566,9 @@ void ChromeContentBrowserClient::RegisterLocalStatePrefs(
                                 true);
 #if BUILDFLAG(IS_CHROMEOS)
   registry->RegisterBooleanPref(prefs::kNativeClientForceAllowed, false);
+  registry->RegisterBooleanPref(prefs::kDeviceNativeClientForceAllowed, false);
+  registry->RegisterBooleanPref(prefs::kDeviceNativeClientForceAllowedCache,
+                                false);
 #endif  // BUILDFLAG(IS_CHROMEOS)
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_ANDROID)
   registry->RegisterBooleanPref(prefs::kOutOfProcessSystemDnsResolutionEnabled,
@@ -1674,6 +1671,7 @@ void ChromeContentBrowserClient::RegisterProfilePrefs(
 #endif
 
   registry->RegisterBooleanPref(prefs::kWebAudioOutputBufferingEnabled, false);
+  registry->RegisterBooleanPref(prefs::kSharedWorkerBlobURLFixEnabled, true);
 }
 
 // static
@@ -3274,6 +3272,13 @@ bool ChromeContentBrowserClient::AllowCompressionDictionaryTransport(
       prefs::kCompressionDictionaryTransportEnabled);
 }
 
+bool ChromeContentBrowserClient::AllowSharedWorkerBlobURLFix(
+    content::BrowserContext* browser_context) {
+  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+  Profile* profile = Profile::FromBrowserContext(browser_context);
+  return profile->GetPrefs()->GetBoolean(prefs::kSharedWorkerBlobURLFixEnabled);
+}
+
 void ChromeContentBrowserClient::RequestFilesAccess(
     const std::vector<base::FilePath>& files,
     const GURL& destination_url,
@@ -3787,8 +3792,7 @@ void ChromeContentBrowserClient::OnTrustAnchorUsed(
       policy::PolicyCertServiceFactory::GetForProfile(
           Profile::FromBrowserContext(browser_context));
   if (!service) {
-    NOTREACHED_IN_MIGRATION();
-    return;
+    NOTREACHED();
   }
   service->SetUsedPolicyCertificates();
 }
@@ -4065,8 +4069,7 @@ bool UpdatePreferredColorScheme(WebPreferences* web_prefs,
 bool CanPromptWithNonmatchingCertificates(const Profile* profile) {
 #if BUILDFLAG(IS_CHROMEOS_ASH)
   if (ash::ProfileHelper::IsSigninProfile(profile) ||
-      ash::ProfileHelper::IsLockScreenProfile(profile) ||
-      ash::ProfileHelper::IsLockScreenAppProfile(profile)) {
+      ash::ProfileHelper::IsLockScreenProfile(profile)) {
     // On non-regular profiles (e.g. sign-in profile or lock-screen profile),
     // never show certificate selection to the user. A client certificate is an
     // identifier that can be stable for a long time, so only the administrator
@@ -5218,7 +5221,7 @@ bool ChromeContentBrowserClient::PreSpawnChild(
 
   // Allow loading Chrome's DLLs.
   for (const auto* dll : {chrome::kBrowserResourcesDll, chrome::kElfDll}) {
-    result = config->AllowExtraDlls(GetModulePath(dll).value().c_str());
+    result = config->AllowExtraDll(GetModulePath(dll).value().c_str());
     if (result != sandbox::SBOX_ALL_OK)
       return false;
   }
@@ -5312,7 +5315,7 @@ content::ControllerPresentationServiceDelegate*
 ChromeContentBrowserClient::GetControllerPresentationServiceDelegate(
     content::WebContents* web_contents) {
   if (media_router::MediaRouterEnabled(web_contents->GetBrowserContext())) {
-    return media_router::PresentationServiceDelegateImpl::
+    return media_router::ControllerPresentationServiceDelegateImpl::
         GetOrCreateForWebContents(web_contents);
   }
   return nullptr;
@@ -6144,7 +6147,7 @@ ChromeContentBrowserClient::CreateURLLoaderThrottles(
       chrome_navigation_ui_data->is_no_state_prefetching()) {
     result.push_back(
         std::make_unique<prerender::NoStatePrefetchURLLoaderThrottle>(
-            GetPrerenderCanceler(wc_getter)));
+            GetNoStatePrefetchCanceler(wc_getter)));
   }
 
 #if BUILDFLAG(IS_ANDROID)
@@ -6966,9 +6969,7 @@ bool ChromeContentBrowserClient::ShouldForceDownloadResource(
     Profile* profile = Profile::FromBrowserContext(browser_context);
     bool force_download = profile->GetPrefs()->GetBoolean(
         quickoffice::kQuickOfficeForceFileDownloadEnabled);
-
-    if (base::FeatureList::IsEnabled(features::kQuickOfficeForceFileDownload) &&
-        force_download) {
+    if (force_download) {
       std::string extension_id =
           PluginUtils::GetExtensionIdForMimeType(browser_context, mime_type);
 
@@ -7991,9 +7992,7 @@ ChromeContentBrowserClient::ShouldOverridePrivateNetworkRequestPolicy(
   }
 
 #if BUILDFLAG(IS_ANDROID)
-  if (base::FeatureList::IsEnabled(
-          kPrivateNetworkAccessRestrictionsForAutomotive) &&
-      base::android::BuildInfo::GetInstance()->is_automotive()) {
+  if (base::android::BuildInfo::GetInstance()->is_automotive()) {
     return content::ContentBrowserClient::PrivateNetworkRequestPolicyOverride::
         kBlockInsteadOfWarn;
   }
@@ -8033,6 +8032,12 @@ bool ChromeContentBrowserClient::IsJitDisabledForSite(
 bool ChromeContentBrowserClient::AreV8OptimizationsDisabledForSite(
     content::BrowserContext* browser_context,
     const GURL& site_url) {
+  // Only disable optimizations for schemes that might atually load web content.
+  auto* policy = ChildProcessSecurityPolicy::GetInstance();
+  if (!site_url.is_empty() && !policy->IsWebSafeScheme(site_url.scheme())) {
+    return false;
+  }
+
   Profile* profile = Profile::FromBrowserContext(browser_context);
   auto* map = HostContentSettingsMapFactory::GetForProfile(profile);
   // Special case to determine if any policy is set.
@@ -8042,10 +8047,12 @@ bool ChromeContentBrowserClient::AreV8OptimizationsDisabledForSite(
            CONTENT_SETTING_BLOCK;
   }
 
-  // Only disable optimizations for schemes that might atually load web content.
-  auto* policy = ChildProcessSecurityPolicy::GetInstance();
-  if (!policy->IsWebSafeScheme(site_url.scheme())) {
-    return false;
+  // Activate experiment only for users who haven't explicitly disabled v8
+  // optimization by default so that most of the users in the "experiment
+  // off" branch have v8 optimization enabled.
+  if (base::FeatureList::GetInstance()->IsEnabled(
+          kDisableJavascriptOptimizerByDefault)) {
+    return true;
   }
 
   return (map &&
@@ -8497,8 +8504,7 @@ std::string ChromeContentBrowserClient::GetChildProcessSuffix(int child_flags) {
       base::to_underlying(ChildProcessHostFlags::kChildProcessHelperAlerts)) {
     return chrome::kMacHelperSuffixAlerts;
   }
-  NOTREACHED_IN_MIGRATION() << "Unsupported child process flags!";
-  return {};
+  NOTREACHED() << "Unsupported child process flags!";
 }
 #endif  // BUILDFLAG(IS_MAC)
 
@@ -8529,11 +8535,6 @@ bool ChromeContentBrowserClient::DoesGaiaOriginRequireDedicatedProcess() {
   // https://crbug.com/739418. On Android, it's more optional but it does
   // improve security generally and specifically it allows the exposure of
   // certain optional privileged APIs.
-
-  // Kill switch that falls back to the legacy behavior.
-  if (!base::FeatureList::IsEnabled(kAllowGaiaOriginIsolationOnAndroid)) {
-    return false;
-  }
 
   if (site_isolation::SiteIsolationPolicy::
           ShouldDisableSiteIsolationDueToMemoryThreshold(
@@ -8718,11 +8719,11 @@ bool ChromeContentBrowserClient::ShouldSuppressAXLoadComplete(
 
 void ChromeContentBrowserClient::BindAIManager(
     content::BrowserContext* browser_context,
-    std::variant<content::RenderFrameHost*, base::SupportsUserData*> context,
+    base::SupportsUserData* context_user_data,
     mojo::PendingReceiver<blink::mojom::AIManager> receiver) {
   auto* ai_manager =
       AIManagerKeyedServiceFactory::GetAIManagerKeyedService(browser_context);
-  ai_manager->AddReceiver(std::move(receiver), context);
+  ai_manager->AddReceiver(std::move(receiver), *context_user_data);
 }
 
 #if !BUILDFLAG(IS_ANDROID)

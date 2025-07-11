@@ -349,7 +349,7 @@ const base::FeatureParam<std::string> kDrDcBlockListByAndroidBuildFP{
 // in the GPU process before we can re-enable this feature.
 BASE_FEATURE(kSharedImageSupportScanoutOnOzoneOnlyIfOverlaysSupported,
              "SharedImageSupportScanoutOnOzoneOnlyIfOverlaysSupported",
-             base::FEATURE_DISABLED_BY_DEFAULT);
+             base::FEATURE_ENABLED_BY_DEFAULT);
 #endif
 
 // Enable Skia Graphite. This will use the Dawn backend by default, but can be
@@ -395,6 +395,9 @@ BASE_FEATURE(kSkiaGraphiteDawnUseD3D12,
 // rolling out restrictions on supporting SCANOUT usage must check the value of
 // these base::Features.
 // TODO(crbug.com/330865436): Remove post-safe rollout.
+BASE_FEATURE(kExoBufferAddScanoutUsageOnlyIfSupportedBySharedImage,
+             "ExoBufferAddScanoutUsageOnlyIfSupportedBySharedImage",
+             base::FEATURE_ENABLED_BY_DEFAULT);
 BASE_FEATURE(
     kCameraVideoFrameHandlerAddScanoutUsageOnlyIfSupportedBySharedImage,
     "CameraVideoFrameHandlerAddScanoutUsageOnlyIfSupportedBySharedImage",

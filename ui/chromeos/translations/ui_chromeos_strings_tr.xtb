@@ -422,6 +422,7 @@
 <translation id="4387004326333427325">Kimlik doğrulama sertifikası uzaktan reddedildi</translation>
 <translation id="4394214039309501350">Harici bağlantı</translation>
 <translation id="4394980935660306080">Bu haftanın başlarında</translation>
+<translation id="4397435965699247285">OneDrive, çevrimdışıyken kullanılamaz</translation>
 <translation id="4398096759193130964">Öğeleri geri yükleyin veya çöp kutusu dışındaki yeni bir klasöre sürükleyin</translation>
 <translation id="4401287888955153199">Tümünü çıkar</translation>
 <translation id="4410695710508688828">Çıkarma işlemi gerçekleştirilemedi. <ph name="ERROR_MESSAGE" /></translation>
@@ -582,7 +583,6 @@
 <translation id="5447680084201416734">Yeterli depolama alanı yok.</translation>
 <translation id="5449551289610225147">Geçersiz şifre</translation>
 <translation id="5459064203055649751">"<ph name="FILENAME" />" adlı bir dosya zaten var. Bu dosyayı taşıdığınız dosyayla değiştirmek istiyor musunuz?</translation>
-<translation id="5462378611565326489">OneDrive, çevrimdışıyken kullanılamaz.</translation>
 <translation id="5463231940765244860">Gir</translation>
 <translation id="5469868506864199649">İtalyanca</translation>
 <translation id="5473333559083690127">Yeni PIN'i tekrar girin</translation>

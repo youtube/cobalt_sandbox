@@ -37,7 +37,7 @@ std::vector<QuickInsertSearchResult> GetMostRecentResults(
   return results;
 }
 
-void PickerSuggestionsController::GetSuggestions(PickerClient& client,
+void PickerSuggestionsController::GetSuggestions(QuickInsertClient& client,
                                                  const QuickInsertModel& model,
                                                  SuggestionsCallback callback) {
   if (model.GetMode() == PickerModeType::kUnfocused) {
@@ -65,9 +65,9 @@ void PickerSuggestionsController::GetSuggestions(PickerClient& client,
   }
 
   if (base::Contains(model.GetAvailableCategories(),
-                     QuickInsertCategory::kLobster) &&
-      model.GetMode() == PickerModeType::kHasSelection) {
-    callback.Run({QuickInsertLobsterResult(/*display_name=*/u"")});
+                     QuickInsertCategory::kLobsterWithSelectedText)) {
+    callback.Run({QuickInsertLobsterResult(
+        QuickInsertLobsterResult::Mode::kWithSelection, /*display_name=*/u"")});
   }
 
   if (model.GetMode() == PickerModeType::kHasSelection) {
@@ -123,14 +123,15 @@ void PickerSuggestionsController::GetSuggestions(PickerClient& client,
 }
 
 void PickerSuggestionsController::GetSuggestionsForCategory(
-    PickerClient& client,
+    QuickInsertClient& client,
     QuickInsertCategory category,
     SuggestionsCallback callback) {
   switch (category) {
     case QuickInsertCategory::kEditorWrite:
     case QuickInsertCategory::kEditorRewrite:
-    case QuickInsertCategory::kLobster:
-      NOTREACHED_NORETURN();
+    case QuickInsertCategory::kLobsterWithNoSelectedText:
+    case QuickInsertCategory::kLobsterWithSelectedText:
+      NOTREACHED();
     case QuickInsertCategory::kLinks:
       // TODO: b/366237507 - Request only kMaxRecentLinks results once
       // HistoryService supports filtering.
@@ -142,7 +143,7 @@ void PickerSuggestionsController::GetSuggestionsForCategory(
       return;
     case QuickInsertCategory::kEmojisGifs:
     case QuickInsertCategory::kEmojis:
-      NOTREACHED_NORETURN();
+      NOTREACHED();
     case QuickInsertCategory::kDriveFiles:
       client.GetRecentDriveFileResults(kMaxRecentFiles, std::move(callback));
       return;

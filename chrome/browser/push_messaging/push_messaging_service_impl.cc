@@ -133,14 +133,6 @@ const char kSenderIdRegistrationDeprecatedMessage[] =
 // Notifications permission.
 const char kNotificationsPermissionRevocationGracePeriodDate[] =
     "notifications_permission_revocation_grace_period";
-
-// The grace period that will be applied before site-level Notifications
-// permissions will be revoked and FCM unsubscribed.
-int GetNotificationsRevocationGracePeriodInDays() {
-  return base::GetFieldTrialParamByFeatureAsInt(
-      features::kRevokeNotificationsPermissionIfDisabledOnAppLevel,
-      features::kNotificationRevocationGracePeriodInDays, 3);
-}
 #endif
 
 void RecordDeliveryStatus(blink::mojom::PushEventStatus status) {
@@ -315,7 +307,7 @@ bool PushMessagingServiceImpl::CanHandle(const std::string& app_id) const {
 void PushMessagingServiceImpl::ShutdownHandler() {
   // Shutdown() should come before and it removes us from the list of app
   // handlers of gcm::GCMDriver so this shouldn't ever been called.
-  NOTREACHED_IN_MIGRATION();
+  NOTREACHED();
 }
 
 void PushMessagingServiceImpl::OnStoreReset() {
@@ -470,7 +462,7 @@ void PushMessagingServiceImpl::OnCheckedOrigin(
         status = blink::mojom::PushEventStatus::PERMISSION_REVOKED_DISRUPTIVE;
         break;
       default:
-        NOTREACHED_IN_MIGRATION();
+        NOTREACHED();
     }
 
     // Drop message and unregister if origin has lost push permission.
@@ -736,15 +728,13 @@ void PushMessagingServiceImpl::OnMessagesDeleted(const std::string& app_id) {
 void PushMessagingServiceImpl::OnSendError(
     const std::string& app_id,
     const gcm::GCMClient::SendErrorDetails& send_error_details) {
-  NOTREACHED_IN_MIGRATION()
-      << "The Push API shouldn't have sent messages upstream";
+  NOTREACHED() << "The Push API shouldn't have sent messages upstream";
 }
 
 void PushMessagingServiceImpl::OnSendAcknowledged(
     const std::string& app_id,
     const std::string& message_id) {
-  NOTREACHED_IN_MIGRATION()
-      << "The Push API shouldn't have sent messages upstream";
+  NOTREACHED() << "The Push API shouldn't have sent messages upstream";
 }
 
 void PushMessagingServiceImpl::OnMessageDecryptionFailed(
@@ -922,11 +912,6 @@ JNI_PushMessagingServiceBridge_VerifyAndRevokeNotificationsPermission(
     std::string& origin,
     std::string& profile_id,
     jboolean app_level_notifications_enabled) {
-  if (!base::FeatureList::IsEnabled(
-          features::kRevokeNotificationsPermissionIfDisabledOnAppLevel)) {
-    return;
-  }
-
   ProfileManager* profile_manager = g_browser_process->profile_manager();
   DCHECK(profile_manager);
 
@@ -960,8 +945,13 @@ void PushMessagingServiceImpl::RevokePermissionIfPossible(
   base::TimeDelta permission_revocation_activated_duration =
       base::Time::Now() -
       prefs->GetTime(kNotificationsPermissionRevocationGracePeriodDate);
+
+  // The grace period that will be applied before site-level Notifications
+  // permissions will be revoked and FCM unsubscribed.
+  constexpr int kNotificationsRevocationGracePeriodInDays = 3;
+
   if (permission_revocation_activated_duration.InDays() >=
-      GetNotificationsRevocationGracePeriodInDays()) {
+      kNotificationsRevocationGracePeriodInDays) {
     content::PermissionController* permission_controller =
         profile->GetPermissionController();
 

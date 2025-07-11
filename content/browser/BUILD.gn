@@ -44,9 +44,9 @@ if (is_android) {
       "//content/test:*",
     ]
     deps = [
-      "//third_party/rust/font_types/v0_7:lib",
-      "//third_party/rust/read_fonts/v0_23:lib",
-      "//third_party/rust/skrifa/v0_24:lib",
+      "//third_party/rust/font_types/v0_8:lib",
+      "//third_party/rust/read_fonts/v0_25:lib",
+      "//third_party/rust/skrifa/v0_26:lib",
     ]
   }
 }
@@ -131,6 +131,7 @@ source_set("browser") {
     "//components/ukm",
     "//components/ukm/debug:util",
     "//components/url_formatter",
+    "//components/url_matcher",
     "//components/variations",
     "//components/variations/net",
     "//components/version_info",
@@ -248,6 +249,7 @@ source_set("browser") {
     "//services/video_capture:lib",
     "//services/video_capture/public/cpp",
     "//services/video_capture/public/mojom:constants",
+    "//services/video_effects/buildflags",
     "//services/video_effects/public/mojom:mojom",
     "//services/viz/privileged/mojom",
     "//services/viz/public/cpp/gpu",
@@ -457,6 +459,8 @@ source_set("browser") {
     "attribution_reporting/aggregatable_debug_rate_limit_table.h",
     "attribution_reporting/aggregatable_debug_report.cc",
     "attribution_reporting/aggregatable_debug_report.h",
+    "attribution_reporting/aggregatable_named_budget_pair.cc",
+    "attribution_reporting/aggregatable_named_budget_pair.h",
     "attribution_reporting/attribution_background_registrations_id.h",
     "attribution_reporting/attribution_beacon_id.h",
     "attribution_reporting/attribution_config.cc",
@@ -2104,18 +2108,20 @@ source_set("browser") {
     "shared_storage/shared_storage_document_service_impl.h",
     "shared_storage/shared_storage_event_params.cc",
     "shared_storage/shared_storage_event_params.h",
+    "shared_storage/shared_storage_features.cc",
+    "shared_storage/shared_storage_features.h",
     "shared_storage/shared_storage_header_observer.cc",
     "shared_storage/shared_storage_header_observer.h",
     "shared_storage/shared_storage_render_thread_worklet_driver.cc",
     "shared_storage/shared_storage_render_thread_worklet_driver.h",
+    "shared_storage/shared_storage_runtime_manager.cc",
+    "shared_storage/shared_storage_runtime_manager.h",
     "shared_storage/shared_storage_saved_query_data.cc",
     "shared_storage/shared_storage_saved_query_data.h",
     "shared_storage/shared_storage_url_loader_factory_proxy.cc",
     "shared_storage/shared_storage_url_loader_factory_proxy.h",
     "shared_storage/shared_storage_worklet_host.cc",
     "shared_storage/shared_storage_worklet_host.h",
-    "shared_storage/shared_storage_worklet_host_manager.cc",
-    "shared_storage/shared_storage_worklet_host_manager.h",
     "site_info.cc",
     "site_info.h",
     "site_instance_group.cc",
@@ -2836,7 +2842,6 @@ source_set("browser") {
         "media/capture/desktop_frame_skia.cc",
         "media/capture/desktop_frame_skia.h",
       ]
-      deps += [ "//ash" ]
     }
   }
 

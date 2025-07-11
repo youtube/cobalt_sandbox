@@ -630,7 +630,6 @@
 <translation id="3208321278970793882">應用程式</translation>
 <translation id="3213571860604332401">將連結儲存為書籤</translation>
 <translation id="3217205077783620295">音量已開啟；使用切換鈕可設為靜音。</translation>
-<translation id="3218561536255328229">按 Esc 鍵 5 次即可啟用觸控板</translation>
 <translation id="3226991577105957773">還有 <ph name="COUNT" /> 則</translation>
 <translation id="3227137524299004712">麥克風</translation>
 <translation id="3233611303007751344">省電模式已關閉</translation>
@@ -1302,6 +1301,7 @@
 <translation id="5393156353051693207">按住任一處即可將應用程式重新排序</translation>
 <translation id="5395308026110844773">「<ph name="DRAGGED_APP_NAME" />」已拖曳到「<ph name="IN_PLACE_APP" />」上方，放開滑鼠即可建立資料夾。</translation>
 <translation id="5397578532367286026">管理員 (<ph name="MANAGER_EMAIL" />) 可以在 chrome.com 瞭解這名使用者的使用情形和記錄。</translation>
+<translation id="540338817371815859">橫向</translation>
 <translation id="540713187982329711">切換無線基地台。無線基地台已開啟，目前沒有任何裝置連線。</translation>
 <translation id="5409208741270395213">將工作標示為完成</translation>
 <translation id="5413656666631274079">設定頁面</translation>
@@ -1328,7 +1328,7 @@
 <translation id="5512042095225963688">刪除上一個字詞</translation>
 <translation id="5519005148254860683">展開 Google Tasks</translation>
 <translation id="5519195206574732858">LTE</translation>
-<translation id="5520229639206813572">你的管理員已移除所有 eSIM 卡設定檔。如需更多資訊，請向管理員洽詢。</translation>
+<translation id="5520229639206813572">你的管理員已移除所有 eSIM 設定檔。如需更多資訊，請向管理員洽詢。</translation>
 <translation id="5520909879404821039">法文的「你好」</translation>
 <translation id="5523434445161341166">「<ph name="FEATURE_NAME" />」正在連線。</translation>
 <translation id="5529587891732734495">暫停投放</translation>
@@ -1526,7 +1526,7 @@
 <translation id="6121838516699723042">確認下載「<ph name="FILENAME" />」</translation>
 <translation id="612734058257491180">Google 助理不支援訪客工作階段。</translation>
 <translation id="6127395413317891856">目前已離線，請檢查連線狀態，然後再試一次。</translation>
-<translation id="6129953537138746214">空格</translation>
+<translation id="6129953537138746214">空格鍵</translation>
 <translation id="6137566720514957455">開啟移除 <ph name="USER_EMAIL_ADDRESS" /> 的對話方塊</translation>
 <translation id="6141205840878048728">你想專心處理什麼？</translation>
 <translation id="6141988275892716286">確認下載</translation>
@@ -1650,7 +1650,7 @@
 <translation id="6559158502366839560">瀏覽更多應用程式和遊戲</translation>
 <translation id="6559976592393364813">詢問系統管理員</translation>
 <translation id="6562447480759345110">結束專注模式</translation>
-<translation id="6565007273808762236">無法建立 eSIM 卡連線</translation>
+<translation id="6565007273808762236">無法建立 eSIM 連線</translation>
 <translation id="6570831796530454248">{0,plural, =1{請在 1 小時內更新裝置}other{請在 # 小時內更新裝置}}</translation>
 <translation id="6570902864550063460">正在透過 USB 充電</translation>
 <translation id="6571006437522772306">搜尋「檔案」</translation>
@@ -1763,6 +1763,7 @@
 <translation id="6921427376813842559">更新裝置</translation>
 <translation id="6929081673585394903">顯示控制選項</translation>
 <translation id="6931576957638141829">儲存至</translation>
+<translation id="6935857786205183008">直向</translation>
 <translation id="6942518653766415536">錄製內容格式選單</translation>
 <translation id="6945221475159498467">選取</translation>
 <translation id="6945922087561257829">手機目前使用的是行動網路。請確定你的手機和 Chromebook 已連上同一個 Wi-Fi 網路，然後再試一次。<ph name="LEARN_MORE" /></translation>
@@ -1852,7 +1853,7 @@
 <translation id="7303365578352795231">正在透過其他裝置回答問題。</translation>
 <translation id="7305884605064981971">EDGE</translation>
 <translation id="7311244614769792472">找不到任何結果</translation>
-<translation id="7312210124139670355">管理員正在重設 eSIM 卡，請稍候片刻。</translation>
+<translation id="7312210124139670355">管理員正在重設 eSIM，請稍候片刻。</translation>
 <translation id="7312761820869643657">將裝置復原為先前的版本</translation>
 <translation id="7313193732017069507">展開相機調整大小的按鈕</translation>
 <translation id="73289266812733869">已取消選取</translation>
@@ -1880,7 +1881,7 @@
 <translation id="7386767620098596324">切換網路連線。<ph name="STATE_TEXT" />。</translation>
 <translation id="7392563512730092880">你稍後可以隨時前往「設定」頁面進行設定。</translation>
 <translation id="7401222354741467707">擷取完整螢幕截圖或錄製完整螢幕畫面</translation>
-<translation id="7401788553834047908">在專注模式下開啟零打擾模式</translation>
+<translation id="7401788553834047908">在專注模式下啟用零打擾模式</translation>
 <translation id="7405710164030118432">如要將這部裝置解鎖，請輸入你的 Family Link 家長存取碼</translation>
 <translation id="7406608787870898861">完成行動網路設定</translation>
 <translation id="7406854842098869085">按住 <ph name="MODIFIER_1" /> 鍵再按下 <ph name="KEY" /> 鍵，切換至要開啟的視窗後放開按鍵</translation>
@@ -2307,7 +2308,7 @@
 <translation id="8849001918648564819">隱藏</translation>
 <translation id="8855885154700222542">全螢幕鍵</translation>
 <translation id="8858369206579825206">隱私權控制項</translation>
-<translation id="8860366331836346216">新增 eSIM 卡</translation>
+<translation id="8860366331836346216">新增 eSIM</translation>
 <translation id="8870509716567206129">這個應用程式不支援分割畫面。</translation>
 <translation id="8873203135446552888">確認要停用內建觸控板</translation>
 <translation id="8874184842967597500">未連線</translation>
@@ -2430,6 +2431,7 @@
 <translation id="98120814841227350">前往文件結尾</translation>
 <translation id="987589956647469042">行動數據已開啟</translation>
 <translation id="989374776391122812">攝影機和音訊控制選項</translation>
+<translation id="990263227494928142">按 Shift 鍵 5 次即可啟用觸控板</translation>
 <translation id="990277280839877440">視窗 <ph name="WINDOW_TITILE" /> 已關閉。</translation>
 <translation id="993398562350683614">導覽步驟 <ph name="STEP" />，共 <ph name="TOTAL_STEPS" /> 個步驟。你可以在 <ph name="PRODUCT_NAME" /> 上使用應用程式處理大小事。如要尋找應用程式，可以使用啟動器。按下 Alt + Shift + L 鍵可將焦點移到啟動鍵。</translation>
 <translation id="994354411665877646"><ph name="NETWORK_NAME" />，<ph name="SUBTEXT" /></translation>

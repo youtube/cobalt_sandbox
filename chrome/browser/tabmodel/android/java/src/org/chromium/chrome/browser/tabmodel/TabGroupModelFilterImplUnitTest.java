@@ -49,6 +49,7 @@ import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.mockito.verification.VerificationMode;
 import org.robolectric.annotation.Config;
 
 import org.chromium.base.ContextUtils;
@@ -79,6 +80,7 @@ import org.chromium.url.GURL;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -652,6 +654,53 @@ public class TabGroupModelFilterImplUnitTest {
     }
 
     @Test
+    public void createTabGroupForTabGroupSync_Empty() {
+        assertEquals(2, mTabGroupModelFilter.getTabGroupCount());
+
+        Token tabGroupId = new Token(783L, 348L);
+        mTabGroupModelFilter.createTabGroupForTabGroupSync(Collections.emptyList(), tabGroupId);
+        assertEquals(2, mTabGroupModelFilter.getTabGroupCount());
+    }
+
+    @Test
+    @EnableFeatures(ChromeFeatureList.TAB_GROUP_CREATION_DIALOG_ANDROID)
+    public void createTabGroupForTabGroupSync_1Tab() {
+        TabGroupFeatureUtils.SHOW_TAB_GROUP_CREATION_DIALOG_SETTING.setForTesting(false);
+        assertEquals(2, mTabGroupModelFilter.getTabGroupCount());
+        assertFalse(mTabGroupModelFilter.isTabInTabGroup(mTab1));
+
+        Token tabGroupId = new Token(783L, 348L);
+        mTabGroupModelFilter.createTabGroupForTabGroupSync(List.of(mTab1), tabGroupId);
+        assertEquals(3, mTabGroupModelFilter.getTabGroupCount());
+        assertEquals(tabGroupId, mTab1.getTabGroupId());
+        assertTrue(mTabGroupModelFilter.isTabInTabGroup(mTab1));
+        assertEquals(1, mTabGroupModelFilter.getRelatedTabCountForRootId(mTab1.getRootId()));
+    }
+
+    @Test
+    @EnableFeatures(ChromeFeatureList.TAB_GROUP_CREATION_DIALOG_ANDROID)
+    public void createTabGroupForTabGroupSync_MultipleTabs() {
+        TabGroupFeatureUtils.SHOW_TAB_GROUP_CREATION_DIALOG_SETTING.setForTesting(false);
+        assertEquals(2, mTabGroupModelFilter.getTabGroupCount());
+        assertFalse(mTabGroupModelFilter.isTabInTabGroup(mTab1));
+
+        Tab newTab = prepareTab(NEW_TAB_ID_0, NEW_TAB_ID_0, null, Tab.INVALID_TAB_ID);
+        addTabToTabModel(POSITION1 + 1, newTab);
+
+        assertFalse(mTabGroupModelFilter.isTabInTabGroup(newTab));
+
+        Token tabGroupId = new Token(783L, 348L);
+        mTabGroupModelFilter.createTabGroupForTabGroupSync(List.of(mTab1, newTab), tabGroupId);
+        assertEquals(3, mTabGroupModelFilter.getTabGroupCount());
+        assertEquals(tabGroupId, mTab1.getTabGroupId());
+        assertEquals(tabGroupId, newTab.getTabGroupId());
+        assertEquals(mTab1.getRootId(), newTab.getRootId());
+        assertTrue(mTabGroupModelFilter.isTabInTabGroup(mTab1));
+        assertTrue(mTabGroupModelFilter.isTabInTabGroup(newTab));
+        assertEquals(2, mTabGroupModelFilter.getRelatedTabCountForRootId(mTab1.getRootId()));
+    }
+
+    @Test
     public void addTab_TabLaunchedFromChromeUi() {
         Tab newTab = prepareTab(NEW_TAB_ID_0, NEW_TAB_ID_0, null, TAB1_ID);
 
@@ -1174,6 +1223,24 @@ public class TabGroupModelFilterImplUnitTest {
         assertThat(mTab1.getTabGroupId(), equalTo(TAB5_TAB_GROUP_ID));
         assertThat(mTab5.getTabGroupId(), equalTo(TAB5_TAB_GROUP_ID));
         assertThat(mTab6.getTabGroupId(), equalTo(TAB5_TAB_GROUP_ID));
+    }
+
+    @Test
+    @EnableFeatures(ChromeFeatureList.TAB_GROUP_CREATION_DIALOG_ANDROID+":"
+            +TabGroupFeatureUtils.SHOW_TAB_GROUP_CREATION_DIALOG_SETTING_PARAM+"/true")
+    public void mergeOneTabToTab_DoNotSkipGroupCreationDialog() {
+        VerificationMode verificationMode = times(1);
+        TabGroupFeatureUtils.setsTestValueShowTabGroupCreationDialog(false);
+        verifyGroupCreationDialogShouldShow(verificationMode);
+    }
+
+    @Test
+    @EnableFeatures(ChromeFeatureList.TAB_GROUP_CREATION_DIALOG_ANDROID+":"
+        +TabGroupFeatureUtils.SHOW_TAB_GROUP_CREATION_DIALOG_SETTING_PARAM+"/true")
+    public void mergeOneTabToTab_SkipGroupCreationDialog() {
+        VerificationMode verificationMode = never();
+        TabGroupFeatureUtils.setsTestValueShowTabGroupCreationDialog(true);
+        verifyGroupCreationDialogShouldShow(verificationMode);
     }
 
     @Test
@@ -2655,5 +2722,23 @@ public class TabGroupModelFilterImplUnitTest {
         // Mock a merge between mTab1, mTab2 and mTab3, of which the latter 2 are in a group.
         List<Tab> tabsToMerge = List.of(mTab1, mTab2, mTab3);
         assertFalse(mTabGroupModelFilter.willMergingCreateNewGroup(tabsToMerge));
+    }
+
+    private void verifyGroupCreationDialogShouldShow(VerificationMode mode) {
+        mTabGroupModelFilter.mergeTabsToGroup(mTab1.getId(), mTab4.getId());
+
+        List<Tab> expectedGroup = Arrays.asList(mTab4, mTab1);
+        List<Integer> expectedOriginalIndex = Arrays.asList(POSITION4, POSITION1);
+        List<Integer> originalRootId = Arrays.asList(TAB4_ROOT_ID, TAB1_ROOT_ID);
+        List<Token> originalTabGroupId =  Arrays.asList(TAB1_TAB_GROUP_ID, TAB4_TAB_GROUP_ID);
+        verify(mTabGroupModelFilterObserver, mode).didCreateGroup(
+            eq(expectedGroup),
+            eq(expectedOriginalIndex),
+            eq(originalRootId),
+            eq(originalTabGroupId),
+            anyString(),
+            anyInt(),
+            anyBoolean()
+        );
     }
 }

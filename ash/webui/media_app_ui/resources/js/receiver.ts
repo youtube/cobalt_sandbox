@@ -14,6 +14,7 @@ import type {Url as MojoUrl} from '//resources/mojo/url/mojom/url.mojom-webui.js
 import {assertCast, MessagePipe} from '//system_apps/message_pipe.js';
 
 import type {MahiUntrustedServiceRemote, MantisMediaAppUntrustedServiceRemote, OcrUntrustedServiceRemote, PageMetadata} from './media_app_ui_untrusted.mojom-webui.js';
+import {MantisMediaAppUntrustedProcessorRemote} from './media_app_ui_untrusted.mojom-webui.js';
 import {EditInPhotosMessage, FileContext, IsFileArcWritableMessage, IsFileArcWritableResponse, IsFileBrowserWritableMessage, IsFileBrowserWritableResponse, LoadFilesMessage, Message, OpenAllowedFileMessage, OpenAllowedFileResponse, OpenFilesWithPickerMessage, OverwriteFileMessage, OverwriteViaFilePickerResponse, RenameFileResponse, RenameResult, RequestSaveFileMessage, RequestSaveFileResponse, SaveAsMessage, SaveAsResponse} from './message_types.js';
 import {connectToMahiUntrustedService, connectToMantisUntrustedService, connectToOcrUntrustedService, mahiCallbackRouter, ocrCallbackRouter} from './mojo_api_bootstrap_untrusted.js';
 import {loadPiex} from './piex_module_loader.js';
@@ -302,6 +303,7 @@ parentMessagePipe.sendMessage(Message.IFRAME_READY);
 let ocrUntrustedService: OcrUntrustedServiceRemote;
 let mahiUntrustedService: MahiUntrustedServiceRemote;
 let mantisUntrustedService: MantisMediaAppUntrustedServiceRemote;
+let mantisUntrustedProcessor: MantisMediaAppUntrustedProcessorRemote;
 
 ocrCallbackRouter.requestBitmap.addListener(async (requestedPageId: string) => {
   const app = getApp();
@@ -380,6 +382,7 @@ const DELEGATE: ClientApiDelegate = {
     // Close any existing pipes when opening a new file.
     ocrUntrustedService?.$.close();
     mahiUntrustedService?.$.close();
+    mantisUntrustedProcessor?.$.close();
     mantisUntrustedService?.$.close();
 
     if (type === 'application/pdf') {
@@ -452,6 +455,39 @@ const DELEGATE: ClientApiDelegate = {
   },
   async onPdfContextMenuHide() {
     await mahiUntrustedService?.onPdfContextMenuHide();
+  },
+  async getMantisFeatureStatus() {
+    const response = await mantisUntrustedService?.getMantisFeatureStatus();
+    return response.status;
+  },
+  async initializeMantis() {
+    if (mantisUntrustedProcessor) {
+      mantisUntrustedProcessor.$.close();
+    }
+    mantisUntrustedProcessor = new MantisMediaAppUntrustedProcessorRemote();
+    const response = await mantisUntrustedService?.initialize(
+        mantisUntrustedProcessor.$.bindNewPipeAndPassReceiver());
+    return response.result;
+  },
+  async segmentImage(image: number[], selection: number[]) {
+    const response =
+        await mantisUntrustedProcessor?.segmentImage(image, selection);
+    return response.result;
+  },
+  async generativeFillImage(
+      image: number[], mask: number[], text: string, seed: number) {
+    const response = await mantisUntrustedProcessor?.generativeFillImage(
+        image, mask, text, seed);
+    return response.result;
+  },
+  async inpaintImage(image: number[], mask: number[], seed: number) {
+    const response =
+        await mantisUntrustedProcessor?.inpaintImage(image, mask, seed);
+    return response.result;
+  },
+  async classifyImageSafety(image: number[]) {
+    const response = await mantisUntrustedProcessor?.classifyImageSafety(image);
+    return response.verdict;
   },
 };
 

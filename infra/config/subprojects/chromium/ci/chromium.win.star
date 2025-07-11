@@ -126,8 +126,9 @@ ci.builder(
         ],
     ),
     builderless = False,
-    cores = 32,
+    cores = 16,
     os = os.WINDOWS_ANY,
+    ssd = True,
     console_view_entry = consoles.console_view_entry(
         category = "release|builder",
         short_name = "32",
@@ -165,9 +166,9 @@ ci.builder(
             "all",
         ],
     ),
-    builderless = True,
-    cores = 32,
+    cores = 16,
     os = os.WINDOWS_ANY,
+    ssd = True,
     console_view_entry = consoles.console_view_entry(
         category = "debug|builder",
         short_name = "64",
@@ -207,6 +208,12 @@ ci.builder(
                 reason = "Not enabled on dbg due to resource limits.",
             ),
             "blink_wpt_tests": targets.remove(
+                reason = "Not enabled on dbg due to resource limits.",
+            ),
+            "chrome_wpt_tests": targets.remove(
+                reason = "Not enabled on dbg due to resource limits.",
+            ),
+            "headless_shell_wpt_tests": targets.remove(
                 reason = "Not enabled on dbg due to resource limits.",
             ),
             "browser_tests": targets.remove(
@@ -306,8 +313,9 @@ ci.builder(
         ],
     ),
     builderless = False,
-    cores = 32,
+    cores = 16,
     os = os.WINDOWS_ANY,
+    ssd = True,
     console_view_entry = consoles.console_view_entry(
         category = "debug|builder",
         short_name = "32",
@@ -366,8 +374,9 @@ ci.builder(
         ],
     ),
     builderless = False,
-    cores = 32,
+    cores = 16,
     os = os.WINDOWS_ANY,
+    ssd = True,
     console_view_entry = consoles.console_view_entry(
         category = "release|builder",
         short_name = "64",
@@ -780,9 +789,9 @@ ci.builder(
             "all",
         ],
     ),
-    builderless = True,
-    cores = 32,
+    cores = 16,
     os = os.WINDOWS_DEFAULT,
+    ssd = True,
     tree_closing = True,
     console_view_entry = consoles.console_view_entry(
         category = "debug|builder",
@@ -826,6 +835,12 @@ ci.thin_tester(
                 reason = "Not enabled on dbg due to resource limits.",
             ),
             "blink_wpt_tests": targets.remove(
+                reason = "Not enabled on dbg due to resource limits.",
+            ),
+            "chrome_wpt_tests": targets.remove(
+                reason = "Not enabled on dbg due to resource limits.",
+            ),
+            "headless_shell_wpt_tests": targets.remove(
                 reason = "Not enabled on dbg due to resource limits.",
             ),
             "browser_tests": targets.remove(
@@ -877,7 +892,8 @@ ci.builder(
         ],
     ),
     builderless = False,
-    cores = 32,
+    cores = 16,
+    ssd = True,
     console_view_entry = consoles.console_view_entry(
         category = "misc",
         short_name = "det",

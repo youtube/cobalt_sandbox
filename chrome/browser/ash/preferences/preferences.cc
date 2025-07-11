@@ -375,9 +375,6 @@ void Preferences::RegisterProfilePrefs(
 
   // Don't sync the note-taking app; it may not be installed on other devices.
   registry->RegisterStringPref(::prefs::kNoteTakingAppId, std::string());
-  registry->RegisterBooleanPref(::prefs::kRestoreLastLockScreenNote, true);
-  registry->RegisterDictionaryPref(
-      ::prefs::kNoteTakingAppsLockScreenToastShown);
 
   registry->RegisterBooleanPref(::prefs::kLockScreenAutoStartOnlineReauth,
                                 false);
@@ -682,6 +679,7 @@ void Preferences::RegisterProfilePrefs(
   registry->RegisterIntegerPref(
       ::prefs::kSkyVaultMigrationState,
       static_cast<int>(policy::local_user_files::State::kUninitialized));
+  registry->RegisterIntegerPref(::prefs::kSkyVaultMigrationRetryCount, 0);
 }
 
 void Preferences::InitUserPrefs(sync_preferences::PrefServiceSyncable* prefs) {

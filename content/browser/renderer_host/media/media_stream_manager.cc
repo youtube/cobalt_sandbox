@@ -101,10 +101,6 @@
 #include "media/capture/video/chromeos/video_capture_device_factory_chromeos.h"
 #endif
 
-#if BUILDFLAG(IS_CHROMEOS_LACROS)
-#include "chromeos/lacros/lacros_service.h"
-#endif
-
 #if !BUILDFLAG(IS_ANDROID)
 #include "content/browser/media/captured_surface_controller.h"
 #endif
@@ -1627,6 +1623,14 @@ MediaStreamManager::MediaStreamManager(
   InitializeMaybeAsync(std::move(video_capture_provider));
 
   audio_service_listener_ = std::make_unique<AudioServiceListener>();
+
+#if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
+  if (base::FeatureList::IsEnabled(kReleaseVideoSourceProviderIfNotInUse)) {
+    video_capture_hosts_.set_disconnect_handler(base::BindRepeating(
+        &MediaStreamManager::OnVideoCaptureHostConnectionError,
+        base::Unretained(this)));
+  }
+#endif
 }
 
 MediaStreamManager::~MediaStreamManager() {
@@ -4293,6 +4297,12 @@ void MediaStreamManager::RegisterVideoCaptureHost(
     mojo::PendingReceiver<media::mojom::VideoCaptureHost> receiver) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
   video_capture_hosts_.Add(std::move(host), std::move(receiver));
+#if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
+  if (base::FeatureList::IsEnabled(kReleaseVideoSourceProviderIfNotInUse)) {
+    media_devices_manager_->UpdateVideoCaptureHostsEmptyState(
+        video_capture_hosts_.empty());
+  }
+#endif
 }
 
 std::optional<url::Origin> MediaStreamManager::GetOriginByVideoSessionId(
@@ -4596,5 +4606,13 @@ std::unique_ptr<MediaStreamUIProxy> MediaStreamManager::MakeFakeUIProxy(
 
   return fake_ui;
 }
+
+#if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
+void MediaStreamManager::OnVideoCaptureHostConnectionError() {
+  DCHECK_CURRENTLY_ON(BrowserThread::IO);
+  media_devices_manager_->UpdateVideoCaptureHostsEmptyState(
+      video_capture_hosts_.empty());
+}
+#endif
 
 }  // namespace content

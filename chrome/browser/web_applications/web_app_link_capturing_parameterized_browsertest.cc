@@ -27,6 +27,7 @@
 #include "base/threading/scoped_blocking_call.h"
 #include "base/threading/thread_restrictions.h"
 #include "base/types/expected.h"
+#include "build/build_config.h"
 #include "chrome/app/chrome_command_ids.h"
 #include "chrome/browser/apps/app_service/app_registry_cache_waiter.h"
 #include "chrome/browser/apps/app_service/app_service_proxy.h"
@@ -107,14 +108,17 @@ constexpr char kValueTargetNoFrame[] = "NO_FRAME";
 enum class LinkCapturing {
   kEnabled,
   kDisabled,
+  kEnabledViaClientMode,
 };
 
-std::string_view ToParamString(LinkCapturing capturing) {
+constexpr std::string_view ToParamString(LinkCapturing capturing) {
   switch (capturing) {
     case LinkCapturing::kEnabled:
       return "CaptureOn";
     case LinkCapturing::kDisabled:
       return "CaptureOff";
+    case LinkCapturing::kEnabledViaClientMode:
+      return "CaptureForNonAuto";
   }
 }
 
@@ -130,7 +134,7 @@ enum class AppUserDisplayMode {
   kMaxValue = kAppAStandaloneAppBBrowser,
 };
 
-std::string_view ToParamString(AppUserDisplayMode mode) {
+constexpr std::string_view ToParamString(AppUserDisplayMode mode) {
   switch (mode) {
     case AppUserDisplayMode::kBothBrowser:
       return "BothBrowser";
@@ -147,7 +151,7 @@ enum class StartingPoint {
   kTab,
 };
 
-std::string_view ToParamString(StartingPoint start) {
+constexpr std::string_view ToParamString(StartingPoint start) {
   switch (start) {
     case StartingPoint::kAppWindow:
       return "AppWnd";
@@ -166,7 +170,7 @@ enum class Destination {
   kScopeA2X,
 };
 
-std::string ToIdString(Destination scope) {
+constexpr std::string ToIdString(Destination scope) {
   switch (scope) {
     case Destination::kScopeA2A:
       return kValueScopeA2A;
@@ -177,7 +181,7 @@ std::string ToIdString(Destination scope) {
   }
 }
 
-std::string_view ToParamString(Destination scope) {
+constexpr std::string_view ToParamString(Destination scope) {
   switch (scope) {
     case Destination::kScopeA2A:
       return "ScopeA2A";
@@ -208,7 +212,7 @@ std::string ToIdString(RedirectType redirect, Destination final_destination) {
   }
 }
 
-std::string_view ToParamString(RedirectType redirect) {
+constexpr std::string_view ToParamString(RedirectType redirect) {
   switch (redirect) {
     case RedirectType::kNone:
       return "Direct";
@@ -243,11 +247,11 @@ std::string ToIdString(NavigationElement element) {
     case NavigationElement::kElementIntentPicker:
       // The IntentPicker is within the Chrome UI, not the web page. Therefore,
       // this should not be used to construct an ID to click on within the page.
-      NOTREACHED_NORETURN();
+      NOTREACHED();
   }
 }
 
-std::string_view ToParamString(NavigationElement element) {
+constexpr std::string_view ToParamString(NavigationElement element) {
   switch (element) {
     case NavigationElement::kElementLink:
       return "ViaLink";
@@ -262,7 +266,7 @@ std::string_view ToParamString(NavigationElement element) {
   }
 }
 
-std::string_view ToParamString(test::ClickMethod click) {
+constexpr std::string_view ToParamString(test::ClickMethod click) {
   switch (click) {
     case test::ClickMethod::kLeftClick:
       return "LeftClick";
@@ -281,7 +285,7 @@ enum class OpenerMode {
   kNoOpener,
 };
 
-std::string ToIdString(OpenerMode opener) {
+constexpr std::string_view ToIdString(OpenerMode opener) {
   switch (opener) {
     case OpenerMode::kOpener:
       return kValueOpener;
@@ -316,7 +320,7 @@ std::string ToParamString(ClientModeCombination client_mode_combo) {
   }
 }
 
-std::string_view ToParamString(OpenerMode opener) {
+constexpr std::string_view ToParamString(OpenerMode opener) {
   switch (opener) {
     case OpenerMode::kOpener:
       return "WithOpener";
@@ -341,7 +345,7 @@ enum class NavigationTarget {
   kNoFrame,
 };
 
-std::string ToIdString(NavigationTarget target) {
+constexpr std::string_view ToIdString(NavigationTarget target) {
   switch (target) {
     case NavigationTarget::kSelf:
       return kValueTargetSelf;
@@ -354,7 +358,7 @@ std::string ToIdString(NavigationTarget target) {
   }
 }
 
-std::string_view ToParamString(NavigationTarget target) {
+constexpr std::string_view ToParamString(NavigationTarget target) {
   switch (target) {
     case NavigationTarget::kSelf:
       return "TargetSelf";
@@ -684,35 +688,125 @@ static const base::flat_set<std::string> disabled_flaky_tests = {
     // TODO(crbug.com/377425233): Fix flakiness on ASAN.
     "AppAStandaloneAppBBrowser_CaptureOn_AppWnd_ScopeA2B_ServerSideViaB_"
     "ViaLink_MiddleClick_WithoutOpener_TargetBlank",
-    "kAppANavigateExistingAppBFocusExisting_BothStandalone_CaptureOn_AppWnd_"
+    "AppANavigateExistingAppBFocusExisting_BothStandalone_CaptureOn_AppWnd_"
     "ScopeA2B_ServerSideViaB_ViaLink_LeftClick_WithoutOpener_TargetBlank",
-    "kAppANavigateExistingAppBFocusExisting_BothStandalone_CaptureOn_AppWnd_"
+    "AppANavigateExistingAppBFocusExisting_BothStandalone_CaptureOn_AppWnd_"
     "ScopeA2B_ServerSideViaX_ViaLink_LeftClick_WithoutOpener_TargetBlank",
-    "kFocusExisting_BothStandalone_CaptureOn_AppWnd_ScopeA2B_Direct_ViaLink_"
+    "FocusExisting_BothStandalone_CaptureOn_AppWnd_ScopeA2B_Direct_ViaLink_"
     "RightClick_WithoutOpener_TargetBlank",
-    "kFocusExisting_BothStandalone_CaptureOn_Tab_ScopeA2B_Direct_ViaLink_"
+    "FocusExisting_BothStandalone_CaptureOn_Tab_ScopeA2B_Direct_ViaLink_"
     "RightClick_WithoutOpener_TargetBlank",
-    "kNavigateExisting_BothStandalone_CaptureOn_AppWnd_ScopeA2B_ServerSideViaA_"
+    "NavigateExisting_BothStandalone_CaptureOn_AppWnd_ScopeA2B_ServerSideViaA_"
     "ViaLink_LeftClick_WithoutOpener_TargetBlank",
-    "kNavigateExisting_BothStandalone_CaptureOn_AppWnd_ScopeA2B_ServerSideViaX_"
+    "NavigateExisting_BothStandalone_CaptureOn_AppWnd_ScopeA2B_ServerSideViaX_"
     "ViaLink_LeftClick_WithoutOpener_TargetBlank",
-    "kNavigateExisting_BothStandalone_CaptureOn_Tab_ScopeA2B_ServerSideViaA_"
+    "NavigateExisting_BothStandalone_CaptureOn_Tab_ScopeA2B_ServerSideViaA_"
     "ViaLink_LeftClick_WithoutOpener_TargetBlank",
-    "kNavigateExisting_BothStandalone_CaptureOn_Tab_ScopeA2B_ServerSideViaX_"
+    "NavigateExisting_BothStandalone_CaptureOn_Tab_ScopeA2B_ServerSideViaX_"
+    "ViaLink_LeftClick_WithoutOpener_TargetBlank",
+    "AppANavigateExistingAppBFocusExisting_BothStandalone_CaptureOn_AppWnd_"
+    "ScopeA2B_ServerSideViaX_ViaLink_LeftClick_WithoutOpener_TargetBlank",
+    "NavigateExisting_BothStandalone_CaptureOn_Tab_ScopeA2B_ServerSideViaX_"
     "ViaLink_LeftClick_WithoutOpener_TargetBlank",
 #endif
 #if BUILDFLAG(IS_MAC)
     // TODO(crbug.com/372119276): Fix flakiness for `Redirection_OpenInChrome`
     // tests on MacOS.
-    "AppWnd_ScopeA2X_ServerSideViaB_ViaLink_ShiftClick_WithOpener_TargetBlank",
-    "AppWnd_ScopeA2X_ServerSideViaA_ViaLink_ShiftClick_WithOpener_TargetBlank",
-    "AppWnd_ScopeA2X_ServerSideViaA_ViaLink_MiddleClick_WithOpener_TargetBlank",
+    "BothStandalone_CaptureOn_AppWnd_ScopeA2X_ServerSideViaB_ViaLink_"
+    "ShiftClick_WithOpener_TargetBlank",
+    "BothStandalone_CaptureOn_AppWnd_ScopeA2X_ServerSideViaA_ViaLink_"
+    "ShiftClick_WithOpener_TargetBlank",
+    "BothStandalone_CaptureOn_AppWnd_ScopeA2X_ServerSideViaA_ViaLink_"
+    "MiddleClick_WithOpener_TargetBlank",
 #elif BUILDFLAG(IS_LINUX)
 #elif BUILDFLAG(IS_WIN)
 #elif BUILDFLAG(IS_CHROMEOS)
-    // TODO(crbug.com/359600606): Enable on CrOS if navigation capturing needs
-    // to be supported.
-    "*"
+    // TODO(crbug.com/359600606): Fix failures of AppBBrowser/BothBrowser tests
+    // on ChromeOS.
+    "AppAStandaloneAppBBrowser_CaptureOn_AppWnd_ScopeA2B_Direct_ViaButton_"
+    "LeftClick_WithoutOpener_TargetBlank",
+    "AppAStandaloneAppBBrowser_CaptureOn_AppWnd_ScopeA2B_Direct_ViaButton_"
+    "MiddleClick_WithoutOpener_TargetBlank",
+    "AppAStandaloneAppBBrowser_CaptureOn_AppWnd_ScopeA2B_Direct_ViaButton_"
+    "ShiftClick_WithoutOpener_TargetBlank",
+    "AppAStandaloneAppBBrowser_CaptureOn_AppWnd_ScopeA2B_Direct_ViaLink_"
+    "LeftClick_WithoutOpener_TargetBlank",
+    "AppAStandaloneAppBBrowser_CaptureOn_AppWnd_ScopeA2B_Direct_ViaLink_"
+    "MiddleClick_WithOpener_TargetBlank",
+    "AppAStandaloneAppBBrowser_CaptureOn_AppWnd_ScopeA2B_Direct_ViaLink_"
+    "MiddleClick_WithoutOpener_TargetBlank",
+    "AppAStandaloneAppBBrowser_CaptureOn_AppWnd_ScopeA2B_Direct_ViaLink_"
+    "ShiftClick_WithOpener_TargetBlank",
+    "AppAStandaloneAppBBrowser_CaptureOn_AppWnd_ScopeA2B_Direct_ViaLink_"
+    "ShiftClick_WithoutOpener_TargetBlank",
+    "AppAStandaloneAppBBrowser_CaptureOn_AppWnd_ScopeA2B_ServerSideViaA_"
+    "ViaLink_MiddleClick_WithoutOpener_TargetBlank",
+    "AppAStandaloneAppBBrowser_CaptureOn_AppWnd_ScopeA2B_ServerSideViaA_"
+    "ViaLink_ShiftClick_WithoutOpener_TargetBlank",
+    "AppAStandaloneAppBBrowser_CaptureOn_AppWnd_ScopeA2B_ServerSideViaB_"
+    "ViaLink_MiddleClick_WithoutOpener_TargetBlank",
+    "AppAStandaloneAppBBrowser_CaptureOn_AppWnd_ScopeA2B_ServerSideViaB_"
+    "ViaLink_ShiftClick_WithoutOpener_TargetBlank",
+    "AppAStandaloneAppBBrowser_CaptureOn_AppWnd_ScopeA2B_ServerSideViaX_"
+    "ViaLink_ShiftClick_WithoutOpener_TargetBlank",
+    "AppAStandaloneAppBBrowser_CaptureOn_Tab_ScopeA2B_Direct_ViaButton_"
+    "LeftClick_WithoutOpener_TargetBlank",
+    "AppAStandaloneAppBBrowser_CaptureOn_Tab_ScopeA2B_Direct_ViaButton_"
+    "MiddleClick_WithoutOpener_TargetBlank",
+    "AppAStandaloneAppBBrowser_CaptureOn_Tab_ScopeA2B_Direct_ViaButton_"
+    "ShiftClick_WithoutOpener_TargetBlank",
+    "AppAStandaloneAppBBrowser_CaptureOn_Tab_ScopeA2B_Direct_ViaLink_LeftClick_"
+    "WithoutOpener_TargetBlank",
+    "AppAStandaloneAppBBrowser_CaptureOn_Tab_ScopeA2B_Direct_ViaLink_"
+    "MiddleClick_WithOpener_TargetBlank",
+    "AppAStandaloneAppBBrowser_CaptureOn_Tab_ScopeA2B_Direct_ViaLink_"
+    "MiddleClick_WithoutOpener_TargetBlank",
+    "AppAStandaloneAppBBrowser_CaptureOn_Tab_ScopeA2B_Direct_ViaLink_"
+    "ShiftClick_WithOpener_TargetBlank",
+    "AppAStandaloneAppBBrowser_CaptureOn_Tab_ScopeA2B_Direct_ViaLink_"
+    "ShiftClick_WithoutOpener_TargetBlank",
+    "AppAStandaloneAppBBrowser_CaptureOn_Tab_ScopeA2B_ServerSideViaA_ViaLink_"
+    "LeftClick_WithoutOpener_TargetBlank",
+    "AppAStandaloneAppBBrowser_CaptureOn_Tab_ScopeA2B_ServerSideViaB_ViaLink_"
+    "LeftClick_WithoutOpener_TargetBlank",
+    "AppAStandaloneAppBBrowser_CaptureOn_Tab_ScopeA2B_ServerSideViaB_ViaLink_"
+    "MiddleClick_WithoutOpener_TargetBlank",
+    "AppAStandaloneAppBBrowser_CaptureOn_Tab_ScopeA2B_ServerSideViaB_ViaLink_"
+    "ShiftClick_WithoutOpener_TargetBlank",
+    "AppAStandaloneAppBBrowser_CaptureOn_Tab_ScopeA2B_ServerSideViaX_ViaLink_"
+    "LeftClick_WithoutOpener_TargetBlank",
+    "BothBrowser_CaptureOn_Tab_ScopeA2A_Direct_ViaLink_LeftClick_WithoutOpener_"
+    "TargetBlank",
+    "BothBrowser_CaptureOn_Tab_ScopeA2B_Direct_ViaLink_LeftClick_WithoutOpener_"
+    "TargetBlank",
+    "FocusExisting_AppAStandaloneAppBBrowser_CaptureOn_AppWnd_ScopeA2B_Direct_"
+    "ViaLink_LeftClick_WithoutOpener_TargetBlank",
+    "FocusExisting_AppAStandaloneAppBBrowser_CaptureOn_AppWnd_ScopeA2B_Direct_"
+    "ViaLink_LeftClick_WithoutOpener_TargetBlank",
+    "FocusExisting_AppAStandaloneAppBBrowser_CaptureOn_Tab_ScopeA2B_Direct_"
+    "ViaLink_LeftClick_WithoutOpener_TargetBlank",
+    "FocusExisting_AppAStandaloneAppBBrowser_CaptureOn_Tab_ScopeA2B_Direct_"
+    "ViaLink_LeftClick_WithoutOpener_TargetBlank",
+    "FocusExisting_AppAStandaloneAppBBrowser_CaptureOn_Tab_ScopeA2B_"
+    "ServerSideViaA_ViaLink_LeftClick_WithoutOpener_TargetBlank",
+    "FocusExisting_BothBrowser_CaptureOn_Tab_ScopeA2A_Direct_ViaLink_LeftClick_"
+    "WithoutOpener_TargetBlank",
+    "FocusExisting_BothBrowser_CaptureOn_Tab_ScopeA2B_Direct_ViaLink_LeftClick_"
+    "WithoutOpener_TargetBlank",
+    "FocusExisting_BothBrowser_CaptureOn_Tab_ScopeA2B_ServerSideViaA_ViaLink_"
+    "LeftClick_WithoutOpener_TargetBlank",
+    "NavigateExisting_AppAStandaloneAppBBrowser_CaptureOn_AppWnd_ScopeA2B_"
+    "Direct_ViaLink_LeftClick_WithoutOpener_TargetBlank",
+    "NavigateExisting_AppAStandaloneAppBBrowser_CaptureOn_Tab_ScopeA2B_Direct_"
+    "ViaLink_LeftClick_WithoutOpener_TargetBlank",
+    "NavigateExisting_BothBrowser_CaptureOn_Tab_ScopeA2A_Direct_ViaLink_"
+    "LeftClick_WithoutOpener_TargetBlank",
+    "NavigateExisting_BothBrowser_CaptureOn_Tab_ScopeA2B_Direct_ViaLink_"
+    "LeftClick_WithoutOpener_TargetBlank",
+    "NavigateExisting_AppAStandaloneAppBBrowser_CaptureOn_Tab_ScopeA2B_"
+    "ServerSideViaA_ViaLink_LeftClick_WithoutOpener_TargetBlank",
+    "NavigateExisting_BothBrowser_CaptureOn_Tab_ScopeA2B_ServerSideViaA_"
+    "ViaLink_LeftClick_WithoutOpener_TargetBlank",
 #endif
 };
 
@@ -752,10 +846,20 @@ class WebAppLinkCapturingParameterizedBrowserTest
   WebAppLinkCapturingParameterizedBrowserTest() {
     // kDropInputEventsBeforeFirstPaint is disabled to de-flake our simulated
     // clicks.
+    std::string mode = "reimpl_default_on";
+    const char* param_name =
+        ::testing::UnitTest::GetInstance()->current_test_info()->value_param();
+    if (param_name != nullptr && std::string_view(param_name).length() > 0) {
+      // GetParam() crashes unless this test is run as a parameterized test. The
+      // 'Cleanup' tests are not.
+      if (GetLinkCapturing() == LinkCapturing::kEnabledViaClientMode) {
+        mode = "reimpl_on_via_client_mode";
+      }
+    }
     scoped_feature_list_.InitWithFeaturesAndParameters(
         /*enabled_features=*/{base::test::FeatureRefAndParams(
             features::kPwaNavigationCapturing,
-            {{"link_capturing_state", "reimpl_default_on"}})},
+            {{"link_capturing_state", mode}})},
         /*disabled_features=*/{
             blink::features::kDropInputEventsBeforeFirstPaint});
   }
@@ -1437,11 +1541,22 @@ class WebAppLinkCapturingParameterizedBrowserTest
     const webapps::AppId app_b = InstallTestWebApp(
         embedded_test_server()->GetURL(kDestinationPageScopeB), client_mode_b);
 
-    if (GetLinkCapturing() == LinkCapturing::kDisabled) {
-      ASSERT_EQ(apps::test::DisableLinkCapturingByUser(profile(), app_a),
-                base::ok());
-      ASSERT_EQ(apps::test::DisableLinkCapturingByUser(profile(), app_b),
-                base::ok());
+    switch (GetLinkCapturing()) {
+      case LinkCapturing::kEnabled:
+      case LinkCapturing::kEnabledViaClientMode:
+#if BUILDFLAG(IS_CHROMEOS)
+        ASSERT_EQ(apps::test::EnableLinkCapturingByUser(profile(), app_a),
+                  base::ok());
+        ASSERT_EQ(apps::test::EnableLinkCapturingByUser(profile(), app_b),
+                  base::ok());
+#endif
+        break;
+      case LinkCapturing::kDisabled:
+        ASSERT_EQ(apps::test::DisableLinkCapturingByUser(profile(), app_a),
+                  base::ok());
+        ASSERT_EQ(apps::test::DisableLinkCapturingByUser(profile(), app_b),
+                  base::ok());
+        break;
     }
 
     DLOG(INFO) << "Setting up.";
@@ -1873,6 +1988,40 @@ INSTANTIATE_TEST_SUITE_P(
                      testing::Values(NavigationTarget::kBlank)),
     LinkCaptureTestParamToString);
 
+INSTANTIATE_TEST_SUITE_P(
+    NavigateNew_ServerRedirect_AtoA_StartInApp,
+    WebAppLinkCapturingParameterizedBrowserTest,
+    testing::Combine(
+        testing::Values(ClientModeCombination::kBothFocusExisting,
+                        ClientModeCombination::kBothNavigateExisting),
+        testing::Values(AppUserDisplayMode::kBothStandalone),
+        testing::Values(LinkCapturing::kEnabled),
+        testing::Values(StartingPoint::kAppWindow),
+        testing::Values(Destination::kScopeA2A),
+        testing::Values(RedirectType::kServerSideViaB),
+        testing::Values(NavigationElement::kElementLink),
+        testing::Values(test::ClickMethod::kLeftClick),
+        testing::Values(OpenerMode::kNoOpener),
+        testing::Values(NavigationTarget::kBlank)),
+    LinkCaptureTestParamToString);
+
+INSTANTIATE_TEST_SUITE_P(
+    NavigateNew_ServerRedirect_AtoA_StartInTab,
+    WebAppLinkCapturingParameterizedBrowserTest,
+    testing::Combine(
+        testing::Values(ClientModeCombination::kBothFocusExisting,
+                        ClientModeCombination::kBothNavigateExisting),
+        testing::Values(AppUserDisplayMode::kAppAStandaloneAppBBrowser),
+        testing::Values(LinkCapturing::kEnabled),
+        testing::Values(StartingPoint::kTab),
+        testing::Values(Destination::kScopeA2A),
+        testing::Values(RedirectType::kServerSideViaB),
+        testing::Values(NavigationElement::kElementLink),
+        testing::Values(test::ClickMethod::kLeftClick),
+        testing::Values(OpenerMode::kNoOpener),
+        testing::Values(NavigationTarget::kBlank)),
+    LinkCaptureTestParamToString);
+
 // Use-case where redirection goes into a browser tab as an intermediate step
 // and ends up in an app window, triggered by a shift click.
 INSTANTIATE_TEST_SUITE_P(
@@ -2063,6 +2212,38 @@ INSTANTIATE_TEST_SUITE_P(
                      testing::Values(test::ClickMethod::kLeftClick),
                      testing::Values(OpenerMode::kOpener,
                                      OpenerMode::kNoOpener),
+                     testing::Values(NavigationTarget::kBlank)),
+    LinkCaptureTestParamToString);
+
+// kEnabledViaClientMode should not capture when 'auto' is specified.
+INSTANTIATE_TEST_SUITE_P(
+    ClientModeEnabledNoCapture,
+    WebAppLinkCapturingParameterizedBrowserTest,
+    testing::Combine(testing::Values(ClientModeCombination::kAuto),
+                     testing::Values(mojom::UserDisplayMode::kStandalone),
+                     testing::Values(LinkCapturing::kEnabledViaClientMode),
+                     testing::Values(StartingPoint::kTab),
+                     testing::Values(Destination::kScopeA2B),
+                     testing::Values(RedirectType::kNone),
+                     testing::Values(NavigationElement::kElementLink),
+                     testing::Values(test::ClickMethod::kLeftClick),
+                     testing::Values(OpenerMode::kNoOpener),
+                     testing::Values(NavigationTarget::kBlank)),
+    LinkCaptureTestParamToString);
+
+// kEnabledViaClientMode should capture when auto isn't specified.
+INSTANTIATE_TEST_SUITE_P(
+    ClientModeEnabledCaptured,
+    WebAppLinkCapturingParameterizedBrowserTest,
+    testing::Combine(testing::Values(ClientModeCombination::kBothNavigateNew),
+                     testing::Values(mojom::UserDisplayMode::kStandalone),
+                     testing::Values(LinkCapturing::kEnabledViaClientMode),
+                     testing::Values(StartingPoint::kTab),
+                     testing::Values(Destination::kScopeA2B),
+                     testing::Values(RedirectType::kNone),
+                     testing::Values(NavigationElement::kElementLink),
+                     testing::Values(test::ClickMethod::kLeftClick),
+                     testing::Values(OpenerMode::kNoOpener),
                      testing::Values(NavigationTarget::kBlank)),
     LinkCaptureTestParamToString);
 

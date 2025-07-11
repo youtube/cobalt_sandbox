@@ -4,6 +4,8 @@
 
 #import "ios/chrome/credential_provider_extension/passkey_util.h"
 
+#import <AuthenticationServices/AuthenticationServices.h>
+
 #import "base/apple/foundation_util.h"
 #import "base/containers/span.h"
 #import "base/debug/dump_without_crashing.h"
@@ -13,6 +15,7 @@
 #import "components/sync/protocol/webauthn_credential_specifics.pb.h"
 #import "components/webauthn/core/browser/passkey_model_utils.h"
 #import "ios/chrome/common/app_group/app_group_constants.h"
+#import "ios/chrome/common/credential_provider/ASPasskeyCredentialIdentity+credential.h"
 #import "ios/chrome/common/credential_provider/archivable_credential+passkey.h"
 #import "ios/chrome/common/credential_provider/constants.h"
 #import "ios/chrome/common/credential_provider/credential_provider_creation_notifier.h"
@@ -42,41 +45,14 @@ NSData* MakeAuthenticatorDataForAssertion(NSString* rp_id) {
 // Generates the signature during the passkey assertion process by decrypting
 // the passkey using the security domain secret and then using the decrypted
 // passkey to call passkey_model_utils's GenerateEcSignature function.
-NSData* GenerateSignature(NSData* encrypted_private_key,
-                          NSData* encrypted_message,
+NSData* GenerateSignature(id<Credential> credential,
                           NSData* authenticator_data,
                           NSData* client_data_hash,
                           NSArray<NSData*>* security_domain_secrets) {
-  if ([security_domain_secrets count] == 0) {
-    return nil;
-  }
+  std::string private_key =
+      DecryptPrivateKey(credential, security_domain_secrets);
 
-  // Decrypt the private key using the security domain secret.
-  sync_pb::WebauthnCredentialSpecifics credential_specifics;
-  if ([encrypted_private_key length] > 0) {
-    credential_specifics.set_private_key(encrypted_private_key.bytes,
-                                         encrypted_private_key.length);
-  } else if ([encrypted_message length] > 0) {
-    credential_specifics.set_encrypted(encrypted_message.bytes,
-                                       encrypted_message.length);
-  } else {
-    return nil;
-  }
-
-  bool successful_decryption = false;
-  sync_pb::WebauthnCredentialSpecifics_Encrypted credential_secrets;
-  for (NSData* security_domain_secret in security_domain_secrets) {
-    std::vector<uint8_t> trusted_vault_key;
-    Append(trusted_vault_key, security_domain_secret);
-
-    if (webauthn::passkey_model_utils::DecryptWebauthnCredentialSpecificsData(
-            trusted_vault_key, credential_specifics, &credential_secrets)) {
-      successful_decryption = true;
-      break;
-    }
-  }
-
-  if (!successful_decryption) {
+  if (private_key.empty()) {
     return nil;
   }
 
@@ -88,13 +64,35 @@ NSData* GenerateSignature(NSData* encrypted_private_key,
   // Compute signature.
   std::optional<std::vector<uint8_t>> signature =
       webauthn::passkey_model_utils::GenerateEcSignature(
-          base::as_byte_span(credential_secrets.private_key()),
-          signed_over_data);
+          base::as_byte_span(private_key), signed_over_data);
   if (!signature) {
     return nil;
   }
 
   return [NSData dataWithBytes:signature->data() length:signature->size()];
+}
+
+void SaveToIdentityStore(id<Credential> credential, ProceduralBlock completion)
+    API_AVAILABLE(ios(17.0)) {
+  auto stateCompletion = ^(ASCredentialIdentityStoreState* state) {
+    if (state.enabled) {
+      // Update ASCredentialIdentityStore to make the passkey immediately
+      // available locally.
+      NSMutableArray<id<ASCredentialIdentity>>* storeIdentities =
+          [NSMutableArray arrayWithCapacity:1];
+      [storeIdentities addObject:[[ASPasskeyCredentialIdentity alloc]
+                                     cr_initWithCredential:credential]];
+      [ASCredentialIdentityStore.sharedStore
+          replaceCredentialIdentityEntries:storeIdentities
+                                completion:^(BOOL success, NSError* error) {
+                                  completion();
+                                }];
+    } else {
+      completion();
+    }
+  };
+  [ASCredentialIdentityStore.sharedStore
+      getCredentialIdentityStoreStateWithCompletion:stateCompletion];
 }
 
 // Saves a newly created passkey to the user defaults credential store. This
@@ -117,7 +115,12 @@ void SaveCredential(id<Credential> credential) {
       return;
     }
 
-    [CredentialProviderCreationNotifier notifyCredentialCreated];
+    if (@available(iOS 17.0, *)) {
+      SaveToIdentityStore(credential, ^{
+        // Notify Chrome that a new passkey was created
+        [CredentialProviderCreationNotifier notifyCredentialCreated];
+      });
+    }
   }];
 }
 
@@ -142,6 +145,38 @@ UserVerificationPreference UserVerificationPreferenceFromString(
 }
 
 }  // namespace
+
+std::string DecryptPrivateKey(id<Credential> credential,
+                              NSArray<NSData*>* security_domain_secrets) {
+  if ([security_domain_secrets count] == 0) {
+    return std::string();
+  }
+
+  // Decrypt the private key using the security domain secret.
+  sync_pb::WebauthnCredentialSpecifics credential_specifics;
+  if ([credential.privateKey length] > 0) {
+    credential_specifics.set_private_key(credential.privateKey.bytes,
+                                         credential.privateKey.length);
+  } else if ([credential.encrypted length] > 0) {
+    credential_specifics.set_encrypted(credential.encrypted.bytes,
+                                       credential.encrypted.length);
+  } else {
+    return std::string();
+  }
+
+  sync_pb::WebauthnCredentialSpecifics_Encrypted credential_secrets;
+  for (NSData* security_domain_secret in security_domain_secrets) {
+    std::vector<uint8_t> trusted_vault_key;
+    Append(trusted_vault_key, security_domain_secret);
+
+    if (webauthn::passkey_model_utils::DecryptWebauthnCredentialSpecificsData(
+            trusted_vault_key, credential_specifics, &credential_secrets)) {
+      return std::move(credential_secrets.private_key());
+    }
+  }
+
+  return std::string();
+}
 
 ASPasskeyRegistrationCredential* PerformPasskeyCreation(
     NSData* client_data_hash,
@@ -216,8 +251,7 @@ ASPasskeyAssertionCredential* PerformPasskeyAssertion(
   NSData* authenticatorData =
       MakeAuthenticatorDataForAssertion(credential.rpId);
   NSData* signature = GenerateSignature(
-      credential.privateKey, credential.encrypted, authenticatorData,
-      client_data_hash, security_domain_secrets);
+      credential, authenticatorData, client_data_hash, security_domain_secrets);
 
   if (!signature) {
     return nil;

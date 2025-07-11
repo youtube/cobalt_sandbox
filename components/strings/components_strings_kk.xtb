@@ -63,6 +63,7 @@
 <translation id="1104409666019087579">Кейбір міндетті өрістер бос. Оларды сақтау алдында толтырыңыз.</translation>
 <translation id="1104860668737945357">"Құпия сөздерді басқару" түймесі, Chrome параметрлерінде құпия сөздеріңізді көру және басқару үшін белсендіріңіз</translation>
 <translation id="1108464073729874771">A3x4</translation>
+<translation id="1110809716549020493">Виртуалдық карта толтырылмады ма? Буферге көшіру үшін виртуалдық карта мәліметтерін басыңыз. <ph name="IDS_AUTOFILL_FILLED_CARD_INFORMATION_BUBBLE_LEARN_MORE_LINK_LABEL_VIRTUAL_CARD" /></translation>
 <translation id="1110994991967754504"><ph name="PERMISSION_NAME" /> үшін рұқсатты таңдаңыз</translation>
 <translation id="1113000785583998331">IBAN нөмірін сақтау керек пе?</translation>
 <translation id="1113869188872983271">&amp;Қайта ретке келтіру әрекетін болдырмау</translation>
@@ -544,6 +545,7 @@
 <translation id="1947454675006758438">Жоғарғы оң жағын қапсыру</translation>
 <translation id="1953729392594614704"><ph name="TOPIC" /> блокталса, (тақырып қолданыста болса да) оған қатысты тақырыптар да блокталады.</translation>
 <translation id="1954847915560574887">A3x3</translation>
+<translation id="1955773397805078763">Төлеу әдісін қосу</translation>
 <translation id="1956486093533522234">Құрылғыңызды табу, қорғау немесе тазарту</translation>
 <translation id="1957274554973357626">Тікелей эфирдегі комедия</translation>
 <translation id="1958218078413065209">Ең жоғары ұпайыңыз: <ph name="SCORE" />.</translation>
@@ -920,6 +922,7 @@
 <translation id="2622754869869445457">Ең соңғы қойындыңыз</translation>
 <translation id="2625385379895617796">Сағатыңыз алда</translation>
 <translation id="262745152991669301">USB құрылғыларына қосылуға рұқсат сұрайды</translation>
+<translation id="2627847595568876492">PDF-тен мәтін алынып жатыр...</translation>
 <translation id="2628224721443278970">Microsoft OneDrive аккаунтына кіру</translation>
 <translation id="2634124572758952069"><ph name="HOST_NAME" /> серверінің IP мекенжайын табу мүмкін емес.</translation>
 <translation id="2639739919103226564">Күйі:</translation>
@@ -1041,7 +1044,6 @@
 <translation id="290376772003165898">Бет <ph name="LANGUAGE" /> тілінде емес пе?</translation>
 <translation id="2904165004205947971">Ақпаратты реттеу</translation>
 <translation id="2905107382358353958">Жаңа төлем параметрі туралы хабарландыру</translation>
-<translation id="2909120679423833511">Ұйымыңыз (<ph name="MANAGER" />) жүйеге арнайы профиль арқылы кіруіңізді талап етеді</translation>
 <translation id="2909946352844186028">Желі өзгерісі анықталды.</translation>
 <translation id="2911255567212929079">Машинаны оқыту және жасанды интеллект</translation>
 <translation id="2911973620368911614">Тапсырма орындалатын аккаунт пайдаланушысының идентификаторы</translation>
@@ -1409,6 +1411,7 @@
 <translation id="353816159217417898">Экран (беттерге бөлінген)</translation>
 <translation id="3542628208405253498">Карта суреті</translation>
 <translation id="3542768452570884558">Сілтемені жаңа терезеде ашу</translation>
+<translation id="3543935938072367282">Автотолтыру арқылы жылдам төлеңіз</translation>
 <translation id="3547442767634383572">жұмыс профилі туралы жалпы ақпарат;</translation>
 <translation id="3547746132308051926">20 x 24 дюйм</translation>
 <translation id="3550325450190222557">Жасанды интеллект көмегімен автотолтыруға қатысты пікіріңізді жазыңыз.</translation>
@@ -1577,6 +1580,7 @@
 <translation id="3801297763951514916">Жиі кіресіз</translation>
 <translation id="380329542618494757">Аты</translation>
 <translation id="3803801106042434208">Бұл іздеу жүйелері аймағыңызда танымал.</translation>
+<translation id="380666903981445943">Chrome-да тауар сатып алған кезде, төлеу әдісін автоматты түрде толтыру үшін оны Google аккаунтыңызға сақтаңыз.</translation>
 <translation id="3807366285948165054">Кескіннің Х осі бойынша ығысуы</translation>
 <translation id="3807709094043295184">Классикалық рок және ескі әндер</translation>
 <translation id="3807873520724684969">Зиянды контентке тыйым салынды.</translation>
@@ -1631,6 +1635,7 @@
 <translation id="3905894480064208252">{0,plural, =1{Файлды тасымалдауға блок қойылған}other{<ph name="FILE_COUNT" /> файлды тасымалдауға блок қойылған}}</translation>
 <translation id="3906954721959377182">Планшет</translation>
 <translation id="3909695131102177774"><ph name="LABEL" /> <ph name="ERROR" /></translation>
+<translation id="3909899182024383590"><ph name="WEBSITE" /> веб-сайтындағы сақталған ақпарат пен бет Google-ға жіберіледі. Оларды осы функцияны жақсарту үшін тексерушілер қарауы мүмкін.</translation>
 <translation id="3910231615117880630">Ендірілген контент туралы толық ақпарат</translation>
 <translation id="3915878244842478983">Chrome ақпаратыңызды ала алмады</translation>
 <translation id="3919748199683685809"><ph name="BEGIN_BOLD" />Деректеріңізді басқару жолы:<ph name="END_BOLD" /> Chrome браузері 30 күннен асқан сайттарды автоматты жояды. Сіз қайта кірген сайт тізімде қайта пайда болуы мүмкін. Сонымен қатар кез келген уақытта Chrome параметрлерінде сайттың сізге жарнамалар ұсынуын бөгей аласыз және сайт ұсынған жарнамаларды өшіре аласыз.</translation>
@@ -1732,6 +1737,7 @@
 <translation id="4102567721634170493">Жергілікті жаңалықтар</translation>
 <translation id="4103249731201008433">Құрылғы сериялық нөмірі жарамсыз болып табылады</translation>
 <translation id="4103592298805904008">Картон (бір қабатты)</translation>
+<translation id="4104702906064390950">IBAN туралы ақпарат сақталып жатыр</translation>
 <translation id="4106887816571530227">Ендірілген контент рұқсат етілмеген</translation>
 <translation id="4110652170750985508">Төлеміңізді тексеріңіз</translation>
 <translation id="4111546256784973544">Пейнтбол</translation>
@@ -3049,11 +3055,11 @@
 <translation id="6499038740797743453">Құпия сөз қайта орнатылсын ба?</translation>
 <translation id="6502510275417601303">Жаңа төлем параметрі туралы хабарландыру жабық</translation>
 <translation id="6502991525169604759">Өзгертулеріңізсіз</translation>
+<translation id="6505072878288254563">Аударылып жатыр</translation>
 <translation id="6506959208958864820">Конверт</translation>
 <translation id="6507117483253822672">Интернетте жазба қалдыруға сенімділік береді</translation>
 <translation id="6508722015517270189">Chrome браузерін қайта іске қосу</translation>
 <translation id="6513005815064132016">Камераңыздың орнын қадағалауға рұқсат сұрай алады</translation>
-<translation id="6514932395202175590"><ph name="EMAIL" /> аккаунтына кіріп, жалғастырыңыз. Содан кейін жаңа профиль орнатыңыз.</translation>
 <translation id="6517596291481585650">Ескерту: бұл саясат тізім болмағандықтан, саясат бойынша көрсетілгендей тізім ретінде біріктірілмеген.</translation>
 <translation id="6518133107902771759">Растау</translation>
 <translation id="6519885440226079262">Қолыңызды бақылауға рұқсат сұрай алады.</translation>
@@ -3227,6 +3233,7 @@
 <translation id="6831043979455480757">Аудару</translation>
 <translation id="683108308100148227">Элементті жасыру</translation>
 <translation id="6832753933931306326">Үлгі толтырылған</translation>
+<translation id="6837361937093656245">Аккаунтқа кіру қажет</translation>
 <translation id="6841864657731852591">Формалық цилиндр</translation>
 <translation id="6842196666980060516">184 x 260 мм</translation>
 <translation id="6844998850832008753">Бұл жолы қолды бақылау функциясына рұқсат берілді</translation>
@@ -3618,6 +3625,7 @@
 <translation id="7525804896095537619">Атауы бос болмауы керек</translation>
 <translation id="7526934274050461096">Бұл сайтқа жеке режимде кірмедіңіз</translation>
 <translation id="7529884293139707752">Үйде оқыту</translation>
+<translation id="7531464389616946220">Картаны сканерлеу</translation>
 <translation id="7534987659046836932">C7 хатқалтасы</translation>
 <translation id="7535087603100972091">Мәні</translation>
 <translation id="753556296624075801">Google ұсынған</translation>
@@ -3981,7 +3989,6 @@
 <translation id="8194412401381329820">Бұл басқарылмайтын құрылғыда басқарылатын аккаунттан осы бетті пайдалану мүмкін емес. Бұл бетті пайдалансаңыз, осы құрылғымен бірдей ұйым басқаратын аккаунттан басқа барлық басқарылатын аккаунт құлыпталады (үлестес аккаунттар).</translation>
 <translation id="8194797478851900357">&amp;Жылжуды болдырмау</translation>
 <translation id="8194956568907463262">Атыс ойындары</translation>
-<translation id="819931074683918462">Ұйымыңыз жүйеге арнайы профиль арқылы кіруіңізді талап етеді</translation>
 <translation id="8199437620497683918">Оптикалық диск (жылтыр)</translation>
 <translation id="8199730148066603000">HTTPS емес URL мекенжайларын алдын алу көруге тыйым салынған.</translation>
 <translation id="8200772114523450471">Жалғастыру</translation>

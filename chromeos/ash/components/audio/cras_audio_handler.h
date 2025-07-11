@@ -459,6 +459,12 @@ class COMPONENT_EXPORT(CHROMEOS_ASH_COMPONENTS_AUDIO) CrasAudioHandler
   // Refreshes the input device voice isolation state in CrasAudioClient.
   void RefreshVoiceIsolationState();
 
+  // Gets the pref state of input voice isolation preferred effect mode.
+  uint32_t GetVoiceIsolationPreferredEffect() const;
+
+  // Refreshes the preferred effect mode of voice isolation.
+  void RefreshVoiceIsolationPreferredEffect();
+
   // Returns noise cancellation supported if:
   // - Overall board/device supports noise cancellation
   // - Audio device has bit for Noise Cancellation set in `audio_effect`.
@@ -466,9 +472,6 @@ class COMPONENT_EXPORT(CHROMEOS_ASH_COMPONENTS_AUDIO) CrasAudioHandler
 
   // Gets the pref state of input noise cancellation.
   bool GetNoiseCancellationState() const;
-
-  // Refreshes the input device noise cancellation state.
-  void RefreshNoiseCancellationState();
 
   // Updates noise cancellation state in `CrasAudioClient` and
   // `AudioDevicesPrefHandler` to the provided value. `source` records to
@@ -490,9 +493,6 @@ class COMPONENT_EXPORT(CHROMEOS_ASH_COMPONENTS_AUDIO) CrasAudioHandler
 
   // Gets the pref state of input style transfer.
   bool GetStyleTransferState() const;
-
-  // Refreshes the input device style transfer state.
-  void RefreshStyleTransferState();
 
   // Updates style transfer state in `CrasAudioClient` and
   // `AudioDevicesPrefHandler` to the provided value.
@@ -1042,6 +1042,16 @@ class COMPONENT_EXPORT(CHROMEOS_ASH_COMPONENTS_AUDIO) CrasAudioHandler
   // Handle dbus callback for GetVoiceIsolationUIAppearance.
   void HandleGetVoiceIsolationUIAppearance(
       std::optional<VoiceIsolationUIAppearance> appearance);
+
+  // Resets Voice Isolation preferred effect in pref if:
+  // 1. UIAppearance says show no effect modes and pref has value.
+  //    -> Reset pref to 0.
+  // 2. UIAppearance says show some effect modes and pref is 0.
+  //    -> Default set to Style Transfer.
+  // Otherwise, keep the pref value.
+  // The pref is directly connected with the UI radio buttons in
+  // chrome/browser/resources/ash/settings/device_page/audio.html.
+  void ResetVoiceIsolationPreferredEffectIfNeeded();
 
   // Handle dbus callback for GetSystemNoiseCancellationSupported.
   void HandleGetNoiseCancellationSupported(

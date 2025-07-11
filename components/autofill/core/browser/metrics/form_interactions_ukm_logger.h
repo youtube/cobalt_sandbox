@@ -164,21 +164,6 @@ class FormInteractionsUkmLogger {
                                                   const AutofillField& field,
                                                   bool is_skipped);
 
-  // Logs the fields for which the autofill decided to rationalize the server
-  // type predictions due to repetition of the type.
-  void LogRepeatedServerTypePredictionRationalized(
-      const FormSignature form_signature,
-      const AutofillField& field,
-      FieldType old_type);
-
-  // Logs a hash of the `sectioning_signature` for a specific
-  // `form_signature`. This is useful for detecting sites where different
-  // sectioning algorithms yield different results. Emitted every time
-  // sectioning is performed and only when
-  // `AutofillUseParameterizedSectioning` is enabled.
-  void LogSectioningHash(FormSignature form_signature,
-                         uint32_t sectioning_signature);
-
  private:
   bool CanLog() const;
   int64_t MillisecondsSinceFormParsed(

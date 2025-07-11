@@ -514,6 +514,53 @@ bool CanIntentionallyDeferSpeculativeRFHForRequest(
          !DevToolsAgentHost::IsDebuggerAttached(request->GetWebContents());
 }
 
+void RecordWastedSpeculativeRFHCase(bool from_ad_click,
+                                    WastedSpeculativeRFHCase result) {
+  std::string initiator_types[] = {"All",
+                                   from_ad_click ? "FromAd" : "NotFromAd"};
+  for (std::string_view initiator_type : initiator_types) {
+    base::UmaHistogramEnumeration(base::StrCat({"Navigation.", initiator_type,
+                                                ".WastedSpeculativeRFHCase"}),
+                                  result);
+  }
+}
+
+void RecordWastedAndReplacementRFHDiff(
+    bool from_ad_click,
+    scoped_refptr<SiteInstanceImpl> wasted_rfh_site_instance,
+    scoped_refptr<SiteInstanceImpl> new_site_instance) {
+  std::string initiator_types[] = {"All",
+                                   from_ad_click ? "FromAd" : "NotFromAd"};
+  for (std::string_view initiator_type : initiator_types) {
+    base::UmaHistogramBoolean(
+        base::StrCat({"Navigation.", initiator_type,
+                      ".WastedSpeculativeRFH.CrossOriginIsolationDiffers"}),
+        wasted_rfh_site_instance->IsCrossOriginIsolated() !=
+            new_site_instance->IsCrossOriginIsolated());
+    base::UmaHistogramBoolean(
+        base::StrCat({"Navigation.", initiator_type,
+                      ".WastedSpeculativeRFH.ProcessDiffers"}),
+        wasted_rfh_site_instance->GetProcess() !=
+            new_site_instance->GetProcess());
+    // If the previous speculative RFH's process only has the speculative RFH in
+    // it, it's likely that the renderer process was created for that
+    // speculative RFH (it's also possible but less likely that all other RFH
+    // that uses that process had been destructed).
+    base::UmaHistogramBoolean(
+        base::StrCat(
+            {"Navigation.", initiator_type,
+             ".WastedSpeculativeRFH.WastedRFHLikelyCreatedNewProcess"}),
+        wasted_rfh_site_instance->GetProcess()->GetRenderFrameHostCount() == 1);
+    // For the replacement RFH, if it's a speculative RFH that created a new
+    // process, then the RFH count for its process must be 0, since the RFH is
+    // not created yet at this point.
+    base::UmaHistogramBoolean(
+        base::StrCat({"Navigation.", initiator_type,
+                      ".WastedSpeculativeRFH.ReplacementRFHCreatedNewProcess"}),
+        new_site_instance->GetProcess()->GetRenderFrameHostCount() == 0);
+  }
+}
+
 }  // namespace
 
 RenderFrameHostManager::IsSameSiteGetter::IsSameSiteGetter()
@@ -1748,6 +1795,59 @@ RenderFrameHostManager::GetFrameHostForNavigation(
   bool recovering_without_early_commit =
       ShouldSkipEarlyCommitPendingForCrashedFrame() &&
       render_frame_host_->must_be_replaced();
+
+  bool from_ad_click =
+      (request->GetNavigationInitiatorActivationAndAdStatus() ==
+       blink::mojom::NavigationInitiatorActivationAndAdStatus::
+           kStartedWithTransientActivationFromAd);
+  // Record whether a speculative RFH previously created for this navigation
+  // (if any) will be wasted because we change the RFH associated with this
+  // navigation this time.
+  if (request->GetAssociatedRFHType() ==
+      NavigationRequest::AssociatedRenderFrameHostType::NONE) {
+    RecordWastedSpeculativeRFHCase(
+        from_ad_click, WastedSpeculativeRFHCase::kNotWasted_WasUnassociated);
+  } else if (request->GetAssociatedRFHType() ==
+             NavigationRequest::AssociatedRenderFrameHostType::CURRENT) {
+    if (use_current_rfh) {
+      RecordWastedSpeculativeRFHCase(
+          from_ad_click, WastedSpeculativeRFHCase::
+                             kNotWasted_WasUsingCurrentRFH_NowKeepCurrentRFH);
+    } else {
+      RecordWastedSpeculativeRFHCase(
+          from_ad_click,
+          WastedSpeculativeRFHCase::
+              kNotWasted_WasUsingCurrentRFH_NowUseSpeculativeRFH);
+    }
+  } else {
+    CHECK_EQ(request->GetAssociatedRFHType(),
+             NavigationRequest::AssociatedRenderFrameHostType::SPECULATIVE);
+    CHECK(speculative_render_frame_host_);
+    if (use_current_rfh) {
+      RecordWastedSpeculativeRFHCase(
+          from_ad_click, WastedSpeculativeRFHCase::kWasted_NowUseCurrentRFH);
+      // Record the difference between the previously picked RFH for the
+      // navigation and the new one.
+      RecordWastedAndReplacementRFHDiff(
+          from_ad_click, speculative_render_frame_host_->GetSiteInstance(),
+          render_frame_host_->GetSiteInstance());
+    } else if (speculative_render_frame_host_->GetSiteInstance() !=
+               dest_site_instance.get()) {
+      RecordWastedSpeculativeRFHCase(
+          from_ad_click,
+          WastedSpeculativeRFHCase::kWasted_NowUseNewSpeculativeRFH);
+      // Record the difference between the previously picked RFH for the
+      // navigation and the new one.
+      RecordWastedAndReplacementRFHDiff(
+          from_ad_click, speculative_render_frame_host_->GetSiteInstance(),
+          dest_site_instance);
+    } else {
+      RecordWastedSpeculativeRFHCase(
+          from_ad_click,
+          WastedSpeculativeRFHCase::kNotWasted_NowKeepSameSpeculativeRFH);
+    }
+  }
+
   if (use_current_rfh) {
     AppendReason(reason, "GetFrameHostForNavigation / use-current-rfh");
     navigation_rfh = render_frame_host_.get();
@@ -3861,10 +3961,9 @@ RenderFrameHostManager::CreateRenderFrameHost(
   // Check to see if a speculative RenderViewHost is needed. It is needed for
   // cross-page same-SiteInstanceGroup navigations when the feature is enabled.
   // TODO(yangsharon, rakina, crbug.com/1336305): Handle the
-  // cross-SiteInstanceGroup  and crashed frame cases.
+  // cross-SiteInstanceGroup and crashed frame cases.
   CreateRenderViewHostCase create_rvh_case =
       (render_frame_host_ &&
-       render_frame_host_->ShouldChangeRenderFrameHostOnSameSiteNavigation() &&
        create_frame_case == CreateFrameCase::kCreateSpeculative &&
        static_cast<SiteInstanceImpl*>(site_instance)->group() ==
            render_frame_host_->GetSiteInstance()->group() &&
@@ -4592,7 +4691,7 @@ RenderFrameHostManager::GetReplacementFrameToken(
     return existing_proxy->GetFrameToken();
   } else {
     // No proxy means that this is one of:
-    // - a same-SiteInstance subframe navigation
+    // - a same-SiteInstanceGroup subframe navigation
     // - a cross-SiteInstance navigation from a crashed subframe that will do an
     //   early commit and the SiteInstance is not already in the frame tree.
     // A main frame navigation with no proxy would have its RenderFrame init
@@ -4600,11 +4699,15 @@ RenderFrameHostManager::GetReplacementFrameToken(
     // frames.
     DCHECK(frame_tree_node_->parent());
     if (current_frame_host()->IsRenderFrameLive()) {
-      CHECK_EQ(render_frame_host->GetSiteInstance(),
-               current_frame_host()->GetSiteInstance());
+      CHECK_EQ(render_frame_host->GetSiteInstance()->group(),
+               current_frame_host()->GetSiteInstance()->group());
       // The new frame will replace an existing frame in the renderer. For now
-      // this can only be when RenderDocument-subframe is enabled.
-      DCHECK(render_frame_host_
+      // this can only be when RenderDocument-subframe is enabled or when
+      // navigating to a different SiteInstance in the same SiteInstanceGroup in
+      // a subframe.
+      DCHECK(render_frame_host->GetSiteInstance() !=
+                 current_frame_host()->GetSiteInstance() ||
+             render_frame_host_
                  ->ShouldChangeRenderFrameHostOnSameSiteNavigation());
       DCHECK_NE(render_frame_host, current_frame_host());
       return current_frame_host()->GetFrameToken();
@@ -5184,6 +5287,16 @@ std::unique_ptr<RenderFrameHostImpl> RenderFrameHostManager::SetRenderFrameHost(
     frame_tree.MakeSpeculativeRVHCurrent();
   }
 
+  // Update the owner of the new RenderFrameHost to point to the current frame.
+  // Note that this is a no-op for pending commit RenderFrameHosts (which start
+  // with owner pointing to the FrameTreeNode owning them) and prerendering
+  // activations (where RenderFrameHost's owner has been updated in
+  // PrerenderHost::Activate), but is necessary for RFHs restored from
+  // back/forward cache.
+  if (render_frame_host_) {
+    render_frame_host_->SetRenderFrameHostOwner(frame_tree_node_);
+  }
+
   // Swapping the current RenderFrameHost in a FrameTreeNode comes along with an
   // update to its LifecycleStateImpl.
 
@@ -5252,17 +5365,9 @@ std::unique_ptr<RenderFrameHostImpl> RenderFrameHostManager::SetRenderFrameHost(
     }
   }
 
-  // Update the owner of the new RenderFrameHost to point to the current frame.
-  // Note that this is a no-op for pending commit RenderFrameHosts (which start
-  // with owner pointing to the FrameTreeNode owning them) and prerendering
-  // activations (where RenderFrameHost's owner has been updated in
-  // PrerenderHost::Activate), but is necessary for RFHs restored from
-  // back/forward cache.
-  if (render_frame_host_)
-    render_frame_host_->SetRenderFrameHostOwner(frame_tree_node_);
-
-  if (old_render_frame_host)
+  if (old_render_frame_host) {
     old_render_frame_host->SetRenderFrameHostOwner(nullptr);
+  }
 
   if (render_frame_host_) {
     SiteInstanceGroupId sig_id =
@@ -5364,6 +5469,8 @@ void RenderFrameHostManager::CreateOpenerProxies(
     SiteInstanceGroup* group,
     FrameTreeNode* skip_this_node,
     const scoped_refptr<BrowsingContextState>& browsing_context_state) {
+  base::ElapsedTimer timer;
+
   // TODO(crbug.com/40205442): Add a DCHECK verifying that |instance
   // is a related site instance to the site instance in |render_frame_host_|. At
   // the moment, this DCHECK fails due to a bug in choosing SiteInstance in
@@ -5415,6 +5522,9 @@ void RenderFrameHostManager::CreateOpenerProxies(
     DCHECK(opener_frame_token);
     proxy->GetAssociatedRemoteFrame()->UpdateOpener(opener_frame_token);
   }
+
+  base::UmaHistogramMicrosecondsTimes("SiteIsolation.CreateOpenerProxiesTime",
+                                      timer.Elapsed());
 }
 
 void RenderFrameHostManager::CreateOpenerProxiesForFrameTree(
@@ -5464,17 +5574,17 @@ void RenderFrameHostManager::ExecutePageBroadcastMethod(
     if (pair.second->site_instance_group() == group_to_skip) {
       continue;
     }
-    callback.Run(pair.second->GetRenderViewHost());
+    callback(pair.second->GetRenderViewHost());
   }
 
   if (speculative_render_frame_host_ &&
       speculative_render_frame_host_->GetSiteInstance()->group() !=
           group_to_skip) {
-    callback.Run(speculative_render_frame_host_->render_view_host());
+    callback(speculative_render_frame_host_->render_view_host());
   }
 
   if (render_frame_host_->GetSiteInstance()->group() != group_to_skip) {
-    callback.Run(render_frame_host_->render_view_host());
+    callback(render_frame_host_->render_view_host());
   }
 }
 

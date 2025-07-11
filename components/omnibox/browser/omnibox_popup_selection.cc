@@ -4,12 +4,13 @@
 
 #include "components/omnibox/browser/omnibox_popup_selection.h"
 
+#include <algorithm>
+
 #include "build/build_config.h"
 #include "components/omnibox/browser/actions/omnibox_action.h"
+#include "components/omnibox/browser/autocomplete_match.h"
 #include "components/omnibox/browser/autocomplete_result.h"
 #include "components/search_engines/template_url_service.h"
-
-#include <algorithm>
 
 constexpr bool kIsDesktop = !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_IOS);
 
@@ -99,11 +100,12 @@ bool OmniboxPopupSelection::IsControlPresentOnMatch(
       return match.type == AutocompleteMatchType::HISTORY_EMBEDDINGS;
     case FOCUSED_BUTTON_REMOVE_SUGGESTION:
       return match.SupportsDeletion();
+    case FOCUSED_IPH_LINK:
+      return match.IsIPHSuggestion() && !match.iph_link_url.is_empty();
     default:
       break;
   }
-  NOTREACHED_IN_MIGRATION();
-  return false;
+  NOTREACHED();
 }
 
 OmniboxPopupSelection OmniboxPopupSelection::GetNextSelection(
@@ -171,8 +173,7 @@ OmniboxPopupSelection OmniboxPopupSelection::GetNextSelection(
     return *(current - 1);
   }
 
-  NOTREACHED_IN_MIGRATION();
-  return *this;
+  NOTREACHED();
 }
 
 // static
@@ -205,6 +206,7 @@ OmniboxPopupSelection::GetAllAvailableSelectionsSorted(
     all_states.push_back(FOCUSED_BUTTON_THUMBS_UP);
     all_states.push_back(FOCUSED_BUTTON_THUMBS_DOWN);
     all_states.push_back(FOCUSED_BUTTON_REMOVE_SUGGESTION);
+    all_states.push_back(FOCUSED_IPH_LINK);
   }
   DCHECK(std::is_sorted(all_states.begin(), all_states.end()))
       << "This algorithm depends on a sorted list of line states.";

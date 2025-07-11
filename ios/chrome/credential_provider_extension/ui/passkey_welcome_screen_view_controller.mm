@@ -6,8 +6,14 @@
 
 #import "base/notreached.h"
 #import "ios/chrome/common/ui/colors/semantic_color_names.h"
+#import "ios/chrome/common/ui/instruction_view/instruction_view.h"
+#import "ios/chrome/common/ui/util/constraints_ui_util.h"
 
 namespace {
+
+// Vertical spacing between the UI elements contained in the
+// `specificContentView`.
+constexpr CGFloat kSpecificContentVerticalSpacing = 24;
 
 // Leading, trailing and top margin to use for the screen's title.
 constexpr CGFloat kTitleHorizontalAndTopMargin = 24;
@@ -51,7 +57,7 @@ NSString* GetSubtitleString(PasskeyWelcomeScreenPurpose purpose) {
   NSString* stringID;
   switch (purpose) {
     case PasskeyWelcomeScreenPurpose::kEnroll:
-      NOTREACHED_NORETURN();
+      NOTREACHED();
     case PasskeyWelcomeScreenPurpose::kFixDegradedRecoverability:
       stringID =
           @"IDS_IOS_CREDENTIAL_PROVIDER_PASSKEY_PARTIAL_BOOTSRAPPING_SUBTITLE";
@@ -92,15 +98,34 @@ NSString* GetPrimaryButtonTitle(PasskeyWelcomeScreenPurpose purpose) {
   // UI elements.
   PasskeyWelcomeScreenPurpose _purpose;
 
+  // The view to be used as the navigation bar title view.
+  UIView* _navigationItemTitleView;
+
+  // Email address associated with the signed in account. Depending on the
+  // PasskeyWelcomeScreenPurpose, the user email might or might no have to be
+  // dispalyed in the UI. If part of the UI, the `userEmail` must not be `nil`.
+  NSString* _userEmail;
+
+  // Delegate for this view controller.
+  __weak id<PasskeyWelcomeScreenViewControllerDelegate>
+      _passkeyWelcomeScreenViewControllerDelegate;
+
   // The block that should be executed when the primary button is tapped.
   ProceduralBlock _primaryButtonAction;
 }
 
 - (instancetype)initForPurpose:(PasskeyWelcomeScreenPurpose)purpose
+       navigationItemTitleView:(UIView*)navigationItemTitleView
+                     userEmail:(NSString*)userEmail
+                      delegate:(id<PasskeyWelcomeScreenViewControllerDelegate>)
+                                   delegate
            primaryButtonAction:(ProceduralBlock)primaryButtonAction {
   self = [super initWithNibName:nil bundle:nil];
   if (self) {
     _purpose = purpose;
+    _navigationItemTitleView = navigationItemTitleView;
+    _userEmail = userEmail;
+    _passkeyWelcomeScreenViewControllerDelegate = delegate;
     _primaryButtonAction = primaryButtonAction;
   }
   return self;
@@ -117,7 +142,7 @@ NSString* GetPrimaryButtonTitle(PasskeyWelcomeScreenPurpose purpose) {
   self.titleHorizontalMargin = kTitleHorizontalAndTopMargin;
 
   if (_purpose == PasskeyWelcomeScreenPurpose::kEnroll) {
-    // TODO(crbug.com/355042392): Set up `self.specificContentView`.
+    self.specificContentView = [self createSpecificContentView];
   } else {
     self.subtitleText = GetSubtitleString(_purpose);
   }
@@ -130,6 +155,7 @@ NSString* GetPrimaryButtonTitle(PasskeyWelcomeScreenPurpose purpose) {
   [super viewDidLoad];
 
   self.view.backgroundColor = GetBackgroundColor();
+  self.navigationItem.titleView = _navigationItemTitleView;
 }
 
 #pragma mark - PromoStyleViewController
@@ -140,15 +166,90 @@ NSString* GetPrimaryButtonTitle(PasskeyWelcomeScreenPurpose purpose) {
 
 #pragma mark - PromoStyleViewControllerDelegate
 
-- (void)didTapPrimaryActionButton {
-  ProceduralBlock primaryButtonAction = _primaryButtonAction;
-  _primaryButtonAction = nil;
+// Creates and configures the screen-specific view that's placed between the
+// titles and buttons.
+- (UIView*)createSpecificContentView {
+  UIView* specificContentView = [[UIView alloc] init];
+  specificContentView.translatesAutoresizingMaskIntoConstraints = NO;
 
-  primaryButtonAction();
+  InstructionView* instructionView = [self createInstructionView];
+  [specificContentView addSubview:instructionView];
+  AddSameConstraintsToSides(
+      instructionView, specificContentView,
+      LayoutSides::kTop | LayoutSides::kLeading | LayoutSides::kTrailing);
+
+  UILabel* footerMessage = [self createFooterMessage];
+  [specificContentView addSubview:footerMessage];
+  AddSameConstraintsToSides(
+      footerMessage, specificContentView,
+      LayoutSides::kLeading | LayoutSides::kTrailing | LayoutSides::kBottom);
+
+  [NSLayoutConstraint activateConstraints:@[
+    [footerMessage.topAnchor
+        constraintGreaterThanOrEqualToAnchor:instructionView.bottomAnchor
+                                    constant:kSpecificContentVerticalSpacing],
+  ]];
+
+  return specificContentView;
+}
+
+// Creates and configures the instruction view for the enrollment welcome
+// screen.
+- (InstructionView*)createInstructionView {
+  NSArray<NSString*>* steps = @[
+    NSLocalizedString(
+        @"IDS_IOS_CREDENTIAL_PROVIDER_PASSKEY_ENROLLMENT_INSTRUCTIONS_STEP_1",
+        @"First step of the passkey enrollment instructions"),
+    NSLocalizedString(
+        @"IDS_IOS_CREDENTIAL_PROVIDER_PASSKEY_ENROLLMENT_INSTRUCTIONS_STEP_2",
+        @"First step of the passkey enrollment instructions"),
+    NSLocalizedString(
+        @"IDS_IOS_CREDENTIAL_PROVIDER_PASSKEY_ENROLLMENT_INSTRUCTIONS_STEP_3",
+        @"First step of the passkey enrollment instructions"),
+  ];
+
+  InstructionView* instructionView =
+      [[InstructionView alloc] initWithList:steps];
+  instructionView.translatesAutoresizingMaskIntoConstraints = NO;
+
+  return instructionView;
+}
+
+// Creates and configures the footer message for the enrollment welcome screen.
+- (UILabel*)createFooterMessage {
+  UILabel* footerMessage = [[UILabel alloc] init];
+  footerMessage.translatesAutoresizingMaskIntoConstraints = NO;
+  footerMessage.textAlignment = NSTextAlignmentCenter;
+  footerMessage.adjustsFontForContentSizeCategory = YES;
+  footerMessage.textColor = [UIColor colorNamed:kGrey600Color];
+  footerMessage.numberOfLines = 0;
+
+  UIFont* font = [UIFont systemFontOfSize:13 weight:UIFontWeightRegular];
+  footerMessage.font = [[UIFontMetrics defaultMetrics] scaledFontForFont:font];
+
+  CHECK(_userEmail);
+  NSString* stringWithPlaceholder = NSLocalizedString(
+      @"IDS_IOS_CREDENTIAL_PROVIDER_PASSKEY_ENROLLMENT_FOOTER_MESSAGE",
+      @"Footer messsage shown at the bottom of the screen-specific view.");
+  footerMessage.text =
+      [stringWithPlaceholder stringByReplacingOccurrencesOfString:@"$1"
+                                                       withString:_userEmail];
+
+  return footerMessage;
+}
+
+- (void)didTapPrimaryActionButton {
+  if (self.navigationController.topViewController != self) {
+    return;
+  }
+
+  CHECK(_primaryButtonAction);
+  _primaryButtonAction();
 }
 
 - (void)didTapSecondaryActionButton {
-  // TODO(crbug.com/355042392): Handle taps on "Not now" button.
+  [_passkeyWelcomeScreenViewControllerDelegate
+      passkeyWelcomeScreenViewControllerShouldBeDismissed:self];
 }
 
 @end

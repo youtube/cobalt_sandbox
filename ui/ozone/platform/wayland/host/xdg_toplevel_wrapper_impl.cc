@@ -122,12 +122,6 @@ bool XDGToplevelWrapperImpl::Initialize() {
         ZAURA_SHELL_GET_AURA_TOPLEVEL_FOR_XDG_TOPLEVEL_SINCE_VERSION) {
       aura_toplevel_.reset(zaura_shell_get_aura_toplevel_for_xdg_toplevel(
           connection_->zaura_shell()->wl_object(), xdg_toplevel_.get()));
-      if (ui::IsWaylandSurfaceSubmissionInPixelCoordinatesEnabled() &&
-          version >=
-              ZAURA_TOPLEVEL_SURFACE_SUBMISSION_IN_PIXEL_COORDINATES_SINCE_VERSION) {
-        zaura_toplevel_surface_submission_in_pixel_coordinates(
-            aura_toplevel_.get());
-      }
     }
   }
 
@@ -361,14 +355,6 @@ void XDGToplevelWrapperImpl::OnAuraToplevelConfigure(
       CheckIfWlArrayHasValue(states, XDG_TOPLEVEL_STATE_MAXIMIZED);
   window_states.is_fullscreen =
       CheckIfWlArrayHasValue(states, XDG_TOPLEVEL_STATE_FULLSCREEN);
-#if BUILDFLAG(IS_CHROMEOS_LACROS)
-  window_states.is_immersive_fullscreen =
-      CheckIfWlArrayHasValue(states, ZAURA_TOPLEVEL_STATE_IMMERSIVE);
-  window_states.is_pinned_fullscreen =
-      CheckIfWlArrayHasValue(states, ZAURA_TOPLEVEL_STATE_PINNED);
-  window_states.is_trusted_pinned_fullscreen =
-      CheckIfWlArrayHasValue(states, ZAURA_TOPLEVEL_STATE_TRUSTED_PINNED);
-#endif  // BUILDFLAG(IS_CHROMEOS_LACROS)
   window_states.is_activated =
       CheckIfWlArrayHasValue(states, XDG_TOPLEVEL_STATE_ACTIVATED);
   window_states.is_minimized =

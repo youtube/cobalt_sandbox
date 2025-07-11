@@ -72,9 +72,13 @@ class TabGroupSyncServiceImpl : public TabGroupSyncService,
               const std::u16string& title,
               const GURL& url,
               std::optional<size_t> position) override;
-  void UpdateTab(const LocalTabGroupID& group_id,
-                 const LocalTabID& tab_id,
-                 const SavedTabGroupTabBuilder& tab_builder) override;
+  void NavigateTab(const LocalTabGroupID& group_id,
+                   const LocalTabID& tab_id,
+                   const GURL& url,
+                   const std::u16string& title) override;
+  void UpdateTabProperties(const LocalTabGroupID& group_id,
+                           const LocalTabID& tab_id,
+                           const SavedTabGroupTabBuilder& tab_builder) override;
   void RemoveTab(const LocalTabGroupID& group_id,
                  const LocalTabID& tab_id) override;
   void MoveTab(const LocalTabGroupID& group_id,
@@ -227,6 +231,12 @@ class TabGroupSyncServiceImpl : public TabGroupSyncService,
   // `shared_tab_groups_available_at_startup_for_messaging_` for later
   // retrieval.
   void StoreSharedTabGroupsAvailableAtStartupForMessaging();
+
+  // Transitions the originating saved tab group to the given shared tab group
+  // if the saved tab group is open in the tab strip. Returns true if the group
+  // was transitioned.
+  bool TransitionSavedToSharedTabGroupIfNeeded(
+      const SavedTabGroup& shared_group);
 
   // The in-memory model representing the currently present saved tab groups.
   std::unique_ptr<SavedTabGroupModel> model_;

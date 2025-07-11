@@ -422,6 +422,7 @@
 <translation id="4387004326333427325">ავთენტიფიკაციის სერტიფიკატი დისტანციურად უარყოფილი იქნა</translation>
 <translation id="4394214039309501350">გარე ბმული</translation>
 <translation id="4394980935660306080">ამ კვირის დასაწყისში</translation>
+<translation id="4397435965699247285">OneDrive მიუწვდომელია ხაზგარეშე რეჟიმში</translation>
 <translation id="4398096759193130964">აღადგინეთ ერთეულები, ან ჩავლებით გადაიტანეთ ის ახალ საქაღალდეში წაშლილებს მიღმა</translation>
 <translation id="4401287888955153199">ყველას ამოღება</translation>
 <translation id="4410695710508688828">ამოღების ოპერაცია ვერ შესრულდა. <ph name="ERROR_MESSAGE" /></translation>
@@ -582,7 +583,6 @@
 <translation id="5447680084201416734">საკმარისი მეხსიერება არ არის.</translation>
 <translation id="5449551289610225147">პაროლი არასწორია</translation>
 <translation id="5459064203055649751">ფაილი სახელად „<ph name="FILENAME" />“ უკვე არსებობს. გსურთ, ჩაანაცვლოთ ის იმ ფაილით, რომელიც გადაგაქვთ?</translation>
-<translation id="5462378611565326489">OneDrive მიუწვდომელია ხაზგარეშე რეჟიმში.</translation>
 <translation id="5463231940765244860">შეყვანა</translation>
 <translation id="5469868506864199649">იტალიური</translation>
 <translation id="5473333559083690127">ხელახლა შეიყვანეთ ახალი PIN-კოდი</translation>

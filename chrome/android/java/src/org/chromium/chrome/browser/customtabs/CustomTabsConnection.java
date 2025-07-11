@@ -69,6 +69,7 @@ import org.chromium.chrome.browser.customtabs.ClientManager.CalledWarmup;
 import org.chromium.chrome.browser.customtabs.content.EngagementSignalsHandler;
 import org.chromium.chrome.browser.customtabs.features.branding.MismatchNotificationData;
 import org.chromium.chrome.browser.device.DeviceClassManager;
+import org.chromium.chrome.browser.firstrun.FirstRunStatus;
 import org.chromium.chrome.browser.flags.ChromeFeatureList;
 import org.chromium.chrome.browser.init.ChromeBrowserInitializer;
 import org.chromium.chrome.browser.init.ProcessInitializationHandler;
@@ -85,6 +86,7 @@ import org.chromium.chrome.browser.ui.google_bottom_bar.proto.IntentParams.Googl
 import org.chromium.components.content_settings.CookieControlsMode;
 import org.chromium.components.embedder_support.util.Origin;
 import org.chromium.components.embedder_support.util.UrlConstants;
+import org.chromium.components.externalauth.ExternalAuthUtils;
 import org.chromium.components.user_prefs.UserPrefs;
 import org.chromium.components.variations.SyntheticTrialAnnotationMode;
 import org.chromium.content_public.browser.BrowserStartupController;
@@ -372,9 +374,7 @@ public class CustomTabsConnection {
 
                         // TODO(pshmakov): invert this dependency by moving event dispatching to a
                         // separate class.
-                        ChromeApplicationImpl.getComponent()
-                                .resolveCustomTabsFileProcessor()
-                                .onSessionDisconnected(session);
+                        CustomTabsClientFileProcessor.getInstance().onSessionDisconnected(session);
                     }
                 };
 
@@ -383,7 +383,7 @@ public class CustomTabsConnection {
         PostMessageServiceConnection serviceConnection =
                 new PostMessageServiceConnection(session) {};
         PostMessageHandler handler = new PostMessageHandler(serviceConnection);
-        var engagementSignalsHandler = new EngagementSignalsHandler(this, session);
+        var engagementSignalsHandler = new EngagementSignalsHandler(session);
         return mClientManager.newSession(
                 session,
                 Binder.getCallingUid(),
@@ -817,7 +817,10 @@ public class CustomTabsConnection {
             return bundle;
         } else if (commandName.equals(IS_AUTH_TAB_SUPPORTED)) {
             var bundle = new Bundle();
-            bundle.putBoolean(AUTH_TAB_SUPPORTED_KEY, ChromeFeatureList.sCctAuthTab.isEnabled());
+            boolean supported =
+                    ChromeFeatureList.sCctAuthTab.isEnabled()
+                            && FirstRunStatus.getFirstRunFlowComplete();
+            bundle.putBoolean(AUTH_TAB_SUPPORTED_KEY, supported);
             return bundle;
         }
         return null;
@@ -1326,9 +1329,7 @@ public class CustomTabsConnection {
      */
     public boolean isFirstParty(String packageName) {
         if (packageName == null) return false;
-        return ChromeApplicationImpl.getComponent()
-                .resolveExternalAuthUtils()
-                .isGoogleSigned(packageName);
+        return ExternalAuthUtils.getInstance().isGoogleSigned(packageName);
     }
 
     void setIgnoreUrlFragmentsForSession(CustomTabsSessionToken session, boolean value) {
@@ -2126,8 +2127,7 @@ public class CustomTabsConnection {
 
     public boolean receiveFile(
             CustomTabsSessionToken sessionToken, Uri uri, int purpose, Bundle extras) {
-        return ChromeApplicationImpl.getComponent()
-                .resolveCustomTabsFileProcessor()
+        return CustomTabsClientFileProcessor.getInstance()
                 .processFile(sessionToken, uri, purpose, extras);
     }
 

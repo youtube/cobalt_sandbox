@@ -99,6 +99,25 @@ BASE_FEATURE(kCodeCacheDeletionWithoutFilter,
              "CodeCacheDeletionWithoutFilter",
              base::FEATURE_ENABLED_BY_DEFAULT);
 
+// Turn on enforcements based on tracking the list of committed origins in
+// ChildProcessSecurityPolicy::CanAccessMaybeOpaqueOrigin(). Note that this only
+// controls whether or not the new security checks take effect; when this is
+// off, the security check is still performed and compared to the legacy jail
+// and citadel check to collect data about possible mismatches. Requires
+// CommittedOriginTracking to also be turned on to take effect. See
+// https://crbug.com/40148776.
+BASE_FEATURE(kCommittedOriginEnforcements,
+             "CommittedOriginEnforcements",
+             base::FEATURE_DISABLED_BY_DEFAULT);
+
+// Turn on the tracking of origins committed in each renderer process in
+// ChildProcessSecurityPolicy. This is required for committed origin
+// enforcements, which is gated behind kCommittedOriginEnforcements.
+// Temporarily disabled while investigating https://crbug.com/377793089.
+BASE_FEATURE(kCommittedOriginTracking,
+             "CommittedOriginTracking",
+             base::FEATURE_DISABLED_BY_DEFAULT);
+
 // Enables support for the `Critical-CH` response header.
 // https://github.com/WICG/client-hints-infrastructure/blob/master/reliability.md#critical-ch
 BASE_FEATURE(kCriticalClientHint,
@@ -154,7 +173,7 @@ BASE_FEATURE(kExperimentalContentSecurityPolicyFeatures,
 // Requires FedCmAuthz to be enabled.
 BASE_FEATURE(kFedCmFlexibleFields,
              "FedCmFlexibleFields",
-             base::FEATURE_DISABLED_BY_DEFAULT);
+             base::FEATURE_ENABLED_BY_DEFAULT);
 
 // Enables CORS checks on the ID assertion endpoint of the FedCM API.
 BASE_FEATURE(kFedCmIdAssertionCORS,
@@ -484,19 +503,6 @@ BASE_FEATURE(kReuseInitialRenderFrameHostForWebUI,
 BASE_FEATURE(kRunStableVideoDecoderFactoryProcessServiceOnIOThread,
              "RunStableVideoDecoderFactoryProcessServiceOnIOThread",
              base::FEATURE_ENABLED_BY_DEFAULT);
-
-// Enables auto preloading for fetch requests before invoking the fetch handler
-// in ServiceWorker. The fetch request inside the fetch handler is resolved with
-// this preload response. If the fetch handler result is fallback, uses this
-// preload request as a fallback network request.
-//
-// Unlike navigation preload, this preloading is applied to subresources. Also,
-// it doesn't require a developer opt-in.
-//
-// crbug.com/1472634 for more details.
-BASE_FEATURE(kServiceWorkerAutoPreload,
-             "ServiceWorkerAutoPreload",
-             base::FEATURE_DISABLED_BY_DEFAULT);
 
 BASE_FEATURE(kServiceWorkerAvoidMainThreadForInitialization,
              "ServiceWorkerAvoidMainThreadForInitialization",

@@ -43,7 +43,7 @@ StringView TypeToString(Component::Type type) {
     case Component::Type::kHash:
       return "hash";
   }
-  NOTREACHED_IN_MIGRATION();
+  NOTREACHED();
 }
 
 // Utility method to get the correct encoding callback for a given type.
@@ -98,7 +98,7 @@ liburlpattern::EncodeCallback GetEncodeCallback(std::string_view pattern_utf8,
     case Component::Type::kHash:
       return ::url_pattern::HashEncodeCallback;
   }
-  NOTREACHED_IN_MIGRATION();
+  NOTREACHED();
 }
 
 // Utility method to get the correct liburlpattern parse options for a given
@@ -373,8 +373,7 @@ bool Component::ShouldTreatAsStandardURL() const {
 
   const auto protocol_matches = [&](const std::string& scheme) {
     DCHECK(base::IsStringASCII(scheme));
-    return Match(String(scheme.data(), static_cast<unsigned>(scheme.size())),
-                 /*group_list=*/nullptr);
+    return Match(String(scheme), /*group_list=*/nullptr);
   };
 
   should_treat_as_standard_url_ =

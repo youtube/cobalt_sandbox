@@ -130,6 +130,7 @@ AXPlatformNodeMemoryDumpProvider::AXPlatformNodeMemoryDumpProvider(
 }  // namespace
 
 const char16_t AXPlatformNodeBase::kEmbeddedCharacter = u'\xfffc';
+const std::string AXPlatformNodeBase::kAriaActionsPrefix = "custom";
 
 // TODO(fxbug.dev/91030): Remove the !BUILDFLAG(IS_FUCHSIA) condition once
 // fuchsia has native accessibility.
@@ -1178,6 +1179,10 @@ void AXPlatformNodeBase::ComputeAttributes(PlatformAttributeList* attributes) {
     AddAttributeToList("autocomplete", "list", attributes);
   }
 
+  if (HasState(ax::mojom::State::kHasActions)) {
+    AddAttributeToList("has-actions", "true", attributes);
+  }
+
   std::u16string role_description =
       GetRoleDescriptionFromImageAnnotationStatusOrFromAttribute();
   if (!role_description.empty() ||
@@ -1535,6 +1540,12 @@ void AXPlatformNodeBase::ComputeAttributes(PlatformAttributeList* attributes) {
     AddAttributeToList("id", id, attributes);
   }
 
+  std::string input_name;
+  if (delegate_->GetStringAttribute(ax::mojom::StringAttribute::kHtmlInputName,
+                                    &input_name)) {
+    AddAttributeToList("html-input-name", input_name, attributes);
+  }
+
   std::string src;
   if (IsImage(GetRole()) &&
       GetStringAttribute(ax::mojom::StringAttribute::kUrl, &src)) {
@@ -1793,6 +1804,8 @@ void AXPlatformNodeBase::SanitizeStringAttribute(const std::string& input,
   base::ReplaceChars(*output, ",", "\\,", output);
   base::ReplaceChars(*output, "=", "\\=", output);
   base::ReplaceChars(*output, ";", "\\;", output);
+  base::ReplaceChars(*output, "\r", " ", output);
+  base::ReplaceChars(*output, "\n", " ", output);
 }
 
 int32_t AXPlatformNodeBase::GetHyperlinkIndexFromChild(

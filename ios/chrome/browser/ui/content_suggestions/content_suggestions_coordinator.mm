@@ -8,6 +8,7 @@
 #import <vector>
 
 #import "base/apple/foundation_util.h"
+#import "base/ios/block_types.h"
 #import "base/ios/ios_util.h"
 #import "base/memory/raw_ptr.h"
 #import "base/metrics/histogram_functions.h"
@@ -383,7 +384,9 @@ using segmentation_platform::TipIdentifier;
                      localState:GetApplicationContext()->GetLocalState()
         pushNotificationService:GetApplicationContext()
                                     ->GetPushNotificationService()
-          authenticationService:self.authService];
+          authenticationService:self.authService
+                  faviconLoader:IOSChromeFaviconLoaderFactory::GetForProfile(
+                                    profile)];
     _priceTrackingPromoMediator.dispatcher =
         static_cast<id<ApplicationCommands, SnackbarCommands>>(
             self.browser->GetCommandDispatcher());
@@ -621,6 +624,19 @@ using segmentation_platform::TipIdentifier;
   CHECK(IsTipsMagicStackEnabled());
   CHECK(_tipsMediator);
 
+  __weak __typeof(self) weakSelf = self;
+
+  ProceduralBlock completion = ^{
+    [weakSelf openTipDestination:tip];
+  };
+
+  [_tipsMediator removeModuleWithCompletion:completion];
+}
+
+- (void)openTipDestination:(segmentation_platform::TipIdentifier)tip {
+  CHECK(IsTipsMagicStackEnabled());
+  CHECK(_tipsMediator);
+
   // Log the Tips (Magic Stack) Module that the user tapped on.
   base::UmaHistogramEnumeration(kTipsMagicStackModuleTappedTypeHistogram, tip);
   switch (tip) {
@@ -700,7 +716,6 @@ using segmentation_platform::TipIdentifier;
   }
 
   [self.NTPActionsDelegate tipsOpened];
-  [_tipsMediator removeModule];
 
   std::optional<std::string_view> name = OutputLabelForTipIdentifier(tip);
 
@@ -1161,23 +1176,14 @@ using segmentation_platform::TipIdentifier;
   // dismiss a previous instance and then clicks the item again the
   // previous instance may not have been stopped yet due to the animation.
   [_defaultBrowserPromoCoordinator stop];
-  if (IsSegmentedDefaultBrowserPromoEnabled()) {
-    _defaultBrowserPromoCoordinator =
-        [[SetUpListDefaultBrowserPromoCoordinator alloc]
-                initWithBaseViewController:[self viewController]
-                                   browser:self.browser
-                               application:[UIApplication sharedApplication]
-                       segmentationService:_segmentationService
-            deviceSwitcherResultDispatcher:_deviceSwitcherResultDispatcher];
-  } else {
-    _defaultBrowserPromoCoordinator =
-        [[SetUpListDefaultBrowserPromoCoordinator alloc]
-                initWithBaseViewController:[self viewController]
-                                   browser:self.browser
-                               application:[UIApplication sharedApplication]
-                       segmentationService:nullptr
-            deviceSwitcherResultDispatcher:nullptr];
-  }
+
+  _defaultBrowserPromoCoordinator =
+      [[SetUpListDefaultBrowserPromoCoordinator alloc]
+              initWithBaseViewController:self.viewController
+                                 browser:self.browser
+                             application:[UIApplication sharedApplication]
+                     segmentationService:_segmentationService
+          deviceSwitcherResultDispatcher:_deviceSwitcherResultDispatcher];
   _defaultBrowserPromoCoordinator.delegate = self;
   [_defaultBrowserPromoCoordinator start];
 }
@@ -1252,15 +1258,31 @@ using segmentation_platform::TipIdentifier;
   CHECK_EQ(_notificationsOptInAlertCoordinator, alertCoordinator);
   std::vector<PushNotificationClientId> clientIds =
       alertCoordinator.clientIds.value();
-  [_notificationsOptInAlertCoordinator stop];
-  _notificationsOptInAlertCoordinator = nil;
-  if (result == NotificationsOptInAlertResult::kPermissionGranted ||
-      result == NotificationsOptInAlertResult::kPermissionDenied) {
+  if (result != NotificationsOptInAlertResult::kOpenedSettings) {
+    [_notificationsOptInAlertCoordinator stop];
+    _notificationsOptInAlertCoordinator = nil;
     if (std::find(clientIds.begin(), clientIds.end(),
                   PushNotificationClientId::kSendTab) != clientIds.end()) {
       [_sendTabPromoMediator dismissModule];
     }
   }
+}
+
+- (void)notificationsOptInAlertCoordinatorReturnedFromSettings:
+    (NotificationsOptInAlertCoordinator*)alertCoordinator {
+  CHECK_EQ(_notificationsOptInAlertCoordinator, alertCoordinator);
+  std::vector<PushNotificationClientId> clientIds =
+      alertCoordinator.clientIds.value();
+  [_notificationsOptInAlertCoordinator stop];
+  _notificationsOptInAlertCoordinator = nil;
+  [PushNotificationUtil getPermissionSettings:^(
+                            UNNotificationSettings* settings) {
+    if (settings.authorizationStatus == UNAuthorizationStatusAuthorized) {
+      for (PushNotificationClientId clientId : clientIds) {
+        [self enableNotifications:[self contentSuggestionsModuleType:clientId]];
+      }
+    }
+  }];
 }
 
 #pragma mark - NotificationsOptInCoordinatorDelegate
@@ -1274,6 +1296,8 @@ using segmentation_platform::TipIdentifier;
 
 #pragma mark - PriceTrackingPromoActionDelegate
 
+// TODO(crbug.com/378554727): Integrate Price Tracking with
+// NotificationsOptInAlertCoordinatorDelegate.
 - (void)showPriceTrackingPromoAlertCoordinator {
   __weak ContentSuggestionsCoordinator* weakSelf = self;
   _priceTrackingPromoAlertCoordinator = [[AlertCoordinator alloc]
@@ -1329,6 +1353,8 @@ using segmentation_platform::TipIdentifier;
   [_priceTrackingPromoAlertCoordinator start];
 }
 
+// TODO(crbug.com/378554727): Integrate Price Tracking with
+// NotificationsOptInAlertCoordinatorDelegate.
 - (void)onReturnFromSettings:(NSNotification*)notification {
   [PushNotificationUtil
       getPermissionSettings:^(UNNotificationSettings* settings) {
@@ -1446,6 +1472,24 @@ using segmentation_platform::TipIdentifier;
 - (void)dismissParcelTrackingAlertCoordinator {
   [_parcelTrackingAlertCoordinator stop];
   _parcelTrackingAlertCoordinator = nil;
+}
+
+// Returns the ContentSuggestionsModuleType associated with `clientId`.
+- (ContentSuggestionsModuleType)contentSuggestionsModuleType:
+    (PushNotificationClientId)clientId {
+  switch (clientId) {
+    case PushNotificationClientId::kCommerce:
+      return ContentSuggestionsModuleType::kPriceTrackingPromo;
+    case PushNotificationClientId::kTips:
+      return ContentSuggestionsModuleType::kTips;
+    case PushNotificationClientId::kSafetyCheck:
+      return ContentSuggestionsModuleType::kSafetyCheck;
+    case PushNotificationClientId::kSendTab:
+      return ContentSuggestionsModuleType::kSendTabPromo;
+    case PushNotificationClientId::kContent:
+    case PushNotificationClientId::kSports:
+      NOTREACHED();
+  }
 }
 
 @end

@@ -33,6 +33,7 @@
 #include "components/autofill/core/browser/field_types.h"
 #include "components/autofill/core/browser/form_structure.h"
 #include "components/autofill/core/browser/metrics/autofill_metrics.h"
+#include "components/autofill/core/browser/metrics/form_events/credit_card_form_event_logger.h"
 #include "components/autofill/core/browser/metrics/payments/card_metadata_metrics.h"
 #include "components/autofill/core/browser/metrics/suggestions_list_metrics.h"
 #include "components/autofill/core/browser/payments/autofill_offer_manager.h"
@@ -496,8 +497,8 @@ void SetSuggestionLabelsForCard(
         labels.push_back({*benefit_label});
         if (base::FeatureList::IsEnabled(
                 features::kAutofillEnableCardBenefitsIph)) {
-          suggestion.feature_for_iph =
-              &feature_engagement::kIPHAutofillCreditCardBenefitFeature;
+          suggestion.iph_metadata = Suggestion::IPHMetadata(
+              &feature_engagement::kIPHAutofillCreditCardBenefitFeature);
         }
       }
     }
@@ -583,13 +584,13 @@ void AdjustVirtualCardSuggestionContent(Suggestion& suggestion,
     suggestion.acceptability =
         Suggestion::Acceptability::kUnacceptableWithDeactivatedStyle;
   }
-  suggestion.feature_for_iph =
+  suggestion.iph_metadata = Suggestion::IPHMetadata(
       suggestion.HasDeactivatedStyle() &&
               base::FeatureList::IsEnabled(
                   features::kAutofillEnableVcnGrayOutForMerchantOptOut)
           ? &feature_engagement::
                 kIPHAutofillDisabledVirtualCardSuggestionFeature
-          : &feature_engagement::kIPHAutofillVirtualCardSuggestionFeature;
+          : &feature_engagement::kIPHAutofillVirtualCardSuggestionFeature);
 
   // If ShouldFormatForLargeKeyboardAccessory() is true, `suggestion` has been
   // properly formatted by `SetSuggestionLabelsForCard` and does not need
@@ -956,12 +957,12 @@ Suggestion CreateCreditCardSuggestion(
                                        trigger_field_type);
   } else if (card_linked_offer_available) {
 #if BUILDFLAG(IS_ANDROID)
-    // For Keyboard Accessory, set Suggestion::feature_for_iph and change the
+    // For Keyboard Accessory, set Suggestion::iph_metadata and change the
     // suggestion icon only if card linked offers are also enabled.
     if (base::FeatureList::IsEnabled(
             features::kAutofillEnableOffersInClankKeyboardAccessory)) {
-      suggestion.feature_for_iph =
-          &feature_engagement::kIPHKeyboardAccessoryPaymentOfferFeature;
+      suggestion.iph_metadata = Suggestion::IPHMetadata(
+          &feature_engagement::kIPHKeyboardAccessoryPaymentOfferFeature);
       suggestion.icon = Suggestion::Icon::kOfferTag;
     } else {
 #else   // Add the offer label on Desktop unconditionally.
@@ -1201,8 +1202,8 @@ std::vector<Suggestion> GetVirtualCardStandaloneCvcFieldSuggestions(
     suggestion.icon = credit_card.CardIconForAutofillSuggestion();
     suggestion.type = SuggestionType::kVirtualCreditCardEntry;
     suggestion.payload = Suggestion::Guid(credit_card.guid());
-    suggestion.feature_for_iph =
-        &feature_engagement::kIPHAutofillVirtualCardCVCSuggestionFeature;
+    suggestion.iph_metadata = Suggestion::IPHMetadata(
+        &feature_engagement::kIPHAutofillVirtualCardCVCSuggestionFeature);
     SetCardArtURL(suggestion, credit_card,
                   client.GetPersonalDataManager()->payments_data_manager(),
                   /*virtual_card_option=*/true);
@@ -1259,9 +1260,13 @@ std::vector<CreditCard> GetTouchToFillCardsToSuggest(
 
 std::vector<Suggestion> GetCreditCardSuggestionsForTouchToFill(
     base::span<const CreditCard> credit_cards,
-    const AutofillClient& client) {
+    const AutofillClient& client,
+    autofill_metrics::CreditCardFormEventLogger&
+        credit_card_form_event_logger) {
   std::vector<Suggestion> suggestions;
   suggestions.reserve(credit_cards.size());
+  autofill_metrics::CardMetadataLoggingContext metadata_logging_context =
+      autofill_metrics::GetMetadataLoggingContext(credit_cards);
   for (const CreditCard& credit_card : credit_cards) {
     Suggestion suggestion;
     bool should_display_terms_available = false;
@@ -1284,11 +1289,21 @@ std::vector<Suggestion> GetCreditCardSuggestionsForTouchToFill(
         credit_card.ObfuscatedNumberWithVisibleLastFourDigits();
     std::optional<Suggestion::Text> benefit_label =
         GetCreditCardBenefitSuggestionLabel(credit_card, client);
-    if (benefit_label && client.GetPersonalDataManager()
-                             ->payments_data_manager()
-                             .IsCardEligibleForBenefits(credit_card)) {
-      suggestion.labels.push_back({*benefit_label});
-      should_display_terms_available = true;
+    if (benefit_label) {
+      // Keep track of which cards had eligible benefits even if the
+      // benefit is not displayed in the suggestion due to
+      // IsCardEligibleForBenefits() == false. This helps denote a control
+      // group of users with benefit-eligible cards to help determine how
+      // benefit availability affects autofill usage.
+      metadata_logging_context
+          .instrument_ids_to_issuer_ids_with_benefits_available.insert(
+              {credit_card.instrument_id(), credit_card.issuer_id()});
+      if (client.GetPersonalDataManager()
+              ->payments_data_manager()
+              .IsCardEligibleForBenefits(credit_card)) {
+        suggestion.labels.push_back({*benefit_label});
+        should_display_terms_available = true;
+      }
     }
     suggestion.payload = Suggestion::PaymentsPayload(
         main_text_content_description, should_display_terms_available);
@@ -1297,9 +1312,9 @@ std::vector<Suggestion> GetCreditCardSuggestionsForTouchToFill(
       bool acceptable = IsCardSuggestionAcceptable(
           credit_card, client, /*is_manual_fallback= */ false);
       suggestion.acceptability =
-          acceptable ? autofill::Suggestion::Acceptability::kAcceptable
-                     : autofill::Suggestion::Acceptability::
-                           kUnacceptableWithDeactivatedStyle;
+          acceptable
+              ? Suggestion::Acceptability::kAcceptable
+              : Suggestion::Acceptability::kUnacceptableWithDeactivatedStyle;
       suggestion.labels.push_back(std::vector<Suggestion::Text>{
           Suggestion::Text(l10n_util::GetStringUTF16(
               acceptable
@@ -1316,6 +1331,8 @@ std::vector<Suggestion> GetCreditCardSuggestionsForTouchToFill(
     }
     suggestions.push_back(suggestion);
   }
+  credit_card_form_event_logger.OnMetadataLoggingContextReceived(
+      std::move(metadata_logging_context));
   return suggestions;
 }
 

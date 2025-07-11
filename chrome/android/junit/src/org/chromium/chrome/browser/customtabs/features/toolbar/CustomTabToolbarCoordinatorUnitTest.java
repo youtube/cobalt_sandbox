@@ -81,18 +81,16 @@ public class CustomTabToolbarCoordinatorUnitTest {
         mTabController = env.createTabController();
 
         when(mActivity.getCustomTabActivityTabProvider()).thenReturn(mTabProvider);
+        when(mActivity.getCloseButtonVisibilityManager()).thenReturn(mCloseButtonVisibilityManager);
+        when(mActivity.getCustomTabBrowserControlsVisibilityDelegate())
+                .thenReturn(mVisibilityDelegate);
 
         mCoordinator =
                 new CustomTabToolbarCoordinator(
                         env.intentDataProvider,
-                        env.connection,
                         mActivity,
                         mActivityWindowAndroid,
-                        mActivity,
-                        mBrowserControlsVisibilityManager,
                         env.createNavigationController(mTabController),
-                        mCloseButtonVisibilityManager,
-                        mVisibilityDelegate,
                         mCompositorContentInitializer,
                         mToolbarColorController);
 
@@ -115,14 +113,7 @@ public class CustomTabToolbarCoordinatorUnitTest {
             mCoordinator.onCustomButtonClick(mCustomButtonParams);
             verify(mShareDelegate, never()).share(any(Tab.class), eq(false), anyInt());
             verify(mPendingIntent)
-                    .send(
-                            eq(mActivity),
-                            eq(0),
-                            any(Intent.class),
-                            any(),
-                            isNull(),
-                            isNull(),
-                            any());
+                    .send(any(), eq(0), any(Intent.class), any(), isNull(), isNull(), any());
         } catch (PendingIntent.CanceledException e) {
             assert false;
         }

@@ -2288,9 +2288,7 @@ void LayerTreeHostImpl::ReclaimResources(
 void LayerTreeHostImpl::MaybeFlushPendingWork() {
   // If we're not in background, delayed work will be flushed "at some point",
   // and we also may have something better to do.
-  if (visible_ || !has_valid_layer_tree_frame_sink_ ||
-      !base::FeatureList::IsEnabled(
-          features::kReclaimResourcesFlushInBackground)) {
+  if (visible_ || !has_valid_layer_tree_frame_sink_) {
     return;
   }
 
@@ -2590,6 +2588,7 @@ RenderFrameMetadata LayerTreeHostImpl::MakeRenderFrameMetadata(
   }
   metadata.has_transparent_background =
       frame->render_passes.back()->has_transparent_background;
+  metadata.has_offset_tag = browser_controls_offset_manager_->HasOffsetTag();
 #endif
 
   bool allocate_new_local_surface_id = false;
@@ -2635,21 +2634,44 @@ RenderFrameMetadata LayerTreeHostImpl::MakeRenderFrameMetadata(
         last_draw_render_frame_metadata_->has_transparent_background !=
             metadata.has_transparent_background;
 
-    if (!features::IsBrowserControlsInVizEnabled()) {
+    if (features::IsBrowserControlsInVizEnabled()) {
+      // When the browser controls become locked, the browser will update the
+      // offset tags, and also update the controls' offsets if they don't match
+      // the current renderer scroll position. These updates result in a new
+      // renderer frame, but sometimes it gets drawn before the browser frame
+      // with the updated offsets arrives, which causes the controls to jump, so
+      // we need a new surface id here to sync the updates.
+      allocate_new_local_surface_id |=
+          (last_draw_render_frame_metadata_->has_offset_tag &&
+           !metadata.has_offset_tag);
+
+      // If BCIV is enabled but there's no offset tags, it means the controls
+      // aren't scrollable, and any movement of the controls is the result of
+      // the browser updating their offsets and submitting a new browser frame.
+      // We need a new surface id in this case, as this is identical to the
+      // situation without BCIV.
+      if (!browser_controls_offset_manager_->HasOffsetTag()) {
+        allocate_new_local_surface_id |=
+            last_draw_render_frame_metadata_->top_controls_shown_ratio !=
+                metadata.top_controls_shown_ratio ||
+            last_draw_render_frame_metadata_->bottom_controls_shown_ratio !=
+                metadata.bottom_controls_shown_ratio;
+      } else {
+        // When AndroidBrowserControlsInViz is enabled, don't always use
+        // bottom_controls_shown_ratio to determine if surface sync is needed,
+        // because it changes even when there are no bottom controls.
+        bool bottom_controls_exist =
+            metadata.bottom_controls_height != 0 ||
+            last_draw_render_frame_metadata_->bottom_controls_height != 0;
+        allocate_new_local_surface_id |=
+            bottom_controls_exist &&
+            last_draw_render_frame_metadata_->bottom_controls_shown_ratio !=
+                metadata.bottom_controls_shown_ratio;
+      }
+    } else {
       allocate_new_local_surface_id |=
           last_draw_render_frame_metadata_->top_controls_shown_ratio !=
               metadata.top_controls_shown_ratio ||
-          last_draw_render_frame_metadata_->bottom_controls_shown_ratio !=
-              metadata.bottom_controls_shown_ratio;
-    } else {
-      // When AndroidBrowserControlsInViz is enabled, don't always use
-      // bottom_controls_shown_ratio to determine if surface sync is needed,
-      // because it changes even when there are no bottom controls.
-      bool bottom_controls_exist =
-          metadata.bottom_controls_height != 0 ||
-          last_draw_render_frame_metadata_->bottom_controls_height != 0;
-      allocate_new_local_surface_id |=
-          bottom_controls_exist &&
           last_draw_render_frame_metadata_->bottom_controls_shown_ratio !=
               metadata.bottom_controls_shown_ratio;
     }
@@ -2827,9 +2849,9 @@ std::optional<SubmitInfo> LayerTreeHostImpl::DrawLayers(FrameData* frame) {
     client_->FrameSinksToThrottleUpdated(throttle_decider_.ids());
   }
 
-  if (GetActivelyScrollingType() != ActivelyScrollingType::kNone) {
-    scroll_checkerboards_incomplete_recording_ =
-        frame->checkerboarded_needs_record;
+  if (GetActivelyScrollingType() != ActivelyScrollingType::kNone &&
+      frame->checkerboarded_needs_record) {
+    scroll_checkerboards_incomplete_recording_ = true;
   }
 
   return SubmitInfo{frame_token,

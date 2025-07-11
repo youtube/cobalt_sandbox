@@ -35,7 +35,8 @@ std::u16string GetLabelForQuickInsertCategory(QuickInsertCategory category) {
 #else
       return u"";
 #endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
-    case QuickInsertCategory::kLobster:
+    case QuickInsertCategory::kLobsterWithNoSelectedText:
+    case QuickInsertCategory::kLobsterWithSelectedText:
 #if BUILDFLAG(GOOGLE_CHROME_BRANDING)
       return l10n_util::GetStringUTF16(IDS_PICKER_LOBSTER_SELECTION_LABEL);
 #else
@@ -83,10 +84,11 @@ std::u16string GetSearchFieldPlaceholderTextForQuickInsertCategory(
           IDS_PICKER_UNITS_MATHS_CATEGORY_SEARCH_FIELD_PLACEHOLDER_TEXT);
     case QuickInsertCategory::kEditorWrite:
     case QuickInsertCategory::kEditorRewrite:
-    case QuickInsertCategory::kLobster:
+    case QuickInsertCategory::kLobsterWithNoSelectedText:
+    case QuickInsertCategory::kLobsterWithSelectedText:
     case QuickInsertCategory::kEmojisGifs:
     case QuickInsertCategory::kEmojis:
-      NOTREACHED_NORETURN();
+      NOTREACHED();
   }
 }
 
@@ -108,13 +110,7 @@ std::u16string GetSectionTitleForQuickInsertCategoryType(
       return u"";
 #endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
     case QuickInsertCategoryType::kLobster:
-#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
-      return l10n_util::GetStringUTF16(
-          IDS_PICKER_EDITOR_WRITE_CATEGORY_TYPE_SECTION_TITLE);
-#else
       return u"";
-#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
-
     case QuickInsertCategoryType::kGeneral:
       return l10n_util::GetStringUTF16(
           IDS_PICKER_GENERAL_CATEGORY_TYPE_SECTION_TITLE);

@@ -107,6 +107,7 @@
 #include "chrome/browser/ui/ui_features.h"
 #include "chrome/browser/ui/views/side_panel/read_anything/read_anything_side_panel_controller_utils.h"
 #include "chrome/browser/ui/web_applications/app_browser_controller.h"
+#include "chrome/browser/ui/webauthn/context_menu_helper.h"
 #include "chrome/browser/ui/webui/history/foreign_session_handler.h"
 #include "chrome/browser/user_education/user_education_service.h"
 #include "chrome/browser/web_applications/mojom/user_display_mode.mojom.h"
@@ -530,13 +531,14 @@ const std::map<int, int>& GetIdcToUmaMap(UmaEnumIdLookupType type) {
        {IDC_CONTENT_CONTEXT_AUTOFILL_PREDICTION_IMPROVEMENTS, 151},
        {IDC_CONTENT_CONTEXT_AUTOFILL_FALLBACK_PASSWORDS_USE_PASSKEY_FROM_ANOTHER_DEVICE,
         152},
+       {IDC_CONTENT_CONTEXT_USE_PASSKEY_FROM_ANOTHER_DEVICE, 153},
        // To add new items:
        //   - Add one more line above this comment block, using the UMA value
        //     from the line below this comment block.
        //   - Increment the UMA value in that latter line.
        //   - Add the new item to the RenderViewContextMenuItem enum in
        //     tools/metrics/histograms/enums.xml.
-       {0, 153}});
+       {0, 154}});
 
   // These UMA values are for the ContextMenuOptionDesktop enum, used for
   // the ContextMenu.SelectedOptionDesktop histograms.
@@ -774,8 +776,7 @@ int GetClipboardHistoryCommandId() {
 }
 
 bool IsCaptivePortalProfile(Profile* profile) {
-  return chromeos::features::IsCaptivePortalPopupWindowEnabled() &&
-         profile->IsOffTheRecord() &&
+  return profile->IsOffTheRecord() &&
          profile->GetOTRProfileID().IsCaptivePortal();
 }
 
@@ -1454,8 +1455,7 @@ void RenderViewContextMenu::RecordUsedItem(int id) {
   int enum_id =
       FindUMAEnumValueForCommand(id, UmaEnumIdLookupType::GeneralEnumId);
   if (enum_id == -1) {
-    NOTREACHED_IN_MIGRATION() << "Update GetIdcToUmaMap. Unhandled IDC: " << id;
-    return;
+    NOTREACHED() << "Update GetIdcToUmaMap. Unhandled IDC: " << id;
   }
 
   UMA_HISTOGRAM_EXACT_LINEAR(
@@ -2154,7 +2154,7 @@ void RenderViewContextMenu::AppendVideoItems() {
   if (base::FeatureList::IsEnabled(media::kContextMenuSearchForVideoFrame)) {
     const int search_for_video_frame_idc = GetSearchForVideoFrameIdc();
 
-    if (GetBrowser()
+    if (GetBrowser() && GetBrowser()
             ->GetFeatures()
             .lens_overlay_entry_point_controller()
             ->IsEnabled() &&
@@ -2648,12 +2648,10 @@ void RenderViewContextMenu::AppendPasswordItems() {
   password_manager::ContentPasswordManagerDriver* driver =
       password_manager::ContentPasswordManagerDriver::GetForRenderFrameHost(
           GetRenderFrameHost());
-
-  if (!driver || !driver->IsPasswordFieldForPasswordManager(
-                     autofill::FieldRendererId(params_.field_renderer_id),
-                     params_.form_control_type)) {
-    return;
-  }
+  const bool is_pwm_field =
+      driver && driver->IsPasswordFieldForPasswordManager(
+                    autofill::FieldRendererId(params_.field_renderer_id),
+                    params_.form_control_type);
 
   if (base::FeatureList::IsEnabled(
           password_manager::features::kPasswordManualFallbackAvailable)) {
@@ -2664,14 +2662,29 @@ void RenderViewContextMenu::AppendPasswordItems() {
 
   // Don't show the item for guest or incognito profiles and also when the
   // automatic generation feature is disabled.
-  if (password_manager_util::ManualPasswordGenerationEnabled(driver)) {
+  if (is_pwm_field &&
+      password_manager_util::ManualPasswordGenerationEnabled(driver)) {
     menu_model_.AddItemWithStringId(IDC_CONTENT_CONTEXT_GENERATEPASSWORD,
                                     IDS_CONTENT_CONTEXT_GENERATEPASSWORD);
     add_separator = true;
   }
-  if (password_manager_util::ShowAllSavedPasswordsContextMenuEnabled(driver)) {
+  if (is_pwm_field &&
+      password_manager_util::ShowAllSavedPasswordsContextMenuEnabled(driver)) {
     menu_model_.AddItemWithStringId(IDC_CONTENT_CONTEXT_SHOWALLSAVEDPASSWORDS,
                                     IDS_AUTOFILL_SHOW_ALL_SAVED_FALLBACK);
+    add_separator = true;
+  }
+  const bool add_passkey_from_another_device_option =
+      webauthn::IsPasskeyFromAnotherDeviceContextMenuEnabled(
+          GetRenderFrameHost(), params_.form_renderer_id,
+          params_.field_renderer_id) &&
+      base::FeatureList::IsEnabled(
+          password_manager::features::
+              kWebAuthnUsePasskeyFromAnotherDeviceInContextMenu);
+  if (add_passkey_from_another_device_option) {
+    menu_model_.AddItemWithStringId(
+        IDC_CONTENT_CONTEXT_USE_PASSKEY_FROM_ANOTHER_DEVICE,
+        IDS_CONTENT_CONTEXT_AUTOFILL_FALLBACK_PASSWORDS_USE_PASSKEY_FROM_ANOTHER_DEVICE);
     add_separator = true;
   }
 
@@ -2899,8 +2912,6 @@ bool RenderViewContextMenu::IsCommandIdEnabled(int id) const {
       return navigation_allowed;
 
     case IDC_CONTENT_CONTEXT_OPENLINKBOOKMARKAPP:
-      return navigation_allowed && params_.link_url.is_valid() &&
-             IsOpenLinkAllowedByDlp(params_.link_url);
     case IDC_CONTENT_CONTEXT_OPENLINKINPROFILE:
     case IDC_CONTENT_CONTEXT_OPENLINKNEWTAB:
     case IDC_CONTENT_CONTEXT_OPENLINKNEWWINDOW:
@@ -3020,9 +3031,13 @@ bool RenderViewContextMenu::IsCommandIdEnabled(int id) const {
 
     case IDC_CONTENT_CONTEXT_SEARCHWEBFOR:
     case IDC_CONTENT_CONTEXT_SEARCHWEBFORNEWTAB:
-    case IDC_CONTENT_CONTEXT_GOTOURL:
       return navigation_allowed &&
              IsOpenLinkAllowedByDlp(selection_navigation_url_);
+
+    case IDC_CONTENT_CONTEXT_GOTOURL:
+      return navigation_allowed &&
+             IsOpenLinkAllowedByDlp(selection_navigation_url_) &&
+             IsAllowedByUntrustedNetworkStatus();
 
     case IDC_SPELLPANEL_TOGGLE:
     case IDC_CONTENT_CONTEXT_LANGUAGE_SETTINGS:
@@ -3051,11 +3066,14 @@ bool RenderViewContextMenu::IsCommandIdEnabled(int id) const {
 #endif
 
     case IDC_SPELLCHECK_MENU:
-    case IDC_CONTENT_CONTEXT_OPENLINKWITH:
     case IDC_CONTENT_CONTEXT_PROTOCOL_HANDLER_SETTINGS:
     case IDC_CONTENT_CONTEXT_GENERATEPASSWORD:
     case IDC_CONTENT_CONTEXT_SHOWALLSAVEDPASSWORDS:
+    case IDC_CONTENT_CONTEXT_USE_PASSKEY_FROM_ANOTHER_DEVICE:
       return true;
+
+    case IDC_CONTENT_CONTEXT_OPENLINKWITH:
+      return IsAllowedByUntrustedNetworkStatus();
 
     case IDC_ROUTE_MEDIA:
       return IsRouteMediaEnabled();
@@ -3103,8 +3121,7 @@ bool RenderViewContextMenu::IsCommandIdEnabled(int id) const {
              !chromeos::clipboard_history::QueryItemDescriptors().empty();
     }
 #else
-      NOTREACHED_IN_MIGRATION() << "Unhandled id: " << id;
-      return false;
+      NOTREACHED() << "Unhandled id: " << id;
 #endif
 
     default:
@@ -3541,6 +3558,10 @@ void RenderViewContextMenu::ExecuteCommand(int id, int event_flags) {
           GetBrowser(),
           password_manager::ManagePasswordsReferrer::kPasswordContextMenu);
       break;
+    case IDC_CONTENT_CONTEXT_USE_PASSKEY_FROM_ANOTHER_DEVICE:
+      webauthn::OnPasskeyFromAnotherDeviceContextMenuItemSelected(
+          GetRenderFrameHost());
+      break;
 
     case IDC_CONTENT_CONTEXT_PICTUREINPICTURE:
       ExecPictureInPicture();
@@ -3581,10 +3602,10 @@ void RenderViewContextMenu::ExecuteCommand(int id, int event_flags) {
       CHECK(!chromeos::features::IsClipboardHistoryRefreshEnabled());
 
       ShowClipboardHistoryMenu(event_flags);
-#else
-      NOTREACHED_IN_MIGRATION() << "Unhandled id: " << id;
-#endif  // BUILDFLAG(IS_CHROMEOS)
       break;
+#else
+      NOTREACHED() << "Unhandled id: " << id;
+#endif  // BUILDFLAG(IS_CHROMEOS)
     }
 
     default:
@@ -3675,7 +3696,7 @@ bool RenderViewContextMenu::IsSaveAsItemAllowedByPolicy(
 
   // Check if all downloads are forbidden by policy.
   if (DownloadPrefs::FromBrowserContext(GetProfile())->download_restriction() ==
-      DownloadPrefs::DownloadRestriction::ALL_FILES) {
+      policy::DownloadRestriction::ALL_FILES) {
     return false;
   }
 
@@ -4320,8 +4341,7 @@ void RenderViewContextMenu::ExecSaveAs() {
 void RenderViewContextMenu::ExecExitFullscreen() {
   Browser* browser = GetBrowser();
   if (!browser) {
-    NOTREACHED_IN_MIGRATION();
-    return;
+    NOTREACHED();
   }
 
   browser->exclusive_access_manager()->ExitExclusiveAccess();

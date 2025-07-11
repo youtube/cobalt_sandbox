@@ -22,12 +22,14 @@
 <translation id="1120743664840974483">{"а": "андрій", "б": "богдан", "в": "василь", "г": "григорій", "ґ": "ґудзик", "д": "дмитро", "е": "еней", "є": "євген", "ж": "жук", "з": "зеновій", "и": "ігрек", "і": "іван", "ї": "їжак", "й": "йосип", "к": "кіловат", "л": "левко", "м": "марія", "н": "наталка", "о": "ольга", "п": "павло", "р": "роман", "с": "степан", "т": "тарас", "у": "україна", "ф": "федір", "х": "христина", "ц": "центр", "ч": "чоловік", "ш": "шура", "щ": "щука", "ь": "м'який знак", "ю": "юрій", "я": "яків"}</translation>
 <translation id="1120938014254001895">Проведіть двома пальцями вгору</translation>
 <translation id="1126928665165112660">Без курсиву</translation>
+<translation id="1133751489735776037">Тричі натиснути лівою кнопкою миші</translation>
 <translation id="113582498867142724">Збірка <ph name="TAG" /> з такою кількістю елементів: <ph name="NUM" /></translation>
 <translation id="1146441463334103638">Увімкнути або вимкнути екран</translation>
 <translation id="1156488781945104845">Поточний час</translation>
 <translation id="1161762950103988776">Перехід</translation>
 <translation id="1164857107703583584">Команди переходу полегшують навігацію веб-сторінкою.</translation>
 <translation id="1175914831232945926">Цифри</translation>
+<translation id="1186712907912748007">Триває перетягування. Щоб завершити його, <ph name="GESTURE" />. Інші жести тимчасово недоступні.</translation>
 <translation id="1188858454923323853">додатково</translation>
 <translation id="1189258430971676908">Практика: спадні списки</translation>
 <translation id="1195238899008218998">Післямова</translation>
@@ -209,6 +211,7 @@
 <translation id="2347456970887948350">Посилання</translation>
 <translation id="2363753371702255035">маркер</translation>
 <translation id="2365384324219615024">Щоб активувати елементи, можна також натиснути клавішу Enter. Наприклад, так можна надіслати текст у формі. Щоб продовжити, натисніть Enter.</translation>
+<translation id="2371402123699727805">Диктування активовано. Щоб зупинити його, <ph name="GESTURE" />. Інші жести тимчасово недоступні.</translation>
 <translation id="2381733276052567791">Вмикає або вимикає голосові підказки</translation>
 <translation id="2390264819538553347">Щоб перейти далі, натисніть клавішу Enter, щоб повернутися назад – клавішу Backspace.</translation>
 <translation id="2398579267367951220">Введіть текст, який потрібно знайти на сторінці. Щоб перейти до результатів, натисніть клавішу Enter. Щоб переглянути їх, натискайте стрілки вгору або вниз. Щоб змінити пошуковий запит, продовжуйте вводити текст. Щоб скасувати його, натисніть клавішу Escape.</translation>
@@ -271,6 +274,7 @@
 <translation id="2723001399770238859">аудіо</translation>
 <translation id="2737898226590637227">Немає наступного орієнтира ARIA</translation>
 <translation id="2749275490991666823">З прапорцем</translation>
+<translation id="2751454300227269244">Змістити рот праворуч</translation>
 <translation id="27527859628328957">Перейти до наступного інтерактивного елемента</translation>
 <translation id="2756452585631602151">Введіть спеціальну мітку</translation>
 <translation id="2766299274563946262">Немає клітинки ліворуч</translation>
@@ -341,7 +345,6 @@
 <translation id="311015743332597320">Проведіть чотирма пальцями праворуч</translation>
 <translation id="3112457281078985179">Щоб увімкнути чи вимкнути ChromeVox, натисніть комбінацію клавіш Control+Alt+Z.</translation>
 <translation id="3115800313647508384">Вимкнути екран?</translation>
-<translation id="3127625407966660979">Диктування активовано</translation>
 <translation id="3131002934070407451">Зачитувати числа як:</translation>
 <translation id="3134461040845705080">лише читання</translation>
 <translation id="3137663468179739624">Оливковий</translation>
@@ -352,6 +355,7 @@
 <translation id="3153928844647607688">Таблиця "<ph name="TABLENAME" />", <ph name="TABLEROWS" /> на <ph name="TABLECOLS" /></translation>
 <translation id="3159493096109238499">Бежевий</translation>
 <translation id="316542773973815724">Навігація</translation>
+<translation id="3167446923957429259">Змістити рот ліворуч</translation>
 <translation id="3172700825913348768">{COUNT,plural, =1{пробіл}one{# пробіл}few{# пробіли}many{# пробілів}other{# spaces}}</translation>
 <translation id="3179119189286472195">Не посилання</translation>
 <translation id="3180990259147710757">Посунути щелепу ліворуч</translation>
@@ -462,6 +466,7 @@
 <translation id="3870295413168340326">Немає попереднього заголовка рівня 3</translation>
 <translation id="3887399638190992181">Найважливіші клавіші</translation>
 <translation id="3887576927692165210">текстове поле</translation>
+<translation id="3896762831164962772">Керування за допомогою обличчя призупинено. Щоб відновити його, <ph name="GESTURE" />. Інші жести тимчасово недоступні.</translation>
 <translation id="3897092660631435901">Меню</translation>
 <translation id="3907138069015388678">сітка</translation>
 <translation id="3909320334364316587">Попередній заголовок рівня 6</translation>
@@ -501,7 +506,6 @@
 <translation id="4161104397932142764">{COUNT,plural, =1{секунда}one{секунда}few{секунди}many{секунд}other{секунди}}</translation>
 <translation id="4161663686871496107">Голосові підказки ChromeVox активовано</translation>
 <translation id="4176463684765177261">Вимкнено</translation>
-<translation id="4176677444195790114">Триває перетягування</translation>
 <translation id="4187322598335821254">Проведіть пальцем угору або вниз, щоб переходити між рядками</translation>
 <translation id="4188530942454211480">Попереднє речення</translation>
 <translation id="4191918948604314587">Кнопка</translation>
@@ -546,6 +550,7 @@
 <translation id="4402014469255336455">Насичений небесно-голубий</translation>
 <translation id="4406249099130339147">Озвучення розділових знаків:</translation>
 <translation id="441418754432585599"><ph name="MODIFIER_ONE" /> + <ph name="MODIFIER_TWO" /> + <ph name="KEY" /></translation>
+<translation id="4423525817792153232">Показати всі зуби</translation>
 <translation id="4432457053224379116">Індійський червоний</translation>
 <translation id="4432896207833262240">Позначений контент</translation>
 <translation id="4437615272777527928">Щоб шукати параметри в меню, введіть текст. Щоб переходити між результатами, натискайте стрілки вгору та вниз. Щоб змінити місце введення тексту або переходити між меню, натискайте стрілки вліво та вправо.</translation>
@@ -698,6 +703,7 @@
 <translation id="5452267669091857717">Немає наступного заголовка рівня 1</translation>
 <translation id="5455441614648621694">Додатково</translation>
 <translation id="5462510922370980473">Список сторінок</translation>
+<translation id="5489460663499094917">Режим прокручування ввімкнено. Щоб вийти з нього, <ph name="GESTURE" />. Інші жести тимчасово недоступні.</translation>
 <translation id="5495517933067991341">Найважливіші клавіші: Shift</translation>
 <translation id="549602578321198708">Слово</translation>
 <translation id="5513242761114685513">Контекстне меню</translation>
@@ -1109,7 +1115,6 @@
 <translation id="8378855320830505539">Регіон</translation>
 <translation id="8382679411218029383">Вбудоване автозавершення та список</translation>
 <translation id="8394908167088220973">Відтворити чи призупинити</translation>
-<translation id="8409502156784390079">Режим прокручування ввімкнено</translation>
 <translation id="8428213095426709021">Налаштування</translation>
 <translation id="8428603554127842284">рівень <ph name="DEPTH" /></translation>
 <translation id="8430049249787218991">панель меню</translation>
@@ -1187,7 +1192,6 @@
 <translation id="8986362086234534611">Забути</translation>
 <translation id="8989104346085848538">Щоб зупинити озвучення ChromeVox, натисніть клавішу Control.</translation>
 <translation id="9014206344398081366">Навчальний посібник ChromeVox</translation>
-<translation id="9034592733577768445">Керування за допомогою обличчя призупинено</translation>
 <translation id="9040132695316389094">Заголовок 1</translation>
 <translation id="9061884144798498064">Виберіть таблицю з 8-крапковим шрифтом Брайля:</translation>
 <translation id="9063946545000394379">перейти до попереднього символа</translation>

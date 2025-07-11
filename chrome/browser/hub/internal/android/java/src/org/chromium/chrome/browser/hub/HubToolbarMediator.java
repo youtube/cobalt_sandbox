@@ -21,6 +21,7 @@ import android.content.Context;
 import android.content.res.Configuration;
 import android.view.View;
 
+import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.util.Pair;
@@ -29,12 +30,12 @@ import org.chromium.base.Callback;
 import org.chromium.base.metrics.RecordHistogram;
 import org.chromium.base.supplier.ObservableSupplier;
 import org.chromium.base.supplier.TransitiveObservableSupplier;
-import org.chromium.chrome.browser.flags.ChromeFeatureList;
 import org.chromium.chrome.browser.hub.HubToolbarProperties.PaneButtonLookup;
 import org.chromium.chrome.browser.ui.searchactivityutils.SearchActivityClient;
 import org.chromium.chrome.browser.ui.searchactivityutils.SearchActivityExtras.ResolutionType;
 import org.chromium.components.embedder_support.util.UrlConstants;
 import org.chromium.components.feature_engagement.Tracker;
+import org.chromium.components.omnibox.OmniboxFeatures;
 import org.chromium.ui.base.DeviceFormFactor;
 import org.chromium.ui.modelutil.PropertyModel;
 import org.chromium.url.GURL;
@@ -45,12 +46,44 @@ import java.util.Objects;
 
 /** Logic for the toolbar of the Hub. */
 public class HubToolbarMediator {
+    // These values are persisted to logs. Entries should not be renumbered and numeric values
+    // should never be reused.
+    // LINT.IfChange(HubSearchEntrypoint)
+    @IntDef({
+        HubSearchEntrypoint.REGULAR_SEARCHBOX,
+        HubSearchEntrypoint.INCOGNITO_SEARCHBOX,
+        HubSearchEntrypoint.REGULAR_LOUPE,
+        HubSearchEntrypoint.INCOGNITO_LOUPE,
+        HubSearchEntrypoint.NUM_ENTRIES
+    })
+    public @interface HubSearchEntrypoint {
+        int REGULAR_SEARCHBOX = 0;
+        int INCOGNITO_SEARCHBOX = 1;
+        int REGULAR_LOUPE = 2;
+        int INCOGNITO_LOUPE = 3;
+
+        // Be sure to also update enums.xml when updating these values.
+        int NUM_ENTRIES = 4;
+    }
+
+    // LINT.ThenChange(/tools/metrics/histograms/metadata/android/enums.xml:HubSearchEntrypoint)
+
     private static final int INVALID_PANE_SWITCHER_INDEX = -1;
 
     private final ComponentCallbacks mComponentCallbacks =
             new ComponentCallbacks() {
                 @Override
                 public void onConfigurationChanged(@NonNull Configuration configuration) {
+                    // Only show the search box visuals in the tab switcher and incognito panes.
+                    @PaneId
+                    int focusedPaneId = mPaneManager.getFocusedPaneSupplier().get().getPaneId();
+                    if (focusedPaneId != PaneId.TAB_SWITCHER
+                            && focusedPaneId != PaneId.INCOGNITO_TAB_SWITCHER) {
+                        mPropertyModel.set(SEARCH_BOX_VISIBLE, false);
+                        mPropertyModel.set(SEARCH_LOUPE_VISIBLE, false);
+                        return;
+                    }
+
                     boolean showLoupe =
                             DeviceFormFactor.isNonMultiDisplayContextOnTablet(mContext)
                                     || configuration.orientation
@@ -128,7 +161,7 @@ public class HubToolbarMediator {
 
         mPropertyModel.set(PANE_BUTTON_LOOKUP_CALLBACK, this::consumeButtonLookup);
 
-        if (ChromeFeatureList.sAndroidHubSearch.isEnabled()) {
+        if (OmniboxFeatures.sAndroidHubSearch.isEnabled()) {
             mPropertyModel.set(SEARCH_LISTENER, this::onSearchClicked);
             // Fire an event for the original setup.
             mComponentCallbacks.onConfigurationChanged(mContext.getResources().getConfiguration());
@@ -145,7 +178,7 @@ public class HubToolbarMediator {
         mRemoveReferenceButtonObservers.stream().forEach(r -> r.run());
         mRemoveReferenceButtonObservers.clear();
         mPaneManager.getFocusedPaneSupplier().removeObserver(mOnFocusedPaneChange);
-        if (ChromeFeatureList.sAndroidHubSearch.isEnabled()) {
+        if (OmniboxFeatures.sAndroidHubSearch.isEnabled()) {
             mContext.unregisterComponentCallbacks(mComponentCallbacks);
         }
     }
@@ -232,6 +265,11 @@ public class HubToolbarMediator {
             mPropertyModel.set(IS_INCOGNITO, isIncognito);
         }
 
+        if (OmniboxFeatures.sAndroidHubSearch.isEnabled()) {
+            // Fire an event to determine what is shown.
+            mComponentCallbacks.onConfigurationChanged(mContext.getResources().getConfiguration());
+        }
+
         int index = 0;
         for (Pair<Integer, DisplayButtonData> pair : mCachedPaneSwitcherButtonData) {
             if (pair.second == null) {
@@ -271,5 +309,28 @@ public class HubToolbarMediator {
                         .setIncognito(mPropertyModel.get(IS_INCOGNITO))
                         .setResolutionType(ResolutionType.OPEN_IN_CHROME)
                         .build());
+        recordHubSearchEntrypointHistogram(
+                mPropertyModel.get(SEARCH_BOX_VISIBLE), mPropertyModel.get(IS_INCOGNITO));
+    }
+
+    private void recordHubSearchEntrypointHistogram(boolean isSearchBox, boolean isIncognito) {
+        // Based on the ComponentCallback#onConfigurationChanged logic for hub search, it is implied
+        // that the search box and search loupe visibilities have opposite behaviors at any time.
+        @HubSearchEntrypoint int action;
+
+        if (isIncognito) {
+            action =
+                    isSearchBox
+                            ? HubSearchEntrypoint.INCOGNITO_SEARCHBOX
+                            : HubSearchEntrypoint.INCOGNITO_LOUPE;
+        } else {
+            action =
+                    isSearchBox
+                            ? HubSearchEntrypoint.REGULAR_SEARCHBOX
+                            : HubSearchEntrypoint.REGULAR_LOUPE;
+        }
+
+        RecordHistogram.recordEnumeratedHistogram(
+                "Android.HubSearch.SearchBoxEntrypointV2", action, HubSearchEntrypoint.NUM_ENTRIES);
     }
 }

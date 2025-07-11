@@ -831,18 +831,11 @@ void AddDeviceKeyboardStrings(content::WebUIDataSource* html_source) {
   };
   html_source->AddLocalizedStrings(keyboard_strings);
 
-  if (Shell::Get()->keyboard_capability()->IsModifierSplitEnabled()) {
-    html_source->AddLocalizedString("perDeviceKeyboardKeyRightAlt",
-                                    IDS_KEYBOARD_QUICK_INSERT_LABEL);
-  } else {
-    html_source->AddLocalizedString(
-        "perDeviceKeyboardKeyRightAlt",
-        IDS_SETTINGS_PER_DEVICE_KEYBOARD_KEY_RIGHT_ALT);
-  }
+  html_source->AddLocalizedString("perDeviceKeyboardKeyRightAlt",
+                                  IDS_KEYBOARD_QUICK_INSERT_LABEL);
 
-  html_source->AddBoolean(
-      "enableModifierSplit",
-      Shell::Get()->keyboard_capability()->IsModifierSplitEnabled());
+  html_source->AddBoolean("enableModifierSplit",
+                          features::IsModifierSplitEnabled());
 
   if (Shell::Get()->keyboard_capability()->HasLauncherButtonOnAnyKeyboard()) {
     html_source->AddLocalizedString(
@@ -983,6 +976,13 @@ void AddDeviceAudioStrings(content::WebUIDataSource* html_source) {
        IDS_SETTINGS_AUDIO_INPUT_STYLE_TRANSFER_TITLE},
       {"audioInputStyleTransferDescription",
        IDS_SETTINGS_AUDIO_INPUT_STYLE_TRANSFER_DESCRIPTION},
+      {"audioInputVoiceIsolationEffectFallbackMessage",
+       IDS_SETTINGS_AUDIO_INPUT_VOICE_ISOLATION_EFFECT_FALLBACK_MESSAGE},
+      {"audioInputEffectMode", IDS_SETTINGS_AUDIO_INPUT_EFFECT_MODE},
+      {"audioInputEffectModeStyleTransferTitle",
+       IDS_SETTINGS_AUDIO_INPUT_EFFECT_MODE_STYLE_TRANSFER_TITLE},
+      {"audioInputEffectModeStyleTransferDescription",
+       IDS_SETTINGS_AUDIO_INPUT_EFFECT_MODE_STYLE_TRANSFER_DESCRIPTION},
       {"audioInputBeamformingTitle",
        IDS_SETTINGS_AUDIO_INPUT_BEAMFORMING_TITLE},
       {"audioInputBeamformingDescription",

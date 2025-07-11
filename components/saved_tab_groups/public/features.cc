@@ -42,23 +42,12 @@ BASE_FEATURE(kTabGroupsSaveUIUpdate,
              base::FEATURE_ENABLED_BY_DEFAULT
 );
 
-// Feature flag specific to UNO. Controls how we handle tab groups on sign-out
-// and sync toggle. Can be defined independently for each platform.
-BASE_FEATURE(kTabGroupSyncUno,
-             "TabGroupSyncUno",
-             base::FEATURE_DISABLED_BY_DEFAULT);
-
 // Feature flag specific to Desktop platforms. When enabled, desktop platforms
 // will use the TabGroupSyncService. When disabled, desktop platforms will
 // continue to use SavedTabGroupKeyedService.
 BASE_FEATURE(kTabGroupSyncServiceDesktopMigration,
              "TabGroupSyncServiceDesktopMigration",
              base::FEATURE_DISABLED_BY_DEFAULT);
-
-// Feature flag to remove any merge logic from saved tab group model.
-BASE_FEATURE(kAlwaysAcceptServerDataInModel,
-             "AlwaysAcceptServerDataInModel",
-             base::FEATURE_ENABLED_BY_DEFAULT);
 
 // Feature flag to disable auto-open of saved tab groups. Note that the
 // settings page for auto open will still be visible, and when user is allowed
@@ -78,12 +67,6 @@ BASE_FEATURE(kRestrictDownloadOnSyncedTabs,
 BASE_FEATURE(kDeferMediaLoadInBackgroundTab,
              "DeferMediaLoadInBackgroundTab",
              base::FEATURE_DISABLED_BY_DEFAULT);
-
-// Kill switch to stop notifying observers when user interaction time is
-// updated and storing it to the storage.
-BASE_FEATURE(kSavedTabGroupNotifyOnInteractionTimeChanged,
-             "SavedTabGroupNotifyOnInteractionTimeChanged",
-             base::FEATURE_ENABLED_BY_DEFAULT);
 
 // Feature flag to determine whether an alternate illustration should be used on
 // the history sync consent screen. This feature should be used independent of
@@ -116,10 +99,6 @@ bool IsTabGroupSyncCoordinatorEnabled() {
 #else
   return true;
 #endif
-}
-
-bool AlwaysAcceptServerDataInModel() {
-  return base::FeatureList::IsEnabled(kAlwaysAcceptServerDataInModel);
 }
 
 bool RestrictDownloadOnSyncedTabs() {

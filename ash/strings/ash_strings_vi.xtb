@@ -630,7 +630,6 @@ Nếu không, bàn di chuột tích hợp sẵn sẽ bật lại sau <ph name="T
 <translation id="3208321278970793882">Ứng dụng</translation>
 <translation id="3213571860604332401">Lưu đường liên kết làm dấu trang</translation>
 <translation id="3217205077783620295">Âm lượng đang bật. Nếu bạn chuyển đổi, âm thanh sẽ bị tắt.</translation>
-<translation id="3218561536255328229">Nhấn phím Esc 5 lần để bật bàn di chuột</translation>
 <translation id="3226991577105957773">+<ph name="COUNT" /> mục khác</translation>
 <translation id="3227137524299004712">Micrô</translation>
 <translation id="3233611303007751344">Đã tắt Trình tiết kiệm pin</translation>
@@ -985,7 +984,7 @@ Một số tính năng bị hạn chế nhằm tăng thời lượng pin.</trans
 <translation id="4378479437904450384"><ph name="WIRELESS_PROVIDER" />, cường độ tín hiệu: <ph name="SIGNAL_STRENGTH" />%</translation>
 <translation id="4378551569595875038">Đang kết nối…</translation>
 <translation id="4379531060876907730">Đây là các công cụ bút dành cho bút cảm ứng</translation>
-<translation id="4381031910344220229">Điều này cho phép sử dụng micrô đối với <ph name="APP_NAME" /> cũng như mọi ứng dụng và trang web có quyền sử dụng micrô</translation>
+<translation id="4381031910344220229">Điều này cho phép sử dụng micrô đối với <ph name="APP_NAME" /> cũng như mọi ứng dụng và trang web có quyền truy cập micrô</translation>
 <translation id="4382340674111381977">Quay lại trang trước</translation>
 <translation id="4389184120735010762">Bạn đã nhấn phím tắt của tính năng phóng to ở vị trí cố định. Bạn có muốn bật tính năng này không?</translation>
 <translation id="4394466652057229831">Nhấp chuột phải để tóm tắt</translation>
@@ -1274,7 +1273,7 @@ Một số tính năng bị hạn chế nhằm tăng thời lượng pin.</trans
 <translation id="5308380583665731573">Kết nối</translation>
 <translation id="5313326810920013265">Cài đặt Bluetooth</translation>
 <translation id="5314219114274263156">Đã ghi màn hình</translation>
-<translation id="5314489738835854379">Di chuyển lùi lại qua các cửa sổ</translation>
+<translation id="5314489738835854379">Di chuyển lùi qua các cửa sổ</translation>
 <translation id="5316716239522500219">Phản chiếu màn hình</translation>
 <translation id="5317780077021120954">Lưu</translation>
 <translation id="5319712128756744240">Ghép nối thiết bị mới</translation>
@@ -1305,6 +1304,7 @@ Chưa kết nối thiết bị nào.</translation>
 <translation id="5393156353051693207">Chạm và giữ vị trí bất kỳ để sắp xếp lại ứng dụng</translation>
 <translation id="5395308026110844773"><ph name="DRAGGED_APP_NAME" /> nằm trên <ph name="IN_PLACE_APP" />, thả để tạo thư mục.</translation>
 <translation id="5397578532367286026">Người quản lý (<ph name="MANAGER_EMAIL" />) trên chrome.com có thể xem lại mức sử dụng và lịch sử của người dùng này.</translation>
+<translation id="540338817371815859">Ngang</translation>
 <translation id="540713187982329711">Bật/tắt điểm phát sóng. Điểm phát sóng đang bật, chưa có thiết bị nào kết nối.</translation>
 <translation id="5409208741270395213">Đánh dấu việc cần làm là đã hoàn thành</translation>
 <translation id="5413656666631274079">Trang cài đặt</translation>
@@ -1473,7 +1473,7 @@ Chưa kết nối thiết bị nào.</translation>
 <translation id="5958529069007801266">Người dùng được giám sát</translation>
 <translation id="5960410286721553511">Xem nội dung phương tiện và ảnh mới đây trên điện thoại</translation>
 <translation id="5965524703725988602">Bật/tắt Giao diện tối. <ph name="STATE_TEXT" />.</translation>
-<translation id="5975235751479998104">Di chuyển tiến lên qua các cửa sổ</translation>
+<translation id="5975235751479998104">Di chuyển tiến qua các cửa sổ</translation>
 <translation id="5978382165065462689">Chia sẻ quyền kiểm soát màn hình của bạn qua Trợ giúp từ xa.</translation>
 <translation id="5980301590375426705">Thoát phiên khách</translation>
 <translation id="5983567367406220847">Điểm phát sóng đã tắt do không hoạt động.</translation>
@@ -1529,7 +1529,7 @@ Chưa kết nối thiết bị nào.</translation>
 <translation id="6121838516699723042">Xác nhận tải <ph name="FILENAME" /> xuống</translation>
 <translation id="612734058257491180">Bạn không thể dùng Trợ lý Google trong phiên khách.</translation>
 <translation id="6127395413317891856">Bạn chưa kết nối mạng. Hãy kiểm tra kết nối rồi thử lại.</translation>
-<translation id="6129953537138746214">Dấu cách</translation>
+<translation id="6129953537138746214">Phím cách</translation>
 <translation id="6137566720514957455">Mở hộp thoại xóa tài khoản cho <ph name="USER_EMAIL_ADDRESS" /></translation>
 <translation id="6141205840878048728">Bạn muốn tập trung vào việc gì?</translation>
 <translation id="6141988275892716286">Xác nhận tải xuống</translation>
@@ -1767,6 +1767,7 @@ Mới cài đặt</translation>
 <translation id="6921427376813842559">Khôi phục hệ điều hành trên thiết bị</translation>
 <translation id="6929081673585394903">Hiện các nút điều khiển</translation>
 <translation id="6931576957638141829">Lưu vào</translation>
+<translation id="6935857786205183008">Dọc</translation>
 <translation id="6942518653766415536">Trình đơn định dạng bản ghi</translation>
 <translation id="6945221475159498467">Chọn</translation>
 <translation id="6945922087561257829">Điện thoại của bạn đang sử dụng mạng di động. Hãy đảm bảo điện thoại và Chromebook của bạn kết nối với cùng một mạng Wi-Fi, rồi thử lại. <ph name="LEARN_MORE" /></translation>
@@ -1873,7 +1874,7 @@ Mới cài đặt</translation>
 <translation id="736045644501761622">Cài đặt hình nền và phong cách</translation>
 <translation id="7371404428569700291">Ghi hình nội dung của cửa sổ</translation>
 <translation id="7372069265635026568">Còn trống <ph name="AVAILABLE_MEMORY" /> trong tổng <ph name="TOTAL_MEMORY" /> bộ nhớ</translation>
-<translation id="737315737514430195">Điều này cho phép sử dụng micrô đối với tất cả ứng dụng và trang web có quyền sử dụng micrô</translation>
+<translation id="737315737514430195">Điều này cho phép sử dụng micrô đối với tất cả ứng dụng và trang web có quyền truy cập micrô</translation>
 <translation id="7377169924702866686">Caps Lock đang bật.</translation>
 <translation id="7377481913241237033">Kết nối bằng mã</translation>
 <translation id="7378203170292176219">Kéo để chọn một vùng sẽ quay</translation>
@@ -1972,7 +1973,7 @@ Mới cài đặt</translation>
 <translation id="7682351277038250258">Dán nội dung trong bảng nhớ tạm dưới dạng văn bản thuần tuý</translation>
 <translation id="7684531502177797067">Đặt chế độ nhập dữ liệu bằng máy ảnh thành <ph name="CAMERA_NAME" />.</translation>
 <translation id="7687172143976244806">Bạn đã mở</translation>
-<translation id="7689817529363080918">Điều này cho phép sử dụng micrô đối với <ph name="APP1_NAME" />, <ph name="APP2_NAME" /> cũng như mọi ứng dụng và trang web có quyền sử dụng micrô</translation>
+<translation id="7689817529363080918">Điều này cho phép sử dụng micrô đối với <ph name="APP1_NAME" />, <ph name="APP2_NAME" /> cũng như mọi ứng dụng và trang web có quyền truy cập micrô</translation>
 <translation id="7704000866383261579">Làm lại thao tác thực hiện gần đây nhất</translation>
 <translation id="7705524343798198388">VPN</translation>
 <translation id="770741401784017797">Đang tạo GIF</translation>
@@ -2031,7 +2032,7 @@ Mới cài đặt</translation>
 <translation id="788781083998633524">Gửi email</translation>
 <translation id="7893503627044934815">Không muốn hiện tệp này</translation>
 <translation id="7893547474469215105">Định nghĩa thiên đỉnh</translation>
-<translation id="7895348134893321514">Tote</translation>
+<translation id="7895348134893321514">Truy cập nhanh</translation>
 <translation id="7896681766480521542">Thêm việc cần làm</translation>
 <translation id="7897375687985782769">Bạn đã nhấn phím tắt để xoay màn hình. Bạn có muốn xoay màn hình không?</translation>
 <translation id="7897626842031123113">Khay trạng thái, thời gian <ph name="TIME" />,
@@ -2435,6 +2436,7 @@ Mới cài đặt</translation>
 <translation id="98120814841227350">Chuyển đến cuối tài liệu</translation>
 <translation id="987589956647469042">Dữ liệu di động đang bật</translation>
 <translation id="989374776391122812">Các tuỳ chọn điều khiển máy ảnh và âm thanh</translation>
+<translation id="990263227494928142">Nhấn phím Shift 5 lần để bật bàn di chuột</translation>
 <translation id="990277280839877440">Đã đóng cửa sổ <ph name="WINDOW_TITILE" />.</translation>
 <translation id="993398562350683614">Bước <ph name="STEP" />/<ph name="TOTAL_STEPS" /> của hướng dẫn. Dùng các ứng dụng để làm mọi việc bạn cần trên <ph name="PRODUCT_NAME" />. Bạn có thể tìm ứng dụng của mình trong Trình chạy. Nhấn tổ hợp phím Alt + Shift + L để lấy tiêu điểm vào nút Trình chạy.</translation>
 <translation id="994354411665877646"><ph name="NETWORK_NAME" />, <ph name="SUBTEXT" /></translation>

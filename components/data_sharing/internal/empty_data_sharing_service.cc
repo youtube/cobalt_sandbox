@@ -44,6 +44,13 @@ std::set<GroupData> EmptyDataSharingService::ReadAllGroups() {
   return std::set<GroupData>();
 }
 
+std::optional<GroupMemberPartialData>
+EmptyDataSharingService::GetPossiblyRemovedGroupMember(
+    const GroupId& group_id,
+    const std::string& member_gaia_id) {
+  return std::nullopt;
+}
+
 void EmptyDataSharingService::ReadAllGroups(
     base::OnceCallback<void(const GroupsDataSetOrFailureOutcome&)> callback) {}
 
@@ -87,12 +94,12 @@ void EmptyDataSharingService::HandleShareURLNavigationIntercepted(
     const GURL& url,
     std::unique_ptr<ShareURLInterceptionContext> context) {}
 
-std::unique_ptr<GURL> EmptyDataSharingService::GetDataSharingURL(
+std::unique_ptr<GURL> EmptyDataSharingService::GetDataSharingUrl(
     const GroupData& group_data) {
   return nullptr;
 }
 
-DataSharingService::ParseURLResult EmptyDataSharingService::ParseDataSharingURL(
+DataSharingService::ParseUrlResult EmptyDataSharingService::ParseDataSharingUrl(
     const GURL& url) {
   return GroupToken();
 }
@@ -112,12 +119,8 @@ void EmptyDataSharingService::SetSDKDelegate(
 void EmptyDataSharingService::SetUIDelegate(
     std::unique_ptr<DataSharingUIDelegate> ui_delegate) {}
 
-DataSharingUIDelegate* EmptyDataSharingService::GetUIDelegate() {
+DataSharingUIDelegate* EmptyDataSharingService::GetUiDelegate() {
   return nullptr;
-}
-
-ServiceStatus EmptyDataSharingService::GetServiceStatus() {
-  return ServiceStatus();
 }
 
 }  // namespace data_sharing

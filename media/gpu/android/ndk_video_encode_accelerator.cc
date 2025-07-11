@@ -444,6 +444,30 @@ std::optional<std::string> FindMediaCodecFor(
   return encoder_name;
 }
 
+// AVC and HEVC encoders produce parameters sets as a separate buffers
+// with BUFFER_FLAG_CODEC_CONFIG flag, these parameters sets need to be
+// preserved and appended at the beginning of the bitstream.
+// Av1, Vp9 encoders produce extra data describing the stream, but this data
+// is already known via other channels and is not expected by decoders.
+// For such encoders we don't put it into the bitstream.
+// Vp8 doesn't produce configuration buffers.
+// More Info:
+// https://developer.android.com/reference/android/media/MediaCodec#CSD
+bool ProfileNeedsConfigDataInBitstream(VideoCodecProfile profile) {
+  switch (VideoCodecProfileToVideoCodec(profile)) {
+    case VideoCodec::kH264:
+    case VideoCodec::kHEVC:
+      return true;
+    case VideoCodec::kAV1:
+    case VideoCodec::kVP9:
+    case VideoCodec::kVP8:
+      return false;
+    default:
+      NOTREACHED()
+          << "Configuration for unsupported codecs shouldn't come this far.";
+  }
+}
+
 }  // namespace
 
 NdkVideoEncodeAccelerator::NdkVideoEncodeAccelerator(
@@ -528,18 +552,13 @@ bool NdkVideoEncodeAccelerator::Initialize(
     return false;
   }
 
-  // Conservative upper bound for output buffer size: decoded size + 2KB.
-  // Adding 2KB just in case the frame is really small, we don't want to
-  // end up with no space for a video codec's headers.
-  const size_t output_buffer_capacity =
-      VideoFrame::AllocationSize(config.input_format,
-                                 config.input_visible_size) +
-      2048;
+  const size_t bitstream_buffer_size = EstimateBitstreamBufferSize(
+      config_.bitrate, config_.framerate, config.input_visible_size);
   task_runner_->PostTask(
       FROM_HERE,
       base::BindOnce(&VideoEncodeAccelerator::Client::RequireBitstreamBuffers,
                      client_ptr_factory_->GetWeakPtr(), 1,
-                     config.input_visible_size, output_buffer_capacity));
+                     config.input_visible_size, bitstream_buffer_size));
 
   NotifyEncoderInfo();
   return true;
@@ -889,7 +908,10 @@ void NdkVideoEncodeAccelerator::NotifyErrorStatus(EncoderStatus status) {
              << static_cast<int>(status.code())
              << ", message=" << status.message();
   if (!error_occurred_) {
-    client_ptr_factory_->GetWeakPtr()->NotifyErrorStatus(status);
+    task_runner_->PostTask(
+        FROM_HERE,
+        base::BindOnce(&VideoEncodeAccelerator::Client::NotifyErrorStatus,
+                       client_ptr_factory_->GetWeakPtr(), status));
     error_occurred_ = true;
   }
 }
@@ -945,8 +967,11 @@ bool NdkVideoEncodeAccelerator::DrainConfig() {
     return false;
   }
 
-  config_data_.resize(mc_buffer_size);
-  memcpy(config_data_.data(), buf_data + mc_buffer_info.offset, mc_buffer_size);
+  if (ProfileNeedsConfigDataInBitstream(config_.output_profile)) {
+    config_data_.resize(mc_buffer_size);
+    memcpy(config_data_.data(), buf_data + mc_buffer_info.offset,
+           mc_buffer_size);
+  }
   AMediaCodec_releaseOutputBuffer(media_codec_->codec(),
                                   output_buffer.buffer_index, false);
   return true;

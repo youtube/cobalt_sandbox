@@ -53,19 +53,7 @@ class AwTracingDelegateTest : public testing::Test {
 TEST_F(AwTracingDelegateTest, IsAllowedToBegin) {
   EXPECT_TRUE(delegate_->OnBackgroundTracingActive(
       /*requires_anonymized_data=*/false));
-  EXPECT_TRUE(delegate_->OnBackgroundTracingIdle(
-      /*requires_anonymized_data=*/false));
-}
-
-TEST_F(AwTracingDelegateTest, IsAllowedToBeginSessionEndedUnexpectedly) {
-  base::Value::Dict dict;
-  dict.Set("state", static_cast<int>(tracing::BackgroundTracingState::STARTED));
-  pref_service_->Set(tracing::kBackgroundTracingSessionState,
-                     base::Value(std::move(dict)));
-  tracing::BackgroundTracingStateManager::GetInstance().ResetForTesting();
-
-  EXPECT_FALSE(delegate_->OnBackgroundTracingActive(
-      /*requires_anonymized_data=*/false));
+  delegate_->OnBackgroundTracingIdle();
 }
 
 }  // namespace android_webview

@@ -104,6 +104,12 @@ NSArray<UTType*>* UTTypesAcceptedForEvent(const ChooseFileEvent& event) {
     UTType* file_extension_type =
         [UTType typeWithFilenameExtension:base::SysUTF8ToNSString(
                                               truncated_file_extension)];
+    if (!file_extension_type) {
+      // `file_extension_type` can sometimes be nil according to crash reports,
+      // although this behaviour is not documented. If so, discard this file
+      // extension.
+      continue;
+    }
     [types addObject:file_extension_type];
   }
   // Add accepted MIME types.
@@ -238,7 +244,7 @@ DriveListQuery CreateDriveListQuery(
   switch (collection_type) {
     case DriveFilePickerCollectionType::kRoot:
       // The root collection cannot be obtained using a query.
-      NOTREACHED_NORETURN();
+      NOTREACHED();
     case DriveFilePickerCollectionType::kSharedDrives:
       // For "Shared Drives", there are no parameters to set.
       break;
@@ -412,7 +418,7 @@ NSString* DriveFilePickerItemSubtitle(
   // Handling non-search items.
   switch (collection_type) {
     case DriveFilePickerCollectionType::kRoot:
-      NOTREACHED_NORETURN();
+      NOTREACHED();
     case DriveFilePickerCollectionType::kSharedDrives:
       // Shared drives do not have subtitles.
       return nil;

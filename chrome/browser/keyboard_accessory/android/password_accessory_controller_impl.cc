@@ -214,14 +214,14 @@ PasswordAccessoryControllerImpl::GetSheetData() const {
   if (GetWebContents().GetFocusedFrame() == nullptr) {
     return std::nullopt;
   }
-  if (!last_focused_field_info_) {
+  if (!last_focus_info_) {
     return std::nullopt;
   }
   url::Origin origin = GetFocusedFrameOrigin();
   // If the focused origin doesn't match the last known origin, it is not safe
   // to provide any suggestions (because e.g. information about field type isn't
   // reliable).
-  if (!last_focused_field_info_->origin.IsSameOriginWith(origin)) {
+  if (!last_focus_info_->origin.IsSameOriginWith(origin)) {
     return std::nullopt;
   }
 
@@ -240,9 +240,9 @@ PasswordAccessoryControllerImpl::GetSheetData() const {
   base::flat_map<std::string, bool> plus_addresses_used_as_usernames(
       std::move(items));
 
-  const bool is_password_field = last_focused_field_info_->focused_field_type ==
+  const bool is_password_field = last_focus_info_->focused_field_type ==
                                  FocusedFieldType::kFillablePasswordField;
-  if (autofill::IsFillable(last_focused_field_info_->focused_field_type)) {
+  if (autofill::IsFillable(last_focus_info_->focused_field_type)) {
     base::span<const UiCredential> suggestions =
         credential_cache_->GetCredentialStore(origin).GetCredentials();
     info_to_add.reserve(suggestions.size());
@@ -436,9 +436,8 @@ void PasswordAccessoryControllerImpl::OnOptionSelected(
                 WebAuthnCredManDelegate::RequestPasswords(false));
             return;
           default:
-            NOTREACHED_IN_MIGRATION()
-                << "WebAuthnCredManDelegate should not be used if "
-                   "CredManMode is kNotEnabled!";
+            NOTREACHED() << "WebAuthnCredManDelegate should not be used if "
+                            "CredManMode is kNotEnabled!";
         }
       }
       return;
@@ -478,8 +477,8 @@ void PasswordAccessoryControllerImpl::OnOptionSelected(
       plus_addresses::ShowManagePlusAddressesPage(GetWebContents());
       return;
     default:
-      NOTREACHED_IN_MIGRATION()
-          << "Unhandled selected action: " << static_cast<int>(selected_action);
+      NOTREACHED() << "Unhandled selected action: "
+                   << static_cast<int>(selected_action);
   }
 }
 
@@ -490,8 +489,8 @@ void PasswordAccessoryControllerImpl::OnToggleChanged(
     ChangeCurrentOriginSavePasswordsStatus(enabled);
     return;
   }
-  NOTREACHED_IN_MIGRATION()
-      << "Unhandled selected action: " << static_cast<int>(toggled_action);
+  NOTREACHED() << "Unhandled selected action: "
+               << static_cast<int>(toggled_action);
 }
 
 void PasswordAccessoryControllerImpl::RegisterPlusProfilesProvider(
@@ -503,10 +502,11 @@ void PasswordAccessoryControllerImpl::RegisterPlusProfilesProvider(
 }
 
 void PasswordAccessoryControllerImpl::RefreshSuggestionsForField(
-    FocusedFieldType focused_field_type) {
+    FocusedFieldType focused_field_type,
+    bool is_field_eligible_for_manual_generation) {
   // Discard all frame data. This ensures that the data is never used for an
   // incorrect frame.
-  last_focused_field_info_ = std::nullopt;
+  last_focus_info_ = std::nullopt;
   all_passwords_helper_.SetLastFocusedFieldType(focused_field_type);
 
   // Prevent crashing by not acting at all if frame became unfocused at any
@@ -526,13 +526,14 @@ void PasswordAccessoryControllerImpl::RefreshSuggestionsForField(
   }
   TRACE_EVENT0("passwords",
                "PasswordAccessoryControllerImpl::RefreshSuggestionsForField");
-  const bool is_manual_generation_available =
+  const bool is_generation_allowed_in_frame =
       password_manager_util::ManualPasswordGenerationEnabled(driver) &&
       password_client_->GetPasswordManager()->HaveFormManagersReceivedData(
           driver);
 
-  last_focused_field_info_.emplace(origin, focused_field_type,
-                                   is_manual_generation_available);
+  last_focus_info_.emplace(origin, focused_field_type,
+                           is_generation_allowed_in_frame,
+                           is_field_eligible_for_manual_generation);
 
   RefreshSuggestions();
 }
@@ -570,13 +571,16 @@ PasswordAccessoryControllerImpl::AsWeakPtr() {
   return weak_ptr_factory_.GetWeakPtr();
 }
 
-PasswordAccessoryControllerImpl::LastFocusedFieldInfo::LastFocusedFieldInfo(
+PasswordAccessoryControllerImpl::LastFocusInfo::LastFocusInfo(
     url::Origin focused_origin,
     FocusedFieldType focused_field,
-    bool manual_generation_available)
+    bool generation_allowed_in_frame,
+    bool field_eligible_for_manual_generation)
     : origin(focused_origin),
       focused_field_type(focused_field),
-      is_manual_generation_available(manual_generation_available) {}
+      is_generation_allowed_in_frame(generation_allowed_in_frame),
+      is_field_eligible_for_manual_generation(
+          field_eligible_for_manual_generation) {}
 
 PasswordAccessoryControllerImpl::PasswordAccessoryControllerImpl(
     content::WebContents* web_contents,
@@ -634,10 +638,8 @@ PasswordAccessoryControllerImpl::CreateManagePasswordsFooter() const {
         autofill::AccessoryAction::USE_OTHER_PASSWORD);
   }
 
-  const bool is_password_field = last_focused_field_info_->focused_field_type ==
-                                 FocusedFieldType::kFillablePasswordField;
-  if (is_password_field &&
-      last_focused_field_info_->is_manual_generation_available) {
+  if (last_focus_info_->is_field_eligible_for_manual_generation &&
+      last_focus_info_->is_generation_allowed_in_frame) {
     std::u16string generate_password_title = l10n_util::GetStringUTF16(
         IDS_PASSWORD_MANAGER_ACCESSORY_GENERATE_PASSWORD_BUTTON_TITLE);
     footer_commands_to_add.emplace_back(
@@ -797,7 +799,7 @@ url::Origin PasswordAccessoryControllerImpl::GetFocusedFrameOrigin() const {
 
 void PasswordAccessoryControllerImpl::ShowAllPasswords() {
   // If the controller is initialized that means that the UI is showing.
-  if (all_passords_bottom_sheet_controller_ || !last_focused_field_info_) {
+  if (all_passords_bottom_sheet_controller_ || !last_focus_info_) {
     return;
   }
 
@@ -822,7 +824,7 @@ void PasswordAccessoryControllerImpl::ShowAllPasswords() {
           base::BindOnce(
               &PasswordAccessoryControllerImpl::AllPasswordsSheetDismissed,
               base::Unretained(this)),
-          last_focused_field_info_->focused_field_type);
+          last_focus_info_->focused_field_type);
 
   all_passords_bottom_sheet_controller_->Show();
 }
@@ -862,6 +864,11 @@ void PasswordAccessoryControllerImpl::FillSelection(
   }
   driver->FillIntoFocusedField(selection.is_obfuscated(),
                                selection.display_text());
+  if (selection.suggestion_type() ==
+          autofill::AccessorySuggestionType::kPlusAddress &&
+      plus_address_service_) {
+    plus_address_service_->DidFillPlusAddress();
+  }
   if (base::FeatureList::IsEnabled(
           password_manager::features::
               kUnifiedPasswordManagerLocalPasswordsMigrationWarning)) {
@@ -916,25 +923,25 @@ void PasswordAccessoryControllerImpl::OnPlusAddressSelected(
 }
 
 void PasswordAccessoryControllerImpl::RefreshSuggestions() {
-  if (!last_focused_field_info_) {
+  if (!last_focus_info_) {
     return;
   }
 
-  bool sheet_provides_value =
-      last_focused_field_info_->is_manual_generation_available;
+  bool sheet_provides_value = last_focus_info_->is_generation_allowed_in_frame;
 
   all_passwords_helper_.ClearUpdateCallback();
   if (!all_passwords_helper_.available_credentials().has_value()) {
     all_passwords_helper_.SetUpdateCallback(base::BindOnce(
         &PasswordAccessoryControllerImpl::RefreshSuggestionsForField,
-        base::Unretained(this), last_focused_field_info_->focused_field_type));
+        base::Unretained(this), last_focus_info_->focused_field_type,
+        last_focus_info_->is_field_eligible_for_manual_generation));
   } else {
     sheet_provides_value |=
         all_passwords_helper_.available_credentials().value() > 0;
   }
 
-  if (ShouldShowRecoveryToggle(last_focused_field_info_->origin)) {
-    if (credential_cache_->GetCredentialStore(last_focused_field_info_->origin)
+  if (ShouldShowRecoveryToggle(last_focus_info_->origin)) {
+    if (credential_cache_->GetCredentialStore(last_focus_info_->origin)
             .GetBlocklistedStatus() == BlocklistedStatus::kIsBlocklisted) {
       UMA_HISTOGRAM_BOOLEAN(
           "KeyboardAccessory.DisabledSavingAccessoryImpressions", true);
@@ -945,7 +952,7 @@ void PasswordAccessoryControllerImpl::RefreshSuggestions() {
   // The all passwords sheet could cover this but if it's still loading, use
   // this data as the next closest proxy to minimize delayed updates UI.
   sheet_provides_value |=
-      !credential_cache_->GetCredentialStore(last_focused_field_info_->origin)
+      !credential_cache_->GetCredentialStore(last_focus_info_->origin)
            .GetCredentials()
            .empty();
 
@@ -958,10 +965,9 @@ void PasswordAccessoryControllerImpl::RefreshSuggestions() {
   // The "Manage Passwords" entry point doesn't justify showing this fallback
   // sheet for non-password fields.
   source_observer_.Run(
-      this,
-      IsFillingSourceAvailable(
-          autofill::IsFillable(last_focused_field_info_->focused_field_type) &&
-          sheet_provides_value));
+      this, IsFillingSourceAvailable(
+                autofill::IsFillable(last_focus_info_->focused_field_type) &&
+                sheet_provides_value));
 }
 
 void PasswordAccessoryControllerImpl::OnAffiliatedPlusProfilesFetched() {
@@ -1011,11 +1017,6 @@ void PasswordAccessoryControllerImpl::ReauthenticateAndFill(
     const url::Origin& origin_to_fill_on) {
   authenticator_ = password_client_->GetDeviceAuthenticator();
   if (!ShouldTriggerBiometricReauth(selection)) {
-    if (selection.suggestion_type() ==
-            autofill::AccessorySuggestionType::kPlusAddress &&
-        plus_address_service_) {
-      plus_address_service_->DidFillPlusAddress();
-    }
     authenticator_.reset();
     FillSelection(selection, origin_to_fill_on);
     return;

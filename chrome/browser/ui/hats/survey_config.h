@@ -39,7 +39,6 @@ extern const char kHatsSurveyTriggerPerformanceControlsPerformance[];
 extern const char kHatsSurveyTriggerPerformanceControlsBatteryPerformance[];
 extern const char kHatsSurveyTriggerPerformanceControlsMemorySaverOptOut[];
 extern const char kHatsSurveyTriggerPerformanceControlsBatterySaverOptOut[];
-extern const char kHatsSurveyTriggerPlusAddressAcceptedFirstTimeCreate[];
 extern const char kHatsSurveyTriggerPrivacyGuide[];
 extern const char kHatsSurveyTriggerRedWarning[];
 extern const char kHatsSurveyTriggerSafetyHubOneOffExperimentControl[];
@@ -73,9 +72,13 @@ extern const char kHatsSurveyTriggerWhatsNew[];
 extern const char kHatsSurveyTriggerAndroidStartupSurvey[];
 extern const char kHatsSurveyTriggerQuickDelete[];
 extern const char kHatsSurveyTriggerSafetyHubAndroid[];
+extern const char kHatsSurveyOrganicTriggerSafetyHubAndroid[];
 #endif  // #if !BUILDFLAG(IS_ANDROID)
 
 extern const char kHatsSurveyTriggerPermissionsPrompt[];
+extern const char kHatsSurveyTriggerPlusAddressAcceptedFirstTimeCreate[];
+extern const char kHatsSurveyTriggerPlusAddressCreatedMultiplePlusAddresses[];
+extern const char kHatsSurveyTriggerPlusAddressDeclinedFirstTimeCreate[];
 extern const char kHatsSurveyTriggerPrivacySandboxSentimentSurvey[];
 
 extern const char kHatsSurveyTriggerTesting[];

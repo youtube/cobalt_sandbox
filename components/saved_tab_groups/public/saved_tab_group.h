@@ -140,9 +140,12 @@ class SavedTabGroup {
   // Removes a tab from `saved_tabs_` denoted by `saved_tab_guid` even if that
   // was the last tab in the group: crbug/1371959. If the tab was removed
   // locally update the positions of all tabs in the group. Otherwise, leave the
-  // order of the group as is.
+  // order of the group as is. CHECKs that the removed tab is not the last tab,
+  // unless `ignore_empty_groups_for_testing` is true.
   SavedTabGroup& RemoveTabLocally(const base::Uuid& saved_tab_guid);
-  SavedTabGroup& RemoveTabFromSync(const base::Uuid& saved_tab_guid);
+  SavedTabGroup& RemoveTabFromSync(
+      const base::Uuid& saved_tab_guid,
+      bool ignore_empty_groups_for_testing = false);
 
   // Replaces that tab denoted by `tab_id` with value of `tab` unless the
   // replacement tab already exists. In this case we CHECK.
@@ -168,9 +171,6 @@ class SavedTabGroup {
       std::optional<std::string> creator_cache_guid,
       std::optional<std::string> last_updater_cache_guid,
       base::Time update_time);
-
-  // Returns whether the remote group has more recent updates.
-  bool RemoteGroupHasMoreRecentUpdates(base::Time remote_update_time) const;
 
   // Returns true iff syncable data fields in `this` and `other` are equivalent.
   bool IsSyncEquivalent(const SavedTabGroup& other) const;
@@ -198,8 +198,10 @@ class SavedTabGroup {
   // in the group at `group_index`. Does not call observers.
   void UpdateTabPositionsImpl();
 
-  // Removes `saved_tab_guid` from this group.
-  void RemoveTabImpl(const base::Uuid& saved_tab_guid);
+  // Removes `saved_tab_guid` from this group. CHECKs that the removed tab is
+  // not the last tab, unless `ignore_empty_groups_for_testing` is true.
+  void RemoveTabImpl(const base::Uuid& saved_tab_guid,
+                     bool ignore_empty_groups_for_testing = false);
 
   // The ID used to represent the group in sync.
   base::Uuid saved_guid_;

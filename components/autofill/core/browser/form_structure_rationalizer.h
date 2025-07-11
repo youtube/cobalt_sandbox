@@ -18,10 +18,6 @@ namespace autofill {
 
 class LogManager;
 
-namespace autofill_metrics {
-class FormInteractionsUkmLogger;
-}
-
 // Rationalization is the process of taking a parsed form structure and
 // changing the types of fields based on their context based on assumptions
 // about how forms should be structured.
@@ -64,19 +60,13 @@ class FormStructureRationalizer {
   // contenteditables in their own code.
   void RationalizeContentEditables(LogManager* log_manager);
 
-  // Tunes the fields with identical predictions.
-  // The `form_signature` is needed for logging.
-  void RationalizeRepeatedFields(
-      FormSignature form_signature,
-      autofill_metrics::FormInteractionsUkmLogger* form_interactions_ukm_logger,
-      LogManager* log_manager);
-
   // A helper function to review the predictions and do appropriate adjustments
   // when it considers necessary.
-  void RationalizeFieldTypePredictions(const url::Origin& main_origin,
-                                       const GeoIpCountryCode& client_country,
-                                       const LanguageCode& language_code,
-                                       LogManager* log_manager);
+  void RationalizeFieldTypePredictions(
+      const url::Origin& main_origin,
+      const GeoIpCountryCode& client_country,
+      const LanguageCode& language_code,
+      LogManager* log_manager);
 
   // Ensures that only a single phone number (which can be split across multiple
   // fields) is autofilled per section. If a section contains multiple phone
@@ -85,10 +75,6 @@ class FormStructureRationalizer {
 
  private:
   friend class FormStructureTestApi;
-
-  // This class wraps a vector of vectors of field indices. The indices of a
-  // vector belong to the same group.
-  class SectionedFieldsIndexes;
 
   // Fine-tunes the credit cards related predictions. For example: lone credit
   // card fields in an otherwise non-credit-card related form is unlikely to be
@@ -106,6 +92,11 @@ class FormStructureRationalizer {
   // likely be filled with the the first, second, third, and fourth,
   // respectively, block of four digits.
   void RationalizeCreditCardNumberOffsets(LogManager* log_manager);
+
+  // Rewrites two or three (not necessarily consecutive)
+  // ADDRESS_HOME_STREET_ADDRESS fields in the same section into address line 1,
+  // 2 and 3.
+  void RationalizeRepeatedStreetAddressFields(LogManager* log_manager);
 
   // Rewrites sequences of (street address, address_line2) into (address_line1,
   // address_line2) as server predictions sometimes introduce wrong street
@@ -127,25 +118,9 @@ class FormStructureRationalizer {
   // accordingly.
   void RationalizePhoneNumberTrunkTypes(LogManager* log_manager);
 
-  // Set fields_[|field_index|] to |new_type| and log this change.
-  void ApplyRationalizationsToFieldAndLog(
-      size_t field_index,
-      FieldType new_type,
-      FormSignature form_signature,
-      autofill_metrics::FormInteractionsUkmLogger*
-          form_interactions_ukm_logger);
-
-  // Two or three fields predicted as the whole address should be address lines
-  // 1, 2 and 3 instead.
-  void RationalizeAddressLineFields(
-      SectionedFieldsIndexes* sections_of_address_indexes,
-      FormSignature form_signature,
-      autofill_metrics::FormInteractionsUkmLogger*,
-      LogManager* log_manager);
-
-  // Filters out fields that don't meet the relationship ruleset for their type
-  // defined in |type_relationships_rules_|.
-  void RationalizeTypeRelationships(LogManager* log_manager);
+  // Rationalizes all PHONE_HOME_COUNTRY_CODE fields to UNKNOWN_TYPE if no other
+  // phone number fields exist among the `fields_`.
+  void RationalizePhoneCountryCode(LogManager* log_manager);
 
   // Executes a set of declarative rationalization rules. See
   // ApplyRationalizationEngineRules in

@@ -35,7 +35,7 @@ class SharedURLLoaderFactory;
 namespace ash {
 
 // Lets QuickInsertController in Ash to communicate with the browser.
-class ASH_EXPORT PickerClient {
+class ASH_EXPORT QuickInsertClient {
  public:
   using CrosSearchResultsCallback = base::RepeatingCallback<void(
       ash::AppListSearchResultType result_type,
@@ -54,9 +54,9 @@ class ASH_EXPORT PickerClient {
   using FetchFileThumbnailCallback =
       base::OnceCallback<void(const SkBitmap* bitmap, base::File::Error error)>;
 
-  // Gets the SharedURLLoaderFactory to use for Picker network requests, e.g. to
-  // fetch assets. This is the loader factory for the active profile, not the
-  // global browser process one.
+  // Gets the SharedURLLoaderFactory to use for Quick Insert network requests,
+  // e.g. to fetch assets. This is the loader factory for the active profile,
+  // not the global browser process one.
   virtual scoped_refptr<network::SharedURLLoaderFactory>
   GetSharedURLLoaderFactory() = 0;
 
@@ -105,8 +105,8 @@ class ASH_EXPORT PickerClient {
   virtual void Announce(std::u16string_view message) = 0;
 
  protected:
-  PickerClient();
-  virtual ~PickerClient();
+  QuickInsertClient();
+  virtual ~QuickInsertClient();
 };
 
 }  // namespace ash

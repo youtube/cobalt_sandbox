@@ -1444,7 +1444,7 @@ chromium-metrics-reviews@google.com.
 </histogram>
 
 <histogram
-    name="PageLoad.Clients.GoogleSearch.PaintTiming.NavigationToLargestContentfulPaint{SafeSitesFilter}"
+    name="PageLoad.Clients.GoogleSearch.PaintTiming.NavigationToLargestContentfulPaint{Granularity}{SafeSitesFilter}"
     units="ms" expires_after="2025-04-06">
   <owner>spelchat@chromium.org</owner>
   <owner>chrome-brapp-loading@google.com</owner>
@@ -1458,7 +1458,12 @@ chromium-metrics-reviews@google.com.
     content is still considered a valid candidate. Only recorded for Search
     navigations that happen entirely in the foreground. The metric is emitted
     when the navigation is completed or the app is backgrounded on Android.
+    {Granularity}
   </summary>
+  <token key="Granularity">
+    <variant name="" summary=""/>
+    <variant name=".FineGrained" summary="Metric is clipped to 10 seconds."/>
+  </token>
   <token key="SafeSitesFilter" variants="SafeSitesFilterType"/>
 </histogram>
 
@@ -1500,6 +1505,36 @@ chromium-metrics-reviews@google.com.
     parse start.
 
     This metric has incomplete data. It was expired between 2023-10-01 and M121.
+  </summary>
+</histogram>
+
+<histogram
+    name="PageLoad.Clients.GoogleSearch.SyntheticResponse.AllHeadersExpected"
+    enum="Boolean" expires_after="2025-02-12">
+  <owner>sisidovski@chromium.org</owner>
+  <owner>chrome-loading@google.com</owner>
+  <summary>
+    Records whether the response headers from SERP are consitent with the ones
+    that the browser internally expects in `GWSPageLoadMetricsObserver`. If
+    either of them is mismatched from the expected one, or the expected header
+    does not actually exist, or there is an unexpected header in the actual SERP
+    header list, this is reported with `false`. This indicates the potential hit
+    rate of synthetic response for SERP.
+
+    This is recorded at the timing of navigation commit.
+  </summary>
+</histogram>
+
+<histogram
+    name="PageLoad.Clients.GoogleSearch.SyntheticResponse.HeaderMismatchType"
+    units="count" expires_after="2025-08-01">
+  <owner>sisidovski@chromium.org</owner>
+  <owner>chrome-loading@google.com</owner>
+  <summary>
+    When the response headers from SERP are mismatched from the expected ones,
+    reports the bitmask of mismatched type.
+
+    This is recorded at the timing of navigation commit.
   </summary>
 </histogram>
 
@@ -4094,6 +4129,31 @@ chromium-metrics-reviews@google.com.
   <summary>
     Measures the LargestContentfulPaint in milliseconds from the start time of
     the soft navigation to the LCP time.
+  </summary>
+</histogram>
+
+<histogram name="PageSerialization.Mhtml.Fetched.{ResourceType}"
+    enum="BooleanSuccess" expires_after="2025-01-29">
+  <owner>harringtond@chromium.org</owner>
+  <owner>offline-dev@chromium.org</owner>
+  <summary>
+    Reports whether a resource fetch was successful while saving a page to
+    MHTML. Reported for each resource fetched.
+  </summary>
+  <token key="ResourceType">
+    <variant name="Font" summary="Font resource"/>
+    <variant name="Style" summary="CSS resource"/>
+  </token>
+</histogram>
+
+<histogram name="PageSerialization.Mhtml.FrameSerializerTime" units="ms"
+    expires_after="2025-01-29">
+  <owner>harringtond@chromium.org</owner>
+  <owner>offline-dev@chromium.org</owner>
+  <summary>
+    Reports the time taken to serialize a single frame of an MHTML file.
+    Includes only time taken by frame_serializer.cc. Reported when frame
+    serialization completes.
   </summary>
 </histogram>
 

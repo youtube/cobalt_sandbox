@@ -269,8 +269,7 @@ ui::mojom::WindowShowState ConvertToWindowShowState(
     case windows::WindowState::kNone:
       return ui::mojom::WindowShowState::kDefault;
   }
-  NOTREACHED_IN_MIGRATION();
-  return ui::mojom::WindowShowState::kDefault;
+  NOTREACHED();
 }
 
 bool IsValidStateForWindowsCreateFunction(
@@ -294,8 +293,7 @@ bool IsValidStateForWindowsCreateFunction(
     case windows::WindowState::kNone:
       return true;
   }
-  NOTREACHED_IN_MIGRATION();
-  return true;
+  NOTREACHED();
 }
 
 bool ExtensionHasLockedFullscreenPermission(const Extension* extension) {
@@ -827,6 +825,12 @@ ExtensionFunction::ResponseAction WindowsCreateFunction::Run() {
   for (const GURL& url : urls) {
     NavigateParams navigate_params(new_window, url, ui::PAGE_TRANSITION_LINK);
     navigate_params.disposition = WindowOpenDisposition::NEW_FOREGROUND_TAB;
+    // Ensure that these navigations will not get 'captured' into PWA windows,
+    // as this means that `new_window` could be ignored. It may be
+    // useful/desired in the future to allow this behavior, but this may require
+    // an API change, or at least a re-write of how these navigations are called
+    // to be compatible with the navigation capturing behavior.
+    navigate_params.pwa_navigation_capturing_force_off = true;
 
     // Depending on the |setSelfAsOpener| option, we need to put the new
     // contents in the same BrowsingInstance as their opener.  See also
@@ -1319,6 +1323,12 @@ ExtensionFunction::ResponseAction TabsQueryFunction::Run() {
       auto* tab_lifecycle_unit_external =
           resource_coordinator::TabLifecycleUnitExternal::FromWebContents(
               web_contents);
+
+      if (!MatchesBool(params->query_info.frozen,
+                       tab_lifecycle_unit_external->GetTabState() ==
+                           ::mojom::LifecycleUnitState::FROZEN)) {
+        continue;
+      }
 
       if (!MatchesBool(params->query_info.discarded,
                        tab_lifecycle_unit_external->GetTabState() ==
@@ -2408,10 +2418,8 @@ std::string TabsCaptureVisibleTabFunction::CaptureResultToErrorMessage(
     case FAILURE_REASON_SCREEN_SHOTS_DISABLED_BY_DLP:
       return tabs_constants::kScreenshotsDisabledByDlp;
     case OK:
-      NOTREACHED_IN_MIGRATION()
-          << "CaptureResultToErrorMessage should not be called"
-             " with a successful result";
-      return kUnknownErrorDoNotUse;
+      NOTREACHED() << "CaptureResultToErrorMessage should not be called with a "
+                      "successful result";
   }
   return ErrorUtils::FormatErrorMessage("Failed to capture tab: *",
                                         reason_description);

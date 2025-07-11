@@ -1199,15 +1199,12 @@ void RasterImplementation::UnmapRasterCHROMIUM(uint32_t raster_written_size,
 
 void RasterImplementation::CopySharedImage(const gpu::Mailbox& source_mailbox,
                                            const gpu::Mailbox& dest_mailbox,
-                                           GLenum dest_target,
                                            GLint xoffset,
                                            GLint yoffset,
                                            GLint x,
                                            GLint y,
                                            GLsizei width,
-                                           GLsizei height,
-                                           GLboolean unpack_flip_y,
-                                           GLboolean unpack_premultiply_alpha) {
+                                           GLsizei height) {
   GPU_CLIENT_SINGLE_THREAD_CHECK();
   GPU_CLIENT_LOG("[" << GetLogPrefix() << "] glCopySharedImage("
                      << source_mailbox.ToDebugString() << ", "
@@ -1227,7 +1224,7 @@ void RasterImplementation::CopySharedImage(const gpu::Mailbox& source_mailbox,
   memcpy(mailboxes + sizeof(source_mailbox.name), dest_mailbox.name,
          sizeof(dest_mailbox.name));
   helper_->CopySharedImageINTERNALImmediate(xoffset, yoffset, x, y, width,
-                                            height, unpack_flip_y, mailboxes);
+                                            height, mailboxes);
   CheckGLError();
 }
 
