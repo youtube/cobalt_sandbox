@@ -201,7 +201,7 @@ jobs:
         run: |
           set -x
           docker_content_sha=$(git log -n 1 --pretty=format:%h -- cobalt/docker docker-compose.yaml)
-          git show ${docker_content_sha}
+          # git show ${docker_content_sha}
           echo "docker_content_sha=${docker_content_sha}" >> $GITHUB_OUTPUT
     outputs:
       platforms: ${{ steps.set-platforms.outputs.platforms }}
