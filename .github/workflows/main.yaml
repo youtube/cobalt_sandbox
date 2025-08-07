@@ -316,7 +316,7 @@ jobs:
         with:
           path: src
           # Use fetch depth of 0 to get full history for a valid build id.
-          fetch-depth: 1
+          fetch-depth: 2
       - name: Set Up Depot Tools
         uses: ./src/.github/actions/depot_tools
       - name: Build Cobalt
