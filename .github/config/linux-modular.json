@@ -5,7 +5,7 @@
     ],
     "test_on_host": true,
     "test_root_target": "//cobalt:gn_all",
-    "num_gtest_shards": 10,
+    "num_gtest_shards": 20,
     "targets": [
       "cobalt:gn_all",
       "content_shell",
