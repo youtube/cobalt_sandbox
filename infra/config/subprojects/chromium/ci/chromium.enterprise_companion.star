@@ -20,7 +20,6 @@ ci.defaults.set(
     os = os.LINUX_DEFAULT,
     execution_timeout = ci.DEFAULT_EXECUTION_TIMEOUT,
     health_spec = health_spec.DEFAULT,
-    reclient_enabled = False,
     service_account = ci.DEFAULT_SERVICE_ACCOUNT,
     shadow_service_account = ci.DEFAULT_SHADOW_SERVICE_ACCOUNT,
     siso_enabled = True,
@@ -111,7 +110,7 @@ ci.builder(
 ci.thin_tester(
     name = "linux-enterprise-companion-tester-dbg",
     description_html = linkify("https://source.chromium.org/chromium/chromium/src/+/main:chrome/enterprise_companion/README.md", "Chrome Enterprise Companion App") + " Linux x64 Debug Tester.",
-    triggered_by = ["linux-enterprise-companion-builder-dbg"],
+    parent = "linux-enterprise-companion-builder-dbg",
     builder_spec = builder_config.builder_spec(
         execution_mode = builder_config.execution_mode.TEST,
         gclient_config = builder_config.gclient_config(
@@ -146,7 +145,7 @@ ci.thin_tester(
 ci.thin_tester(
     name = "linux-enterprise-companion-tester-rel",
     description_html = linkify("https://source.chromium.org/chromium/chromium/src/+/main:chrome/enterprise_companion/README.md", "Chrome Enterprise Companion App") + " Linux x64 Release Tester.",
-    triggered_by = ["linux-enterprise-companion-builder-rel"],
+    parent = "linux-enterprise-companion-builder-rel",
     builder_spec = builder_config.builder_spec(
         execution_mode = builder_config.execution_mode.TEST,
         gclient_config = builder_config.gclient_config(
@@ -392,7 +391,7 @@ ci.builder(
 ci.thin_tester(
     name = "mac11-arm64-enterprise-companion-tester-dbg",
     description_html = linkify("https://source.chromium.org/chromium/chromium/src/+/main:chrome/enterprise_companion/README.md", "Chrome Enterprise Companion App") + " MacOS 11 ARM64 Debug Tester.",
-    triggered_by = ["mac-enterprise-companion-builder-arm64-dbg"],
+    parent = "mac-enterprise-companion-builder-arm64-dbg",
     builder_spec = builder_config.builder_spec(
         execution_mode = builder_config.execution_mode.TEST,
         gclient_config = builder_config.gclient_config(
@@ -426,7 +425,7 @@ ci.thin_tester(
 ci.thin_tester(
     name = "mac11-arm64-enterprise-companion-tester-rel",
     description_html = linkify("https://source.chromium.org/chromium/chromium/src/+/main:chrome/enterprise_companion/README.md", "Chrome Enterprise Companion App") + " MacOS 11 ARM64 Release Tester.",
-    triggered_by = ["mac-enterprise-companion-builder-arm64-rel"],
+    parent = "mac-enterprise-companion-builder-arm64-rel",
     builder_spec = builder_config.builder_spec(
         execution_mode = builder_config.execution_mode.TEST,
         gclient_config = builder_config.gclient_config(
@@ -460,7 +459,7 @@ ci.thin_tester(
 ci.thin_tester(
     name = "mac11-x64-enterprise-companion-tester-dbg",
     description_html = linkify("https://source.chromium.org/chromium/chromium/src/+/main:chrome/enterprise_companion/README.md", "Chrome Enterprise Companion App") + " MacOS 11 x64 Debug Tester.",
-    triggered_by = ["mac-enterprise-companion-builder-dbg"],
+    parent = "mac-enterprise-companion-builder-dbg",
     builder_spec = builder_config.builder_spec(
         execution_mode = builder_config.execution_mode.TEST,
         gclient_config = builder_config.gclient_config(
@@ -494,7 +493,7 @@ ci.thin_tester(
 ci.thin_tester(
     name = "mac11-x64-enterprise-companion-tester-rel",
     description_html = linkify("https://source.chromium.org/chromium/chromium/src/+/main:chrome/enterprise_companion/README.md", "Chrome Enterprise Companion App") + " MacOS 11 x64 Release Tester.",
-    triggered_by = ["mac-enterprise-companion-builder-rel"],
+    parent = "mac-enterprise-companion-builder-rel",
     builder_spec = builder_config.builder_spec(
         execution_mode = builder_config.execution_mode.TEST,
         gclient_config = builder_config.gclient_config(
@@ -528,7 +527,7 @@ ci.thin_tester(
 ci.thin_tester(
     name = "mac12-arm64-enterprise-companion-tester-rel",
     description_html = linkify("https://source.chromium.org/chromium/chromium/src/+/main:chrome/enterprise_companion/README.md", "Chrome Enterprise Companion App") + " MacOS 12 ARM64 Release Tester.",
-    triggered_by = ["mac-enterprise-companion-builder-arm64-rel"],
+    parent = "mac-enterprise-companion-builder-arm64-rel",
     builder_spec = builder_config.builder_spec(
         execution_mode = builder_config.execution_mode.TEST,
         gclient_config = builder_config.gclient_config(
@@ -562,7 +561,7 @@ ci.thin_tester(
 ci.thin_tester(
     name = "mac12-x64-enterprise-companion-tester-asan-dbg",
     description_html = linkify("https://source.chromium.org/chromium/chromium/src/+/main:chrome/enterprise_companion/README.md", "Chrome Enterprise Companion App") + " MacOS 12 x64 ASAN Debug Tester.",
-    triggered_by = ["mac-enterprise-companion-builder-asan-dbg"],
+    parent = "mac-enterprise-companion-builder-asan-dbg",
     builder_spec = builder_config.builder_spec(
         execution_mode = builder_config.execution_mode.TEST,
         gclient_config = builder_config.gclient_config(
@@ -596,7 +595,7 @@ ci.thin_tester(
 ci.thin_tester(
     name = "mac13-arm64-enterprise-companion-tester-dbg",
     description_html = linkify("https://source.chromium.org/chromium/chromium/src/+/main:chrome/enterprise_companion/README.md", "Chrome Enterprise Companion App") + " MacOS 13 ARM64 Debug Tester.",
-    triggered_by = ["mac-enterprise-companion-builder-arm64-dbg"],
+    parent = "mac-enterprise-companion-builder-arm64-dbg",
     builder_spec = builder_config.builder_spec(
         execution_mode = builder_config.execution_mode.TEST,
         gclient_config = builder_config.gclient_config(
@@ -630,7 +629,7 @@ ci.thin_tester(
 ci.thin_tester(
     name = "mac13-x64-enterprise-companion-tester-rel",
     description_html = linkify("https://source.chromium.org/chromium/chromium/src/+/main:chrome/enterprise_companion/README.md", "Chrome Enterprise Companion App") + " MacOS 13 x64 Release Tester.",
-    triggered_by = ["mac-enterprise-companion-builder-rel"],
+    parent = "mac-enterprise-companion-builder-rel",
     builder_spec = builder_config.builder_spec(
         execution_mode = builder_config.execution_mode.TEST,
         gclient_config = builder_config.gclient_config(
@@ -831,7 +830,7 @@ ci.builder(
 ci.thin_tester(
     name = "win10-enterprise-companion-tester-dbg",
     description_html = linkify("https://source.chromium.org/chromium/chromium/src/+/main:chrome/enterprise_companion/README.md", "Chrome Enterprise Companion App") + " Windows 10 x64 Debug Tester.",
-    triggered_by = ["win-enterprise-companion-builder-dbg"],
+    parent = "win-enterprise-companion-builder-dbg",
     builder_spec = builder_config.builder_spec(
         execution_mode = builder_config.execution_mode.TEST,
         gclient_config = builder_config.gclient_config(
@@ -866,7 +865,7 @@ ci.thin_tester(
 ci.thin_tester(
     name = "win10-32-on-64-enterprise-companion-tester-dbg",
     description_html = linkify("https://source.chromium.org/chromium/chromium/src/+/main:chrome/enterprise_companion/README.md", "Chrome Enterprise Companion App") + " Windows 10 x86-on-x64 Debug Tester.",
-    triggered_by = ["win32-enterprise-companion-builder-dbg"],
+    parent = "win32-enterprise-companion-builder-dbg",
     builder_spec = builder_config.builder_spec(
         execution_mode = builder_config.execution_mode.TEST,
         gclient_config = builder_config.gclient_config(
@@ -901,7 +900,7 @@ ci.thin_tester(
 ci.thin_tester(
     name = "win10-32-on-64-enterprise-companion-tester-rel",
     description_html = linkify("https://source.chromium.org/chromium/chromium/src/+/main:chrome/enterprise_companion/README.md", "Chrome Enterprise Companion App") + " Windows 10 x86-on-x64 Release Tester.",
-    triggered_by = ["win32-enterprise-companion-builder-rel"],
+    parent = "win32-enterprise-companion-builder-rel",
     builder_spec = builder_config.builder_spec(
         execution_mode = builder_config.execution_mode.TEST,
         gclient_config = builder_config.gclient_config(
@@ -936,7 +935,7 @@ ci.thin_tester(
 ci.thin_tester(
     name = "win10-enterprise-companion-tester-rel",
     description_html = linkify("https://source.chromium.org/chromium/chromium/src/+/main:chrome/enterprise_companion/README.md", "Chrome Enterprise Companion App") + " Windows 10 x64 Release Tester.",
-    triggered_by = ["win-enterprise-companion-builder-rel"],
+    parent = "win-enterprise-companion-builder-rel",
     builder_spec = builder_config.builder_spec(
         execution_mode = builder_config.execution_mode.TEST,
         gclient_config = builder_config.gclient_config(
@@ -971,7 +970,7 @@ ci.thin_tester(
 ci.thin_tester(
     name = "win11-enterprise-companion-tester-rel",
     description_html = linkify("https://source.chromium.org/chromium/chromium/src/+/main:chrome/enterprise_companion/README.md", "Chrome Enterprise Companion App") + " Windows 11 x64 Release Tester.",
-    triggered_by = ["win-enterprise-companion-builder-rel"],
+    parent = "win-enterprise-companion-builder-rel",
     builder_spec = builder_config.builder_spec(
         execution_mode = builder_config.execution_mode.TEST,
         gclient_config = builder_config.gclient_config(

@@ -30,7 +30,6 @@ ci.defaults.set(
     execution_timeout = ci.DEFAULT_EXECUTION_TIMEOUT,
     health_spec = health_spec.DEFAULT,
     notifies = ["chromium.linux"],
-    reclient_enabled = False,
     service_account = ci.DEFAULT_SERVICE_ACCOUNT,
     shadow_service_account = ci.DEFAULT_SHADOW_SERVICE_ACCOUNT,
     siso_enabled = True,
@@ -464,7 +463,7 @@ ci.builder(
 ci.thin_tester(
     name = "Linux Tests",
     branch_selector = branches.selector.LINUX_BRANCHES,
-    triggered_by = ["ci/Linux Builder"],
+    parent = "ci/Linux Builder",
     builder_spec = builder_config.builder_spec(
         execution_mode = builder_config.execution_mode.TEST,
         gclient_config = builder_config.gclient_config(
@@ -567,7 +566,7 @@ ci.thin_tester(
 ci.thin_tester(
     name = "Linux Tests (dbg)(1)",
     branch_selector = branches.selector.LINUX_BRANCHES,
-    triggered_by = ["ci/Linux Builder (dbg)"],
+    parent = "ci/Linux Builder (dbg)",
     builder_spec = builder_config.builder_spec(
         execution_mode = builder_config.execution_mode.TEST,
         gclient_config = builder_config.gclient_config(
@@ -665,7 +664,7 @@ ci.thin_tester(
 ci.thin_tester(
     name = "Linux Tests (Wayland)",
     branch_selector = branches.selector.LINUX_BRANCHES,
-    triggered_by = ["ci/Linux Builder (Wayland)"],
+    parent = "ci/Linux Builder (Wayland)",
     builder_spec = builder_config.builder_spec(
         execution_mode = builder_config.execution_mode.TEST,
         gclient_config = builder_config.gclient_config(
@@ -767,7 +766,7 @@ ci.thin_tester(
                 "ozone wayland doc",
             ),
         ),
-    triggered_by = ["ci/Linux Builder (Wayland)"],
+    parent = "ci/Linux Builder (Wayland)",
     builder_spec = builder_config.builder_spec(
         execution_mode = builder_config.execution_mode.TEST,
         gclient_config = builder_config.gclient_config(
@@ -909,7 +908,7 @@ ci.builder(
 ci.builder(
     name = "linux-oi-rel",
     description_html = "This builder runs key test suites with OriginKeyedProcessesByDefault (OriginIsolation) enabled, to provide test coverage with the feature enabled.",
-    triggered_by = ["ci/Linux Builder"],
+    parent = "ci/Linux Builder",
     builder_spec = builder_config.builder_spec(
         execution_mode = builder_config.execution_mode.TEST,
         gclient_config = builder_config.gclient_config(
