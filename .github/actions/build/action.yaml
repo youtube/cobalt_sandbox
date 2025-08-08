@@ -40,13 +40,14 @@ runs:
         id: changed-files
         env:
           CHANGED_FILES_LIST: changed_files.txt
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -x
           cd src
           #git fetch origin ${{ github.event.pull_request.base.sha }}
           #git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} > ${CHANGED_FILES_LIST}
           #cat ${CHANGED_FILES_LIST}
-          diff_content=$(curl -fsSL -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github.v3.diff" ${{ github.event.issue.pull_request.url }})
+          diff_content=$(curl -fsSL -H "Authorization: Bearer ${GITHUB_TOKEN}" -H "Accept: application/vnd.github.v3.diff" ${{ github.event.issue.pull_request.url }})
           echo ${diff_content}
           exit 1
         shell: bash
