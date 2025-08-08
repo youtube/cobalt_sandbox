@@ -109,7 +109,11 @@
     },
   },
   'chromeos-tast-public-builder': {
-    'args': ["tast.setup.FieldTrialConfig=enable", "maybemissingvars=ui\\.(gaiaPoolDefault|signinProfileTestExtensionManifestKey)|uidetection\\.(key|key_type|server)", "shard_method=hash"],
+    'args': [
+      'tast.setup.FieldTrialConfig=enable',
+      'maybemissingvars=ui\.(gaiaPoolDefault|signinProfileTestExtensionManifestKey)|uidetection\.(key|key_type|server)',
+      'shard_method=hash',
+    ],
   },
   'chromium-tester-service-account': {
     'fail_if_unused': False,
@@ -140,9 +144,6 @@
         'pool': 'chromium.tests',
       },
     },
-  },
-  'cros-cbx-dut': {
-    'cros_cbx': True,
   },
   'crosier-no-arc': {
     'args': [
@@ -396,7 +397,9 @@
     ],
   },
   'long_skylab_timeout': {
-    'timeout_sec': 10800,
+    'skylab': {
+      'timeout_sec': 10800,
+    },
   },
   'mac_14_x64': {
     'swarming': {
@@ -594,15 +597,6 @@
       '${ISOLATED_OUTDIR}',
     ],
   },
-  'shards-20': {
-    'shards': 20,
-  },
-  'shards-30': {
-    'shards': 30,
-  },
-  'shards-50': {
-    'shards': 50,
-  },
   'skia_gold_test': {
     'args': [
       '--git-revision=${got_revision}',
@@ -612,6 +606,21 @@
       '--gerrit-patchset=${patch_set}',
       '--buildbucket-id=${buildbucket_build_id}',
     ],
+  },
+  'skylab-shards-20': {
+    'skylab': {
+      'shards': 20,
+    },
+  },
+  'skylab-shards-30': {
+    'skylab': {
+      'shards': 30,
+    },
+  },
+  'skylab-shards-50': {
+    'skylab': {
+      'shards': 50,
+    },
   },
   'swarming_containment_auto': {
     'fail_if_unused': False,
