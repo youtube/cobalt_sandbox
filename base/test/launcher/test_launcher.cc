@@ -1177,6 +1177,16 @@ bool TestLauncher::Run(CommandLine* command_line) {
   return run_result;
 }
 
+bool TestLauncher::GetAndFilterTestsForShard(std::vector<std::string>* tests) {
+  DCHECK(tests);
+  if (!Init(CommandLine::ForCurrentProcess())) {
+    return false;
+  }
+
+  *tests = CollectTests();
+  return true;
+}
+
 void TestLauncher::LaunchChildGTestProcess(
     scoped_refptr<TaskRunner> task_runner,
     const std::vector<std::string>& test_names,
@@ -1487,6 +1497,9 @@ bool LoadFilterFile(const FilePath& file_path,
 }
 
 bool TestLauncher::Init(CommandLine* command_line) {
+  if (initialized_)
+    return true;
+
   // Initialize sharding. Command line takes precedence over legacy environment
   // variables.
   if (command_line->HasSwitch(switches::kTestLauncherTotalShards) &&
@@ -1779,6 +1792,8 @@ bool TestLauncher::Init(CommandLine* command_line) {
 #if defined(ARCH_CPU_64_BITS)
   results_tracker_.AddGlobalTag("CPU_64_BITS");
 #endif
+
+  initialized_ = true;
 
   return true;
 }

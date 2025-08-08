@@ -328,6 +328,8 @@ class TestLauncher {
   // redirect stdio of subprocess
   bool redirect_stdio_;
 
+  bool initialized_ = false;
+
   // Number of times all tests should be repeated during each iteration.
   // 1 if gtest_repeat is not specified or gtest_break_on_failure is specified.
   // Otherwise it matches gtest_repeat value.

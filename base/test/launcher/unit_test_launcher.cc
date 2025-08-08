@@ -153,6 +153,39 @@ int RunTestSuite(RunTestSuiteCallback run_test_suite,
                  bool use_job_objects,
                  RepeatingClosure timeout_callback,
                  OnceClosure gtest_init) {
+  CommandLine* command_line = CommandLine::ForCurrentProcess();
+  if (command_line->HasSwitch(switches::kSingleProcessTests) &&
+      command_line->HasSwitch(switches::kTestLauncherTotalShards) &&
+      command_line->HasSwitch(switches::kTestLauncherShardIndex)) {
+    std::move(gtest_init).Run();
+    TestTimeouts::Initialize();
+
+    DefaultUnitTestPlatformDelegate platform_delegate;
+    UnitTestLauncherDelegate delegate(&platform_delegate, 0, false,
+                                      DoNothing());
+    TestLauncher launcher(&delegate, 1, 0);
+
+    std::vector<std::string> tests_to_run;
+    if (!launcher.GetAndFilterTestsForShard(&tests_to_run)) {
+      LOG(ERROR) << "Failed to get tests for shard.";
+      return 1;
+    }
+
+    if (tests_to_run.empty()) {
+      fprintf(stdout, "No tests to run in this shard.\n");
+      fflush(stdout);
+      return 0;
+    }
+
+    // The TestLauncher has already processed the user-provided filter and
+    // combined it with the sharding logic. We can now replace the old filter
+    // with the precise list of tests to run.
+    command_line->RemoveSwitch(kGTestFilterFlag);
+    command_line->AppendSwitchASCII(kGTestFilterFlag,
+                                    JoinString(tests_to_run, ":"));
+    return std::move(run_test_suite).Run();
+  }
+
   bool force_single_process = false;
   if (CommandLine::ForCurrentProcess()->HasSwitch(
           switches::kTestLauncherDebugLauncher)) {
