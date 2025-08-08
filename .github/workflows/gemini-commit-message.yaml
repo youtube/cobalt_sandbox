@@ -14,31 +14,14 @@ on:
 # This block defines the job that will run.
 jobs:
   generate_commit_message:
-    # This condition ensures the workflow only runs if the comment is on a PR
-    # and the comment body is exactly '/gemini-commit-message'.
-    if: github.event.issue.pull_request && github.event.comment.body == '/gemini-commit-message'
-
     # The workflow will run on the latest version of Ubuntu.
     runs-on: ubuntu-latest
 
     # We need to grant the workflow permission to write comments on pull requests.
     permissions:
-      pull-requests: write
+      pull-requests: read
 
     steps:
-      # Step 1: Get the code changes (the "diff") from the pull request.
-      - name: 'Get PR Diff'
-        id: diff
-        run: |
-          set -eux
-          # Fetch the diff content directly from the PR's diff URL.
-          diff_content=$(curl -fsSL -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github.v3.diff" ${{ github.event.issue.pull_request.url }})
-
-          # The following lines save the diff content into a GitHub Actions output variable.
-          echo "diff_content<<EOF" >> $GITHUB_OUTPUT
-          echo "$diff_content" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
       # Step 2: Call the Gemini API directly with a detailed prompt.
       # This approach avoids third-party actions and gives us full control over the request.
       - name: 'Generate Commit Message with Gemini'
