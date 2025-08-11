@@ -43,12 +43,12 @@ jobs:
     if: |
       github.event.action != 'labeled' ||
       (github.event.pull_request.merged == false && github.event.label.name == 'runtest')
-    timeout-minutes: 10
+    timeout-minutes: 40
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 1
           ref: ${{ github.event.pull_request.head.sha }}
       - name: Cache CI Essentials
         uses: actions/upload-artifact@v4
@@ -201,7 +201,7 @@ jobs:
         run: |
           set -x
           docker_content_sha=$(git log -n 1 --pretty=format:%h -- cobalt/docker docker-compose.yaml)
-          git show ${docker_content_sha}
+          # git show ${docker_content_sha}
           echo "docker_content_sha=${docker_content_sha}" >> $GITHUB_OUTPUT
     outputs:
       platforms: ${{ steps.set-platforms.outputs.platforms }}
@@ -316,7 +316,7 @@ jobs:
         with:
           path: src
           # Use fetch depth of 0 to get full history for a valid build id.
-          fetch-depth: 0
+          fetch-depth: 2
       - name: Set Up Depot Tools
         uses: ./src/.github/actions/depot_tools
       - name: Build Cobalt
