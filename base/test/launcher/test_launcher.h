@@ -138,6 +138,10 @@ class TestLauncher {
   // if null, uses command line for current process.
   [[nodiscard]] bool Run(CommandLine* command_line = nullptr);
 
+  // Gets the tests for the current shard, putting them in |tests|.
+  // Returns true on success.
+  [[nodiscard]] bool GetAndFilterTestsForShard(std::vector<std::string>* tests);
+
   // Launches a child process (assumed to be gtest-based binary) which runs
   // tests indicated by |test_names|.
   // |task_runner| is used to post results back to the launcher on the main
