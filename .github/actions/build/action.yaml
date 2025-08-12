@@ -28,6 +28,7 @@ runs:
       - name: GN gen
         run: |
           cd src
+          git log
           cobalt/build/gn.py -p ${{ matrix.platform }} -C ${{ matrix.config }}
         shell: bash
       - name: List GN args
