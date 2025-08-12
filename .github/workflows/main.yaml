@@ -315,6 +315,9 @@ jobs:
         if: ${{ ! (contains(matrix.platform, 'android') && matrix.config == 'debug') }}
         with:
           path: src
+          # Fetching 2 commits guarantees to have local repository with a merge commit (PR to a target branch)
+          # plus the HEAD commit from the target branch.  This is needed to find changed files between
+          # PR and the target branch.
           fetch-depth: 2
       - name: Set Up Depot Tools
         uses: ./src/.github/actions/depot_tools

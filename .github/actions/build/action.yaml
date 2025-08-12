@@ -41,12 +41,11 @@ runs:
         id: changed-files
         env:
           CHANGED_FILES_LIST: changed_files.txt
-          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -x
           cd src
-          git fetch origin ${{ github.event.pull_request.base.sha }}
-          git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} > ${CHANGED_FILES_LIST}
+          # This will only work if checkout is done with fetch-depth set to 2
+          git diff --name-only HEAD~1 HEAD > ${CHANGED_FILES_LIST}
           cat ${CHANGED_FILES_LIST}
         shell: bash
       - name: Calculate test targets
