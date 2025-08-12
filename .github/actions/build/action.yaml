@@ -48,9 +48,9 @@ runs:
           echo "Git show HEAD"
           git show --name-only HEAD
           echo "Git show HEAD~1"
-          git show --name-only HEAD~1
+          git show --name-only HEAD~1cd c
           echo "Git commit count"
-          git rev-list --count origin/HEAD
+          git rev-list --count HEAD
           # This will only work if checkout is done with fetch-depth set to 2
           git diff --name-only HEAD~1 HEAD > ${CHANGED_FILES_LIST}
           cat ${CHANGED_FILES_LIST}

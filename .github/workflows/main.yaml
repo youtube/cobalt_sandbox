@@ -317,8 +317,9 @@ jobs:
           path: src
           # Fetching 2 commits guarantees to have local repository with a merge commit (PR to a target branch)
           # plus the HEAD commit from the target branch.  This is needed to find changed files between
-          # PR and the target branch.
-          fetch-depth: 2
+          # PR and the target branch.  We only fetch everything in prod repository which is needed to calcuate
+          # build id properly.  For the sandbox repository we limit number of commits to 2.
+          fetch-depth: ${{ ( github.event_name == 'pull_request' || github.repository == 'youtube/cobalt_sandbox' ) && 2 || 0 }}
       - name: Set Up Depot Tools
         uses: ./src/.github/actions/depot_tools
       - name: Build Cobalt
