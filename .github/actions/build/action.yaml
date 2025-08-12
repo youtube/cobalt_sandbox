@@ -29,6 +29,8 @@ runs:
         run: |
           cd src
           git log
+          git show --name-only HEAD
+          git show --name-only HEAD~1
           cobalt/build/gn.py -p ${{ matrix.platform }} -C ${{ matrix.config }}
         shell: bash
       - name: List GN args
