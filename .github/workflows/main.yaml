@@ -201,7 +201,7 @@ jobs:
         run: |
           set -x
           docker_content_sha=$(git log -n 1 --pretty=format:%h -- cobalt/docker docker-compose.yaml)
-          # git show ${docker_content_sha}
+          git show ${docker_content_sha}
           echo "docker_content_sha=${docker_content_sha}" >> $GITHUB_OUTPUT
     outputs:
       platforms: ${{ steps.set-platforms.outputs.platforms }}
@@ -315,8 +315,7 @@ jobs:
         if: ${{ ! (contains(matrix.platform, 'android') && matrix.config == 'debug') }}
         with:
           path: src
-          # Use fetch depth of 0 to get full history for a valid build id.
-          fetch-depth: 2
+          fetch-depth: 1
       - name: Set Up Depot Tools
         uses: ./src/.github/actions/depot_tools
       - name: Build Cobalt
