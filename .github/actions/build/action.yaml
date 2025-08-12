@@ -28,9 +28,6 @@ runs:
       - name: GN gen
         run: |
           cd src
-          git log
-          git show --name-only HEAD
-          git show --name-only HEAD~1
           cobalt/build/gn.py -p ${{ matrix.platform }} -C ${{ matrix.config }}
         shell: bash
       - name: List GN args
@@ -46,6 +43,14 @@ runs:
         run: |
           set -x
           cd src
+          echo "Git log"
+          git log
+          echo "Git show HEAD"
+          git show --name-only HEAD
+          echo "Git show HEAD~1"
+          git show --name-only HEAD~1
+          echo "Git commit count"
+          git rev-list --count origin/HEAD
           # This will only work if checkout is done with fetch-depth set to 2
           git diff --name-only HEAD~1 HEAD > ${CHANGED_FILES_LIST}
           cat ${CHANGED_FILES_LIST}
