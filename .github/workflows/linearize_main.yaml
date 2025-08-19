@@ -1,0 +1,55 @@
+name: linearize_main
+
+on:
+  schedule:
+    # GMT timezone.
+    - cron: '0 10 * * *'
+  workflow_dispatch:
+
+permissions: read-all
+
+jobs:
+  trigger_linearize:
+    # runs-on: ubuntu-latest
+    runs-on: [self-hosted, chrobalt-linux-runner]
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Checkout rebase_tools
+        uses: actions/checkout@v4
+        with:
+          ref: experimental/rebase_tools
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+          cache: 'pip'
+      - name: Install rebase_tools
+        run: |
+          set -eux
+          pip install -r requirements.txt
+      - name: Run linearize
+        run: |
+          set -eux
+          # m114 merge commit=38a06fe8674ad2140ff85c87b5b3a817304e369a
+          export REV=$(git rev-parse --verify origin/main)
+          python main.py linearize --repo-path=${GITHUB_WORKSPACE} --source-branch=main --new-branch-name=feature/linear_main \
+            --start-commit-ref=38a06fe8674ad2140ff85c87b5b3a817304e369a --end-commit-ref=${REV} --new-branch-name=linear_main_commit_mapping.json
+      - name: Commit new commit mapping
+        run: |
+          set -eux
+          git add linear_main_commit_mapping.json
+          git commit -m "Linearization refresh on $(date +'%Y-%m-%d')."
+          git push --force origin experimental/rebase_tools
+      - name: Checkout rebase_tools
+        uses: actions/checkout@v4
+        with:
+          ref: feature/linear_main
+      - name: Update feature/linear_main
+        run: |
+          set -eux
+          git push --force origin feature/linear_main
