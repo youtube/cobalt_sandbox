@@ -32,6 +32,10 @@ jobs:
         run: |
           set -eux
           pip install -r requirements.txt
+      - name: Setup Git
+        run: |
+          git config --global user.name "GitHub Release Automation"
+          git config --global user.email "github@google.com"
       - name: Run linearize
         run: |
           set -eux
@@ -53,3 +57,4 @@ jobs:
         run: |
           set -eux
           git push --force origin feature/linear_main
+

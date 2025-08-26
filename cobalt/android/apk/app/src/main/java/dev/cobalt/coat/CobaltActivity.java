@@ -52,6 +52,7 @@ import java.util.regex.Pattern;
 import org.chromium.base.CommandLine;
 import org.chromium.base.library_loader.LibraryLoader;
 import org.chromium.base.library_loader.LibraryProcessType;
+import org.chromium.base.memory.MemoryPressureMonitor;
 import org.chromium.components.version_info.VersionInfo;
 import org.chromium.content.browser.input.ImeAdapterImpl;
 import org.chromium.content_public.browser.BrowserStartupController;
@@ -288,9 +289,6 @@ public abstract class CobaltActivity extends Activity {
     return webContents != null ? ImeAdapterImpl.fromWebContents(webContents) : null;
   }
 
-  // TODO(b/375442742): re-enable native code.
-  // private static native void nativeLowMemoryEvent();
-
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     // Record the application start timestamp.
@@ -303,6 +301,7 @@ public abstract class CobaltActivity extends Activity {
 
     super.onCreate(savedInstanceState);
     createContent(savedInstanceState);
+    MemoryPressureMonitor.INSTANCE.registerComponentCallbacks();
 
     videoSurfaceView = new VideoSurfaceView(this);
     a11yHelper = new CobaltA11yHelper(this, videoSurfaceView);
@@ -380,6 +379,7 @@ public abstract class CobaltActivity extends Activity {
       // visibility:visible event
       webContents.onShow();
     }
+    MemoryPressureMonitor.INSTANCE.enablePolling();
   }
 
   @Override
@@ -398,6 +398,7 @@ public abstract class CobaltActivity extends Activity {
     if (VideoSurfaceView.getCurrentSurface() != null) {
       forceCreateNewVideoSurfaceView = true;
     }
+    MemoryPressureMonitor.INSTANCE.disablePolling();
 
     // Set the SurfaceView to fullscreen.
     View rootView = getWindow().getDecorView();
@@ -587,13 +588,6 @@ public abstract class CobaltActivity extends Activity {
     } else {
       Log.w(TAG, "Unexpected surface view parent class " + parent.getClass().getName());
     }
-  }
-
-  @Override
-  public void onLowMemory() {
-    super.onLowMemory();
-    // TODO(cobalt): re-enable native low memory event or remove code if unnecessary.
-    // nativeLowMemoryEvent();
   }
 
   public long getAppStartTimestamp() {

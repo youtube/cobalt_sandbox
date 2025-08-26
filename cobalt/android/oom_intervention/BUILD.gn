@@ -1,4 +1,4 @@
-# Copyright 2021 The Cobalt Authors. All Rights Reserved.
+# Copyright 2025 The Cobalt Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,26 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-static_library("eztime") {
-  sources = [
-    "eztime.cc",
-    "eztime.h",
-  ]
-
-  deps = [ "//third_party/icu" ]
-}
-
-source_set("eztime_test") {
+static_library("oom_intervention") {
   testonly = true
-
   sources = [
-    "eztime_test.cc",
-    "test_constants.h",
+    "oom_intervention_config.cc",
+    "oom_intervention_config.h",
+    "oom_intervention_features.cc",
+    "oom_intervention_features.h",
+    "oom_intervention_tab_helper.cc",
+    "oom_intervention_tab_helper.h",
   ]
 
   deps = [
-    ":eztime",
-    "//testing/gmock",
-    "//testing/gtest",
+    "//base",
+    "//cobalt/browser:global_features",
+    "//cobalt/common/features",
+    "//components/prefs",
+    "//content/public/browser",
   ]
 }
