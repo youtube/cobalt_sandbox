@@ -93,6 +93,9 @@ jobs:
                   }
                 }
               },
+              "security": {
+                "security.auth.selectedType": "GEMINI_API_KEY"
+              },
               "coreTools": [
                 "run_shell_command(cat)",
                 "run_shell_command(echo)",
