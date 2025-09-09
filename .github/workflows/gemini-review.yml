@@ -57,9 +57,9 @@ jobs:
           gcp_project_id: '${{ vars.GOOGLE_CLOUD_PROJECT }}'
           gcp_location: '${{ vars.GOOGLE_CLOUD_LOCATION }}'
           gcp_service_account: '${{ vars.SERVICE_ACCOUNT_EMAIL }}'
-          gemini_api_key: '${{ secrets.GEMINI_API_KEY }}'
+          gemini_api_key: '${{ secrets.GEMINI_ACTIONS_API_KEY }}'
           use_vertex_ai: '${{ vars.GOOGLE_GENAI_USE_VERTEXAI }}'
-          google_api_key: '${{ secrets.GEMINI_ACTIONS_API_KEY }}'
+          google_api_key: '${{ secrets.GOOGLE_API_KEY }}'
           use_gemini_code_assist: '${{ vars.GOOGLE_GENAI_USE_GCA }}'
           gemini_debug: '${{ fromJSON(vars.DEBUG || vars.ACTIONS_STEP_DEBUG || false) }}'
           settings: |-
