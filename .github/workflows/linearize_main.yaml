@@ -10,7 +10,6 @@ permissions: read-all
 
 jobs:
   trigger_linearize:
-    # runs-on: ubuntu-latest
     runs-on: [self-hosted, chrobalt-linux-runner]
     permissions:
       contents: write
@@ -19,7 +18,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: main
-          fetch-depth: 0
+          fetch-depth: 10
       - name: Checkout rebase_tools
         uses: actions/checkout@v4
         with:
@@ -42,7 +41,7 @@ jobs:
           set -eux
           # m114 merge commit=38a06fe8674ad2140ff85c87b5b3a817304e369a
           python main.py linearize --repo-path=${GITHUB_WORKSPACE} --source-branch=main --new-branch-name=automated/linear_main \
-            --start-commit-ref=38a06fe8674ad2140ff85c87b5b3a817304e369a --end-commit-ref=${REV}
+            --start-commit-ref=b0083b72e59cbf351aa284e89dcbbb6ea7d69dff --end-commit-ref=${REV}
       - name: Update automated/linear_main and commit map, extract m114 commits
         run: |
           set -eux
@@ -55,7 +54,15 @@ jobs:
 
           # Create new commits json for m114
           python main.py commits --repo-path=${GITHUB_WORKSPACE} --source-branch=origin/automated/linear_main \
-            --start-commit-ref=38a06fe8674ad2140ff85c87b5b3a817304e369a --end-commit-ref=$REV --output-file=automated_commits_m114.json
+            --start-commit-ref=b0083b72e59cbf351aa284e89dcbbb6ea7d69dff --end-commit-ref=$REV --output-file=${GITHUB_WORKSPACE}/automated_commits_m114.json
+          
+          git checkout experimental/rebase_tools
           git add automated_commits_m114.json
+          echo "===================================================="
+          git status
+          git branch
           git commit -m "Linearization refresh on $(date +'%Y-%m-%d')."
-          git push --force origin experimental/rebase_tools:experimental/rebase_tools
+          echo "===================================================="
+          git status
+          git branch
+          git push --force origin experimental/rebase_tools
