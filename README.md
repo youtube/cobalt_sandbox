@@ -5,7 +5,8 @@
 [![linux](https://github.com/youtube/cobalt/actions/workflows/linux.yaml/badge.svg?branch=main&event=push)](https://github.com/youtube/cobalt/actions/workflows/linux.yaml?query=event%3Apush+branch%3Amain)
 
 Chromium is an open-source browser project that aims to build a safer, faster,
-and more stable way for all users to experience the web.
+and more stable way for all users to experience the web. This repository also
+contains Chrobalt.
 
 The project's web site is https://www.chromium.org.
 
