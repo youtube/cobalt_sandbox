@@ -1785,7 +1785,6 @@ if (is_chromeos_ash && enable_js_type_check) {
   }
 }
 
-# Write debug logs to gn_logs.txt.
 _lines = [
            "Generated during 'gn gen' by //BUILD.gn.",
            "",
