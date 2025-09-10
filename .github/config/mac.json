@@ -1,0 +1,10 @@
+{
+  "docker_service": "",
+  "platforms": [
+    "chromium_mac"
+  ],
+  "targets": [
+    "chromedriver",
+    "content_shell"
+  ]
+}

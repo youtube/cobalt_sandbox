@@ -1,24 +1,25 @@
-name: Workflow Debug
+name: mac
 
 on:
   pull_request:
-    types: [opened, reopened, synchronize, labeled]
     branches:
       - main
-      - experimental/*
       - feature/*
   push:
     branches:
       - main
-      - experimental/*
       - feature/*
 
-permissions: {}
-
 jobs:
-  debug:
-    runs-on: ubuntu-latest
+  test_mac:
+    permissions:
+      actions: write
+    runs-on: macos-latest
     steps:
+      - name: Dump worker info
+        run: |
+          uname -a
+          g++ --version
       - name: Dump GitHub context
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
@@ -56,3 +57,14 @@ jobs:
             -H "X-GitHub-Api-Version: 2022-11-28" \
             /rate_limit
         shell: bash
+  chromium_mac:
+    uses: ./.github/workflows/main.yaml
+    permissions:
+      packages: write
+      pull-requests: write
+    with:
+      platform: mac
+      run_in_docker: false
+      nightly: ${{ github.event.inputs.nightly }}
+    secrets:
+      datadog_api_key: ${{ secrets.DD_API_KEY }}
