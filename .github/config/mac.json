@@ -1,16 +1,10 @@
 {
   "docker_service": "",
   "platforms": [
-    "mac"
+    "chromium_mac"
   ],
   "targets": [
     "chromedriver",
     "content_shell"
-  ],
-  "includes": [
-    {
-      "name": "mac",
-      "platform": "chromium_mac"
-    }
   ]
 }
