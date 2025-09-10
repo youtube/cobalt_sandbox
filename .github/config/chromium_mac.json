@@ -3,6 +3,9 @@
   "platforms": [
     "chromium_mac"
   ],
+  "build_configs": [
+    "devel"
+  ],
   "targets": [
     "chromedriver",
     "content_shell"
