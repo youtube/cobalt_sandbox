@@ -385,7 +385,7 @@ jobs:
           fi
           cd /tmp
           curl -L -O "https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/${GCLOUD_ARCHIVE}"
-          tar -xf "${GCLOUD_ARCHIVE}" -C /usr/local
+          sudo tar -xf "${GCLOUD_ARCHIVE}" -C /usr/local
           rm "${GCLOUD_ARCHIVE}"
           echo "/usr/local/google-cloud-sdk/bin" >> $GITHUB_PATH
           gcloud --version

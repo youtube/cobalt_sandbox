@@ -20,6 +20,7 @@ jobs:
         run: |
           uname -a
           g++ --version
+          echo "PATH=${PATH}"
       - name: Dump GitHub context
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
