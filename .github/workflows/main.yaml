@@ -383,11 +383,12 @@ jobs:
           else
             GCLOUD_ARCHIVE="google-cloud-cli-darwin-x86_64.tar.gz"
           fi
+          mkdir -p "$HOME/.local"
           cd /tmp
           curl -L -O "https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/${GCLOUD_ARCHIVE}"
-          sudo tar -xf "${GCLOUD_ARCHIVE}" -C /usr/local
+          tar xf "${GCLOUD_ARCHIVE}" -C "$HOME/.local" --strip-components=1 google-cloud-sdk/bin google-cloud-sdk/lib
           rm "${GCLOUD_ARCHIVE}"
-          echo "/usr/local/google-cloud-sdk/bin" >> $GITHUB_PATH
+          export PATH="$HOME/.local/bin:$PATH"
           gcloud --version
         shell: bash
       - name: Build Cobalt
