@@ -9,5 +9,11 @@
   "targets": [
     "chromedriver",
     "content_shell"
+  ],
+  "includes": [
+    {
+      "name": "mac",
+      "platform": "chromium_mac"
+    }
   ]
 }
