@@ -57,7 +57,7 @@ jobs:
             -H "X-GitHub-Api-Version: 2022-11-28" \
             /rate_limit
         shell: bash
-  chromium_mac:
+  chromium_mac-arm64:
     uses: ./.github/workflows/main.yaml
     permissions:
       packages: write

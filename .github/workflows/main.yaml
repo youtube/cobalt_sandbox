@@ -375,6 +375,21 @@ jobs:
           fetch-depth: ${{ ( github.event_name == 'pull_request' || github.repository == 'youtube/cobalt_sandbox' ) && 2 || 0 }}
       - name: Set Up Depot Tools
         uses: ./src/.github/actions/depot_tools
+      - name: Install Google Cloud SDK
+        run: |
+          set -x
+          if [[ "$(uname -m)" == "arm64" ]]; then
+            GCLOUD_ARCHIVE="google-cloud-cli-darwin-arm.tar.gz"
+          else
+            GCLOUD_ARCHIVE="google-cloud-cli-darwin-x86_64.tar.gz"
+          fi
+          cd /tmp
+          curl -L -O "https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/${GCLOUD_ARCHIVE}"
+          tar -xf "${GCLOUD_ARCHIVE}" -C /usr/local
+          rm "${GCLOUD_ARCHIVE}"
+          echo "/usr/local/google-cloud-sdk/bin" >> $GITHUB_PATH
+          gcloud --version
+        shell: bash
       - name: Build Cobalt
         id: build
         uses: ./src/.github/actions/build
