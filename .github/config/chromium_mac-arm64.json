@@ -1,7 +1,7 @@
 {
   "docker_service": "",
   "platforms": [
-    "chromium_mac"
+    "chromium_mac-arm64"
   ],
   "build_configs": [
     "devel"
@@ -13,7 +13,7 @@
   "includes": [
     {
       "name": "mac",
-      "platform": "chromium_mac"
+      "platform": "chromium_mac-arm64"
     }
   ]
 }
