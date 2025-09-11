@@ -63,7 +63,7 @@ jobs:
       packages: write
       pull-requests: write
     with:
-      platform: mac
+      platform: chromium_mac
       run_in_docker: false
       nightly: ${{ github.event.inputs.nightly }}
     secrets:
