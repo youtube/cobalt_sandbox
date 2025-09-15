@@ -1,5 +1,18 @@
 [
   {
+    "hexsha": "e24995463dc93f66630dda761b57f73ce04623aa",
+    "original_hexsha": "290f9ca98bdc0514e3298cd3dda3f18d0188d072",
+    "author": "Eric Zhang",
+    "datetime": "2025-09-15T13:26:04-07:00",
+    "summary": "test change",
+    "stats": {
+      "files": 1,
+      "insertions": 1,
+      "deletions": 0
+    },
+    "is_linear": true
+  },
+  {
     "hexsha": "a2808af3ab22d6fecc79c8c6738721f5ca6e6ec6",
     "original_hexsha": "9ad8257e8093d52d214eb1ea24e74bf0ef5862d6",
     "author": "Eric Zhang",
