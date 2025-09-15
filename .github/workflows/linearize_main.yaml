@@ -67,3 +67,4 @@ jobs:
             git commit -m "Linearization refresh on $(date +'%Y-%m-%d')."
             git push --force origin experimental/rebase_tools:experimental/rebase_tools
           fi
+          # TEST
