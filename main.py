@@ -189,31 +189,6 @@ def linearize_history(repo, args):
     else:
         print('✅ Working tree matches original end commit')
 
-<<<<<<< HEAD
-=======
-    # Write commit mapping to JSON file
-    if not args.commit_output:
-        mapping_filename = f'{args.new_branch_name}_commit_mapping.json'
-    else:
-        mapping_filename = args.commit_output
-    print(f'\n📄 Writing commit mapping to {mapping_filename}...')
-
-    with open(mapping_filename, 'w', encoding='utf-8') as f:
-        import json
-        output_data = {
-            'linearization_info': {
-                'source_branch': args.source_branch,
-                'start_commit': args.start_commit_ref,
-                'end_commit': args.end_commit_ref,
-                'new_branch': args.new_branch_name,
-                'total_commits_to_replay': len(commits_to_replay),
-                'total_linearized_commits': len(commit_mapping)
-            },
-            'commit_mapping': commit_mapping
-        }
-        json.dump(output_data, f, indent=2)
-
->>>>>>> 5c9c13b3ec5db (WIP linearize test change to script)
     if verification_passed:
         print('\n🎉 SUCCESS: Linearized history created successfully!')
     else:
