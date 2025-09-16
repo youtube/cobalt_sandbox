@@ -127,7 +127,7 @@ jobs:
             exit 1
           fi
           echo "Secret length: $(echo '${{ secrets.SCCACHE_GCS_KEY }}' | wc -c)"
-          echo "${{ secrets.SCCACHE_GCS_KEY }}" | base64 --decode > "${HOME}/gcloud.json"
+          echo "${{ secrets.SCCACHE_GCS_KEY }}" | tr -d '\n\r ' | base64 --decode > "${HOME}/gcloud.json"
           echo "Verifying decoded GCS key:"
           jq -r '.client_email, .project_id' "${HOME}/gcloud.json"
           echo "SCCACHE_GCS_KEY_PATH=${HOME}/gcloud.json" >> $GITHUB_ENV
