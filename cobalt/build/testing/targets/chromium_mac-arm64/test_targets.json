@@ -1,4 +1,6 @@
 {
-    "test_targets": [],
-    "executables": [],
+    "test_targets": [
+        "base:base_unittests"
+    ],
+    "executables": []
 }
