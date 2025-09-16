@@ -15,6 +15,8 @@ on:
     secrets:
       datadog_api_key:
         required: false
+      SCCACHE_GCS_KEY:
+        required: true
 
 concurrency:
   # Cancel existing jobs on the same workflow, platform, and branch (or sha if merged).
@@ -94,7 +96,6 @@ jobs:
       build_configs: ${{ steps.set-build-configs.outputs.build_configs }}
       includes: ${{ steps.set-includes.outputs.includes }}
   build_on_mac:
-    if: ${{ !inputs.run_in_docker }}
     needs: [initialize]
     permissions: {}
     runs-on: macos-latest
