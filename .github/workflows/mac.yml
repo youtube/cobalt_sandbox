@@ -58,6 +58,58 @@ jobs:
             -H "X-GitHub-Api-Version: 2022-11-28" \
             /rate_limit
         shell: bash
+      - name: Debug SCCACHE_GCS_KEY - Check if secret exists
+        run: |
+          if [ -z "${{ secrets.SCCACHE_GCS_KEY }}" ]; then
+            echo "ERROR: SCCACHE_GCS_KEY secret is empty or not set"
+            exit 1
+          else
+            echo "SUCCESS: SCCACHE_GCS_KEY secret exists"
+            echo "Secret length: $(echo '${{ secrets.SCCACHE_GCS_KEY }}' | wc -c)"
+          fi
+        shell: bash
+      - name: Debug SCCACHE_GCS_KEY - Check if multiline
+        run: |
+          echo "Number of lines in secret: $(echo '${{ secrets.SCCACHE_GCS_KEY }}' | wc -l)"
+          echo "First 100 chars of secret:"
+          echo '${{ secrets.SCCACHE_GCS_KEY }}' | head -c 100
+          echo ""
+          echo "Last 100 chars of secret:"
+          echo '${{ secrets.SCCACHE_GCS_KEY }}' | tail -c 100
+        shell: bash
+      - name: Debug SCCACHE_GCS_KEY - Test base64 decode
+        run: |
+          echo "Attempting base64 decode..."
+          echo '${{ secrets.SCCACHE_GCS_KEY }}' | tr -d '\n\r ' | base64 --decode > test_gcloud.json
+          if [ $? -eq 0 ]; then
+            echo "SUCCESS: Base64 decode successful"
+            echo "Decoded file size: $(wc -c < test_gcloud.json) bytes"
+          else
+            echo "ERROR: Base64 decode failed"
+            exit 1
+          fi
+        shell: bash
+      - name: Debug SCCACHE_GCS_KEY - Verify JSON content
+        run: |
+          echo "Verifying JSON content..."
+          client_email=$(jq -r '.client_email' test_gcloud.json)
+          project_id=$(jq -r '.project_id' test_gcloud.json)
+          key_type=$(jq -r '.type' test_gcloud.json)
+
+          echo "Key type: ${key_type}"
+          echo "Project ID: ${project_id}"
+          echo "Client email: ${client_email}"
+
+          if [[ "${key_type}" == "service_account" && "${project_id}" == "yt-cobalt" ]]; then
+            echo "SUCCESS: JSON content is valid service account key"
+          else
+            echo "ERROR: JSON content validation failed"
+            exit 1
+          fi
+
+          # Clean up
+          rm -f test_gcloud.json
+        shell: bash
   chromium_mac-arm64:
     uses: ./.github/workflows/mac_build.yaml
     permissions:
