@@ -123,6 +123,8 @@ jobs:
           fetch-depth: ${{ ( github.event_name == 'pull_request' || github.repository == 'youtube/cobalt_sandbox' ) && 2 || 0 }}
       - name: Install sccache
         run: brew install sccache
+      - name: Install ccache
+        run: brew install ccache
       - name: Configure sccache
         shell: bash
         run: |
@@ -136,6 +138,9 @@ jobs:
       - name: Check sccache status
         run: |
           sccache -s
+      - name: Check ccache status
+        run: |
+          ccache -s
       - name: Set Up Depot Tools
         uses: ./src/.github/actions/depot_tools
       - name: Build Cobalt
