@@ -61,11 +61,16 @@ jobs:
       - name: Debug SCCACHE_GCS_KEY - Check if secret exists
         run: |
           echo "Testing secret availability..."
+          echo "Repository: ${{ github.repository }}"
+          echo "Repository owner: ${{ github.repository_owner }}"
           echo "DD_API_KEY length: $(echo '${{ secrets.DD_API_KEY }}' | wc -c)"
           echo "GITHUB_TOKEN length: $(echo '${{ secrets.GITHUB_TOKEN }}' | wc -c)"
 
           if [ -z "${{ secrets.SCCACHE_GCS_KEY }}" ]; then
             echo "ERROR: SCCACHE_GCS_KEY secret is empty or not set"
+            echo "Trying alternative secret access patterns..."
+            echo "Available secrets context keys:"
+            echo '${{ toJson(secrets) }}'
             exit 1
           else
             echo "SUCCESS: SCCACHE_GCS_KEY secret exists"
