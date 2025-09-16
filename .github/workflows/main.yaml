@@ -373,6 +373,22 @@ jobs:
           # Set fetch-dept to 0 for non pull request workflows in production repo which is needed
           # to properly calculate build id.
           fetch-depth: ${{ ( github.event_name == 'pull_request' || github.repository == 'youtube/cobalt_sandbox' ) && 2 || 0 }}
+      - uses: 'google-github-actions/auth@v3'
+        with:
+          project_id: 'cobalt-actions-prod'
+          workload_identity_provider: 'projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider'
+      - name: Install sccache
+        run: brew install sccache
+      - name: Configure sccache
+        shell: bash
+        run: |
+          set -x
+          echo "${{ secrets.SCCACHE_GCS_KEY }}" | base64 --decode > "${HOME}/gcloud.json"
+          echo "SCCACHE_GCS_KEY_PATH=${HOME}/gcloud.json" >> $GITHUB_ENV
+          echo "SCCACHE=1" >> $GITHUB_ENV
+          echo "SCCACHE_GCS_BUCKET=cobalt-sscache-mac" >> $GITHUB_ENV
+          echo "SCCACHE_GCS_RW_MODE=READ_WRITE" >> $GITHUB_ENV
+          echo "SCCACHE_IDLE_TIMEOUT=0" >> $GITHUB_ENV
       - name: Set Up Depot Tools
         uses: ./src/.github/actions/depot_tools
       - name: Install Google Cloud SDK

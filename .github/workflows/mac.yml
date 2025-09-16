@@ -59,7 +59,7 @@ jobs:
             /rate_limit
         shell: bash
   chromium_mac-arm64:
-    uses: ./.github/workflows/main.yaml
+    uses: ./.github/workflows/mac_build.yaml
     permissions:
       packages: write
       pull-requests: write
@@ -69,3 +69,4 @@ jobs:
       nightly: ${{ github.event.inputs.nightly }}
     secrets:
       datadog_api_key: ${{ secrets.DD_API_KEY }}
+      SCCACHE_GCS_KEY: ${{ secrets.SCCACHE_GCS_KEY }}
