@@ -63,18 +63,27 @@ jobs:
           echo "Testing secret availability..."
           echo "Repository: ${{ github.repository }}"
           echo "Repository owner: ${{ github.repository_owner }}"
+          echo "Event name: ${{ github.event_name }}"
+          echo "Head ref: ${{ github.head_ref }}"
+          echo ""
+          echo "=== SECRET LENGTHS ==="
+          echo "ANDROID_KEYSTORE_B64 length: $(echo '${{ secrets.ANDROID_KEYSTORE_B64 }}' | wc -c)"
+          echo "CHERRY_PICK_TOKEN length: $(echo '${{ secrets.CHERRY_PICK_TOKEN }}' | wc -c)"
+          echo "CODECOV_TOKEN length: $(echo '${{ secrets.CODECOV_TOKEN }}' | wc -c)"
           echo "DD_API_KEY length: $(echo '${{ secrets.DD_API_KEY }}' | wc -c)"
+          echo "GEMINI_ACTIONS_API_KEY length: $(echo '${{ secrets.GEMINI_ACTIONS_API_KEY }}' | wc -c)"
+          echo "SCCACHE_GCS_KEY length: $(echo '${{ secrets.SCCACHE_GCS_KEY }}' | wc -c)"
+          echo "SCORECARD_TOKEN length: $(echo '${{ secrets.SCORECARD_TOKEN }}' | wc -c)"
           echo "GITHUB_TOKEN length: $(echo '${{ secrets.GITHUB_TOKEN }}' | wc -c)"
+          echo ""
+          echo "Available secrets context keys:"
+          echo '${{ toJson(secrets) }}'
 
           if [ -z "${{ secrets.SCCACHE_GCS_KEY }}" ]; then
             echo "ERROR: SCCACHE_GCS_KEY secret is empty or not set"
-            echo "Trying alternative secret access patterns..."
-            echo "Available secrets context keys:"
-            echo '${{ toJson(secrets) }}'
             exit 1
           else
             echo "SUCCESS: SCCACHE_GCS_KEY secret exists"
-            echo "Secret length: $(echo '${{ secrets.SCCACHE_GCS_KEY }}' | wc -c)"
           fi
         shell: bash
       - name: Debug SCCACHE_GCS_KEY - Check if multiline
