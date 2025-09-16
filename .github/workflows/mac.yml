@@ -60,6 +60,10 @@ jobs:
         shell: bash
       - name: Debug SCCACHE_GCS_KEY - Check if secret exists
         run: |
+          echo "Testing secret availability..."
+          echo "DD_API_KEY length: $(echo '${{ secrets.DD_API_KEY }}' | wc -c)"
+          echo "GITHUB_TOKEN length: $(echo '${{ secrets.GITHUB_TOKEN }}' | wc -c)"
+
           if [ -z "${{ secrets.SCCACHE_GCS_KEY }}" ]; then
             echo "ERROR: SCCACHE_GCS_KEY secret is empty or not set"
             exit 1
