@@ -23,6 +23,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ inputs.platform }} @ ${{ github.head_ref || github.sha }}-${{ github.ref }}
   cancel-in-progress: true
 
+
 jobs:
   # Retrieves configuration from json file.
   initialize:
