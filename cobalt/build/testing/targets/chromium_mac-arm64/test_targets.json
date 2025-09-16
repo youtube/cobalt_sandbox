@@ -1,0 +1,6 @@
+{
+    "test_targets": [
+        "base:base_unittests"
+    ],
+    "executables": []
+}
