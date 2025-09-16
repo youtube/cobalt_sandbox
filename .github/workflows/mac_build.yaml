@@ -12,16 +12,6 @@ on:
         required: true
         type: string
         default: 'false'
-      run_api_leak_detector:
-        description: 'Whether to run the api leak detector.'
-        required: false
-        type: boolean
-        default: false
-      run_in_docker:
-        description: 'Whether to run in docker.'
-        required: false
-        type: boolean
-        default: true
     secrets:
       datadog_api_key:
         required: false
@@ -32,6 +22,77 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Retrieves configuration from json file.
+  initialize:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    env:
+      # Tell gclient not to automatically update depot tools every time it runs.
+      DEPOT_TOOLS_UPDATE: 0
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GITHUB_PR_REPO_URL: ${{ github.event.pull_request.base.repo.url }}
+      GITHUB_EVENT_NUMBER: ${{ github.event.number }}
+    if: |
+      github.event.action != 'labeled' ||
+      (github.event.pull_request.merged == false && github.event.label.name == 'runtest')
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Cache CI Essentials
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-essentials-${{ inputs.platform }}
+          include-hidden-files: true
+          retention-days: 14
+          path: |
+            .github
+            cobalt/build
+            cobalt/docker
+            cobalt/testing/filters
+            cobalt/tools
+            docker-compose.yaml
+      - name: Set platforms
+        id: set-platforms
+        shell: bash
+        run: |
+          set -x
+          platforms=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -c '.platforms')
+          echo "platforms=${platforms}" >> $GITHUB_OUTPUT
+      - name: Set build targets
+        id: set-targets
+        shell: bash
+        run: |
+          set -x
+          targets=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -cr '.targets')
+          echo "targets=${targets}" >> $GITHUB_OUTPUT
+      - name: Set build configs
+        id: set-build-configs
+        shell: bash
+        run: |
+          set -x
+          # Attempt to load build configs from JSON. If not present use default.
+          build_configs=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -cr '.build_configs')
+          if [[ "${build_configs}" == "null" ]]; then
+            build_configs='["devel", "qa", "gold"]'
+          fi
+          echo "build_configs=${build_configs}" >> $GITHUB_OUTPUT
+      - name: Set platform extra includes
+        id: set-includes
+        shell: bash
+        run: |
+          set -x
+          includes=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -c '.includes')
+          echo "includes=${includes}" >> $GITHUB_OUTPUT
+    outputs:
+      platforms: ${{ steps.set-platforms.outputs.platforms }}
+      targets: ${{ steps.set-targets.outputs.targets }}
+      build_configs: ${{ steps.set-build-configs.outputs.build_configs }}
+      includes: ${{ steps.set-includes.outputs.includes }}
   build_on_mac:
     if: ${{ !inputs.run_in_docker }}
     needs: [initialize]
@@ -45,7 +106,6 @@ jobs:
         include: ${{ fromJson(needs.initialize.outputs.includes) }}
         config: ${{ fromJson(needs.initialize.outputs.build_configs) }}
     env:
-      TEST_ARTIFACTS_KEY: ${{ matrix.platform }}_${{ matrix.name }}_test_artifacts
       DEPOT_TOOLS_UPDATE: 0
       DEPOT_TOOLS_REPORT_BUILD: 0
       DEPOT_TOOLS_COLLECT_METRICS: 0
@@ -76,41 +136,19 @@ jobs:
           echo "SCCACHE_GCS_BUCKET=cobalt-sscache-mac" >> $GITHUB_ENV
           echo "SCCACHE_GCS_RW_MODE=READ_WRITE" >> $GITHUB_ENV
           echo "SCCACHE_IDLE_TIMEOUT=0" >> $GITHUB_ENV
+      - name: Check sccache status
+        run: |
+          sccache -s
       - name: Set Up Depot Tools
         uses: ./src/.github/actions/depot_tools
-      - name: Install Google Cloud SDK
-        run: |
-          set -x
-          if [[ "$(uname -m)" == "arm64" ]]; then
-            GCLOUD_ARCHIVE="google-cloud-cli-darwin-arm.tar.gz"
-          else
-            GCLOUD_ARCHIVE="google-cloud-cli-darwin-x86_64.tar.gz"
-          fi
-          mkdir -p "$HOME/.local"
-          cd /tmp
-          curl -L -O "https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/${GCLOUD_ARCHIVE}"
-          tar xf "${GCLOUD_ARCHIVE}" -C "$HOME/.local" --strip-components=1 google-cloud-sdk/bin google-cloud-sdk/lib
-          rm "${GCLOUD_ARCHIVE}"
-          export PATH="$HOME/.local/bin:$PATH"
-          gcloud --version
-        shell: bash
-      - name: Set Up Cloud SDK
-        uses: isarkis/setup-gcloud@40dce7857b354839efac498d3632050f568090b6 # v1.1.1
-      - name: Set GCS Project Name
-        run: |
-          echo "PROJECT_NAME=$(gcloud config get-value project)" >> $GITHUB_ENV
-        shell: bash
-      - name: Check token
-        run: |
-          gcloud auth print-access-token
       - name: Build Cobalt
         id: build
         uses: ./src/.github/actions/build
         with:
           targets: ${{ needs.initialize.outputs.targets }}
-          test_artifacts_key: ${{ env.TEST_ARTIFACTS_KEY }}
-          test_root_target: ${{ needs.initialize.outputs.test_root_target }}
+          test_artifacts_key: None
+          test_root_target: None
           test_targets_json_file: out/${{ matrix.platform }}_${{ matrix.config }}/test_targets.json
-          upload_on_host_test_artifacts: ${{ matrix.config == 'devel' && needs.initialize.outputs.test_on_host == 'true' }}
-          upload_on_device_test_artifacts: ${{ matrix.config == 'devel' && ( needs.initialize.outputs.test_on_device == 'true' || needs.initialize.outputs.test_e2e == 'true' ) }}
-          upload_web_test_artifacts: ${{ matrix.config == 'devel' && needs.initialize.outputs.web_tests == 'true' }}
+          upload_on_host_test_artifacts: false
+          upload_on_device_test_artifacts: false
+          upload_web_test_artifacts: false
