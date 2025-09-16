@@ -65,7 +65,6 @@ jobs:
       pull-requests: write
     with:
       platform: chromium_mac-arm64
-      run_in_docker: false
       nightly: ${{ github.event.inputs.nightly }}
     secrets:
       datadog_api_key: ${{ secrets.DD_API_KEY }}
