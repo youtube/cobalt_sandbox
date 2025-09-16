@@ -113,14 +113,6 @@ jobs:
       DEPOT_TOOLS_METRICS: 0
       IS_CI: 1
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          path: src
-          # Set fetch-depth to 2 to make checkout faster for pull requests and cobalt_sandbox repo.
-          # Set fetch-dept to 0 for non pull request workflows in production repo which is needed
-          # to properly calculate build id.
-          fetch-depth: ${{ ( github.event_name == 'pull_request' || github.repository == 'youtube/cobalt_sandbox' ) && 2 || 0 }}
       - name: Install sccache
         run: brew install sccache
       - name: Install ccache
@@ -130,6 +122,8 @@ jobs:
         run: |
           set -x
           echo "${{ secrets.SCCACHE_GCS_KEY }}" | base64 --decode > "${HOME}/gcloud.json"
+          echo "Verifying decoded GCS key:"
+          jq -r '.client_email, .project_id' "${HOME}/gcloud.json"
           echo "SCCACHE_GCS_KEY_PATH=${HOME}/gcloud.json" >> $GITHUB_ENV
           echo "SCCACHE=1" >> $GITHUB_ENV
           echo "SCCACHE_GCS_BUCKET=cobalt-sscache-mac" >> $GITHUB_ENV
@@ -141,6 +135,20 @@ jobs:
       - name: Check ccache status
         run: |
           ccache -s
+      - name: Test ccache compilation
+        run: |
+          echo "int main() { return 0; }" > test.cc
+          ccache gcc -c test.cc -o test.o
+          echo "ccache compilation test successful"
+          rm -f test.cc test.o
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: src
+          # Set fetch-depth to 2 to make checkout faster for pull requests and cobalt_sandbox repo.
+          # Set fetch-dept to 0 for non pull request workflows in production repo which is needed
+          # to properly calculate build id.
+          fetch-depth: ${{ ( github.event_name == 'pull_request' || github.repository == 'youtube/cobalt_sandbox' ) && 2 || 0 }}
       - name: Set Up Depot Tools
         uses: ./src/.github/actions/depot_tools
       - name: Build Cobalt
