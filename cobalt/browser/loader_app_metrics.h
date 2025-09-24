@@ -1,4 +1,4 @@
-// Copyright 2019 The Cobalt Authors. All Rights Reserved.
+// Copyright 2025 The Cobalt Authors. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,17 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef STARBOARD_SHARED_PULSE_PULSE_AUDIO_SINK_TYPE_H_
-#define STARBOARD_SHARED_PULSE_PULSE_AUDIO_SINK_TYPE_H_
+#ifndef COBALT_BROWSER_LOADER_APP_METRICS_H_
+#define COBALT_BROWSER_LOADER_APP_METRICS_H_
 
-#include "starboard/shared/internal_only.h"
-#include "starboard/shared/starboard/audio_sink/audio_sink_internal.h"
+namespace cobalt {
+namespace browser {
 
-namespace starboard {
+void RecordLoaderAppMetrics();
 
-void PulseAudioPlatformInitialize();
-void PulseAudioPlatformTearDown();
+}  // namespace browser
+}  // namespace cobalt
 
-}  // namespace starboard
-
-#endif  // STARBOARD_SHARED_PULSE_PULSE_AUDIO_SINK_TYPE_H_
+#endif  // COBALT_BROWSER_LOADER_APP_METRICS_H_
