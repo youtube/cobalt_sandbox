@@ -10,7 +10,7 @@ permissions: read-all
 
 jobs:
   trigger_linearize:
-    runs-on: [self-hosted, chrobalt-linux-runner]
+    runs-on: [self-hosted, chrobalt-linux-runner-with-cache]
     permissions:
       contents: write
     steps:
