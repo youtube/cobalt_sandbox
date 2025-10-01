@@ -25,7 +25,6 @@ ftell
 ftello
 fwrite
 getc
-getrlimit
 localeconv
 newlocale
 prctl
@@ -35,7 +34,6 @@ rewind
 sched_getaffinity
 sdallocx
 setlocale
-setpriority
 setvbuf
 stderr
 stdin
