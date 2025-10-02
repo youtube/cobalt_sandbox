@@ -29,7 +29,7 @@ runs:
         shell: bash
       - name: gclient sync
         if: inputs.run_sync == 'true'
-        run: gclient sync -v --shallow --no-history --lock_timeout=601 --jobs=1 -r ${{ github.sha }} && ls -l /gclient-sync-cache/git
+        run: gclient sync -v --shallow --no-history --lock_timeout=700 --jobs=1 -r ${{ github.sha }} && ls -l /gclient-sync-cache/git
         shell: bash
       - name: Disable Chromium client side build telemetry
         run: build_telemetry opt-out
