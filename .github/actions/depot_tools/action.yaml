@@ -29,8 +29,11 @@ runs:
         shell: bash
       - name: warm up cache
         if: inputs.run_sync == 'true'
-        run: cp -r src /tmp/ && cp .gclient /tmp/ && cd /tmp && export DEPOT_TOOLS_UPDATE=0 && gclient sync -v --shallow --no-history -r ${{ github.sha }} --lock_timeout=700 --timeout=700 && cd
+        run: cd /tmp && gclient config --name=src --custom-var=download_remoteexec_cfg=True --custom-var='rbe_instance="projects/cobalt-actions-prod/instances/default_instance"' --cache-dir=/gclient-sync-cache/git https://github.com/${{ github.repository }}
         shell: bash
+      - name: gclient sync to populate cache
+        if: inputs.run_sync == 'true'
+        run: cd /tmp && export DEPOT_TOOLS_UPDATE=0 && gclient sync -v --shallow --no-history -r ${{ github.sha }} --lock_timeout=700 --timeout=700
       - name: clear up tmp/src
         if: inputs.run_sync == 'true'
         run: ls -lh /tmp/src && rm -rf /tmp/src && cd
