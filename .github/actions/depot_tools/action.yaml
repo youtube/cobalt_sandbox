@@ -34,6 +34,7 @@ runs:
       - name: gclient sync to populate cache
         if: inputs.run_sync == 'true'
         run: cd /tmp && export DEPOT_TOOLS_UPDATE=0 && gclient sync -v --shallow --no-history -r ${{ github.sha }} --lock_timeout=700 --timeout=700
+        shell: bash
       - name: clear up tmp/src
         if: inputs.run_sync == 'true'
         run: ls -lh /tmp/src && rm -rf /tmp/src && cd
