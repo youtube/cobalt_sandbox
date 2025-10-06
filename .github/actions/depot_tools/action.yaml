@@ -29,7 +29,7 @@ runs:
         shell: bash
       - name: warm up cache
         if: inputs.run_sync == 'true'
-        run: cp -r src /tmp/ && cd /tmp && export DEPOT_TOOLS_UPDATE=0 && gclient sync -v --shallow --no-history -r ${{ github.sha }} --lock_timeout=700 --timeout=700 && cd
+        run: cp -r src /tmp/ && cp .gclient /tmp/ && cd /tmp && export DEPOT_TOOLS_UPDATE=0 && gclient sync -v --shallow --no-history -r ${{ github.sha }} --lock_timeout=700 --timeout=700 && cd
         shell: bash
       - name: clear up tmp/src
         if: inputs.run_sync == 'true'
