@@ -7,6 +7,9 @@ inputs:
 runs:
   using: "composite"
   steps:
+      - name: check disk size
+        run:  df -h
+        shell: bash
       - name: Get depot tools
         run: git clone --single-branch --depth 1 -n https://chromium.googlesource.com/chromium/tools/depot_tools depot_tools && cd depot_tools && git fetch origin a31405a80ca086d1622e985636b2397e9e3ad8a7 && git checkout -b cache a31405a80ca086d1622e985636b2397e9e3ad8a7
         shell: bash
