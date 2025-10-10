@@ -226,7 +226,7 @@ jobs:
   # Builds, tags, and pushes Cobalt docker build images to ghr.
   docker-build-image:
     needs: [initialize]
-    runs-on: [self-hosted, chrobalt-linux-runner]
+    runs-on: [self-hosted, chrobalt-linux-runner-with-cache]
     steps:
       - name: Restore CI Essentials
         uses: actions/download-artifact@v4
@@ -247,7 +247,7 @@ jobs:
   docker-unittest-image:
     if: needs.initialize.outputs.test_on_host == 'true'
     needs: [initialize]
-    runs-on: [self-hosted, chrobalt-linux-runner]
+    runs-on: [self-hosted, chrobalt-linux-runner-with-cache]
     steps:
       - name: Restore CI Essentials
         uses: actions/download-artifact@v4
@@ -268,7 +268,7 @@ jobs:
   docker-webtest-image:
     if: needs.initialize.outputs.web_tests == 'true'
     needs: [initialize]
-    runs-on: [self-hosted, chrobalt-linux-runner]
+    runs-on: [self-hosted, chrobalt-linux-runner-with-cache]
     steps:
       - name: Restore CI Essentials
         uses: actions/download-artifact@v4
@@ -288,7 +288,7 @@ jobs:
   build:
     needs: [initialize, docker-build-image]
     permissions: {}
-    runs-on: [self-hosted, chrobalt-linux-runner]
+    runs-on: [self-hosted, chrobalt-linux-runner-with-cache]
     name: ${{ matrix.name }}_${{ matrix.config }}
     strategy:
       fail-fast: false
@@ -416,7 +416,7 @@ jobs:
     needs: [initialize, docker-unittest-image, build]
     if: needs.initialize.outputs.test_on_host == 'true'
     permissions: {}
-    runs-on: [self-hosted, chrobalt-linux-runner]
+    runs-on: [self-hosted, chrobalt-linux-runner-with-cache]
     name: ${{ matrix.name }}_on_host_tests_${{ matrix.shard }}
     strategy:
       fail-fast: false
@@ -452,7 +452,7 @@ jobs:
     needs: [initialize, docker-webtest-image, build]
     if: needs.initialize.outputs.web_tests == 'true'
     permissions: {}
-    runs-on: [self-hosted, chrobalt-linux-runner]
+    runs-on: [self-hosted, chrobalt-linux-runner-with-cache]
     name: ${{ matrix.name }}_web_tests
     strategy:
       fail-fast: false
