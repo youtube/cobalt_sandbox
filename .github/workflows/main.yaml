@@ -226,7 +226,7 @@ jobs:
   # Builds, tags, and pushes Cobalt docker build images to ghr.
   docker-build-image:
     needs: [initialize]
-    runs-on: [self-hosted, chrobalt-linux-runner-with-cache]
+    runs-on: [self-hosted, chrobalt-linux-runner]
     steps:
       - name: Restore CI Essentials
         uses: actions/download-artifact@v4
@@ -247,7 +247,7 @@ jobs:
   docker-unittest-image:
     if: needs.initialize.outputs.test_on_host == 'true'
     needs: [initialize]
-    runs-on: [self-hosted, chrobalt-linux-runner-with-cache]
+    runs-on: [self-hosted, chrobalt-linux-runner]
     steps:
       - name: Restore CI Essentials
         uses: actions/download-artifact@v4
@@ -268,7 +268,7 @@ jobs:
   docker-webtest-image:
     if: needs.initialize.outputs.web_tests == 'true'
     needs: [initialize]
-    runs-on: [self-hosted, chrobalt-linux-runner-with-cache]
+    runs-on: [self-hosted, chrobalt-linux-runner]
     steps:
       - name: Restore CI Essentials
         uses: actions/download-artifact@v4
@@ -288,7 +288,7 @@ jobs:
   build:
     needs: [initialize, docker-build-image]
     permissions: {}
-    runs-on: [self-hosted, chrobalt-linux-runner-with-cache]
+    runs-on: [self-hosted, chrobalt-linux-runner]
     name: ${{ matrix.name }}_${{ matrix.config }}
     strategy:
       fail-fast: false
@@ -296,7 +296,10 @@ jobs:
         platform: ${{ fromJson(needs.initialize.outputs.platforms) }}
         include: ${{ fromJson(needs.initialize.outputs.includes) }}
         config: ${{ fromJson(needs.initialize.outputs.build_configs) }}
-    container: ${{ needs.docker-build-image.outputs.docker_tag }}
+    container:
+      image: ${{ needs.docker-build-image.outputs.docker_tag }}
+      volumes:
+        - /gclient-sync-cache:/gclient-sync-cache
     env:
       TEST_ARTIFACTS_KEY: ${{ matrix.platform }}_${{ matrix.name }}_test_artifacts
       DEPOT_TOOLS_UPDATE: 0
@@ -340,9 +343,10 @@ jobs:
 
   on-device-test:
     needs: [initialize, build]
-    if: needs.initialize.outputs.test_on_device == 'true' &&
+    if: |
+      needs.initialize.outputs.test_on_device == 'true' &&
         (
-          github.event.pull_request.draft == false ||
+          (github.event_name == 'pull_request' && github.event.pull_request.draft == false ) ||
           ((inputs.nightly == 'true' || github.event_name == 'schedule') && vars.RUN_ODT_TESTS_ON_NIGHTLY != 'False') ||
           (github.event_name == 'push' && vars.RUN_ODT_TESTS_ON_POSTSUBMIT != 'False')
         )
@@ -382,9 +386,10 @@ jobs:
     needs: [initialize, build]
     # Run E2E tests when on_device label is applied to PR.
     # Also, run E2E tests on push and schedule if not explicitly disabled via repo vars.
-    if: needs.initialize.outputs.test_e2e == 'true' &&
+    if: |
+      needs.initialize.outputs.test_e2e == 'true' &&
         (
-          github.event.pull_request.draft == false ||
+          (github.event_name == 'pull_request' && github.event.pull_request.draft == false ) ||
           ((inputs.nightly == 'true' || github.event_name == 'schedule') && vars.RUN_ODT_TESTS_ON_NIGHTLY != 'False') ||
           (github.event_name == 'push' && vars.RUN_ODT_TESTS_ON_POSTSUBMIT != 'False')
         )
@@ -411,7 +416,7 @@ jobs:
     needs: [initialize, docker-unittest-image, build]
     if: needs.initialize.outputs.test_on_host == 'true'
     permissions: {}
-    runs-on: [self-hosted, chrobalt-linux-runner-with-cache]
+    runs-on: [self-hosted, chrobalt-linux-runner]
     name: ${{ matrix.name }}_on_host_tests_${{ matrix.shard }}
     strategy:
       fail-fast: false
@@ -447,7 +452,7 @@ jobs:
     needs: [initialize, docker-webtest-image, build]
     if: needs.initialize.outputs.web_tests == 'true'
     permissions: {}
-    runs-on: [self-hosted, chrobalt-linux-runner-with-cache]
+    runs-on: [self-hosted, chrobalt-linux-runner]
     name: ${{ matrix.name }}_web_tests
     strategy:
       fail-fast: false
