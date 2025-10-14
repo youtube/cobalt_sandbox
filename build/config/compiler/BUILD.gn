@@ -872,10 +872,15 @@ config("compiler") {
         # whole-program-vtables implies -fsplit-lto-unit, and Rust needs to match
         # behaviour. Rust needs to know the linker will be doing LTO in this case
         # or it rejects the Zsplit-lto-unit flag.
-        rustflags += [
-          "-Zsplit-lto-unit",
-          "-Clinker-plugin-lto=yes",
+        lto_exclusion_list = [
+          "libc",
         ]
+        if (lto_exclusion_list - [ target_name ] == lto_exclusion_list) {
+          rustflags += [
+            "-Clinker-plugin-lto=yes",
+            "-Zsplit-lto-unit",
+          ]
+        }
       } else {
         # Don't include bitcode if it won't be used.
         rustflags += [ "-Cembed-bitcode=no" ]
