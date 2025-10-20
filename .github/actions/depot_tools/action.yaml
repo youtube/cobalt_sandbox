@@ -29,7 +29,11 @@ runs:
         shell: bash
       - name: gclient sync
         if: inputs.run_sync == 'true'
-        run: export CIPD_CACHE_DIR="$GITHUB_WORKSPACE/cobalt/.cipd_cache" && cd cobalt && gclient sync -v --shallow --no-history -r ${{ github.sha }}
+        run: export CIPD_CACHE_DIR="$GITHUB_WORKSPACE/cobalt/.cipd_cache" && cd cobalt && gclient sync -v --shallow --no-history --nohooks -r ${{ github.sha }}
+        shell: bash
+      - name: gclient runhook
+        if: inputs.run_sync == 'true'
+        run: export CIPD_CACHE_DIR="$GITHUB_WORKSPACE/cobalt/.cipd_cache" && cd cobalt && gclient runhooks
         shell: bash
       - name: Disable Chromium client side build telemetry
         run: build_telemetry opt-out
