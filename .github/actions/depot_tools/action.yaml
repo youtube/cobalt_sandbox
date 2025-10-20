@@ -29,7 +29,7 @@ runs:
         shell: bash
       - name: gclient sync
         if: inputs.run_sync == 'true'
-        run: export CIPD_CACHE_DIR=/gclient-sync-cache/.cipd_cache && gclient sync -v --shallow --no-history -r ${{ github.sha }}
+        run: export CIPD_CACHE_DIR=${GITHUB_WORKSPACE}/src/.cipd_cache && gclient sync -v --shallow --no-history -r ${{ github.sha }}
         shell: bash
       - name: Disable Chromium client side build telemetry
         run: build_telemetry opt-out
