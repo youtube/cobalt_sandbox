@@ -312,6 +312,11 @@ jobs:
       # filesystem, whereas /__w which contains Cobalt source code is on tmpfs.
       TMPDIR: /__w/_temp
     steps:
+      - name: Prepare gclient cache directory
+        run: |
+        # 1. Ensure your target cache directory exists
+        mkdir -p /gclient-sync-cache/src
+        ln -s /gclient-sync-cache/src ${{ github.workspace }}/src
       - name: Checkout
         uses: actions/checkout@v4
         # TODO(bug?): android debug builds are broken.
