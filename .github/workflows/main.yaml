@@ -315,13 +315,13 @@ jobs:
       - name: Prepare gclient cache directory
         run: |
           mkdir -p /gclient-sync-cache/src
-          ln -s /gclient-sync-cache/src ${{ github.workspace }}/src
+          ln -s /gclient-sync-cache/src ${GITHUB_WORKSPACE}/src
       - name: Checkout
         uses: actions/checkout@v4
         # TODO(bug?): android debug builds are broken.
         if: ${{ ! (contains(matrix.platform, 'android') && matrix.config == 'debug') }}
         with:
-          path: /gclient-sync-cache/src
+          path: src
           # Set fetch-depth to 2 to make checkout faster for pull requests and cobalt_sandbox repo.
           # Set fetch-dept to 0 for non pull request workflows in production repo which is needed
           # to properly calculate build id.
