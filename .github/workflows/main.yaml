@@ -327,10 +327,10 @@ jobs:
           # to properly calculate build id.
           fetch-depth: ${{ ( github.event_name == 'pull_request' || github.repository == 'youtube/cobalt_sandbox' ) && 2 || 0 }}
       - name: Set Up Depot Tools
-        uses: ./src/.github/actions/depot_tools
+        uses: ./cobalt/src/.github/actions/depot_tools
       - name: Build Cobalt
         id: build
-        uses: ./src/.github/actions/build
+        uses: ./cobalt/src/.github/actions/build
         # TODO(bug?): android debug builds are broken.
         if: ${{ ! (contains(matrix.platform, 'android') && matrix.config == 'debug') }}
         with:
@@ -342,7 +342,7 @@ jobs:
           upload_on_device_test_artifacts: ${{ matrix.config == 'devel' && ( needs.initialize.outputs.test_on_device == 'true' || needs.initialize.outputs.test_e2e == 'true' ) }}
           upload_web_test_artifacts: ${{ matrix.config == 'devel' && needs.initialize.outputs.web_tests == 'true' }}
       - name: Run API Leak Detector
-        uses: ./src/.github/actions/api_leak_detector
+        uses: ./cobalt/src/.github/actions/api_leak_detector
         if: inputs.run_api_leak_detector
 
   on-device-test:
@@ -474,11 +474,11 @@ jobs:
         with:
           path: src
       - name: Set Up Depot Tools
-        uses: ./src/.github/actions/depot_tools
+        uses: ./cobalt/src/.github/actions/depot_tools
         with:
           run_sync: false
       - name: Run Web Tests
-        uses: ./src/.github/actions/web_tests
+        uses: ./cobalt/src/.github/actions/web_tests
         with:
           test_artifacts_key: ${{ env.TEST_ARTIFACTS_KEY }}
           test_results_key: Blink Web Test Results ${{ github.workflow }}
