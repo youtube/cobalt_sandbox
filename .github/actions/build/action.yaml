@@ -27,12 +27,12 @@ runs:
   steps:
       - name: GN gen
         run: |
-          cd src
+          cd cobalt/src
           cobalt/build/gn.py -p ${{ matrix.platform }} -C ${{ matrix.config }}
         shell: bash
       - name: List GN args
         run: |
-          cd src
+          cd cobalt/src
           gn args --list --short --overrides-only out/${{ matrix.platform }}_${{ matrix.config }}
         shell: bash
       - name: Get list of changed files
@@ -42,7 +42,7 @@ runs:
           CHANGED_FILES_LIST: changed_files.txt
         run: |
           set -x
-          cd src
+          cd cobalt/src
           # GitHub's actions/checkout action, by default, checks out the merge commit when
           # a pull request event triggers a workflow. This merge commit represents the state
           # of the code as if the pull request had been merged into the base branch.
@@ -63,7 +63,7 @@ runs:
           DYN_TEST_TARGETS_JSON_FILE: out/${{ matrix.platform }}_${{ matrix.config }}/dyn_targets.json
         run: |
           set -x
-          cd src
+          cd cobalt/src
 
           # TODO: b/382508397 - Currently, override with static test targets
           cp -av "${STATIC_TEST_TARGETS_JSON_FILE}" "${{ inputs.test_targets_json_file }}"
@@ -105,7 +105,7 @@ runs:
         id: build-test-targets
         run: |
           set -ex
-          cd src
+          cd cobalt/src
           test_targets=$(echo '${{ steps.calculate-test-targets.outputs.test_targets_json }}' | jq -cr 'join(" ")')
           time autoninja -C out/${{ matrix.platform }}_${{ matrix.config }} ${test_targets}
         shell: bash
@@ -114,7 +114,7 @@ runs:
           TARGETS_JSON: ${{ inputs.targets }}
         run: |
           set -ex
-          cd src
+          cd cobalt/src
           TARGETS=$(echo "${TARGETS_JSON}" | jq -cr '. | join(" ")')
           time autoninja -C out/${{ matrix.platform }}_${{ matrix.config }} ${TARGETS}
         shell: bash
@@ -149,7 +149,7 @@ runs:
             BUILD_PLATFORM="android"
           else
             BUILD_PLATFORM="linux"
-            cd src/
+            cd cobalt/src/
             cobalt/build/gn.py -p linux-x64x11-no-starboard -c $MATRIX_CONFIG
             autoninja -C out/linux-x64x11-no-starboard_$MATRIX_CONFIG chrome/test/chromedriver
             cp out/linux-x64x11-no-starboard_$MATRIX_CONFIG/chromedriver out/${{ matrix.platform }}_${{ matrix.config }}

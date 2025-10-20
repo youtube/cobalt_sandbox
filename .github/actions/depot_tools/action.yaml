@@ -19,7 +19,7 @@ runs:
         run: echo "$GITHUB_WORKSPACE/depot_tools" >> $GITHUB_PATH
         shell: bash
       - name: Generate gclient file
-        run: gclient config --name=src --custom-var=download_remoteexec_cfg=True --custom-var='rbe_instance="projects/cobalt-actions-prod/instances/default_instance"' https://github.com/${{ github.repository }}
+        run: cd cobalt && gclient config --name=src --custom-var=download_remoteexec_cfg=True --custom-var='rbe_instance="projects/cobalt-actions-prod/instances/default_instance"' https://github.com/${{ github.repository }}
         shell: bash
       - name: Set target OS for Android
         if: ${{ contains(matrix.platform, 'android') }}
@@ -29,7 +29,7 @@ runs:
         shell: bash
       - name: gclient sync
         if: inputs.run_sync == 'true'
-        run: export CIPD_CACHE_DIR=${GITHUB_WORKSPACE}/src/.cipd_cache && gclient sync -v --shallow --no-history -r ${{ github.sha }}
+        run: cd cobalt && gclient sync -v --shallow --no-history -r ${{ github.sha }}
         shell: bash
       - name: Disable Chromium client side build telemetry
         run: build_telemetry opt-out
