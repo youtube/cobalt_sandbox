@@ -41,8 +41,8 @@ runs:
       - name: gclient runhook
         if: inputs.run_sync == 'true'
         run: cd cobalt && gclient runhooks --verbose
-        # env:
-        #   CIPD_CACHE_DIR: "/gclient-sync-cache/cobalt/.cipd_cache"
+        env:
+          CIPD_CACHE_DIR: "/gclient-sync-cache/cobalt/.cipd_cache"
         shell: bash
       - name: Disable Chromium client side build telemetry
         run: build_telemetry opt-out
