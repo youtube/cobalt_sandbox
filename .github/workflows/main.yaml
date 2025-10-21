@@ -326,6 +326,7 @@ jobs:
           # Set fetch-dept to 0 for non pull request workflows in production repo which is needed
           # to properly calculate build id.
           fetch-depth: ${{ ( github.event_name == 'pull_request' || github.repository == 'youtube/cobalt_sandbox' ) && 2 || 0 }}
+          clean: false
       - name: Set Up Depot Tools
         uses: ./cobalt/src/.github/actions/depot_tools
       - name: Build Cobalt
