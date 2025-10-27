@@ -20,6 +20,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include "base/check_op.h"
 #include "base/logging.h"
 #include "base/posix/eintr_wrapper.h"
 #include "build/build_config.h"
@@ -85,13 +86,6 @@ bool ExceptionHandlerClient::GetHandlerCredentials(ucred* creds) {
       server_sock_, &response, sizeof(response), creds);
 }
 
-#if BUILDFLAG(IS_NATIVE_TARGET_BUILD)
-bool ExceptionHandlerClient::SendEvergreenInfo(
-    const ExceptionHandlerProtocol::ClientInformation& info) {
-  return SendEvergreenInfoRequest(info);
-}
-#endif  // BUILDFLAG(IS_NATIVE_TARGET_BUILD)
-
 int ExceptionHandlerClient::RequestCrashDump(
     const ExceptionHandlerProtocol::ClientInformation& info) {
   VMAddress sp = FromPointerCast<VMAddress>(&sp);
@@ -150,19 +144,6 @@ int ExceptionHandlerClient::SignalCrashDump(
 
   return 0;
 }
-
-#if BUILDFLAG(IS_NATIVE_TARGET_BUILD)
-bool ExceptionHandlerClient::SendEvergreenInfoRequest(
-    const ExceptionHandlerProtocol::ClientInformation& info) {
-  ExceptionHandlerProtocol::ClientToServerMessage message;
-  message.type =
-      ExceptionHandlerProtocol::ClientToServerMessage::kTypeAddEvergreenInfo;
-  message.client_info = info;
-
-  UnixCredentialSocket::SendMsg(server_sock_, &message, sizeof(message));
-  return true;
-}
-#endif  // BUILDFLAG(IS_NATIVE_TARGET_BUILD)
 
 int ExceptionHandlerClient::SendCrashDumpRequest(
     const ExceptionHandlerProtocol::ClientInformation& info,

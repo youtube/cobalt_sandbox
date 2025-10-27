@@ -15,6 +15,7 @@
 #include <stddef.h>
 
 #include <algorithm>
+#include <array>
 #include <memory>
 
 #include "base/command_line.h"
@@ -54,11 +55,7 @@
 #include "ui/views/widget/widget_delegate.h"
 #include "ui/wm/core/wm_state.h"
 
-#if defined(RUN_BROWSER_TESTS)
-#include "ui/views/test/desktop_test_views_delegate.h"  // nogncheck
-#else
 #include "cobalt/shell/browser/cobalt_views_delegate.h"
-#endif  // defined(RUN_BROWSER_TESTS)
 
 namespace content {
 
@@ -81,9 +78,9 @@ namespace {
 // Maintain the UI controls and web view for content shell
 class ShellView : public views::BoxLayoutView,
                   public views::TextfieldController {
- public:
-  METADATA_HEADER(ShellView);
+  METADATA_HEADER(ShellView, views::BoxLayoutView)
 
+ public:
   enum UIControl { BACK_BUTTON, FORWARD_BUTTON, STOP_BUTTON };
 
   explicit ShellView(Shell* shell) : shell_(shell) { InitShellWindow(); }
@@ -116,7 +113,7 @@ class ShellView : public views::BoxLayoutView,
 
     // Resize the widget, keeping the same origin.
     gfx::Rect bounds = GetWidget()->GetWindowBoundsInScreen();
-    bounds.set_size(GetWidget()->GetRootView()->GetPreferredSize());
+    bounds.set_size(GetWidget()->GetRootView()->GetPreferredSize({}));
     GetWidget()->SetBounds(bounds);
   }
 
@@ -138,7 +135,7 @@ class ShellView : public views::BoxLayoutView,
   void InitShellWindow() {
     auto toolbar_button_rule = [](const views::View* view,
                                   const views::SizeBounds& size_bounds) {
-      gfx::Size preferred_size = view->GetPreferredSize();
+      gfx::Size preferred_size = view->GetPreferredSize({});
       if (size_bounds != views::SizeBounds() &&
           size_bounds.width().is_bounded()) {
         preferred_size.set_width(std::max(
@@ -151,7 +148,7 @@ class ShellView : public views::BoxLayoutView,
     auto builder =
         views::Builder<views::BoxLayoutView>(this)
             .SetBackground(
-                views::CreateThemedSolidBackground(ui::kColorWindowBackground))
+                views::CreateSolidBackground(ui::kColorWindowBackground))
             .SetOrientation(views::BoxLayout::Orientation::kVertical);
 
     if (!Shell::ShouldHideToolbar()) {
@@ -204,6 +201,7 @@ class ShellView : public views::BoxLayoutView,
                       .SetProperty(
                           views::kFlexBehaviorKey,
                           views::FlexSpecification(
+                              views::LayoutOrientation::kHorizontal,
                               views::MinimumFlexSizeRule::kScaleToMinimum,
                               views::MaximumFlexSizeRule::kUnbounded))
                       // Left padding  = 2, Right padding = 2
@@ -232,8 +230,11 @@ class ShellView : public views::BoxLayoutView,
   void InitAccelerators() {
     // This function must be called when part of the widget hierarchy.
     DCHECK(GetWidget());
-    static const ui::KeyboardCode keys[] = {ui::VKEY_F5, ui::VKEY_BROWSER_BACK,
-                                            ui::VKEY_BROWSER_FORWARD};
+    static const auto keys = std::to_array<ui::KeyboardCode>({
+        ui::VKEY_F5,
+        ui::VKEY_BROWSER_BACK,
+        ui::VKEY_BROWSER_FORWARD,
+    });
     for (size_t i = 0; i < std::size(keys); ++i) {
       GetFocusManager()->RegisterAccelerator(
           ui::Accelerator(keys[i], ui::EF_NONE),
@@ -245,8 +246,8 @@ class ShellView : public views::BoxLayoutView,
                        const std::u16string& new_contents) override {}
   bool HandleKeyEvent(views::Textfield* sender,
                       const ui::KeyEvent& key_event) override {
-    if (key_event.type() == ui::ET_KEY_PRESSED && sender == url_entry_ &&
-        key_event.key_code() == ui::VKEY_RETURN) {
+    if (key_event.type() == ui::EventType::kKeyPressed &&
+        sender == url_entry_ && key_event.key_code() == ui::VKEY_RETURN) {
       std::string text = base::UTF16ToUTF8(url_entry_->GetText());
       GURL url(text);
       if (!url.has_scheme()) {
@@ -303,7 +304,7 @@ class ShellView : public views::BoxLayoutView,
   raw_ptr<views::WebView> web_view_ = nullptr;
 };
 
-BEGIN_METADATA(ShellView, views::View)
+BEGIN_METADATA(ShellView)
 END_METADATA
 
 ShellView* ShellViewForWidget(views::Widget* widget) {
@@ -314,6 +315,11 @@ ShellView* ShellViewForWidget(views::Widget* widget) {
 
 ShellPlatformDelegate::ShellPlatformDelegate() = default;
 
+std::unique_ptr<views::ViewsDelegate>
+ShellPlatformDelegate::CreateViewsDelegate() {
+  return std::make_unique<views::CobaltViewsDelegate>();
+}
+
 void ShellPlatformDelegate::Initialize(const gfx::Size& default_window_size) {
   platform_ = std::make_unique<PlatformData>();
 
@@ -323,12 +329,7 @@ void ShellPlatformDelegate::Initialize(const gfx::Size& default_window_size) {
     platform_->screen = views::CreateDesktopScreen();
   }
 
-#if defined(RUN_BROWSER_TESTS)
-  platform_->views_delegate =
-      std::make_unique<views::DesktopTestViewsDelegate>();
-#else
-  platform_->views_delegate = std::make_unique<views::CobaltViewsDelegate>();
-#endif  // defined(RUN_BROWSER_TESTS)
+  platform_->views_delegate = CreateViewsDelegate();
 }
 
 ShellPlatformDelegate::~ShellPlatformDelegate() = default;
@@ -344,14 +345,17 @@ void ShellPlatformDelegate::CreatePlatformWindow(
   auto delegate = std::make_unique<views::WidgetDelegate>();
   delegate->SetContentsView(std::make_unique<ShellView>(shell));
   delegate->SetHasWindowSizeControls(true);
-  delegate->SetOwnedByWidget(true);
+  delegate->SetOwnedByWidget(views::WidgetDelegate::OwnedByWidgetPassKey());
 
   shell_data.window_widget = new views::Widget();
-  views::Widget::InitParams params;
+  views::Widget::InitParams params(
+      views::Widget::InitParams::NATIVE_WIDGET_OWNS_WIDGET);
   params.bounds = gfx::Rect(initial_size);
   params.delegate = delegate.release();
+#if BUILDFLAG(IS_LINUX)
   params.wm_class_class = "chromium-content_shell";
   params.wm_class_name = params.wm_class_class;
+#endif  // BUILDFLAG(IS_LINUX)
   shell_data.window_widget->Init(std::move(params));
 
   // |window_widget| is made visible in PlatformSetContents(), so that the

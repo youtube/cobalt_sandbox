@@ -18,6 +18,7 @@
 #include "base/files/file_path.h"
 #include "cobalt/browser/switches.h"
 #include "cobalt/shell/common/shell_switches.h"
+#include "components/network_session_configurator/common/network_switches.h"
 #include "content/public/common/content_switches.h"
 #include "gpu/command_buffer/service/gpu_switches.h"
 #include "gpu/config/gpu_switches.h"
@@ -42,36 +43,32 @@ namespace {
 
 // List of toggleable default switches.
 static constexpr auto kCobaltToggleSwitches = std::to_array<const char*>({
-  // Enable Blink to work in overlay video mode
-  switches::kForceVideoOverlays,
-      // Disable multiprocess mode.
-      switches::kSingleProcess,
-      // Hide content shell toolbar.
-      switches::kContentShellHideToolbar,
-      // Accelerated GL is blanket disabled for Linux. Ignore the GPU blocklist
-      // to enable it.
-      switches::kIgnoreGpuBlocklist,
-#if BUILDFLAG(IS_ANDROID)
-      // This flag is added specifically for m114 and should be removed after
-      // rebasing to m120+
-      switches::kUserLevelMemoryPressureSignalParams,
-#endif  // BUILDFLAG(IS_ANDROID)
-      // Disable Zygote (a process fork utility); in turn needs sandbox
-      // disabled.
-      switches::kNoZygote, sandbox::policy::switches::kNoSandbox,
-      // Rasterize Tiles directly to GPU memory (ZeroCopyRasterBufferProvider).
-      blink::switches::kEnableZeroCopy,
-      // Enable low-end device mode. This comes with a load of memory and CPU
-      // saving goodies but can degrade the experience considerably. One of the
-      // known regressions is 4444 textures, which are then disabled explicitly.
-      switches::kEnableLowEndDeviceMode,
-      blink::switches::kDisableRGBA4444Textures,
-      // For Starboard the signal handlers are already setup. Disable the
-      // Chromium registrations to avoid overriding the Starboard ones.
-      switches::kDisableInProcessStackTraces,
-      // Cobalt doesn't use Chrome's accelerated video decoding/encoding.
-      switches::kDisableAcceleratedVideoDecode,
-      switches::kDisableAcceleratedVideoEncode,
+    // Enable Blink to work in overlay video mode
+    switches::kForceVideoOverlays,
+    // Disable multiprocess mode.
+    switches::kSingleProcess,
+    // Hide content shell toolbar.
+    switches::kContentShellHideToolbar,
+    // Accelerated GL is blanket disabled for Linux. Ignore the GPU blocklist
+    // to enable it.
+    switches::kIgnoreGpuBlocklist,
+    // Disable Zygote (a process fork utility); in turn needs sandbox
+    // disabled.
+    switches::kNoZygote,
+    sandbox::policy::switches::kNoSandbox,
+    // Rasterize Tiles directly to GPU memory (ZeroCopyRasterBufferProvider).
+    blink::switches::kEnableZeroCopy,
+    // Enable low-end device mode. This comes with a load of memory and CPU
+    // saving goodies but can degrade the experience considerably. One of the
+    // known regressions is 4444 textures, which are then disabled explicitly.
+    switches::kEnableLowEndDeviceMode,
+    blink::switches::kDisableRGBA4444Textures,
+    // For Starboard the signal handlers are already setup. Disable the
+    // Chromium registrations to avoid overriding the Starboard ones.
+    switches::kDisableInProcessStackTraces,
+    // Cobalt doesn't use Chrome's accelerated video decoding/encoding.
+    switches::kDisableAcceleratedVideoDecode,
+    switches::kDisableAcceleratedVideoEncode,
 });
 
 // Map of switches with parameters and their defaults.
@@ -79,15 +76,6 @@ const base::CommandLine::SwitchMap GetCobaltParamSwitchDefaults() {
   const base::CommandLine::SwitchMap cobalt_param_switch_defaults({
     // Disable Vulkan.
     {switches::kDisableFeatures, "Vulkan"},
-        // The Renderer Compositor (a.k.a. "cc" see //docs/how_cc_works.md) has
-        // two important parts re. memory consumption, one is the image decode
-        // cache whose size is specified by the LimitImageDecodeCacheSize flag
-        // and the tile manager cache of rasterized content (i.e. content that
-        // has been rastered already or pre-rastered and is kept for later fast
-        // (re)use) that can be overwritten with the kForceGpuMemAvailableMb
-        // switch.
-        // TODO(mcasas): Ideally configure depending on policy.
-        {switches::kForceGpuMemAvailableMb, "32"},
         // When DefaultEnableANGLEValidation is disabled (e.g gold/qa), EGL
         // attribute EGL_CONTEXT_OPENGL_NO_ERROR_KHR is set during egl context
         // creation, but egl extension required to support the attribute is
@@ -118,7 +106,7 @@ const base::CommandLine::SwitchMap GetCobaltParamSwitchDefaults() {
   return cobalt_param_switch_defaults;
 }
 
-constexpr base::CommandLine::StringPieceType kDefaultSwitchPrefix = "--";
+constexpr base::CommandLine::StringViewType kDefaultSwitchPrefix = "--";
 constexpr base::CommandLine::CharType kSwitchValueSeparator[] =
     FILE_PATH_LITERAL("=");
 

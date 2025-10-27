@@ -18,7 +18,8 @@ import static dev.cobalt.util.Log.TAG;
 
 import android.util.Base64;
 import dev.cobalt.util.Log;
-import dev.cobalt.util.UsedByNative;
+import java.util.Locale;
+import org.jni_zero.CalledByNative;
 
 /** Abstract class that provides an interface for Cobalt to interact with a platform service. */
 public abstract class CobaltService {
@@ -56,23 +57,26 @@ public abstract class CobaltService {
 
   // Service API
   /** Response to client from calls to receiveFromClient(). */
-  @SuppressWarnings("unused")
-  @UsedByNative
   public static class ResponseToClient {
     /** Indicate if the service was unable to receive data because it is in an invalid state. */
-    @SuppressWarnings("unused")
-    @UsedByNative
     public boolean invalidState;
 
     /** The synchronous response data from the service. */
-    @SuppressWarnings("unused")
-    @UsedByNative
     public byte[] data;
+
+    @CalledByNative("ResponseToClient")
+    public boolean getInvalidState() {
+      return invalidState;
+    }
+
+    @CalledByNative("ResponseToClient")
+    public byte[] getData() {
+      return data;
+    }
   }
 
   /** Receive data from client of the service. */
-  @SuppressWarnings("unused")
-  @UsedByNative
+  @CalledByNative
   public abstract ResponseToClient receiveFromClient(byte[] data);
 
   /**
@@ -81,8 +85,7 @@ public abstract class CobaltService {
    * <p>Once this function returns, it is invalid to call sendToClient for the nativeService, so
    * synchronization must be used to protect against this.
    */
-  @SuppressWarnings("unused")
-  @UsedByNative
+  @CalledByNative
   public void onClose() {
     synchronized (lock) {
       opened = false;
@@ -92,9 +95,7 @@ public abstract class CobaltService {
 
   public abstract void close();
 
-  /**
-   * Send data from the service to the client.
-   */
+  /** Send data from the service to the client. */
   protected void sendToClient(long nativeService, byte[] data) {
     if (this.cobaltActivity == null) {
       Log.e(TAG, "CobaltActivity is null, can not run evaluateJavaScript()");
@@ -110,16 +111,16 @@ public abstract class CobaltService {
     // are registered within the Kabuki app's iframe, which needs to be the
     // execution context for CobaltService.sendToClient(). see b/403277033 for the details.
     String jsCodeTemplate =
-      "((w) => {\n"
-      + "  let targetWindow = w;\n"
-      + "  const appIframe = document.getElementById('anchor');\n"
-      + "  if (appIframe?.contentWindow) {\n"
-      + "    targetWindow = appIframe.contentWindow;\n"
-      + "  }\n"
-      + "  targetWindow.H5vccPlatformService.callbackFromAndroid(%d, '%s');\n"
-      + "})(window)";
+        "((w) => {\n"
+            + "  let targetWindow = w;\n"
+            + "  const appIframe = document.getElementById('anchor');\n"
+            + "  if (appIframe?.contentWindow) {\n"
+            + "    targetWindow = appIframe.contentWindow;\n"
+            + "  }\n"
+            + "  targetWindow.H5vccPlatformService.callbackFromAndroid(%d, '%s');\n"
+            + "})(window)";
 
-    String jsCode = String.format(jsCodeTemplate, nativeService, base64Data);
+    String jsCode = String.format(Locale.US, jsCodeTemplate, nativeService, base64Data);
     this.cobaltActivity.evaluateJavaScript(jsCode);
   }
 }

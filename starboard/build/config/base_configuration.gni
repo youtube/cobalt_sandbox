@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import("//build/config/clang/clang.gni")
 import("//starboard/content/fonts/font_configuration.gni")
 
 # NOTE:
@@ -116,9 +115,6 @@ declare_args() {
   # Note: Only enable if there's no system-wide DIAL support.
   enable_in_app_dial = false
 
-  # A symbolizer path for ASAN can be added to allow translation of callstacks.
-  asan_symbolizer_path = "$clang_base_path/bin/llvm-symbolizer"
-
   # Sub-directory to copy license file to.
   cobalt_licenses_platform = "default"
 
@@ -149,4 +145,11 @@ declare_args() {
   # all unused symbols and nplb fails to link.
   # TODO: b/297808555 Remove this flag after nplb is fixed
   sb_has_unused_symbol_issue = false
+
+  # Platforms can set this to true in order to build and use a real crashpad
+  # implementation. If false, crashpad either won't be built or a stub
+  # implementation will be built and used.
+  # TODO: b/406511608 - remove once crashpad builds and behaves as expected on
+  # all platforms.
+  use_crashpad = false
 }
