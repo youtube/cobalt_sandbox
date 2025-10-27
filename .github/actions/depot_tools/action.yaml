@@ -9,21 +9,21 @@ runs:
   steps:
       - name: Get depot tools
         run: |
-          if [ -d "/gclient-sync-cache/depot_tools" ]; then
+          if [ -d "/runner-cache/depot_tools" ]; then
             echo "depot_tools directory found. Resetting repository..."
-            git -C /gclient-sync-cache/depot_tools reset --hard origin/main
+            git -C /runner-cache/depot_tools reset --hard origin/main
           else
             echo "depot_tools directory not found. Cloning repository..."
-            git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git /gclient-sync-cache/depot_tools
+            git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git /runner-cache/depot_tools
           fi
         shell: bash
       - name: Bootstrap bundled python3
         run: |
           # Must be run manually as $DEPOT_TOOLS_UPDATE is 0 in CI, skipping the bootstrap.
-          source /gclient-sync-cache/depot_tools/bootstrap_python3 && bootstrap_python3
+          source /runner-cache/depot_tools/bootstrap_python3 && bootstrap_python3
         shell: bash
       - name: Add depot tools to PATH
-        run: echo "/gclient-sync-cache/depot_tools" >> $GITHUB_PATH
+        run: echo "/runner-cache/depot_tools" >> $GITHUB_PATH
         shell: bash
       - name: Generate gclient file
         run: cd cobalt && gclient config --name=src --custom-var=download_remoteexec_cfg=True --custom-var='rbe_instance="projects/cobalt-actions-prod/instances/default_instance"' https://github.com/${{ github.repository }}
@@ -42,7 +42,7 @@ runs:
         if: inputs.run_sync == 'true'
         run: cd cobalt && gclient runhooks --verbose
         env:
-          CIPD_CACHE_DIR: "/gclient-sync-cache/cobalt/.cipd_cache"
+          CIPD_CACHE_DIR: "/runner-cache/cobalt/.cipd_cache"
         shell: bash
       - name: Disable Chromium client side build telemetry
         run: build_telemetry opt-out
