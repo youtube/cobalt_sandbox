@@ -98,8 +98,8 @@ runs:
         with:
           name: ${{ matrix.platform }}_test_targets_json
           path: |
-            src/out/${{ matrix.platform }}_${{ matrix.config }}/test_targets.json
-            src/out/${{ matrix.platform }}_${{ matrix.config }}/dyn_targets.json
+            cobalt/src/out/${{ matrix.platform }}_${{ matrix.config }}/test_targets.json
+            cobalt/src/out/${{ matrix.platform }}_${{ matrix.config }}/dyn_targets.json
       - name: Ninja build test targets
         if: ${{ matrix.config == 'devel' && fromJSON(steps.calculate-test-targets.outputs.test_targets_count || 0) > 0 }}
         id: build-test-targets
@@ -127,12 +127,12 @@ runs:
         with:
           name: ${{ matrix.platform }} APKs
           path: |
-            src/out/${{ matrix.platform }}_qa/apks/*.apk
-            src/out/${{ matrix.platform }}_qa/*_apk/*.apk
-            src/out/${{ matrix.platform }}_qa/gen/build_info.json
+            cobalt/src/out/${{ matrix.platform }}_qa/apks/*.apk
+            cobalt/src/out/${{ matrix.platform }}_qa/*_apk/*.apk
+            cobalt/src/out/${{ matrix.platform }}_qa/gen/build_info.json
       - name: Upload Test Artifacts
         if: steps.build-test-targets.outcome == 'success'
-        uses: ./src/.github/actions/upload_test_artifacts
+        uses: ./cobalt/src/.github/actions/upload_test_artifacts
         with:
           test_artifacts_key: ${{ inputs.test_artifacts_key }}
           upload_on_host_test_artifacts: ${{ inputs.upload_on_host_test_artifacts == 'true' || inputs.upload_web_test_artifacts == 'true' }}
@@ -155,9 +155,9 @@ runs:
             cp out/linux-x64x11-no-starboard_$MATRIX_CONFIG/chromedriver out/${{ matrix.platform }}_${{ matrix.config }}
             cd ..
           fi
-          src/cobalt/build/packager.py \
+          cobalt/src/cobalt/build/packager.py \
             --name=${{ matrix.platform }}_${{ matrix.config }} \
-            --json_path=src/cobalt/build/$BUILD_PLATFORM/package.json \
-            --out_dir=src/out/${{ matrix.platform }}_${{ matrix.config }} \
-            --package_dir=src/out/test-package
+            --json_path=cobalt/src/cobalt/build/$BUILD_PLATFORM/package.json \
+            --out_dir=cobalt/src/out/${{ matrix.platform }}_${{ matrix.config }} \
+            --package_dir=cobalt/src/out/test-package
         shell: bash

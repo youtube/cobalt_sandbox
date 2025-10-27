@@ -299,7 +299,7 @@ jobs:
     container:
       image: ${{ needs.docker-build-image.outputs.docker_tag }}
       volumes:
-        - /gclient-sync-cache:/gclient-sync-cache
+        - /runner-cache:/runner-cache
     env:
       TEST_ARTIFACTS_KEY: ${{ matrix.platform }}_${{ matrix.name }}_test_artifacts
       DEPOT_TOOLS_UPDATE: 0
@@ -314,8 +314,17 @@ jobs:
     steps:
       - name: Prepare gclient cache directory
         run: |
-          mkdir -p /gclient-sync-cache/cobalt/src
-          ln -s /gclient-sync-cache/cobalt ${GITHUB_WORKSPACE}/cobalt
+          mkdir -p /runner-cache/cobalt/src
+          ln -s /runner-cache/cobalt ${GITHUB_WORKSPACE}/cobalt
+      - name: Prepare Workspace for Checkout
+        run: |
+          CHECKOUT_PATH="${GITHUB_WORKSPACE}/cobalt/src"
+          # Check src already exists by earlier runners:
+          if [ -d "${CHECKOUT_PATH}/.git" ]; then
+            git reset --hard
+            # Remove unmerged/conflict markers if any merge was aborted
+            git merge --abort || true
+          fi
       - name: Checkout
         uses: actions/checkout@v4
         # TODO(bug?): android debug builds are broken.
