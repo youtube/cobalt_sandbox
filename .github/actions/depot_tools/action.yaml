@@ -31,6 +31,7 @@ runs:
       - name: Set target OS for Android
         if: ${{ contains(matrix.platform, 'android') }}
         run: |
+          cd cobalt
           echo "target_os=['android']" >> .gclient
           gclient validate
         shell: bash
