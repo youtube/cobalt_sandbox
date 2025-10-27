@@ -321,6 +321,7 @@ jobs:
           CHECKOUT_PATH="${GITHUB_WORKSPACE}/cobalt/src"
           # Check src already exists by earlier runners:
           if [ -d "${CHECKOUT_PATH}/.git" ]; then
+            cd "${CHECKOUT_PATH}"
             git reset --hard
             # Remove unmerged/conflict markers if any merge was aborted
             git merge --abort || true
@@ -484,11 +485,11 @@ jobs:
         with:
           path: src
       - name: Set Up Depot Tools
-        uses: ./cobalt/src/.github/actions/depot_tools
+        uses: ./src/.github/actions/depot_tools
         with:
           run_sync: false
       - name: Run Web Tests
-        uses: ./cobalt/src/.github/actions/web_tests
+        uses: ./src/.github/actions/web_tests
         with:
           test_artifacts_key: ${{ env.TEST_ARTIFACTS_KEY }}
           test_results_key: Blink Web Test Results ${{ github.workflow }}
