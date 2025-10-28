@@ -22,7 +22,7 @@ runs:
         TEST_TARGETS_JSON_FILE: ${{ inputs.test_targets_json_file }}
       run: |
         set -eux
-        cd src/
+        cd cobalt/src/
         mkdir -p "${GITHUB_WORKSPACE}/artifacts/"
         for target in $(cat "${TEST_TARGETS_JSON_FILE}" | jq -r '.executables | .[]'); do
           cp "${target}" "${GITHUB_WORKSPACE}/artifacts/"
@@ -34,7 +34,7 @@ runs:
       run: |
         set -x
         mkdir -p "${GITHUB_WORKSPACE}/artifacts/"
-        cd src/
+        cd cobalt/src/
 
         FLAGS=""
         if [[ "${{ matrix.platform }}" == *android* ]]; then
