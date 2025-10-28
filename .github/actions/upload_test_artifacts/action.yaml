@@ -44,7 +44,7 @@ runs:
         fi
 
         time vpython3 -u ./cobalt/build/archive_test_artifacts.py \
-          --source-dir ${GITHUB_WORKSPACE}/src \
+          --source-dir ${GITHUB_WORKSPACE}/cobalt/src \
           --out-dir out/${{ matrix.platform }}_${{ matrix.config }}/ \
           --destination-dir ${GITHUB_WORKSPACE}/artifacts \
           --targets $(cat "${TEST_TARGETS_JSON_FILE}" | jq -cr '.test_targets | join(",")') \
@@ -70,7 +70,7 @@ runs:
 
         # Upload cobalt.apk for smoke tests.
         if [[ "${{ matrix.platform }}" == *android* ]]; then
-          cp "${GITHUB_WORKSPACE}/src/out/${{ matrix.platform }}_${{ matrix.config }}/apks/Cobalt.apk" \
+          cp "${GITHUB_WORKSPACE}/cobalt/src/out/${{ matrix.platform }}_${{ matrix.config }}/apks/Cobalt.apk" \
              "${GITHUB_WORKSPACE}/artifacts/"
         fi
 
