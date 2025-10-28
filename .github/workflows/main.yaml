@@ -326,6 +326,8 @@ jobs:
             # Remove unmerged/conflict markers if any merge was aborted
             git merge --abort || true
           fi
+      - name: Add safe directory for git
+        run: git config --global --add safe.directory /runner-cache/cobalt/src
       - name: Checkout
         uses: actions/checkout@v4
         # TODO(bug?): android debug builds are broken.
