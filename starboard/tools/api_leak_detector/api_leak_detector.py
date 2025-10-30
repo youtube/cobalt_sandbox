@@ -546,7 +546,8 @@ def ProcessNmOutput(nm_output, collect_files=False):
 
 def RunCommand(args, cwd=None):
   """Runs a command, returning its stdout and printing stderr on failure."""
-  logging.info('Running: %s', ' '.join(args))
+  arg_string = ' '.join(args)
+  logging.info('Running: %s', arg_string)
   try:
     result = subprocess.run(
         args,
@@ -557,7 +558,7 @@ def RunCommand(args, cwd=None):
         cwd=cwd)
     return result.stdout
   except subprocess.CalledProcessError as e:
-    print(f'ERROR: Failed to run `{" ".join(args)}`', file=sys.stderr)
+    print(f'ERROR: Failed to run `${arg_string}`', file=sys.stderr)
     print(f'Exit Code: {e.returncode}', file=sys.stderr)
     if e.stdout:
       print('--- stdout ---', file=sys.stderr)
