@@ -41,6 +41,7 @@ from __future__ import print_function
 
 import argparse
 import collections
+import logging
 import os
 import re
 import subprocess
@@ -544,8 +545,22 @@ def ProcessNmOutput(nm_output, collect_files=False):
 
 
 def RunCommand(args):
-  """Executes a command with the given arguments and returns the output."""
-  return subprocess.check_output(args)
+  """Runs a command, returning its stdout and printing stderr on failure."""
+  logging.info('Running: %s', ' '.join(args))
+  try:
+    result = subprocess.run(
+        args, check=True, capture_output=True, text=True, encoding='utf-8')
+    return result.stdout
+  except subprocess.CalledProcessError as e:
+    print(f'ERROR: Failed to run `{" ".join(args)}`', file=sys.stderr)
+    print(f'Exit Code: {e.returncode}', file=sys.stderr)
+    if e.stdout:
+      print('--- stdout ---', file=sys.stderr)
+      print(e.stdout, file=sys.stderr)
+    if e.stderr:
+      print('--- stderr ---', file=sys.stderr)
+      print(e.stderr, file=sys.stderr)
+    raise
 
 
 def main():
