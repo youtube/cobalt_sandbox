@@ -544,12 +544,17 @@ def ProcessNmOutput(nm_output, collect_files=False):
       print(f'Invalid line in nm output: {line}', file=sys.stderr)
 
 
-def RunCommand(args):
+def RunCommand(args, cwd=None):
   """Runs a command, returning its stdout and printing stderr on failure."""
   logging.info('Running: %s', ' '.join(args))
   try:
     result = subprocess.run(
-        args, check=True, capture_output=True, text=True, encoding='utf-8')
+        args,
+        check=True,
+        capture_output=True,
+        text=True,
+        encoding='utf-8',
+        cwd=cwd)
     return result.stdout
   except subprocess.CalledProcessError as e:
     print(f'ERROR: Failed to run `{" ".join(args)}`', file=sys.stderr)
@@ -582,7 +587,8 @@ def main():
   allowed_c99_symbols = LoadAllowedC99Symbols()
 
   print(f'Building {config_dir} if necessary...', file=sys.stderr)
-  RunCommand(['autoninja', '-C', config_path, args.target])
+  RunCommand(['autoninja', '-C', config_path, args.target],
+             cwd=paths.REPOSITORY_ROOT)
 
   # Use the library at lib.unstripped if available, as if that's around it
   # means the top-level one has been stripped of symbols.
