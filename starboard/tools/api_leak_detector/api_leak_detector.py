@@ -528,7 +528,7 @@ def ProcessNmOutput(nm_output, collect_files=False):
   Yields:
     Unresolved symbols that match _RE_SYMBOL_AND_ANY_VERSION_INFO.
   """
-  for line in nm_output.decode('utf-8').splitlines():
+  for line in nm_output.splitlines():
     line = line.lstrip()
     contents = line.split(' ', 1)
     if len(contents) == 1:
