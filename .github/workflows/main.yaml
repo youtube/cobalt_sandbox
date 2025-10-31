@@ -482,16 +482,31 @@ jobs:
       TMPDIR: /__w/_temp
       TEST_ARTIFACTS_KEY: ${{ matrix.platform }}_${{ matrix.name }}_test_artifacts
     steps:
+      - name: Prepare gclient cache directory
+        run: |
+          mkdir -p /runner-cache/cobalt/src
+          ln -s /runner-cache/cobalt ${GITHUB_WORKSPACE}/cobalt
+      - name: Prepare Workspace for Checkout
+        run: |
+          CHECKOUT_PATH="${GITHUB_WORKSPACE}/cobalt/src"
+          # Check src already exists by earlier runners:
+          if [ -d "${CHECKOUT_PATH}/.git" ]; then
+            cd "${CHECKOUT_PATH}"
+            git reset --hard
+            # Remove unmerged/conflict markers if any merge was aborted
+            git merge --abort || true
+          fi
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          path: src
+          path: cobalt/src
+          clean: false
       - name: Set Up Depot Tools
-        uses: ./src/.github/actions/depot_tools
+        uses: ./cobalt/src/.github/actions/depot_tools
         with:
           run_sync: false
       - name: Run Web Tests
-        uses: ./src/.github/actions/web_tests
+        uses: ./cobalt/src/.github/actions/web_tests
         with:
           test_artifacts_key: ${{ env.TEST_ARTIFACTS_KEY }}
           test_results_key: Blink Web Test Results ${{ github.workflow }}
