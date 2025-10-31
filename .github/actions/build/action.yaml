@@ -25,6 +25,10 @@ inputs:
 runs:
   using: "composite"
   steps:
+      - name: Clean out dir from previous runner
+        run: |
+          rm -rf cobalt/src/out
+        shell: bash
       - name: GN gen
         run: |
           cd cobalt/src
