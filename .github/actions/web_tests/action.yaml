@@ -18,17 +18,9 @@ runs:
       shell: bash
       run: |
         set -x
-        echo "Listing all files in the workspace to find the artifact..."
-        ls -lR "${GITHUB_WORKSPACE}"
         # The web tests fail when not run from the source folder. Use the existing checkout.
         cd cobalt/src/
-        artifact_path=$(find "${GITHUB_WORKSPACE}" -name "test_artifacts.tar.gz")
-        if [ -z "$artifact_path" ]; then
-          echo "Error: test_artifacts.tar.gz not found in workspace."
-          exit 1
-        fi
-        echo "Found artifact at: ${artifact_path}"
-        tar -I 'zstd -T0' -xf "${artifact_path}"
+        tar -I 'zstd -T0' -xf ${GITHUB_WORKSPACE}/test_artifacts.tar.zstd
     - name: Run Web Tests
       id: run-tests
       shell: bash
