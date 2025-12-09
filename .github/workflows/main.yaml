@@ -173,7 +173,7 @@ jobs:
           test_device_family=$(cat ${GITHUB_WORKSPACE}/.github/config/${{ inputs.platform }}.json | jq -rc '.test_device_family // empty')
           echo "test_device_family=${test_device_family}" >> $GITHUB_OUTPUT
       - name: Set YTS test targets
-        id: set-e2e-test-targets
+        id: set-yts-test-targets
         shell: bash
         run: |
           set -x
@@ -238,7 +238,7 @@ jobs:
       test_on_device: ${{ steps.set-test-on-device.outputs.test_on_device }}
       test_package: ${{ steps.set-test-package.outputs.test_package }}
       test_e2e: ${{ steps.set-test-e2e.outputs.test_e2e }}
-      test_yts: ${{ steps.set-test-e2e.outputs.test_yts }}
+      test_yts: ${{ steps.set-test-yts.outputs.test_yts }}
       web_tests: ${{ steps.set-web-tests.outputs.web_tests }}
       test_root_target: ${{ steps.set-test-root-target.outputs.test_root_target }}
       test_device_family: ${{ steps.set-test-device-family.outputs.test_device_family }}
@@ -464,9 +464,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Run E2E Tests
-        uses: ./.github/actions/e2e_tests
+        uses: ./.github/actions/internal_tests
         with:
-          e2e_test_targets: '${{ needs.initialize.outputs.e2e_test_targets }}'
+          test_type: 'e2e_test'
+          test_targets: '${{ needs.initialize.outputs.e2e_test_targets }}'
           test_attempts: '${{ needs.initialize.outputs.e2e_test_attempts }}'
           test_dimensions: '${{ needs.initialize.outputs.test_dimensions }}'
 
@@ -494,10 +495,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Run YTS Tests
-        uses: ./.github/actions/yts_tests
+        uses: ./.github/actions/internal_tests
         with:
-          yts_test_targets: '${{ needs.initialize.outputs.yts_test_targets }}'
-          test_dimensions: '${{ needs.initialize.outputs.test_dimensions }}'
+          test_type: 'yts_test'
+          test_targets: '${{ needs.initialize.outputs.yts_test_targets }}'
 
   on-host-test:
     needs: [initialize, docker-unittest-image, build]
