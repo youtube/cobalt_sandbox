@@ -32,7 +32,7 @@ _ON_DEVICE_TESTS_GATEWAY_SERVICE_HOST = (
     'on-device-tests-gateway-service.on-device-tests.svc.cluster.local')
 
 # When testing with local gateway, uncomment:
-# _ON_DEVICE_TESTS_GATEWAY_SERVICE_HOST = 'localhost'
+#_ON_DEVICE_TESTS_GATEWAY_SERVICE_HOST = 'localhost'
 _ON_DEVICE_TESTS_GATEWAY_SERVICE_PORT = '50052'
 
 # These paths are hardcoded in various places. DO NOT CHANGE!
@@ -129,7 +129,7 @@ def _get_test_args_and_dimensions(
         f'test_attempts={args.test_attempts}',
     ])
 
-  device_type = getattr(args, 'device_type', None)
+  device_type = None
   device_pool = None
 
   if args.dimensions:
@@ -137,8 +137,7 @@ def _get_test_args_and_dimensions(
       dimensions = json.loads(args.dimensions)
     except json.JSONDecodeError as e:
       raise ValueError(f'--dimensions is not in JSON format: {e}') from e
-    # device_type from dimensions overrides the dedicated argument if provided
-    device_type = dimensions.pop('device_type', device_type)
+    device_type = dimensions.pop('device_type', None)
     device_pool = dimensions.pop('device_pool', None)
 
     test_args.extend(
@@ -244,7 +243,7 @@ def _process_test_requests(args: argparse.Namespace) -> List[Dict[str, Any]]:
       files = _unit_test_files(args, target_name)
       params = _unit_test_params(args, target_name, dir_on_device)
 
-    elif args.test_type == 'e2e_test':
+    elif args.test_type == 'e2e_test' or args.test_type == 'yts_test':
       test_target = target_data['target']
       test_attempts = target_data.get('test_attempts', '')
       if test_attempts:
@@ -254,12 +253,6 @@ def _process_test_requests(args: argparse.Namespace) -> List[Dict[str, Any]]:
       test_cmd_args = []
       files = [f'cobalt_path={args.cobalt_path}']
       params = [f'yt_binary_name={_E2E_DEFAULT_YT_BINARY_NAME}']
-
-    elif args.test_type == 'yts_test':
-      test_target = target_data
-      files = [f'bin_apk={args.cobalt_apk_path}']
-      test_cmd_args = []
-      params = []
 
     else:
       raise ValueError(f'Unsupported test type: {args.test_type}')
@@ -326,12 +319,6 @@ def main() -> int:
       help='Family of device to run tests on.',
   )
   trigger_args.add_argument(
-      '--device_type',
-      type=str,
-      help=('Type of device to run tests on (e.g., sabrina, boreal). '
-            'Required for yts_test.'),
-  )
-  trigger_args.add_argument(
       '--targets',
       type=str,
       help='List of targets to test in JSON format.',
@@ -365,8 +352,8 @@ def main() -> int:
       '--job_timeout_sec',
       type=str,
       default='2100',
-      help=('Timeout in seconds for the job. Must be set higher and '
-            'start_timeout_sec and test_timeout_sec combined.'),
+      help='Timeout in seconds for the job. Must be set higher and '
+      'start_timeout_sec and test_timeout_sec combined.',
   )
   trigger_args.add_argument(
       '--test_timeout_sec',
@@ -407,14 +394,6 @@ def main() -> int:
       type=str,
       help='Path to Cobalt apk.',
   )
-  # --- YTS Test Arguments ---
-  yts_test_group = trigger_parser.add_argument_group('YTS Test Arguments')
-  yts_test_group.add_argument(
-      '--cobalt_apk_path',
-      type=str,
-      help=('GCS Path to the Cobalt APK for YTS tests (e.g., '
-            '/bigstore/bucket/Cobalt.apk).'),
-  )
 
   # Watch command
   watch_parser = subparsers.add_parser(
@@ -430,9 +409,9 @@ def main() -> int:
   args = parser.parse_args()
 
   # TODO(b/428961033): Let argparse handle these checks as required arguments.
-  if args.test_type == 'e2e_test':
+  if args.test_type == 'e2e_test' or args.test_type == 'yts_test':
     if not args.cobalt_path:
-      raise ValueError('--cobalt_path is required for e2e_test')
+      raise ValueError('--cobalt_path is required for e2e_test or yts_test')
   elif args.test_type == 'unit_test':
     if not args.device_family:
       raise ValueError('--device_family is required for unit_test')
@@ -442,14 +421,6 @@ def main() -> int:
       raise ValueError('--gcs_result_path is required for unit_test')
     if not args.filter_json_dir:
       raise ValueError('--filter_json_dir is required for unit_test')
-  elif args.test_type == 'yts_test':
-    if not args.device_type and not (args.dimensions and
-                                     '"device_type"' in args.dimensions):
-      raise ValueError('device_type is required for yts_test')
-    if not args.cobalt_apk_path:
-      raise ValueError('--cobalt_apk_path is required for yts_test')
-    if not args.targets:
-      raise ValueError('--targets is required for yts_test')
 
   test_requests = _process_test_requests(args)
   client = OnDeviceTestsGatewayClient()
