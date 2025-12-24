@@ -37,6 +37,7 @@ runs:
     - name: Run Tests on ${{ matrix.platform }} Platform
       env:
         GCS_ARTIFACTS_PATH: /bigstore/${{ env.PROJECT_NAME }}-test-artifacts/${{ github.workflow }}/${{ github.run_number }}/${{ matrix.platform }}/${{ matrix.platform }}_qa/${{ inputs.artifact_name }}
+        GCS_ARCHIVE_PATH: gs://cobalt-internal-build-artifacts/${{ matrix.platform }}-sbversion-17_26.eap/2025-12-08/45/${{ matrix.platform }}-sbversion-17_qa.zip
         GITHUB_SHA: ${{ github.sha }}
         GITHUB_TOKEN: ${{ github.token }}
         GITHUB_EVENT_NAME: ${{ github.event_name }}
@@ -57,7 +58,7 @@ runs:
       run: |
         set -x
 
-        python3 -u cobalt/tools/on_device_tests_gateway_client.py \
+        CMD="python3 -u cobalt/tools/on_device_tests_gateway_client.py \
           --token ${GITHUB_TOKEN} \
           trigger \
           --test_type ${TEST_TYPE} \
@@ -77,12 +78,23 @@ runs:
           --label repository-${GITHUB_REPO} \
           --label author-${GITHUB_PR_HEAD_USER_LOGIN:-$GITHUB_COMMIT_AUTHOR_USERNAME} \
           --label author_id-${GITHUB_PR_HEAD_USER_ID:-$GITHUB_COMMIT_AUTHOR_EMAIL} \
-          --dimensions '${{ inputs.test_dimensions }}' \
-          --cobalt_path "${GCS_ARTIFACTS_PATH}" || {
-            echo "Finished running tests..."
-            echo "The test session failed. See logs for details."
-            # Fail the job so it's easy to retrigger.
-            exit 1
-          }
+          --dimensions '${{ inputs.test_dimensions }}'"
+
+        # Add arguments based on platform
+        if [[ "${{ matrix.platform }}" == "evergreen-arm-hardfp-rdk" || "${{ matrix.platform }}" == "evergreen-arm-hardfp-raspi" ]]; then
+          # RDK and Raspi need gcs_archive_path, but not cobalt_path
+          CMD="${CMD} --gcs_archive_path '${GCS_ARCHIVE_PATH}'"
+        else
+          # Other platforms need cobalt_path, but not gcs_archive_path
+          CMD="${CMD} --cobalt_path '${GCS_ARTIFACTS_PATH}'"
+        fi
+
+        echo "Running command: ${CMD}"
+        eval ${CMD} || {
+          echo "Finished running tests..."
+          echo "The test session failed. See logs for details."
+          # Fail the job so it's easy to retrigger.
+          exit 1
+        }
         echo "Finished running tests..."
       shell: bash
