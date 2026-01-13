@@ -51,11 +51,18 @@ runs:
             https://github.com/${{ github.repository }}
         shell: bash
 
-      - name: Set target OS for Android
-        if: contains(matrix.platform, 'android')
+      # - name: Set target OS for Android
+      #   if: contains(matrix.platform, 'android')
+      #   run: |
+      #     cd cobalt
+      #     echo "target_os=['android']" >> .gclient
+      #     gclient validate
+      #   shell: bash
+
+      - name: Set target OS for Mac
+        if: ${{ contains(matrix.platform, 'mac') }}
         run: |
-          cd cobalt
-          echo "target_os=['android']" >> .gclient
+          echo "target_os=['mac']" >> .gclient
           gclient validate
         shell: bash
 
