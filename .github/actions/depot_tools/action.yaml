@@ -59,6 +59,13 @@ runs:
           gclient validate
         shell: bash
 
+      - name: Set target OS for Mac
+        if: ${{ contains(matrix.platform, 'mac') }}
+        run: |
+          echo "target_os=['mac']" >> .gclient
+          gclient validate
+        shell: bash
+
       - name: Run gclient sync
         if: inputs.run_sync == 'true'
         run: |

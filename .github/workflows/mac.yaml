@@ -1,0 +1,16 @@
+name: mac_build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  # This is default Chromium build config
+  tvos-x64:
+    uses: ./.github/workflows/main.yaml
+    permissions:
+      packages: write
+      pull-requests: write
+    with:
+      platform: chromium_linux
+    secrets:
+      datadog_api_key: ${{ secrets.DD_API_KEY }}
