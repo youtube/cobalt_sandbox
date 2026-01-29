@@ -90,35 +90,46 @@ runs:
     - name: Run gclient config
       env:
         RBE_INSTANCE: ${{ inputs.rbe_instance }}
+        CACHE_DIR_BASE_PATH: ${{ steps.paths.outputs.base_path }}/gclient-cache
+        USE_CACHE: ${{ inputs.use_cache }}
       run: |
+        if [[ "${USE_CACHE}" == "false" ]]; then
+          export TMPDIR={{ steps.paths.outputs.base_path }}
+        fi
         cd cobalt
+        CACHE_ARG=()
+        if [[ "${USE_CACHE}" == "true" ]]; then
+          CACHE_ARG=("--cache-dir=${CACHE_DIR_BASE_PATH}")
+        fi
         gclient config \
           --name=src \
-          --cache-dir=/runner-cache/gclient-cache \
           --custom-var=download_remoteexec_cfg=True \
           --custom-var="rbe_instance=\"${RBE_INSTANCE}\"" \
-          https://github.com/${{ github.repository }}
+          "${CACHE_ARG[@]}" \
+          "https://github.com/${{ github.repository }}"
       shell: bash
 
-    - name: Set target OS for Android
-      if: contains(matrix.platform, 'android')
-      run: |
-        cd cobalt
-        echo "target_os=['android']" >> .gclient
-        gclient validate
+    - name: Set target OS
+      if: contains(matrix.platform, 'android') || contains(matrix.platform, 'mac')
       shell: bash
-
-    - name: Set target OS for tvOS
-      if: contains(matrix.platform, 'tvos')
       run: |
+        if [[ "${USE_CACHE}" == "false" ]]; then
+          export TMPDIR={{ steps.paths.outputs.base_path }}
+        fi
         cd cobalt
-        echo "target_os=['ios']" >> .gclient
+        if [[ "${{ matrix.platform }}" == *"android"* ]]; then
+          echo "target_os=['android']" >> .gclient
+        else
+          echo "target_os=['ios']" >> .gclient
+        fi
         gclient validate
-      shell: bash
 
     - name: Run gclient sync
       if: inputs.run_sync == 'true'
       run: |
+        if [[ "${USE_CACHE}" == "false" ]]; then
+          export TMPDIR={{ steps.paths.outputs.base_path }}
+        fi
         cd cobalt
         gclient sync \
           --verbose \
@@ -133,6 +144,9 @@ runs:
     - name: Run gclient runhooks
       if: inputs.run_sync == 'true'
       run: |
+        if [[ "${USE_CACHE}" == "false" ]]; then
+          export TMPDIR={{ steps.paths.outputs.base_path }}
+        fi
         cd cobalt
         gclient runhooks --verbose
       shell: bash
