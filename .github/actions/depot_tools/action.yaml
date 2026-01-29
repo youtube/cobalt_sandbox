@@ -90,34 +90,41 @@ runs:
     - name: Run gclient config
       env:
         RBE_INSTANCE: ${{ inputs.rbe_instance }}
+        CACHE_DIR_BASE_PATH: ${{ steps.paths.outputs.base_path }}/gclient-cache
+        VPYTHON_VIRTUALENV_ROOT: ${{ steps.paths.outputs.base_path }}/vpython_cache }}
+        USE_CACHE: ${{ inputs.use_cache }}
       run: |
         cd cobalt
+        CACHE_ARG=()
+        if [[ "${USE_CACHE}" == "true" ]]; then
+          CACHE_ARG=("--cache-dir=${CACHE_DIR_BASE_PATH}")
+        fi
         gclient config \
           --name=src \
-          --cache-dir=/runner-cache/gclient-cache \
           --custom-var=download_remoteexec_cfg=True \
           --custom-var="rbe_instance=\"${RBE_INSTANCE}\"" \
-          https://github.com/${{ github.repository }}
+          "${CACHE_ARG[@]}" \
+          "https://github.com/${{ github.repository }}"
       shell: bash
 
-    - name: Set target OS for Android
-      if: contains(matrix.platform, 'android')
+    - name: Set target OS
+      if: contains(matrix.platform, 'android') || contains(matrix.platform, 'mac')
+      env:
+        VPYTHON_VIRTUALENV_ROOT: ${{ steps.paths.outputs.base_path }}/vpython_cache }}
+      shell: bash
       run: |
         cd cobalt
-        echo "target_os=['android']" >> .gclient
+        if [[ "${{ matrix.platform }}" == *"android"* ]]; then
+          echo "target_os=['android']" >> .gclient
+        else
+          echo "target_os=['ios']" >> .gclient
+        fi
         gclient validate
-      shell: bash
-
-    - name: Set target OS for tvOS
-      if: contains(matrix.platform, 'tvos')
-      run: |
-        cd cobalt
-        echo "target_os=['ios']" >> .gclient
-        gclient validate
-      shell: bash
 
     - name: Run gclient sync
       if: inputs.run_sync == 'true'
+      env:
+        VPYTHON_VIRTUALENV_ROOT: ${{ steps.paths.outputs.base_path }}/vpython_cache }}
       run: |
         cd cobalt
         gclient sync \
@@ -132,6 +139,8 @@ runs:
 
     - name: Run gclient runhooks
       if: inputs.run_sync == 'true'
+      env:
+        VPYTHON_VIRTUALENV_ROOT: ${{ steps.paths.outputs.base_path }}/vpython_cache }}
       run: |
         cd cobalt
         gclient runhooks --verbose
