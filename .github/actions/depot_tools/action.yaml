@@ -27,6 +27,7 @@ runs:
       run: |
         if [[ "${USE_CACHE}" == "false" ]]; then
           echo "base_path=${{ runner.temp }}" >> ${GITHUB_OUTPUT}
+          echo "TMPDIR=${{ runner.temp }}" >> ${GITHUB_OUTPUT}
         else
           echo "base_path=/runner-cache" >> ${GITHUB_OUTPUT}
         fi
