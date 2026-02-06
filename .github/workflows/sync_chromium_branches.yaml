@@ -44,21 +44,21 @@ jobs:
           git config --global user.email "github@google.com"
           # Add Chromium remote and pull the upstream branch.
           git remote add upstream https://chromium.googlesource.com/chromium/src
-          git fetch --depth=1 upstream refs/branch-heads/${{ matrix.branch.branch_num }}:refs/remotes/branch/${{ matrix.branch.branch_num }}
+          git fetch --depth=1 upstream "refs/branch-heads/${{ matrix.branch.branch_num }}:refs/remotes/branch/${{ matrix.branch.branch_num }}"
       - name: Create missing Chromium branch
         if: steps.checkout.outcome == 'failure'
         run: |
-          git checkout refs/remotes/branch/${{ matrix.branch.branch_num }}
+          git checkout "refs/remotes/branch/${{ matrix.branch.branch_num }}"
           ORIGINAL_TREE_HASH=$(git rev-parse HEAD^{tree})
           ORIGINAL_COMMIT_HASH=$(git rev-parse HEAD)
           NEW_ROOT_COMMIT_HASH=$(git commit-tree "${ORIGINAL_TREE_HASH}" -m "First commit for ${{ matrix.branch.milestone }}.")
-          git checkout -b chromium/${{ matrix.branch.milestone }} "${NEW_ROOT_COMMIT_HASH}"
+          git checkout -b "chromium/${{ matrix.branch.milestone }}" "${NEW_ROOT_COMMIT_HASH}"
           git commit --amend --no-edit -c "${ORIGINAL_COMMIT_HASH}"
-          git push --set-upstream origin chromium/${{ matrix.branch.milestone }}
+          git push --set-upstream origin "chromium/${{ matrix.branch.milestone }}"
       - name: Create upstream diff
         id: create_diff
         run: |
-          git diff HEAD branch/${{ matrix.branch.branch_num }} --binary > chromium_diff.patch
+          git diff HEAD "branch/${{ matrix.branch.branch_num }}" --binary > chromium_diff.patch
       - name: Apply and Push upstream diff
         id: push_diff
         run: |
@@ -66,7 +66,7 @@ jobs:
             echo "Applying diff..."
             git apply --index chromium_diff.patch
             git commit -m "Rebase refresh on $(date +'%Y-%m-%d') for ${{ matrix.branch.milestone }}."
-            git push --force origin chromium/${{ matrix.branch.milestone }}
+            git push --force origin "chromium/${{ matrix.branch.milestone }}"
             DIFF_COMMIT_HASH=$(git rev-parse HEAD)
             echo "main_cherry_pick=true" >> $GITHUB_OUTPUT
             echo "main_cherry_pick_hash=${DIFF_COMMIT_HASH}" >> $GITHUB_OUTPUT
@@ -83,7 +83,7 @@ jobs:
       - name: Cherry Pick and Push upstream diff to main
         if: steps.checkout_main.outcome == 'success'
         run: |
-          if ! git cherry-pick "${{steps.push_diff.outputs.main_cherry_pick_hash}}"; then
+          if ! git cherry-pick "${{ steps.push_diff.outputs.main_cherry_pick_hash }}"; then
             git status | sed -n "s/^[[:space:]]*deleted by us:[[:space:]]*//p" | xargs -d "\n" git rm
             git cherry-pick --continue --no-edit
           fi
