@@ -10,6 +10,7 @@ jobs:
     runs-on: [self-hosted, chrobalt-linux-runner]
     permissions:
       contents: write
+      pull-requests: write
     strategy:
       fail-fast: false
       matrix:
@@ -72,16 +73,37 @@ jobs:
             echo "main_cherry_pick=false" >> "$GITHUB_OUTPUT"
           fi
       - uses: actions/checkout@v4
-        id: checkout_main
+        id: checkout_cherry_pick_main_sync
         if: steps.push_diff.outputs.main_cherry_pick == 'true' && contains(matrix.branch.milestone, 'm138')
         with:
-          ref: main
-          fetch-depth: 1
-      - name: Cherry Pick and Push upstream diff to main
-        if: steps.checkout_main.outcome == 'success'
+          ref: cherry-pick-main-sync
+          fetch-depth: 16
+      - name: Install GitHub CLI
+        if: steps.checkout_cherry_pick_main_sync.outcome == 'success'
         run: |
+          (type -p wget >/dev/null || (sudo apt update && sudo apt install wget -y)) \
+            && sudo mkdir -p -m 755 /etc/apt/keyrings \
+            && out=$(mktemp) && wget -nv -O$out https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+            && cat $out | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null \
+            && sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+            && sudo mkdir -p -m 755 /etc/apt/sources.list.d \
+            && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+          sudo apt update
+          sudo apt install gh -y
+      - name: Cherry Pick upstream diff to main
+        if: steps.checkout_cherry_pick_main_sync.outcome == 'success'
+        run: |
+          git pull --rebase origin main
           if ! git cherry-pick "${{ steps.push_diff.outputs.main_cherry_pick_hash }}"; then
             git status | sed -n "s/^[[:space:]]*deleted by us:[[:space:]]*//p" | xargs -d "\n" git rm
+            git add .
             git cherry-pick --continue --no-edit
           fi
-          git push --force origin main
+          git push origin cherry-pick-main-sync --force
+          if [ -z "$(gh pr list -H cherry-pick-main-sync)" ]; then
+            gh pr create -B main -H cherry-pick-main-sync --fill -r "briantting"
+          else
+            echo "Pull Request already exists."
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
