@@ -98,6 +98,7 @@ jobs:
             git cherry-pick --continue --no-edit
           fi
           git push origin cherry-pick-main-sync --force
+          echo "derp"
           gh pr create -B main -H cherry-pick-main-sync --fill
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
