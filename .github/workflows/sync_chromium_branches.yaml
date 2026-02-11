@@ -89,14 +89,15 @@ jobs:
             && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
           sudo apt update
           sudo apt install gh -y
-      - name: Cherry Pick upstream diff to mains
+      - name: Cherry Pick upstream diff to main
         if: steps.checkout_main.outcome == 'success'
         run: |
+          git checkout -b cherry-pick-main-sync
           if ! git cherry-pick "${{ steps.push_diff.outputs.main_cherry_pick_hash }}"; then
             git status | sed -n "s/^[[:space:]]*deleted by us:[[:space:]]*//p" | xargs -d "\n" git rm
             git cherry-pick --continue --no-edit
           fi
-          git push origin main:cherry-pick-main-sync --force
+          git push origin cherry-pick-main-sync --force
           gh pr create -B main -H cherry-pick-main-sync --fill
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
