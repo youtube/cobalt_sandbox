@@ -100,6 +100,6 @@ jobs:
           fi
           git push origin cherry-pick-main-sync --force
           echo "derp"
-          gh pr create -B main -H cherry-pick-main-sync --fill
+          gh pr create -B main -H cherry-pick-main-sync --fill -r "youtube/cobalt-3p-repository-owners,briantting"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
