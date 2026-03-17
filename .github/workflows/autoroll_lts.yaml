@@ -20,9 +20,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+        env:
+          GH_REPO: ${{ github.server_url }}/${{ github.repository }}
+        run: |
+          git clone --shallow-since="5 days ago" --filter=blob:none "${GH_REPO}"
 
       - name: Setup Git user
         run: |
@@ -34,19 +35,18 @@ jobs:
         env:
           TARGET_BRANCH: 27.lts
           # First commit
-          START_COMMIT: '7e6524981fdd6ab3c87bc55785343d40116a05e5'
+          START_COMMIT: ${{ inputs.start_commit }}
           REPO: ${{ github.repository }}
         run: |
           git fetch origin main "${TARGET_BRANCH}"
           git checkout -B "autoroll-to-${TARGET_BRANCH}" "origin/${TARGET_BRANCH}"
 
           PR_LINKS=""
-          HAS_CHANGES="false"
 
-          # Use git cherry to find missing commits
+          # Use git rev-list to find missing commits natively on the main branch
           while read -r line; do
-            COMMIT=$(echo "$line" | awk '{print $2}')
-            COMMIT_SUBJECT=$(echo "$line" | cut -d' ' -f3-)
+            COMMIT=$(echo "$line" | awk '{print $1}')
+            COMMIT_SUBJECT=$(echo "$line" | cut -d' ' -f2-)
 
             if [[ "$COMMIT_SUBJECT" =~ ^(.*)\ \(#([0-9]+)\)$ ]]; then
               PR_TITLE="${BASH_REMATCH[1]}"
@@ -75,25 +75,20 @@ jobs:
           EOF
 
                 PR_LINKS="${PR_LINKS}- https://github.com/${REPO}/pull/${PR_NUMBER}"$'\n'
-                HAS_CHANGES="true"
               fi
             fi
-          done < <(git cherry -v "origin/${TARGET_BRANCH}" "origin/main" "${START_COMMIT}" | grep "^+")
+          done < <(git rev-list --no-merges --oneline --reverse "origin/main" "^origin/${TARGET_BRANCH}" "${START_COMMIT}^..origin/main")
 
-          if [[ "$HAS_CHANGES" == "false" ]]; then
-            echo "No new commits to roll."
-            echo "has_changes=false" >> $GITHUB_OUTPUT
-            exit 0
+          # Pass PR_LINKS as an output if not empty
+          if [[ -n "$PR_LINKS" ]]; then
+            EOF_MARKER="EOF_$(dd if=/dev/urandom bs=15 count=1 2>/dev/null | base64)"
+            echo "pr_links<<${EOF_MARKER}" >> $GITHUB_OUTPUT
+            echo "$PR_LINKS" >> $GITHUB_OUTPUT
+            echo "${EOF_MARKER}" >> $GITHUB_OUTPUT
           fi
 
-          echo "has_changes=true" >> $GITHUB_OUTPUT
-          # Pass PR_LINKS as an output, preserving newlines for the body
-          echo "pr_links<<EOF" >> $GITHUB_OUTPUT
-          echo -e "$PR_LINKS" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
       - name: Create Pull Request
-        if: steps.autoroll.outputs.has_changes == 'true'
+        if: steps.autoroll.outputs.pr_links != ''
         uses: peter-evans/create-pull-request@2b011faafdcbc9ceb11414d64d0573f37c774b04 # v4.2.3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
