@@ -88,6 +88,8 @@ SB_EXPORT void SbEventHandle(const SbEvent* event) {
       // because Starboard's Musl port specifically maps _exit() back to exit(),
       // which runs the problematic teardown logic anyway. std::_Exit()
       // (uppercase) bypasses this and invokes the raw SYS_exit_group syscall.
+      // TODO(b/463991461): Consider ASAN_OPTIONS=exitcode=0 to avoid the need
+      // for std::_Exit() here.
       std::_Exit(test_result_code);
     }
     default:
