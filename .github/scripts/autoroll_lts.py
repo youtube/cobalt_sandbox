@@ -32,7 +32,10 @@ def get_commits(source, target, start):
   cmd = ['git', 'rev-list', '--oneline', '--reverse', source, f'^{target}']
   if start:
     cmd.append(f'{start}^..{source}')
-  return get_out(cmd).splitlines()
+  print(cmd)
+  derp = get_out(cmd).splitlines()
+  print(derp)
+  return derp
 
 
 def get_pr_set(branch, exclude_branch):
