@@ -1,4 +1,4 @@
-# GitHubb Copilot Integration in Chromium
+# GitHub Copilot Integration in Chromium
 
 This directory provides instructions and prompts for integrating GitHub Copilot
 with the chromium codebase.
