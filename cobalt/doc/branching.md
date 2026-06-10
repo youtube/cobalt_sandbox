@@ -21,10 +21,24 @@ for release.
 
   1. Feature work is done in the `main` branch.
 
+<<<<<<< HEAD
   2. Once all feature work is completed, a release branch is created. Starting
      with Cobalt 27, the branch will be named
      "[[Major Version](versioning.md#major-version)].[[Purpose](versioning.md#purpose)]"
      (dropping the legacy `.1+` suffix).
+=======
+  2. Once all feature work is completed, a release branch is created. The branch
+     will be named "[[Major Version](versioning.md#major-version)].[[Purpose](versioning.md#purpose)].[[Minor Version](versioning.md#minor-version)]+".
+     Note that while very similar to the structure of the Cobalt
+     [version](versioning.md), it features a `+` symbol at the end, indicating
+     that the branch may eventually contain multiple release updates,
+     all greater than or equal to the specified minor version.  In particular, a
+     single branch may host multiple releases/updates. Should another release
+     branch be cut from master with a pre-existing (major version, purpose)
+     pair, the new branch will have a minor version equivalent to the most
+     recently released minor version, plus one.  Note that we expect it to be
+     rare that we will need a branch other than the `1+` branch.
+>>>>>>> 4bc6c1324 (docs: Restore legacy C25 and SB reference documentation (#10825))
 
      An example release branch name is `27.lts`.
 
