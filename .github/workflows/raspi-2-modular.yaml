@@ -12,6 +12,9 @@ on:
       - main
       - experimental/*
       - feature/*
+  merge_group:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       nightly:
