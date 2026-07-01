@@ -52,3 +52,4 @@ Use `/git_commit_ghc`
 - [.github/resources](./resources/): All prompt resources should have an active
   reference or usecase a file in `instructions` or `prompts`, and should be
   cleaned up if their references are modified or removed.
+test key prompt Wed Jul  1 10:05:16 PM UTC 2026
