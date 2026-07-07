@@ -21,10 +21,12 @@
 
 #include "base/check_op.h"
 #include "base/command_line.h"
+#include "base/feature_list.h"
 #include "base/process/current_process.h"
 #include "base/threading/hang_watcher.h"
 #include "build/buildflag.h"
 #include "cobalt/browser/cobalt_content_browser_client.h"
+#include "cobalt/browser/features.h"
 #include "cobalt/common/cobalt_thread_checker.h"
 #include "cobalt/shell/app/shell_main_delegate.h"
 #include "cobalt/utility/cobalt_content_utility_client.h"
@@ -34,7 +36,7 @@
 #include "content/public/gpu/content_gpu_client.h"
 #include "content/public/renderer/content_renderer_client.h"
 
-#if BUILDFLAG(IS_ANDROIDTV)
+#if BUILDFLAG(IS_STARBOARD) || BUILDFLAG(IS_ANDROIDTV)
 #include "cobalt/browser/hang_watcher_delegate_impl.h"
 #endif
 #include "cobalt/app/cobalt_crash_reporter_client.h"
@@ -47,11 +49,21 @@
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/common/content_switches.h"
 #include "gpu/command_buffer/service/gpu_switches.h"
+#if BUILDFLAG(IS_ANDROIDTV)
+#include "starboard/android/shared/starboard_bridge.h"
+#endif
 
 #if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_ANDROID)
 #include "base/base_switches.h"
 #include "v8/include/v8-wasm-trap-handler-posix.h"
 #endif
+
+#if BUILDFLAG(IS_STARBOARD)
+#include "base/debug/dump_without_crashing.h"
+#include "starboard/extension/crash_handler.h"
+#include "starboard/system.h"
+#endif
+
 namespace cobalt {
 
 CobaltMainDelegate::CobaltMainDelegate(
@@ -73,6 +85,9 @@ CobaltMainDelegate::~CobaltMainDelegate() {
 
 std::optional<int> CobaltMainDelegate::BasicStartupComplete() {
   CHECK_CALLED_ON_VALID_THREAD(thread_checker_);
+#if BUILDFLAG(IS_ANDROIDTV)
+  starboard::StarboardBridge::GetInstance()->SetStartupMilestone(14);
+#endif
   base::CommandLine* cl = base::CommandLine::ForCurrentProcess();
   cl->AppendSwitch(switches::kEnableAggressiveDOMStorageFlushing);
   cl->AppendSwitch(switches::kDisableGpuShaderDiskCache);
@@ -109,6 +124,9 @@ CobaltMainDelegate::CreateContentUtilityClient() {
 std::optional<int> CobaltMainDelegate::PostEarlyInitialization(
     InvokedIn invoked_in) {
   CHECK_CALLED_ON_VALID_THREAD(thread_checker_);
+#if BUILDFLAG(IS_ANDROIDTV)
+  starboard::StarboardBridge::GetInstance()->SetStartupMilestone(15);
+#endif
   content::RenderFrameHost::AllowInjectingJavaScript();
 
   if (!ShouldCreateFeatureList(invoked_in)) {
@@ -119,7 +137,7 @@ std::optional<int> CobaltMainDelegate::PostEarlyInitialization(
     content::InitializeMojoCore();
   }
 
-#if BUILDFLAG(IS_ANDROIDTV)
+#if BUILDFLAG(IS_STARBOARD) || BUILDFLAG(IS_ANDROIDTV)
   // This delegate is for reading the flag value.
   cobalt::browser::CobaltHangWatcherDelegate::Initialize();
 #endif
@@ -141,11 +159,16 @@ std::optional<int> CobaltMainDelegate::PostEarlyInitialization(
   // PoissonAllocationSampler we have in the ContentShell. Do we really need to
   // enforce it?
   memory_system::Initializer()
-      .SetDispatcherParameters(memory_system::DispatcherParameters::
-                                   PoissonAllocationSamplerInclusion::kEnforce,
-                               memory_system::DispatcherParameters::
-                                   AllocationTraceRecorderInclusion::kIgnore,
-                               process_type)
+      .SetDispatcherParameters(
+          memory_system::DispatcherParameters::
+              PoissonAllocationSamplerInclusion::kEnforce,
+          memory_system::DispatcherParameters::
+              AllocationTraceRecorderInclusion::kIgnore,
+          process_type,
+          base::FeatureList::IsEnabled(
+              cobalt::features::kCobaltMemoryAttributionManager)
+              ? memory_system::CobaltMemoryAttributionInclusion::kInclude
+              : memory_system::CobaltMemoryAttributionInclusion::kDoNotInclude)
       .Initialize(memory_system_);
 
   return std::nullopt;
@@ -155,6 +178,9 @@ std::variant<int, content::MainFunctionParams> CobaltMainDelegate::RunProcess(
     const std::string& process_type,
     content::MainFunctionParams main_function_params) {
   CHECK_CALLED_ON_VALID_THREAD(thread_checker_);
+#if BUILDFLAG(IS_ANDROIDTV)
+  starboard::StarboardBridge::GetInstance()->SetStartupMilestone(16);
+#endif
   // For non-browser process, return and have the caller run the main loop.
   if (!process_type.empty()) {
     return std::move(main_function_params);
@@ -236,5 +262,20 @@ void CobaltMainDelegate::InitializeHangWatcher() {
 
   base::HangWatcher::InitializeOnMainThread(hang_watcher_process_type,
                                             emit_crashes);
+
+#if BUILDFLAG(IS_STARBOARD)
+  auto* crash_handler_extension =
+      static_cast<const CobaltExtensionCrashHandlerApi*>(
+          SbSystemGetExtension(kCobaltExtensionCrashHandlerName));
+  if (crash_handler_extension && crash_handler_extension->version >= 4 &&
+      crash_handler_extension->DumpWithoutCrashing) {
+    // For Evergreen builds we do not currently link the Crashpad client
+    // library into the hermetic libcobalt shared library. So, we leverage a
+    // Starboard extension to tunnel the request for Crashpad to dump without
+    // crashing.
+    base::debug::SetDumpWithoutCrashingFunction(
+        crash_handler_extension->DumpWithoutCrashing);
+  }
+#endif
 }
 }  // namespace cobalt

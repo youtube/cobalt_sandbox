@@ -24,12 +24,14 @@
 #include "base/run_loop.h"
 #include "base/threading/platform_thread.h"
 #include "cobalt/app/app_event_runner.h"
+#include "cobalt/browser/lifecycle/cobalt_lifecycle_manager.h"
 #include "content/public/browser/browser_thread.h"
+#include "starboard/extension/crash_handler.h"
+#include "starboard/system.h"
 
 namespace cobalt {
 
 namespace {
-constexpr base::TimeDelta kTransitionTimeout = base::Seconds(5);
 
 AppEventDelegate::ApplicationState SbEventToTargetApplicationState(
     SbEventType type) {
@@ -60,10 +62,21 @@ AppEventDelegate::ApplicationState SbEventToTargetApplicationState(
 }
 }  // namespace
 
-AppEventDelegate::AppEventDelegate(std::unique_ptr<AppEventRunner> runner)
-    : runner_(std::move(runner)) {
+AppEventDelegate::AppEventDelegate(
+    std::unique_ptr<AppEventRunner> runner,
+    const CobaltExtensionCrashHandlerApi* crash_handler_extension)
+    : runner_(std::move(runner)),
+      crash_handler_extension_(crash_handler_extension) {
   base::AutoLock lock(lock_);
+  if (!crash_handler_extension_) {
+    // If a special extension implementation wasn't provided, use the default.
+    crash_handler_extension_ =
+        static_cast<const CobaltExtensionCrashHandlerApi*>(
+            SbSystemGetExtension(kCobaltExtensionCrashHandlerName));
+  }
+
   application_state_ = ApplicationState::kInitial;
+  SetApplicationStateAnnotation(ApplicationState::kInitial);
   target_state_ = ApplicationState::kInitial;
   if (!runner_) {
     // If a special runner wasn't provided, use the default.
@@ -71,7 +84,7 @@ AppEventDelegate::AppEventDelegate(std::unique_ptr<AppEventRunner> runner)
   }
 }
 
-AppEventDelegate::~AppEventDelegate() {}
+AppEventDelegate::~AppEventDelegate() = default;
 
 bool AppEventDelegate::IsRunning() const {
   base::AutoLock lock(lock_);
@@ -112,6 +125,16 @@ AppEventDelegate::ApplicationState AppEventDelegate::GetState() const {
   return application_state_;
 }
 
+PendingAck AppEventDelegate::pending_ack() const {
+  base::AutoLock lock(lock_);
+  return runner_ ? runner_->pending_ack() : PendingAck::kNone;
+}
+
+void AppEventDelegate::SetQuitClosure(base::OnceClosure closure) {
+  base::AutoLock lock(lock_);
+  quit_closure_ = std::move(closure);
+}
+
 bool AppEventDelegate::IsFrozenLocked() const {
   return application_state_ == ApplicationState::kFrozen ||
          application_state_ == ApplicationState::kStopped ||
@@ -126,8 +149,6 @@ void AppEventDelegate::HandleEvent(const SbEvent* event) {
 }
 
 void AppEventDelegate::HandleEventLocked(const SbEvent* event) {
-  lock_.AssertAcquired();
-
   // Drop events received after the application stops.
   if (application_state_ == ApplicationState::kStopped ||
       target_state_ == ApplicationState::kStopped) {
@@ -142,7 +163,7 @@ void AppEventDelegate::HandleEventLocked(const SbEvent* event) {
       case kSbEventTypeStart:
       case kSbEventTypePreload:
         runner_->OnStart(event);
-        application_state_ = SbEventToTargetApplicationState(event->type);
+        SetApplicationState(SbEventToTargetApplicationState(event->type));
         target_state_ = application_state_;
         return;
       default:
@@ -190,35 +211,12 @@ void AppEventDelegate::HandleEventLocked(const SbEvent* event) {
     case kSbEventTypeBlur:
     case kSbEventTypeFocus:
     case kSbEventTypeConceal:
+    case kSbEventTypeStop:
     case kSbEventTypeReveal:
     case kSbEventTypeFreeze:
     case kSbEventTypeUnfreeze:
       // Ensure all intermediate state changes are triggered.
       TransitionToLifeCycleState(SbEventToTargetApplicationState(event->type));
-      break;
-    case kSbEventTypeStop:
-      // Stop is a special case that completely tears down the Chromium
-      // environment. It must be executed synchronously on the UI thread to
-      // avoid destroying the TaskEnvironment from within a task or nested
-      // RunLoop.
-
-      // Ensure all intermediate state changes are triggered up to kFrozen.
-      TransitionToLifeCycleState(ApplicationState::kFrozen);
-
-      // We must be on the UI thread to synchronously run DoStop.
-      // Unlike a standard Chromium desktop application where the main
-      // MessagePump naturally unwinds the stack upon exit to destroy the
-      // ContentMainRunner, Cobalt's outermost loop is owned by the Starboard OS
-      // layer. Therefore, we must manually invoke `main_runner_->Shutdown()`
-      // (via `DoStop()`) to trigger the teardown sequence. This manual teardown
-      // must happen on the UI thread and cannot be posted to a task queue, as
-      // it destroys the very SequenceManager that would execute the task.
-      CHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::UI))
-          << "kSbEventTypeStop must be delivered on the UI thread.";
-
-      runner_->OnStop();
-      application_state_ = ApplicationState::kStopped;
-      target_state_ = ApplicationState::kStopped;
       break;
     case kSbEventTypeInput:
       runner_->OnInput(event);
@@ -247,81 +245,139 @@ void AppEventDelegate::HandleEventLocked(const SbEvent* event) {
   }
 }
 
-void AppEventDelegate::ExecuteNextStepOnUIThread() {
-  base::AutoLock lock(lock_);
-  ExecuteNextStepOnUIThreadLocked(true /* schedule_next_step */);
-}
-
-void AppEventDelegate::ExecuteNextStepOnUIThreadLocked(
-    bool schedule_next_step) {
-  lock_.AssertAcquired();
-
+void AppEventDelegate::ExecuteNextStep() {
   if (application_state_ == target_state_) {
-    // Target state reached. Transition complete.
-    if (transition_quit_closure_) {
-      content::GetUIThreadTaskRunner({})->PostTask(
-          FROM_HERE, std::move(transition_quit_closure_));
-    }
     is_transitioning_ = false;
+    if (quit_closure_) {
+      std::move(quit_closure_).Run();
+    }
     return;
   }
 
-  ApplicationState next_state;
+  bool is_activating = target_state_ < application_state_;
+  ApplicationState next_state = GetNextState(application_state_, is_activating);
 
-  if (application_state_ < target_state_) {
-    switch (application_state_) {
-      case ApplicationState::kStarted:
-        runner_->OnBlur();
-        next_state = ApplicationState::kBlurred;
-        break;
-      case ApplicationState::kBlurred:
-        runner_->OnConceal();
-        next_state = ApplicationState::kConcealed;
-        break;
-      case ApplicationState::kConcealed:
-        runner_->OnFreeze();
-        next_state = ApplicationState::kFrozen;
-        break;
+  content::GetUIThreadTaskRunner({})->PostTask(
+      FROM_HERE,
+      base::BindOnce(&AppEventDelegate::ExecuteStepOnUIThread,
+                     base::Unretained(this), next_state, is_activating));
+}
+
+AppEventDelegate::ApplicationState AppEventDelegate::GetNextState(
+    ApplicationState current_state,
+    bool is_activating) const {
+  if (is_activating) {
+    switch (current_state) {
       case ApplicationState::kFrozen:
-        NOTREACHED();
+        return ApplicationState::kConcealed;
+      case ApplicationState::kConcealed:
+        return ApplicationState::kBlurred;
+      case ApplicationState::kBlurred:
+        return ApplicationState::kStarted;
       default:
         NOTREACHED();
     }
   } else {
-    switch (application_state_) {
-      case ApplicationState::kStopped:
-        NOTREACHED();
-      case ApplicationState::kFrozen:
-        runner_->OnUnfreeze();
-        next_state = ApplicationState::kConcealed;
-        break;
-      case ApplicationState::kConcealed:
-        runner_->OnReveal();
-        next_state = ApplicationState::kBlurred;
-        break;
-      case ApplicationState::kBlurred:
-        runner_->OnFocus();
-        next_state = ApplicationState::kStarted;
-        break;
+    switch (current_state) {
       case ApplicationState::kStarted:
-        NOTREACHED();
+        return ApplicationState::kBlurred;
+      case ApplicationState::kBlurred:
+        return ApplicationState::kConcealed;
+      case ApplicationState::kConcealed:
+        return ApplicationState::kFrozen;
+      case ApplicationState::kFrozen:
+        return ApplicationState::kStopped;
       default:
         NOTREACHED();
     }
   }
+}
 
-  application_state_ = next_state;
-
-  if (schedule_next_step) {
-    content::GetUIThreadTaskRunner({})->PostTask(
-        FROM_HERE, base::BindOnce(&AppEventDelegate::ExecuteNextStepOnUIThread,
-                                  base::Unretained(this)));
+void AppEventDelegate::ExecuteEventRunner(ApplicationState next_state,
+                                          bool is_activating) {
+  if (is_activating) {
+    switch (next_state) {
+      case ApplicationState::kConcealed:
+        runner_->OnUnfreeze();
+        break;
+      case ApplicationState::kBlurred:
+        runner_->OnReveal();
+        break;
+      case ApplicationState::kStarted:
+        runner_->OnFocus();
+        break;
+      default:
+        NOTREACHED();
+    }
+  } else {
+    switch (next_state) {
+      case ApplicationState::kBlurred:
+        runner_->OnBlur();
+        break;
+      case ApplicationState::kConcealed:
+        runner_->OnConceal();
+        break;
+      case ApplicationState::kFrozen:
+        runner_->OnFreeze(base::DoNothing());
+        break;
+      case ApplicationState::kStopped:
+        break;
+      default:
+        NOTREACHED();
+    }
   }
 }
 
-void AppEventDelegate::TransitionToLifeCycleState(ApplicationState state) {
-  lock_.AssertAcquired();
+void AppEventDelegate::ExecuteStepOnUIThread(ApplicationState next_state,
+                                             bool is_activating) {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+  {
+    base::AutoLock lock(lock_);
+    if (is_tearing_down_) {
+      LOG(INFO) << "Ignoring ExecuteStepOnUIThread during teardown.";
+      return;
+    }
+  }
+  // Note: ExecuteEventRunner does not change state nor rely on state of this
+  // object, and always runs as a posted task on the UI thread, and therefore
+  // the lock does not need to be held yet here.
+  ExecuteEventRunner(next_state, is_activating);
 
+  base::OnceClosure quit_closure;
+  bool should_execute_next_step = false;
+  {
+    base::AutoLock lock(lock_);
+    SetApplicationState(next_state);
+    if (next_state == ApplicationState::kStopped) {
+      quit_closure = std::move(quit_closure_);
+    } else {
+      should_execute_next_step = true;
+    }
+  }
+
+  if (quit_closure) {
+    std::move(quit_closure).Run();
+  }
+  if (should_execute_next_step) {
+    base::AutoLock lock(lock_);
+    ExecuteNextStep();
+  }
+}
+
+void AppEventDelegate::DoTeardown() {
+  {
+    base::AutoLock lock(lock_);
+    if (is_tearing_down_) {
+      return;
+    }
+    is_tearing_down_ = true;
+  }
+  runner_->OnStop();
+  base::AutoLock lock(lock_);
+  SetApplicationState(ApplicationState::kStopped);
+}
+
+void AppEventDelegate::TransitionToLifeCycleState(ApplicationState state) {
   // TransitionToLifeCycleState ensures that the application moves from its
   // current state to the target |state| by traversing all intermediate states
   // in strict linear order. Each state transition triggers its corresponding
@@ -332,63 +388,63 @@ void AppEventDelegate::TransitionToLifeCycleState(ApplicationState state) {
   CHECK_GT(state, ApplicationState::kInitial);
   CHECK_LE(state, ApplicationState::kStopped);
 
+  LOG(INFO) << "AppEventDelegate::TransitionToLifeCycleState called, current="
+            << static_cast<int>(application_state_) << " ("
+            << GetStateString(application_state_)
+            << ") target=" << static_cast<int>(state) << " ("
+            << GetStateString(state) << ")";
+
   target_state_ = state;
 
-  bool is_downward = state > application_state_;
-
-  if (!is_transitioning_) {
+  if (is_transitioning_) {
+    LOG(INFO) << "Transition already in progress. Updated target_state_ to "
+              << static_cast<int>(state) << " (" << GetStateString(state)
+              << ")";
+    return;
+  } else {
     is_transitioning_ = true;
-    content::GetUIThreadTaskRunner({})->PostTask(
-        FROM_HERE, base::BindOnce(&AppEventDelegate::ExecuteNextStepOnUIThread,
-                                  base::Unretained(this)));
+    ExecuteNextStep();
+  }
+}
+
+// static
+const char* AppEventDelegate::GetStateString(ApplicationState state) {
+  switch (state) {
+    case ApplicationState::kInitial:
+      return "kInitial";
+    case ApplicationState::kStarted:
+      return "kStarted";
+    case ApplicationState::kBlurred:
+      return "kBlurred";
+    case ApplicationState::kConcealed:
+      return "kConcealed";
+    case ApplicationState::kFrozen:
+      return "kFrozen";
+    case ApplicationState::kStopped:
+      return "kStopped";
+    default:
+      NOTREACHED();
+  }
+}
+
+void AppEventDelegate::SetApplicationState(ApplicationState state) {
+  if (application_state_ == state) {
+    return;
+  }
+  application_state_ = state;
+  SetApplicationStateAnnotation(state);
+}
+
+void AppEventDelegate::SetApplicationStateAnnotation(ApplicationState state) {
+  if (!crash_handler_extension_ || crash_handler_extension_->version < 2) {
+    LOG(WARNING)
+        << "Crash handler extension not implemented or version too low.";
+    return;
   }
 
-  // If this is a downward transition, we MUST block the OS (Starboard) thread
-  // until the target state is reached.
-  if (is_downward) {
-    if (content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
-      // REQUIRED BEHAVIOR:
-      // We must block the Starboard OS thread while still pumping Chromium's UI
-      // task queue to execute asynchronous side effects (like Wayland/X11
-      // surface destruction). We use a nested `base::RunLoop` to achieve this.
-      base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
-      base::RepeatingClosure quit_closure = run_loop.QuitClosure();
-      transition_quit_closure_ = base::BindOnce(quit_closure);
-
-      // Ensure we don't hang the OS thread indefinitely if the transition
-      // takes too long or the signal is missed.
-      content::GetUIThreadTaskRunner({})->PostDelayedTask(
-          FROM_HERE, base::BindOnce(quit_closure), kTransitionTimeout);
-
-      {
-        base::AutoUnlock unlock(lock_);
-        run_loop.Run();
-      }
-
-      // Synchronously execute any remaining steps that were skipped by the
-      // asynchronous task runner.
-      while (application_state_ < target_state_) {
-        ExecuteNextStepOnUIThreadLocked(false /* schedule_next_step */);
-      }
-    } else {
-      // If we are on a non-UI thread, we can simply block using a
-      // WaitableEvent. The UI thread will remain free to process the
-      // asynchronous teardown tasks and will execute `transition_quit_closure_`
-      // once the target state is reached.
-      base::WaitableEvent waitable_event(
-          base::WaitableEvent::ResetPolicy::MANUAL,
-          base::WaitableEvent::InitialState::NOT_SIGNALED);
-      transition_quit_closure_ = base::BindOnce(
-          &base::WaitableEvent::Signal, base::Unretained(&waitable_event));
-      {
-        base::AutoUnlock unlock(lock_);
-        if (!waitable_event.TimedWait(kTransitionTimeout)) {
-          LOG(ERROR) << "Timeout waiting " << kTransitionTimeout.InSeconds()
-                     << "s for lifecycle transition to "
-                     << static_cast<int>(state);
-        }
-      }
-    }
+  if (!crash_handler_extension_->SetString("application_state",
+                                           GetStateString(state))) {
+    LOG(WARNING) << "Failed to set application_state annotation.";
   }
 }
 

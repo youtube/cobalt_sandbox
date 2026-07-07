@@ -17,6 +17,7 @@ package dev.cobalt.coat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringJoiner;
+import org.chromium.base.BuildInfo;
 import org.chromium.base.CommandLine;
 
 
@@ -70,6 +71,14 @@ public final class CommandLineOverrideHelper {
         paramOverrides.add("--disable-accelerated-video-encode");
         // Rasterize Tiles directly to GPU memory.
         paramOverrides.add("--enable-zero-copy");
+        // Set default raster threads to 2 for smoother performance.
+        paramOverrides.add("--num-raster-threads=2");
+        // Enforce ANGLE to use GLES backend by default on Android platforms excluding arm64.
+        if (!"arm64".equals(BuildInfo.getArch())) {
+            paramOverrides.add("--use-angle=gles");
+        }
+        // Hide scrollbars to avoid memory allocation.
+        paramOverrides.add("--hide-scrollbars");
 
         return paramOverrides;
     }
@@ -79,6 +88,19 @@ public final class CommandLineOverrideHelper {
 
         // Trades a little V8 performance for significant memory savings.
         paramOverrides.add("--optimize-for-size");
+        // Set initial old space size to 64MB and max old space size to 512MB.
+        paramOverrides.add("--initial-old-space-size=64");
+        paramOverrides.add("--max-old-space-size=512");
+
+        // Disable decommitting pooled pages to prevent virtual memory fragmentation.
+        paramOverrides.add("--no-decommit-pooled-pages");
+
+        // Disable v8 concurrent marking by default.
+        paramOverrides.add("--no-concurrent-marking");
+
+        // Disable v8 optimizing compilers (maglev, turbofan, sparkplug).
+        paramOverrides.add("--disable-optimizing-compilers");
+        paramOverrides.add("--no-sparkplug");
 
         return paramOverrides;
     }
@@ -93,15 +115,16 @@ public final class CommandLineOverrideHelper {
         // It is important to use a feature override instead of the
         // rendering switch, to make sure certain devices are excluded.
         paramOverrides.add("DefaultPassthroughCommandDecoder");
+        // Compositor switch to reduce prepaint tile cache size
+        paramOverrides.add("SmallerInterestArea");
+        paramOverrides.add("ReclaimPrepaintTilesWhenIdle");
+        paramOverrides.add("ReclaimOldPrepaintTiles");
 
         return paramOverrides;
     }
 
     public static StringJoiner getDefaultDisableFeatureOverridesList() {
         StringJoiner paramOverrides = new StringJoiner(",");
-
-        // Use SurfaceTexture for decode-to-texture mode.
-        paramOverrides.add("AImageReader");
 
         // Disable BackupRefPtr and have shim allocator tracked by MemoryReclaimer.
         paramOverrides.add("PartitionAllocBackupRefPtr");
@@ -136,6 +159,7 @@ public final class CommandLineOverrideHelper {
             getDefaultDisableFeatureOverridesList();
         StringJoiner blinkEnableFeatureOverrides =
             getDefaultBlinkEnableFeatureOverridesList();
+        StringJoiner enableH5vccSettings = new StringJoiner(";");
 
         if (params != null) {
             if (!params.mIsOfficialBuild) {
@@ -163,6 +187,8 @@ public final class CommandLineOverrideHelper {
                                 disableFeatureOverrides.add(v);
                             } else if (key.equals("--enable-blink-features")) {
                                 blinkEnableFeatureOverrides.add(v);
+                            } else if (key.equals("--enable-h5vcc-settings")) {
+                                enableH5vccSettings.add(v);
                             } else {
                                 cliOverrides.add(param);
                                 break; // Avoid adding the same param multiple times
@@ -187,5 +213,10 @@ public final class CommandLineOverrideHelper {
         CommandLine.getInstance().appendSwitchesAndArguments(
             new String[]{"--enable-blink-features="
             + blinkEnableFeatureOverrides.toString() });
+        if (enableH5vccSettings.length() > 0) {
+            CommandLine.getInstance().appendSwitchesAndArguments(
+                new String[]{"--enable-h5vcc-settings="
+                + enableH5vccSettings.toString() });
+        }
     }
 }

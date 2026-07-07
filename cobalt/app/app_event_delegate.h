@@ -20,13 +20,16 @@
 #include <optional>
 
 #include "base/functional/callback.h"
+#include "base/memory/raw_ptr.h"
 #include "base/memory/scoped_refptr.h"
 #include "base/synchronization/lock.h"
 #include "base/synchronization/waitable_event.h"
 #include "base/task/sequenced_task_runner.h"
+#include "base/thread_annotations.h"
 #include "build/build_config.h"
 #include "cobalt/app/app_event_runner.h"
 #include "starboard/event.h"
+#include "starboard/extension/crash_handler.h"
 
 #if BUILDFLAG(IS_STARBOARD)
 #include "ui/ozone/platform/starboard/platform_event_source_starboard.h"
@@ -39,6 +42,22 @@ namespace cobalt {
 // state and ensures that events are handled in a strict linear order,
 // synthesizing intermediate transitions when necessary. The actual execution of
 // lifecycle actions and side effects is delegated to the AppEventRunner.
+//
+// Through the course of the lifecycle, application_state_ may change as such:
+//
+//                       ┌──────────┐
+//                       │ kInitial │
+//                       └──────────┘
+//                         │      │
+//          ┌──────────────┘      └──────┐
+//          ↓                            ↓
+//    ┌──────────┐   ┌──────────┐   ┌────────────┐   ┌─────────┐   ╔══════════╗
+//    │ kStarted │ ↔ │ kBlurred │ ↔ │ kConcealed │ ↔ │ kFrozen │ → ║ kStopped ║
+//    └──────────┘   └──────────┘   └────────────┘   └─────────┘   ╚══════════╝
+//
+// Each box corresponds to an AppEventDelegate::ApplicationState. The ↔ arrows
+// represent bidirectional transitions handled via TransitionToLifeCycleState,
+// which ensures all intermediate states are traversed.
 class AppEventDelegate {
  public:
   // ApplicationState defines the lifecycle states of the application.
@@ -48,8 +67,9 @@ class AppEventDelegate {
   // this monotonic ordering to ensure correct state machine transitions.
   //
   // The enum is ordered such that:
-  //   application_state_ < target_state_ => Moving towards Stopped
-  //   application_state_ > target_state_ => Moving towards Started
+  //   application_state_ < target_state_ => Deactivating
+  //   application_state_ > target_state_ => Activating
+  //   (Note: kInitial -> kStarted/kPreloaded is an exception)
   enum class ApplicationState {
     kInitial = 0,
     kStarted = 1,
@@ -59,45 +79,97 @@ class AppEventDelegate {
     kStopped = 5
   };
 
-  explicit AppEventDelegate(std::unique_ptr<AppEventRunner> runner = nullptr);
+  // TODO: b/486236529 - As suggested by jellefoks@, consider using factories to
+  // improve code clarity and decouple |AppEventDelegate| from its dependencies.
+  explicit AppEventDelegate(
+      std::unique_ptr<AppEventRunner> runner = nullptr,
+      const CobaltExtensionCrashHandlerApi* crash_handler_extension = nullptr)
+      LOCKS_EXCLUDED(lock_);
   ~AppEventDelegate();
 
   AppEventDelegate(const AppEventDelegate&) = delete;
   AppEventDelegate& operator=(const AppEventDelegate&) = delete;
 
   // Receives a Starboard event and handles it.
-  void HandleEvent(const SbEvent* event);
+  void HandleEvent(const SbEvent* event) LOCKS_EXCLUDED(lock_);
 
-  bool IsRunning() const;
-  bool IsVisible() const;
-  bool IsFocused() const;
-  bool IsFrozen() const;
+  void DoTeardown() LOCKS_EXCLUDED(lock_);
 
-  ApplicationState GetState() const;
+  bool IsRunning() const LOCKS_EXCLUDED(lock_);
+  bool IsVisible() const LOCKS_EXCLUDED(lock_);
+  bool IsFocused() const LOCKS_EXCLUDED(lock_);
+  bool IsFrozen() const LOCKS_EXCLUDED(lock_);
+
+  ApplicationState GetState() const LOCKS_EXCLUDED(lock_);
+  bool is_transitioning() const LOCKS_EXCLUDED(lock_) {
+    base::AutoLock lock(lock_);
+    return is_transitioning_;
+  }
+  PendingAck pending_ack() const LOCKS_EXCLUDED(lock_);
+  void SetQuitClosure(base::OnceClosure closure) LOCKS_EXCLUDED(lock_);
 
  private:
-  void HandleEventLocked(const SbEvent* event);
-  void TransitionToLifeCycleState(ApplicationState state);
+  static const char* GetStateString(ApplicationState state);
 
-  // Helper that executes a single lifecycle step on the UI thread and then
-  // schedules the next step if the target state has not yet been reached.
-  void ExecuteNextStepOnUIThread();
-  void ExecuteNextStepOnUIThreadLocked(bool schedule_next_step);
+  void HandleEventLocked(const SbEvent* event) EXCLUSIVE_LOCKS_REQUIRED(lock_);
 
-  bool IsRunningLocked() const;
-  bool IsVisibleLocked() const;
-  bool IsFocusedLocked() const;
-  bool IsFrozenLocked() const;
+  // Starts a transition of the application state from its current state to the
+  // target |state| by traversing all intermediate states in strict linear
+  // order. If this is a deactivating transition (e.g. Conceal or Freeze), it
+  // synchronously blocks the calling OS (Starboard) thread using a nested
+  // base::RunLoop until the target state is reached or a safety timeout occurs.
+  // Activating transitions are executed asynchronously.
+  void TransitionToLifeCycleState(ApplicationState state)
+      EXCLUSIVE_LOCKS_REQUIRED(lock_);
+
+  // Wrapper that sets |application_state_| with the side effect of recording
+  // this new state as a crash annotation.
+  // TODO: b/486236529 - Consider enforcing that |application_state_| can only
+  // be modified from within this method. This would prevent developers from
+  // inadvertently updating the member variable but not the crash annotation.
+  //
+  // SetApplicationState must only be called on the UI thread.
+  void SetApplicationState(ApplicationState state)
+      EXCLUSIVE_LOCKS_REQUIRED(lock_);
+  void SetApplicationStateAnnotation(ApplicationState state)
+      EXCLUSIVE_LOCKS_REQUIRED(lock_);
+
+  // Central state-coordination method. Analyzes the current state and target
+  // state to determine the next single linear step, and schedules/executes it.
+  // It also signals the deactivation wait run loop to wake up when the
+  // transition reaches its target state.
+  void ExecuteNextStep() EXCLUSIVE_LOCKS_REQUIRED(lock_);
+
+  // Executes the actual side effects of a single linear transition step (such
+  // as calling runner callbacks and routing frame visibility/focus) on the UI
+  // thread. If required by the step (e.g., concealing or unfreezing), it
+  // initiates Mojo ACK tracking with the renderers and sets up pending ACK
+  // expectations.
+  void ExecuteStepOnUIThread(ApplicationState next_state, bool is_activating)
+      LOCKS_EXCLUDED(lock_);
+
+  // Helpers to reduce duplication.
+  ApplicationState GetNextState(ApplicationState current_state,
+                                bool is_activating) const;
+  void ExecuteEventRunner(ApplicationState next_state, bool is_activating);
+
+  bool IsRunningLocked() const EXCLUSIVE_LOCKS_REQUIRED(lock_);
+  bool IsVisibleLocked() const EXCLUSIVE_LOCKS_REQUIRED(lock_);
+  bool IsFocusedLocked() const EXCLUSIVE_LOCKS_REQUIRED(lock_);
+  bool IsFrozenLocked() const EXCLUSIVE_LOCKS_REQUIRED(lock_);
 
   // Lock to protect state transitions and state bit access.
   mutable base::Lock lock_;
 
   std::unique_ptr<AppEventRunner> runner_;
-  ApplicationState application_state_ = ApplicationState::kInitial;
-  ApplicationState target_state_ = ApplicationState::kInitial;
-  bool is_transitioning_ = false;
-
-  base::OnceClosure transition_quit_closure_;
+  raw_ptr<const CobaltExtensionCrashHandlerApi> crash_handler_extension_ =
+      nullptr;
+  ApplicationState application_state_ GUARDED_BY(lock_) =
+      ApplicationState::kInitial;
+  ApplicationState target_state_ GUARDED_BY(lock_) = ApplicationState::kInitial;
+  bool is_transitioning_ GUARDED_BY(lock_) = false;
+  bool is_tearing_down_ GUARDED_BY(lock_) = false;
+  base::OnceClosure quit_closure_ GUARDED_BY(lock_);
 
 #if BUILDFLAG(IS_STARBOARD)
   // Ozone-specific bridge that converts Starboard events to Chromium events.

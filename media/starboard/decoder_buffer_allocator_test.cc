@@ -27,10 +27,8 @@
 #include "base/logging.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_split.h"
-#include "base/test/scoped_feature_list.h"
 #include "base/time/time.h"
 #include "media/base/demuxer_stream.h"
-#include "media/base/media_switches.h"
 #include "media/base/test_data_util.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
@@ -43,8 +41,6 @@ namespace media {
 namespace {
 
 typedef DecoderBufferAllocator::Handle Handle;
-using ::testing::Bool;
-using ::testing::Combine;
 using ::testing::Values;
 
 struct Operation {
@@ -52,7 +48,6 @@ struct Operation {
   std::string handle;
   DemuxerStream::Type buffer_type;
   int size;
-  int alignment = 0;  // Only used when `operation_type` is `kAllocate`.
 };
 
 int StringToInt(std::string_view input) {
@@ -90,11 +85,10 @@ const std::vector<Operation>& ReadAllocationLogFile(const std::string& name) {
 
     std::vector<Operation> operations;
     std::unordered_set<std::string> handles;
-
     for (auto&& allocation : allocations) {
       auto tokens = base::SplitStringUsingSubstr(
           allocation, " ", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
-      CHECK_GE(tokens.size(), 4u);
+      CHECK_EQ(tokens.size(), 4u);
 
       const std::string& handle = tokens[1];
       const DemuxerStream::Type buffer_type =
@@ -105,21 +99,16 @@ const std::vector<Operation>& ReadAllocationLogFile(const std::string& name) {
             buffer_type == DemuxerStream::AUDIO ||
             buffer_type == DemuxerStream::VIDEO);
 
-      if (tokens.size() == 5) {
-        // In the format of "allocate <handle> <buffer_type> <size>
-        // <alignment>"
-        CHECK_EQ(tokens[0], "allocate");
+      if (tokens[0] == "allocate") {
+        // In the format of "allocate <handle> <buffer_type> <size>"
         CHECK_EQ(handles.count(handle), 0u);
-
-        int alignment = StringToInt(tokens[4]);
 
         handles.insert(handle);
 
-        operations.emplace_back(Operation{Operation::Type::kAllocate, handle,
-                                          buffer_type, size, alignment});
+        operations.emplace_back(
+            Operation{Operation::Type::kAllocate, handle, buffer_type, size});
       } else {
         // In the format of "free <handle> <buffer_type> <size>"
-        CHECK_EQ(tokens.size(), 4u);
         CHECK_EQ(tokens[0], "free");
         CHECK_EQ(handles.erase(handle), 1u);
 
@@ -136,19 +125,10 @@ const std::vector<Operation>& ReadAllocationLogFile(const std::string& name) {
 }
 
 class DecoderBufferAllocatorTest
-    : public ::testing::TestWithParam<std::tuple<std::string, bool>> {
- protected:
-  void SetUp() {
-    scoped_list.InitWithFeatureState(
-        kCobaltDecoderBufferAllocatorWithInPlaceMetadata,
-        std::get<1>(GetParam()));
-  }
-
-  base::test::ScopedFeatureList scoped_list;
-};
+    : public ::testing::TestWithParam<std::string> {};
 
 TEST_P(DecoderBufferAllocatorTest, VerifyAndCacheAllocationLogs) {
-  ReadAllocationLogFile(std::get<0>(GetParam()));
+  ReadAllocationLogFile(GetParam());
 }
 
 TEST_P(DecoderBufferAllocatorTest, CapacityUnderLimit) {
@@ -159,14 +139,13 @@ TEST_P(DecoderBufferAllocatorTest, CapacityUnderLimit) {
   base::Time last_allocate_time = start_time;
   int free_operations_since_last_allocate = 0;
 
-  const auto& operations = ReadAllocationLogFile(std::get<0>(GetParam()));
+  const auto& operations = ReadAllocationLogFile(GetParam());
 
   for (auto&& operation : operations) {
     if (operation.operation_type == Operation::Type::kAllocate) {
       CHECK_EQ(handle_to_handle_map.count(operation.handle), 0u);
 
-      Handle h = allocator.Allocate(operation.buffer_type, operation.size,
-                                    operation.alignment);
+      Handle h = allocator.Allocate(operation.buffer_type, operation.size);
 
       handle_to_handle_map[operation.handle] = h;
       max_allocated = std::max(max_allocated, allocator.GetAllocatedMemory());
@@ -231,7 +210,7 @@ TEST_P(DecoderBufferAllocatorTest, CapacityByType) {
       std::unordered_map<std::string, Handle> handle_to_handle_map;
       size_t max_allocated = 0;
       size_t max_capacity = 0;
-      const auto& operations = ReadAllocationLogFile(std::get<0>(GetParam()));
+      const auto& operations = ReadAllocationLogFile(GetParam());
 
       for (auto&& operation : operations) {
         if (operation.buffer_type != buffer_type) {
@@ -241,8 +220,8 @@ TEST_P(DecoderBufferAllocatorTest, CapacityByType) {
         if (operation.operation_type == Operation::Type::kAllocate) {
           CHECK_EQ(handle_to_handle_map.count(operation.handle), 0u);
 
-          handle_to_handle_map[operation.handle] = allocator.Allocate(
-              operation.buffer_type, operation.size, operation.alignment);
+          handle_to_handle_map[operation.handle] =
+              allocator.Allocate(operation.buffer_type, operation.size);
           max_allocated =
               std::max(max_allocated, allocator.GetAllocatedMemory());
           max_capacity =
@@ -268,22 +247,17 @@ TEST_P(DecoderBufferAllocatorTest, CapacityByType) {
   }
 }
 
-INSTANTIATE_TEST_SUITE_P(
-    DecoderBufferAllocatorTests,
-    DecoderBufferAllocatorTest,
-    Combine(Values("starboard/allocations_1La4QzGeaaQ.txt",
-                   "starboard/allocations_8k.txt",
-                   "starboard/allocations_PMwaIrjiz8w.txt"),
-            Bool()),
-    [](const ::testing::TestParamInfo<std::tuple<std::string, bool>>& info) {
-      std::string name = std::get<0>(info.param);
-      std::replace(name.begin(), name.end(), '.', '_');
-      std::replace(name.begin(), name.end(), '/', '_');
-
-      name += std::get<1>(info.param) ? "_in_place_allocator"
-                                      : "_default_allocator";
-      return name;
-    });
+INSTANTIATE_TEST_SUITE_P(DecoderBufferAllocatorTests,
+                         DecoderBufferAllocatorTest,
+                         Values("starboard/allocations_1La4QzGeaaQ.txt",
+                                "starboard/allocations_8k.txt",
+                                "starboard/allocations_PMwaIrjiz8w.txt"),
+                         [](const ::testing::TestParamInfo<std::string>& info) {
+                           std::string name = info.param;
+                           std::replace(name.begin(), name.end(), '.', '_');
+                           std::replace(name.begin(), name.end(), '/', '_');
+                           return name;
+                         });
 
 }  // namespace
 }  // namespace media

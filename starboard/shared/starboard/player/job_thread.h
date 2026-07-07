@@ -22,6 +22,7 @@
 
 #include "starboard/common/log.h"
 #include "starboard/common/thread.h"
+#include "starboard/common/thread_options.h"
 #include "starboard/shared/internal_only.h"
 #include "starboard/shared/starboard/player/job_queue.h"
 
@@ -41,37 +42,29 @@ namespace starboard {
 // caller level.
 class JobThread {
  public:
-  static std::unique_ptr<JobThread> Create(std::string_view thread_name);
-  static std::unique_ptr<JobThread> Create(std::string_view thread_name,
-                                           SbThreadPriority priority);
+  static std::unique_ptr<JobThread> Create(
+      std::string_view thread_name,
+      const ThreadOptions& options =
+          ThreadOptions().SetPriority(ThreadPriority::kNormal));
   ~JobThread();
 
   bool BelongsToCurrentThread() const {
     return job_queue_->BelongsToCurrentThread();
   }
 
-  JobQueue::JobToken Schedule(const JobQueue::Job& job,
-                              int64_t delay_usec = 0) {
-    return job_queue_->Schedule(job, delay_usec);
-  }
-
-  JobQueue::JobToken Schedule(JobQueue::Job&& job, int64_t delay_usec = 0) {
+  JobQueue::JobToken Schedule(JobQueue::Job job, int64_t delay_usec = 0) {
     return job_queue_->Schedule(std::move(job), delay_usec);
-  }
-
-  void ScheduleAndWait(const JobQueue::Job& job) {
-    job_queue_->ScheduleAndWait(job);
   }
 
   // TODO: Calling ScheduleAndWait with a call to JobQueue::StopSoon will cause
   // heap-use-after-free errors in ScheduleAndWait due to JobQueue dtor
   // occasionally running before ScheduleAndWait has finished.
-  void ScheduleAndWait(JobQueue::Job&& job) {
+  void ScheduleAndWait(JobQueue::Job job) {
     job_queue_->ScheduleAndWait(std::move(job));
   }
 
-  void RemoveJobByToken(JobQueue::JobToken job_token) {
-    return job_queue_->RemoveJobByToken(job_token);
+  void RemoveJobByToken(JobQueue::JobToken* job_token) {
+    job_queue_->RemoveJobByToken(job_token);
   }
 
   JobQueue* job_queue() const { return job_queue_.get(); }

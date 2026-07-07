@@ -18,6 +18,7 @@
 
 #include <atomic>
 #include <condition_variable>
+#include <memory>
 #include <mutex>
 #include <vector>
 
@@ -75,6 +76,20 @@ TEST(JobThreadTest, ScheduleAndWaitWaits) {
   job_thread->Stop();
 }
 
+TEST(JobThreadTest, AcceptsMoveOnlyLambda) {
+  std::atomic_bool executed = false;
+  auto move_only_obj = std::make_unique<int>(100);
+  auto job_thread = JobThread::Create("JobThreadTests");
+
+  job_thread->ScheduleAndWait([ptr = std::move(move_only_obj), &executed]() {
+    EXPECT_EQ(*ptr, 100);
+    executed = true;
+  });
+
+  EXPECT_TRUE(executed);
+  job_thread->Stop();
+}
+
 TEST(JobThreadTest, ScheduledJobsShouldNotExecuteAfterGoingOutOfScope) {
   std::atomic_int counter = {0};
   {
@@ -100,7 +115,8 @@ TEST(JobThreadTest, ScheduledJobsShouldNotExecuteAfterGoingOutOfScope) {
 
 TEST(JobThreadTest, CanceledJobsAreCanceled) {
   std::atomic_int counter_1 = {0}, counter_2 = {0};
-  JobQueue::JobToken job_token_1, job_token_2;
+  JobQueue::JobToken job_token_1 = JobQueue::JobToken::kUnscheduled;
+  JobQueue::JobToken job_token_2 = JobQueue::JobToken::kUnscheduled;
 
   auto job_thread = JobThread::Create("JobThreadTests");
   std::function<void()> job_1 = [&]() {
@@ -120,7 +136,7 @@ TEST(JobThreadTest, CanceledJobsAreCanceled) {
 
   // Cancel job 1 and grab the current counter values.
   job_thread->ScheduleAndWait(
-      [&]() { job_thread->RemoveJobByToken(job_token_1); });
+      [&]() { job_thread->RemoveJobByToken(&job_token_1); });
   int checkpoint_1 = counter_1;
   int checkpoint_2 = counter_2;
 
@@ -136,7 +152,7 @@ TEST(JobThreadTest, CanceledJobsAreCanceled) {
 
   // Cancel job 2 to avoid it scheduling itself during destruction.
   job_thread->ScheduleAndWait(
-      [&]() { job_thread->RemoveJobByToken(job_token_2); });
+      [&]() { job_thread->RemoveJobByToken(&job_token_2); });
   job_thread->Stop();
 }
 

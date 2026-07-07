@@ -17,20 +17,69 @@
 #include <memory>
 #include <vector>
 
-#include "base/android/jni_android.h"
 #include "base/android/jni_array.h"
-#include "cobalt/android/jni_headers/CobaltService_jni.h"
 #include "starboard/android/shared/starboard_bridge.h"
 #include "starboard/common/check_op.h"
 #include "starboard/common/log.h"
 #include "starboard/common/string.h"
 #include "starboard/extension/platform_service.h"
+#include "third_party/jni_zero/jni_zero.h"
+
+namespace starboard {
+
+/**
+ * Holds the response data and state returned to the client.
+ * This struct is used to transfer response information from Java to C++ via
+ * JNI. It is owned by the caller and can be used from any thread.
+ */
+struct ResponseToClientInfo {
+  std::vector<uint8_t> data;
+  bool invalid_state = false;
+};
+
+}  // namespace starboard
+
+namespace jni_zero {
+template <>
+starboard::ResponseToClientInfo FromJniType<starboard::ResponseToClientInfo>(
+    JNIEnv* env,
+    const JavaRef<jobject>& j_response);
+}  // namespace jni_zero
+
+// CobaltService_jni.h must be included AFTER the ResponseToClientInfo struct
+// and its FromJniType specialization declaration because the generated JNI
+// helper functions return ResponseToClientInfo by value and invoke FromJniType
+// implicitly.
+#include "cobalt/android/jni_headers/CobaltService_jni.h"
+
+namespace jni_zero {
+template <>
+starboard::ResponseToClientInfo FromJniType<starboard::ResponseToClientInfo>(
+    JNIEnv* env,
+    const JavaRef<jobject>& j_response) {
+  starboard::ResponseToClientInfo info;
+  if (!j_response) {
+    info.invalid_state = true;
+    return info;
+  }
+  info.invalid_state =
+      starboard::Java_ResponseToClient_getInvalidState(env, j_response);
+  if (!info.invalid_state) {
+    ScopedJavaLocalRef<jbyteArray> j_data =
+        starboard::Java_ResponseToClient_getData(env, j_response);
+    if (j_data) {
+      base::android::JavaByteArrayToByteVector(env, j_data, &info.data);
+    }
+  }
+  return info;
+}
+}  // namespace jni_zero
 
 typedef struct CobaltExtensionPlatformServicePrivate {
   void* context;
   ReceiveMessageCallback receive_callback;
   std::string name;
-  base::android::ScopedJavaGlobalRef<jobject> cobalt_service;
+  jni_zero::ScopedJavaGlobalRef<jobject> cobalt_service;
 
   ~CobaltExtensionPlatformServicePrivate() = default;
 } CobaltExtensionPlatformServicePrivate;
@@ -39,8 +88,10 @@ namespace starboard {
 
 namespace {
 
+using jni_zero::AttachCurrentThread;
+
 bool Has(const char* name) {
-  JNIEnv* env = base::android::AttachCurrentThread();
+  JNIEnv* env = AttachCurrentThread();
   return starboard::StarboardBridge::GetInstance()->HasCobaltService(env, name);
 }
 
@@ -48,7 +99,7 @@ CobaltExtensionPlatformService Open(void* context,
                                     const char* name,
                                     ReceiveMessageCallback receive_callback) {
   SB_DCHECK(context);
-  JNIEnv* env = base::android::AttachCurrentThread();
+  JNIEnv* env = AttachCurrentThread();
 
   if (!Has(name)) {
     SB_LOG(ERROR) << "Can't open Service " << name;
@@ -65,7 +116,7 @@ CobaltExtensionPlatformService Open(void* context,
     delete static_cast<CobaltExtensionPlatformServicePrivate*>(service);
     return kCobaltExtensionPlatformServiceInvalid;
   }
-  service->cobalt_service.Reset(env, cobalt_service.obj());
+  service->cobalt_service.Reset(cobalt_service);
   return service;
 }
 
@@ -74,7 +125,7 @@ void Close(CobaltExtensionPlatformService service) {
     return;
   }
 
-  JNIEnv* env = base::android::AttachCurrentThread();
+  JNIEnv* env = AttachCurrentThread();
   Java_CobaltService_onClose(env, service->cobalt_service);
 
   starboard::StarboardBridge::GetInstance()->CloseCobaltService(
@@ -97,31 +148,29 @@ void* Send(CobaltExtensionPlatformService service,
     return nullptr;
   }
 
-  JNIEnv* env = base::android::AttachCurrentThread();
+  JNIEnv* env = AttachCurrentThread();
   auto j_data = base::android::ToJavaByteArray(
       env, reinterpret_cast<const uint8_t*>(data), length);
-  auto j_response = Java_CobaltService_receiveFromClient(
+  ResponseToClientInfo response_info = Java_CobaltService_receiveFromClient(
       env, service->cobalt_service, j_data);
-  if (j_response.is_null()) {
-    *invalid_state = true;
+  *invalid_state = response_info.invalid_state;
+  *output_length = response_info.data.size();
+
+  if (response_info.invalid_state) {
+    *output_length = 0;
+    return nullptr;
+  }
+  if (response_info.data.empty()) {
     *output_length = 0;
     return nullptr;
   }
 
-  auto j_out_data = Java_ResponseToClient_getData(env, j_response);
-  int data_length = base::android::SafeGetArrayLength(env, j_out_data);
-  SB_CHECK_GE(data_length, 0);
-  void* output = malloc(data_length);
+  void* output = malloc(response_info.data.size());
   if (!output) {
     *output_length = 0;
     return nullptr;
   }
-
-  env->GetByteArrayRegion(j_out_data.obj(), 0, data_length,
-                          reinterpret_cast<jbyte*>(output));
-
-  *invalid_state = Java_ResponseToClient_getInvalidState(env, j_response);
-  *output_length = data_length;
+  memcpy(output, response_info.data.data(), response_info.data.size());
   return output;
 }
 
@@ -142,7 +191,7 @@ const void* GetPlatformServiceApiAndroid() {
 void JNI_CobaltService_NativeSendToClient(
     JNIEnv* env,
     jlong nativeService,
-    const base::android::JavaParamRef<jbyteArray>& j_data) {
+    const jni_zero::JavaParamRef<jbyteArray>& j_data) {
   auto* service =
       reinterpret_cast<CobaltExtensionPlatformServicePrivate*>(nativeService);
 

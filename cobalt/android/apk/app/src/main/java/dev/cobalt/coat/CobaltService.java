@@ -19,6 +19,7 @@ import static dev.cobalt.util.Log.TAG;
 import dev.cobalt.util.Log;
 import org.jni_zero.CalledByNative;
 import org.jni_zero.JNINamespace;
+import org.jni_zero.JniType;
 import org.jni_zero.NativeMethods;
 
 /** Abstract class that provides an interface for Cobalt to interact with a platform service. */
@@ -29,7 +30,7 @@ public abstract class CobaltService {
 
   @JNINamespace("starboard")
   @NativeMethods
-  interface Natives {
+  public interface Natives {
     // Can not set it as nativeService, JNI zero has template code to convert it to a Service object
     void nativeSendToClient(long service, byte[] data);
   }
@@ -78,7 +79,7 @@ public abstract class CobaltService {
 
   /** Receive data from client of the service. */
   @CalledByNative
-  public abstract ResponseToClient receiveFromClient(byte[] data);
+  public abstract @JniType("ResponseToClientInfo") ResponseToClient receiveFromClient(byte[] data);
 
   /**
    * Close the service.
@@ -99,6 +100,19 @@ public abstract class CobaltService {
 
   public abstract void close();
 
+  private static Natives sNatives;
+
+  public static void setNativesForTesting(Natives natives) {
+    sNatives = natives;
+  }
+
+  private static Natives getNatives() {
+    if (sNatives != null) {
+      return sNatives;
+    }
+    return CobaltServiceJni.get();
+  }
+
   /**
    * Send data from the service to the client.
    *
@@ -115,7 +129,7 @@ public abstract class CobaltService {
         return;
       }
 
-      CobaltServiceJni.get().nativeSendToClient(nativeService, data);
+      getNatives().nativeSendToClient(nativeService, data);
     }
   }
 }

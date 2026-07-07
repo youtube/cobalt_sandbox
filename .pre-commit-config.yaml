@@ -9,6 +9,7 @@ files: |
     (?x)^(
         (.*/)?cobalt/.*|
         (.*/)?starboard/.*|
+        .agent/.*|
         .github/.*|
         .pre-commit-config.yaml|
         .pylintrc|
@@ -23,6 +24,10 @@ exclude: |
     )
 
 repos:
+-   repo: https://github.com/google/keep-sorted
+    rev: ac58172d1655aa47a6f806e56ff0f269d6dbe637  # v0.8.0
+    hooks:
+    -   id: keep-sorted
 -   repo: https://cobalt.googlesource.com/pre-commit-hooks
     rev: v5.0.0
     hooks:
@@ -45,6 +50,12 @@ repos:
         files: ^.github/workflows
 -   repo: local
     hooks:
+    -   id: autoroll-format
+        name: autoroll-format
+        entry: python3 ./cobalt/precommit/autoroll_check.py
+        language: python
+        files: ^.github/AUTOROLL$
+        pass_filenames: false
     -   id: chromium-pre-commit
         name: Chromium presubmit bridge
         entry: ./third_party/depot_tools/vpython3 --vpython-spec=./third_party/depot_tools/.vpython3 ./cobalt/precommit/run_chromium_presubmits.py

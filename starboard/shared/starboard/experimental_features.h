@@ -17,7 +17,7 @@
 
 #include <optional>
 
-#include "starboard/extension/experimental_features.h"
+#include "starboard/extension/experimental/experimental_features.h"
 
 namespace starboard {
 
@@ -27,14 +27,26 @@ namespace starboard {
 // dedicated function.
 struct ExperimentalFeatures {
   // The fields should be in alphabetical order.
+  // keep-sorted start
+  bool allow_audio_writing_on_pause = false;
+  bool decoded_audio_buffer_pool = false;
+  bool enable_av1_startup_optimization = false;
+  bool enable_low_latency = false;
+  bool enable_video_renderer_vsp_adjustment = false;
+  bool flush_audio_track_during_seek = false;
   bool flush_decoder_during_reset = false;
+  bool force_clear_surface_view = false;
+  bool ignore_mediacodec_callbacks_during_flushing = false;
   bool reset_audio_decoder = false;
+  bool skip_flush_on_decoder_teardown = false;
+  bool skip_video_frames_over_60_fps = false;
+  bool video_frame_impl_pool = false;
+  std::optional<bool> enable_simd_based_audio_format_switching;
+  std::optional<bool> enable_trivial_optimizations;
   std::optional<int> video_decoder_initial_preroll_count;
-  std::optional<int> video_decoder_poll_interval_ms;
-  std::optional<int> video_initial_max_frames_in_decoder;
-  std::optional<int> video_max_pending_input_frames;
   std::optional<int> video_renderer_min_decoded_frames;
   std::optional<int> video_renderer_min_input_buffers;
+  // keep-sorted end
 };
 
 // Sets the experimental features for the current thread.

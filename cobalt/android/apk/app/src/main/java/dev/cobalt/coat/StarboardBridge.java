@@ -33,6 +33,7 @@ import android.view.InputDevice;
 import android.view.accessibility.CaptioningManager;
 import androidx.annotation.Nullable;
 import dev.cobalt.media.AudioOutputManager;
+import dev.cobalt.shell.StartupGuard;
 import dev.cobalt.util.DisplayUtil;
 import dev.cobalt.util.Holder;
 import dev.cobalt.util.Log;
@@ -107,6 +108,7 @@ public class StarboardBridge {
   private static final TimeZone DEFAULT_TIME_ZONE = TimeZone.getTimeZone("America/Los_Angeles");
   private final long mTimeNanosecondsPerMicrosecond = 1000;
   private static final String YTS_CERT_SCOPE_SYSTEM_PROPERTY = "ro.vendor.youtube.cert_scope";
+  private static final String DEFAULT_DEVICE_NAME = "Android";
 
   public StarboardBridge(
       Context appContext,
@@ -197,11 +199,20 @@ public class StarboardBridge {
   }
 
   protected void onActivityDestroy(Activity activity) {
+    // Note: During rapid restarts or configuration changes, Android allows a new Activity instance's
+    // onCreate()/onStart() to run before the old instance's onDestroy() executes. When that happens,
+    // mActivityHolder will already point to the new activity instance. We must avoid cleaning up
+    // shared platform services or killing the process if another active instance has taken over.
+    if (mActivityHolder.get() != activity && mActivityHolder.get() != null) {
+      Log.i(TAG, "Activity destroyed but another activity is active; skipping service cleanup.");
+      return;
+    }
+    closeAllCobaltService();
     if (mApplicationStopped) {
       // We can't restart the starboard app, so kill the process for a clean start next time.
       Log.i(TAG, "Activity destroyed after shutdown; killing app.");
       StarboardBridgeJni.get().closeNativeStarboard(mNativeApp);
-      closeAllServices();
+      mTtsHelper.shutdown();
       mAdvertisingId.shutdown();
       System.exit(0);
     } else {
@@ -243,16 +254,10 @@ public class StarboardBridge {
     }
   }
 
-  private void closeAllServices() {
-    mTtsHelper.shutdown();
-    for (CobaltService service : mCobaltServices.values()) {
-      service.afterStopped();
-    }
-  }
-
   protected void afterStopped() {
     mApplicationStopped = true;
-    closeAllServices();
+    mTtsHelper.shutdown();
+    closeAllCobaltService();
     Activity activity = mActivityHolder.get();
     if (activity != null) {
       // Wait until the activity is destroyed to exit.
@@ -284,16 +289,23 @@ public class StarboardBridge {
     }
   }
 
-  // TODO(cobalt): remove when Kimono fully switches to Chrobalt.
-  public void requestStop(int errorLevel) {}
+  /* Immediate shutdown, used at least by StandalonePlayerActivity. */
+  public void requestStop(int errorLevel) {
+    applicationStopping();
+    Activity activity = mActivityHolder.get();
+    if (activity != null) {
+      activity.finishAndRemoveTask();
+    }
+  }
 
   public boolean onSearchRequested() {
     return false;
   }
 
   @CalledByNative
-  void raisePlatformError(@PlatformError.ErrorType int errorType, long data) {
-    mPlatformError = new PlatformError(mActivityHolder, errorType, data);
+  void raisePlatformError(@PlatformError.ErrorType int errorType, long data, String url) {
+    StartupGuard.getInstance().setStartupMilestone(37);
+    mPlatformError = new PlatformError(mActivityHolder, errorType, data, url);
     mPlatformError.raise();
   }
 
@@ -516,6 +528,37 @@ public class StarboardBridge {
   }
 
   @CalledByNative
+  protected String getFriendlyName() {
+    String deviceName = null;
+    try {
+      deviceName = android.provider.Settings.Global.getString(
+          mAppContext.getContentResolver(), android.provider.Settings.Global.DEVICE_NAME);
+    } catch (SecurityException e) {
+      Log.w(TAG, "SecurityException reading DEVICE_NAME setting", e);
+    }
+    if (deviceName == null || deviceName.isEmpty()) {
+      deviceName = android.os.Build.MODEL;
+    }
+    if (deviceName == null || deviceName.isEmpty()) {
+      deviceName = DEFAULT_DEVICE_NAME;
+    }
+    return deviceName;
+  }
+
+  @CalledByNative
+  protected double getScreenDiagonal() {
+    android.util.Size size = DisplayUtil.getSystemDisplaySize();
+    DisplayUtil.DisplayDpi dpi = DisplayUtil.getDisplayDpi();
+    if (size == null || dpi == null || dpi.getX() < 0.1f || dpi.getY() < 0.1f) {
+      Log.e(TAG, "getScreenDiagonal: Invalid display size or DPI values");
+      return 0.0;
+    }
+    double widthInches = size.getWidth() / (double) dpi.getX();
+    double heightInches = size.getHeight() / (double) dpi.getY();
+    return Math.sqrt(widthInches * widthInches + heightInches * heightInches);
+  }
+
+  @CalledByNative
   AudioOutputManager getAudioOutputManager() {
     if (mAudioOutputManager == null) {
       throw new IllegalArgumentException("mAudioOutputManager cannot be null for native code");
@@ -615,6 +658,7 @@ public class StarboardBridge {
   public void closeCobaltService(String serviceName) {
     CobaltService service = mCobaltServices.remove(serviceName);
     if (service != null) {
+      service.afterStopped();
       service.onClose();
     }
     Log.i(TAG, String.format("Closed platform service %s.", serviceName));
@@ -753,5 +797,20 @@ public class StarboardBridge {
     public int getHeight() {
       return mHeight;
     }
+  }
+
+  @CalledByNative
+  protected void hideSplashScreen() {
+    StartupGuard.getInstance().disarm();
+  }
+
+  @CalledByNative
+  protected void setStartupMilestone(int milestone) {
+    StartupGuard.getInstance().setStartupMilestone(milestone);
+  }
+
+  @CalledByNative
+  protected void setStartupDiagnosisInfo(String key, String value) {
+    StartupGuard.getInstance().setDiagnosisInfo(key, value);
   }
 }

@@ -35,6 +35,8 @@ _elf_loader_sources = [
   "program_table.h",
   "relocations.cc",
   "relocations.h",
+  "zstd_file_impl.cc",
+  "zstd_file_impl.h",
 ]
 
 config("elf_loader_config") {
@@ -59,33 +61,11 @@ static_library("elf_loader") {
     "//starboard:starboard_group",
     "//starboard/common",
     "//third_party/lz4_lib:lz4",
+    "//third_party/zstd:decompress",
   ]
 
   if (current_toolchain == starboard_toolchain) {
     deps += [ "//starboard/shared/modular:starboard_layer_posix_abi_wrappers" ]
-  }
-}
-
-if (current_toolchain == starboard_toolchain) {
-  static_library("elf_loader_sys") {
-    # System loader based on dlopen/dlsym.
-    # Should be used only for debugging/troubleshooting.
-    sources = _elf_loader_sources + [
-                "elf_loader_impl.h",
-                "elf_loader_sys_impl.cc",
-                "elf_loader_sys_impl.h",
-              ]
-
-    configs += [ ":elf_loader_config" ]
-
-    deps = [
-      ":constants",
-      ":evergreen_config",
-      ":evergreen_info",
-      "//starboard:starboard_group",
-      "//starboard/common",
-      "//starboard/shared/modular:starboard_layer_posix_abi_wrappers",
-    ]
   }
 }
 
@@ -107,45 +87,7 @@ if (current_toolchain == starboard_toolchain) {
       "//starboard/content/fonts:copy_font_data",
     ]
 
-    if (sb_is_evergreen_compatible && use_crashpad) {
-      deps += [ "//starboard/crashpad_wrapper" ]
-    } else {
-      deps += [ "//starboard/crashpad_wrapper:wrapper_stub" ]
-    }
-  }
-}
-
-if (current_toolchain == starboard_toolchain) {
-  target(starboard_level_final_executable_type, "elf_loader_sys_sandbox") {
-    # To properly function the system loader requires the starboard
-    # symbols to be exported from the binary.
-    # To allow symbols to be exported remove the '-fvisibility=hidden' flag
-    # from your BUILD.gn. For Linux this would be:
-    #   starboard/linux/shared/platform_configuration/BUILD.gn
-    # Example run:
-    # export LD_LIBRARY_PATH=.
-    # ./elf_loader_sys_sandbox --evergreen_library=libcobalt.so --evergreen_content=.
-    output_dir = root_build_dir
-
-    sources = [ "elf_loader_sandbox.cc" ]
-    configs += [ ":elf_loader_config" ]
-
-    starboard_syms_path =
-        rebase_path("//starboard/starboard.syms", root_build_dir)
-    ldflags = [
-      "-Wl,--dynamic-list=$starboard_syms_path",
-      "-ldl",
-    ]
-
-    deps = [
-      ":constants",
-      ":elf_loader_sys",
-      ":evergreen_info",
-      ":sabi_string",
-      "//starboard:starboard_group",
-    ]
-
-    if (sb_is_evergreen_compatible && use_crashpad) {
+    if (is_starboard && use_crashpad) {
       deps += [ "//starboard/crashpad_wrapper" ]
     } else {
       deps += [ "//starboard/crashpad_wrapper:wrapper_stub" ]
@@ -174,6 +116,7 @@ if (current_toolchain == starboard_toolchain) {
         "lz4_file_impl_test.cc",
         "program_table_test.cc",
         "relocations_test.cc",
+        "zstd_file_impl_test.cc",
       ]
       deps += [
         ":copy_elf_loader_testdata",
@@ -191,7 +134,12 @@ copy("copy_elf_loader_testdata") {
   }
   sources = [
     "testdata/compressed.lz4",
+    "testdata/compressed.zst",
+    "testdata/compressed_multi_frame.zst",
     "testdata/compressed_no_content_size.lz4",
+    "testdata/compressed_no_content_size.zst",
+    "testdata/compressed_with_garbage.zst",
+    "testdata/empty.zst",
     "testdata/uncompressed",
   ]
   subdir = "starboard/elf_loader"

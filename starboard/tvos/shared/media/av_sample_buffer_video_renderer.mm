@@ -15,6 +15,7 @@
 #include "starboard/tvos/shared/media/av_sample_buffer_video_renderer.h"
 
 #import <AVKit/AVKit.h>
+#import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
 #include <libkern/OSByteOrder.h>
 
@@ -130,6 +131,8 @@ const size_t kCachedFramesHighWatermark = 40;
 const int kRequiredBuffersInDisplayLayer = 16;
 
 UIWindow* GetPlatformWindow() {
+  // This function calls UIKit code that may only be invoked from the UI thread.
+  SB_DCHECK(NSThread.isMainThread);
   NSSet<UIScene*>* connected_scenes =
       UIApplication.sharedApplication.connectedScenes;
   if (connected_scenes.count == 0) {
@@ -295,7 +298,7 @@ void AVSBVideoRenderer::Seek(int64_t seek_to_time) {
   }
   sample_buffer_builder_->Reset();
   CancelPendingJobs();
-  enqueue_sample_buffers_job_token_.ResetToInvalid();
+  enqueue_sample_buffers_job_token_ = JobQueue::JobToken::kUnscheduled;
 
   prerolled_frames_ = 0;
   pts_of_first_written_buffer_ = 0;
@@ -324,17 +327,14 @@ bool AVSBVideoRenderer::CanAcceptMoreData() const {
          sample_buffer_builder_->GetMaxNumberOfCachedFrames();
 }
 
-void AVSBVideoRenderer::SetBounds(int z_index,
-                                  int x,
-                                  int y,
-                                  int width,
-                                  int height) {
+void AVSBVideoRenderer::SetBounds(int z_index, const Rect& rect) {
   SBDAVSampleBufferDisplayView* display_view = display_view_;
   AVSampleBufferDisplayLayer* display_layer = display_layer_;
   onApplicationMainThread(^{
     float scale = [UIScreen mainScreen].scale;
     display_view.frame =
-        CGRectMake(x / scale, y / scale, width / scale, height / scale);
+        CGRectMake(rect.x / scale, rect.y / scale, rect.size.width / scale,
+                   rect.size.height / scale);
     display_layer.zPosition = z_index;
   });
 }
@@ -410,7 +410,10 @@ void AVSBVideoRenderer::ReportError(const std::string& message) {
 }
 
 void AVSBVideoRenderer::UpdatePreferredDisplayCriteria() {
-  AVDisplayManager* avDisplayManager = GetPlatformWindow().avDisplayManager;
+  __block AVDisplayManager* avDisplayManager;
+  onApplicationMainThread(^{
+    avDisplayManager = GetPlatformWindow().avDisplayManager;
+  });
   if (avDisplayManager.isDisplayCriteriaMatchingEnabled == YES) {
     NSURL* url = [NSURL URLWithString:kDummyMasterPlaylistUrl];
 
@@ -601,8 +604,7 @@ void AVSBVideoRenderer::EnqueueSampleBuffers() {
 
     UpdateCachedFramesWatermark();
 
-    if (!video_sample_buffers_.empty() &&
-        !enqueue_sample_buffers_job_token_.is_valid()) {
+    if (!video_sample_buffers_.empty() && !enqueue_sample_buffers_job_token_) {
       enqueue_sample_buffers_job_token_ = Schedule(
           std::bind(&AVSBVideoRenderer::DelayedEnqueueSampleBuffers, this),
           16000);
@@ -620,7 +622,7 @@ void AVSBVideoRenderer::EnqueueSampleBuffers() {
 }
 
 void AVSBVideoRenderer::DelayedEnqueueSampleBuffers() {
-  enqueue_sample_buffers_job_token_.ResetToInvalid();
+  enqueue_sample_buffers_job_token_ = JobQueue::JobToken::kUnscheduled;
   EnqueueSampleBuffers();
 }
 
