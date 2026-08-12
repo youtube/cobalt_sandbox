@@ -644,32 +644,38 @@ void RenderWidgetHostInputEventRouter::DispatchMouseEvent(
   // platforms where MouseUps are not received when the mouse cursor is off the
   // browser window.
   // Also, this is strictly necessary for touch emulation.
-  if (mouse_capture_target_ &&
-      (mouse_event.GetType() == blink::WebInputEvent::Type::kMouseUp ||
+  if (mouse_event.GetType() == blink::WebInputEvent::Type::kMouseUp ||
+      (mouse_event.GetType() != blink::WebInputEvent::Type::kMouseDown &&
        !IsMouseButtonDown(mouse_event))) {
-    mouse_capture_target_ = nullptr;
+    if (mouse_capture_target_) {
+      mouse_capture_target_ = nullptr;
 
-    // Since capture is being lost it is possible that MouseMoves over a hit
-    // test region might have been going to a different region, and now the
-    // CursorManager might need to be notified that the view underneath the
-    // cursor has changed, which could cause the display cursor to update.
-    gfx::PointF transformed_point;
-    auto hit_test_result =
-        FindViewAtLocation(root_view, mouse_event.PositionInWidget(),
-                           viz::EventSource::MOUSE, &transformed_point);
-    // TODO(crbug.com/41419447): This is skipped if the HitTestResult is
-    // requiring an asynchronous hit test to the renderer process, because it
-    // might mean sending extra MouseMoves to renderers that don't need the
-    // event updates which is a worse outcome than the cursor being delayed in
-    // updating. An asynchronous hit test can be added here to fix the problem.
-    if (hit_test_result.view != target && !hit_test_result.should_query_view) {
-      SendMouseEnterOrLeaveEvents(
-          mouse_event, hit_test_result.view, root_view,
-          blink::WebInputEvent::Modifiers::kRelativeMotionEvent, true);
-      if (root_view->GetCursorManager())
-        root_view->GetCursorManager()->UpdateViewUnderCursor(
-            hit_test_result.view);
+      // Since capture is being lost it is possible that MouseMoves over a hit
+      // test region might have been going to a different region, and now the
+      // CursorManager might need to be notified that the view underneath the
+      // cursor has changed, which could cause the display cursor to update.
+      gfx::PointF transformed_point;
+      auto hit_test_result =
+          FindViewAtLocation(root_view, mouse_event.PositionInWidget(),
+                             viz::EventSource::MOUSE, &transformed_point);
+      // TODO(crbug.com/41419447): This is skipped if the HitTestResult is
+      // requiring an asynchronous hit test to the renderer process, because it
+      // might mean sending extra MouseMoves to renderers that don't need the
+      // event updates which is a worse outcome than the cursor being delayed in
+      // updating. An asynchronous hit test can be added here to fix the
+      // problem.
+      if (hit_test_result.view != target &&
+          !hit_test_result.should_query_view) {
+        SendMouseEnterOrLeaveEvents(
+            mouse_event, hit_test_result.view, root_view,
+            blink::WebInputEvent::Modifiers::kRelativeMotionEvent, true);
+        if (root_view->GetCursorManager()) {
+          root_view->GetCursorManager()->UpdateViewUnderCursor(
+              hit_test_result.view);
+        }
+      }
     }
+    last_mouse_down_target_ = nullptr;
   }
 
   // When touch emulation is active, mouse events have to act like touch
@@ -1147,25 +1153,6 @@ void RenderWidgetHostInputEventRouter::ReportBubblingScrollToSameView(
 
 namespace {
 
-// Returns true if |target_view| is one of |starting_view|'s ancestors.
-// If |stay_within| is provided, we only consider ancestors within that
-// sub-tree.
-bool IsAncestorView(RenderWidgetHostViewInput* starting_view,
-                    const RenderWidgetHostViewInput* target_view,
-                    const RenderWidgetHostViewInput* stay_within = nullptr) {
-  RenderWidgetHostViewInput* cur_view = starting_view->GetParentViewInput();
-  while (cur_view) {
-    if (cur_view == target_view)
-      return true;
-
-    if (stay_within && cur_view == stay_within)
-      return false;
-
-    cur_view = cur_view->GetParentViewInput();
-  }
-  return false;
-}
-
 // Given |event| in root coordinates, return an event in |target_view|'s
 // coordinates.
 blink::WebGestureEvent GestureEventInTarget(
@@ -1344,8 +1331,8 @@ bool RenderWidgetHostInputEventRouter::BubbleScrollEvent(
 
     bubbling_gesture_scroll_target_ = target_view;
     bubbling_gesture_scroll_source_device_ = event.SourceDevice();
-    DCHECK(IsAncestorView(bubbling_gesture_scroll_origin_,
-                          bubbling_gesture_scroll_target_));
+    DCHECK(RenderWidgetHostViewInput::IsAncestorView(
+        bubbling_gesture_scroll_origin_, bubbling_gesture_scroll_target_));
   } else {  // !(event.GetType() ==
             // blink::WebInputEvent::Type::kGestureScrollBegin)
     if (!bubbling_gesture_scroll_target_) {
@@ -1486,7 +1473,8 @@ void RenderWidgetHostInputEventRouter::WillDetachChildView(
   // We cancel bubbling only when the child view affects the current scroll
   // bubbling sequence.
   if (detaching_view == bubbling_gesture_scroll_origin_ ||
-      IsAncestorView(bubbling_gesture_scroll_origin_, detaching_view)) {
+      RenderWidgetHostViewInput::IsAncestorView(bubbling_gesture_scroll_origin_,
+                                                detaching_view)) {
     CancelScrollBubbling();
   }
 }
@@ -1524,8 +1512,9 @@ void RenderWidgetHostInputEventRouter::CancelScrollBubblingIfConflicting(
   if (!bubbling_gesture_scroll_target_ || !bubbling_gesture_scroll_origin_)
     return;
 
-  if (IsAncestorView(bubbling_gesture_scroll_origin_, target,
-                     bubbling_gesture_scroll_target_)) {
+  if (RenderWidgetHostViewInput::IsAncestorView(
+          bubbling_gesture_scroll_origin_, target,
+          bubbling_gesture_scroll_target_)) {
     CancelScrollBubbling();
   }
 }
@@ -1986,7 +1975,7 @@ RenderWidgetHostInputEventRouter::FindViewFromFrameSinkId(
       iter == owner_map_.end() ? nullptr : iter->second.get();
 
   if (view && ancestor_to_verify && view != ancestor_to_verify &&
-      !IsAncestorView(view, ancestor_to_verify)) {
+      !RenderWidgetHostViewInput::IsAncestorView(view, ancestor_to_verify)) {
     return nullptr;
   }
 
@@ -2232,6 +2221,12 @@ void RenderWidgetHostInputEventRouter::SetMouseCaptureTarget(
   }
 
   if (capture) {
+    // A frame should only be able to capture the mouse if it was the target of
+    // the last mouse down event. This prevents malicious frames (e.g. OOPIFs or
+    // Fenced Frames) from hijacking mouse events intended for other frames.
+    if (target != last_mouse_down_target_) {
+      return;
+    }
     mouse_capture_target_ = target;
     return;
   }
@@ -2245,9 +2240,17 @@ void RenderWidgetHostInputEventRouter::RootViewReceivesMouseUpIfNecessary(
   root_view_receive_additional_mouse_up_ = root_view_receives_mouse_up;
 }
 
-void RenderWidgetHostInputEventRouter::SetAutoScrollInProgress(
+RenderWidgetTargeter::AutoscrollStatus
+RenderWidgetHostInputEventRouter::SetAutoScrollInProgress(
+    RenderWidgetHostViewInput* view,
     bool is_autoscroll_in_progress) {
-  event_targeter_->SetIsAutoScrollInProgress(is_autoscroll_in_progress);
+  return event_targeter_->SetIsAutoScrollInProgress(view,
+                                                    is_autoscroll_in_progress);
+}
+
+void RenderWidgetHostInputEventRouter::CancelAutoscroll(
+    RenderWidgetHostViewInput* view) {
+  delegate_->CancelAutoscroll(view);
 }
 
 bool IsMoveEvent(ui::EventType type) {
