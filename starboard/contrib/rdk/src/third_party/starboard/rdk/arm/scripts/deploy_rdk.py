@@ -59,6 +59,21 @@ Usage Examples:
 
   14. Revert active Cobalt loader configuration to Cobalt 25:
       python3 starboard/contrib/rdk/src/third_party/starboard/rdk/arm/scripts/deploy_rdk.py --revert-c25
+
+  15. Launch Cobalt plugin with a deep link (e.g. video ID or URL parameter):
+      python3 starboard/contrib/rdk/src/third_party/starboard/rdk/arm/scripts/deploy_rdk.py --run --deeplink "v=dQw4w9WgXcQ"
+  
+  16. Run Cobalt executable with native in-process heap profiling:
+      python3 starboard/contrib/rdk/src/third_party/starboard/rdk/arm/scripts/deploy_rdk.py \
+        --mode executable --run --config devel \
+        --param \
+          --enable-heap-profiling \
+          --memlog=all \
+          --memlog-stack-mode=native-with-thread-names \
+          --trace-startup=disabled-by-default-memory-infra \
+          --trace-startup-duration=15 \
+          --trace-startup-format=json \
+          --trace-startup-file=/tmp/trace_event.json
 """
 
 import argparse
@@ -117,6 +132,57 @@ def run_command(
     return stdout
 
 
+def run_remote_command(
+    command: Union[str, List[str]],
+    device_id: Optional[str] = None,
+    device_ip: Optional[str] = None,
+    verbose: bool = True,
+    check: bool = True,
+    sleep_time: int = 0,
+) -> str:
+    """Runs command on remote device via ADB or SSH."""
+    if device_id:
+        adb_cmd = ["adb", "-s", device_id, "shell"]
+        if isinstance(command, str):
+            adb_cmd.append(command)
+        else:
+            adb_cmd.extend(command)
+        return run_command(adb_cmd, verbose, check, sleep_time)
+    elif device_ip:
+        ssh_cmd = ["ssh", "-q", f"root@{device_ip}"]
+        if isinstance(command, str):
+            ssh_cmd.append(command)
+        else:
+            ssh_cmd.append(" ".join(command))
+        return run_command(ssh_cmd, verbose, check, sleep_time)
+    else:
+        raise ValueError("Either device_id or device_ip must be provided for remote command.")
+
+
+def push_to_device(
+    local_path: Union[str, Path],
+    remote_path: str,
+    device_id: Optional[str] = None,
+    device_ip: Optional[str] = None,
+    verbose: bool = True,
+) -> None:
+    """Pushes local file/directory to remote device via ADB or SCP."""
+    if device_id:
+        adb_cmd = ["adb", "-s", device_id, "push", str(local_path), remote_path]
+        run_command(adb_cmd, verbose=verbose)
+    elif device_ip:
+        scp_cmd = [
+            "scp",
+            "-q",
+            "-r",
+            str(local_path),
+            f"root@{device_ip}:{remote_path}",
+        ]
+        run_command(scp_cmd, verbose=verbose)
+    else:
+        raise ValueError("Either device_id or device_ip must be provided to push file.")
+
+
 def configure_build(platform: str, config: str, out_dir: Path, no_rbe: bool = False) -> None:
     """Runs GN configuration."""
     print(f"=== Configuring {platform} ({config}) ===")
@@ -136,7 +202,7 @@ def build_targets(out_dir: Path, targets: List[str]) -> str:
     return run_command(["autoninja", "-C", str(out_dir)] + targets)
 
 
-def deploy_only_lib(device_id: str, out_dir: Path, remote_dir: str) -> None:
+def deploy_only_lib(device_id: Optional[str], device_ip: Optional[str], out_dir: Path, remote_dir: str) -> None:
     """Pushes libcobalt.lz4 directly to the device."""
     local_lz4 = out_dir / "app/cobalt/lib/libcobalt.lz4"
     if not local_lz4.exists():
@@ -144,16 +210,13 @@ def deploy_only_lib(device_id: str, out_dir: Path, remote_dir: str) -> None:
         sys.exit(1)
 
     remote_lib_dir = f"{remote_dir}/app/cobalt/lib"
-    run_command(
-        ["adb", "-s", device_id, "shell", f"mkdir -p {remote_lib_dir}"])
-    run_command([
-        "adb", "-s", device_id, "push",
-        str(local_lz4), f"{remote_lib_dir}/libcobalt.lz4"
-    ])
+    run_remote_command(f"mkdir -p {remote_lib_dir}", device_id, device_ip)
+    push_to_device(local_lz4, f"{remote_lib_dir}/libcobalt.lz4", device_id, device_ip)
 
 
 def package_and_deploy(
-    device_id: str,
+    device_id: Optional[str],
+    device_ip: Optional[str],
     out_dir: Path,
     remote_dir: str,
     deps_file: Optional[Path],
@@ -178,25 +241,92 @@ def package_and_deploy(
 
     print(f"Packaging with: {' '.join(tar_cmd)}")
     run_command(tar_cmd)
-    run_command(["adb", "-s", device_id, "shell", f"mkdir -p {remote_dir}"])
-    run_command(["adb", "-s", device_id, "push", archive_name, f"{remote_dir}/"])
+    run_remote_command(f"mkdir -p {remote_dir}", device_id, device_ip)
+    push_to_device(archive_name, f"{remote_dir}/", device_id, device_ip)
     Path(archive_name).unlink(missing_ok=True)
 
 
+def ensure_dolby_vision_policy(device_id: Optional[str], device_ip: Optional[str]) -> None:
+    """Ensures /sys/module/aml_media/parameters/dolby_vision_policy is set to 1."""
+    # TODO(b/532753892): Remove this workaround once the device driver is updated.
+    policy_file = "/sys/module/aml_media/parameters/dolby_vision_policy"
+    run_remote_command(f"echo 1 > {policy_file}", device_id, device_ip)
+
+
+def _extract_flag_key(arg: str) -> str:
+    """Extracts option key from flag string (e.g. '--foo' from '--foo=val', '--foo val', or '--foo')."""
+    return arg.split("=", 1)[0].split()[0]
+
+
+def _filter_args_by_keys(base_args: List[str], override_args: List[str]) -> List[str]:
+    """Filters flags from base_args whose option keys match any flag in override_args."""
+    override_keys = set()
+    for arg in override_args:
+        if arg.startswith("--"):
+            override_keys.add(_extract_flag_key(arg))
+
+    filtered_args = []
+    i = 0
+    while i < len(base_args):
+        arg = base_args[i]
+        if arg.startswith("--"):
+            key = _extract_flag_key(arg)
+            if key in override_keys:
+                # Key is overridden by override_args. Skip this flag.
+                if "=" not in arg and " " not in arg and (i + 1 < len(base_args)) and not base_args[i + 1].startswith("--"):
+                    i += 1  # Skip space-separated value item (e.g. '1' in '--foo 1' or '--foo', '1')
+            else:
+                filtered_args.append(arg)
+        else:
+            filtered_args.append(arg)
+        i += 1
+
+    return filtered_args
+
+
+def _merge_args(base_args: List[str], override_args: List[str]) -> List[str]:
+    """Replaces flags in base_args with matching option keys from override_args, and appends override_args."""
+    return _filter_args_by_keys(base_args, override_args) + override_args
+
+
+def remove_duplicate_sb_args(
+    cobalt_json_args: List[str],
+    script_args: Optional[List[str]] = None,
+    user_override_args: Optional[List[str]] = None,
+) -> List[str]:
+    """Combines cobalt_json_args, script_args, and user_override_args with key deduplication.
+
+    Precedence order (highest to lowest):
+      1. user_override_args (passed via --param)
+      2. script_args (script-added flags e.g. --remote-debugging-port=9222)
+      3. cobalt_json_args (pre-existing flags from WPEFramework cobalt.json / sbmainargs)
+    """
+    script_args = script_args or []
+    user_override_args = user_override_args or []
+
+    # 1. Merge script_args with user_override_args
+    override_args = _merge_args(script_args, user_override_args)
+
+    # 2. Merge cobalt_json_args with override_args
+    return _merge_args(cobalt_json_args, override_args)
+
+
 def launch_on_device(
-    device_id: str,
+    device_id: Optional[str],
+    device_ip: Optional[str],
     remote_dir: str,
-    is_up_to_date: bool,
-    force_deploy: bool,
+    extract_archive: bool,
     test_name: Optional[str],
     mode: str,
     devtools: bool = False,
+    param: Optional[List[str]] = None,
+    deeplink: Optional[str] = None,
 ) -> None:
     """Executes remote commands to launch Cobalt or tests."""
     print("=== Launching on device ===")
     remote_cmds = [f"cd {remote_dir}"]
 
-    if not is_up_to_date or force_deploy:
+    if extract_archive:
         # Ensure unprivileged container users have access to extracted artifacts.
         remote_cmds += [
             "tar -xzf archive.tar.gz",
@@ -219,7 +349,7 @@ def launch_on_device(
         remote_cmds += [
             "rdkDisplay create",
             "sleep 2",
-            f"./{test_name}_loader.py {xml_out}{gtest_filter}",
+            f"XDG_RUNTIME_DIR=/run WAYLAND_DISPLAY=test-0 ./{test_name}_loader.py {xml_out}{gtest_filter}",
             "rdkDisplay remove",
             "sleep 2",
         ]
@@ -229,11 +359,11 @@ def launch_on_device(
 
         # Deactivate first to change config
         deactivate_json = '{"jsonrpc":"2.0","id":1,"method":"Controller.1.deactivate","params":{"callsign":"YouTube"}}'
-        run_command(["adb", "-s", device_id, "shell", f"curl -s http://127.0.0.1:9998/jsonrpc -d '{deactivate_json}'"])
+        run_remote_command(f"curl -s http://127.0.0.1:9998/jsonrpc -d '{deactivate_json}'", device_id, device_ip)
 
         # Get configuration
         get_config_json = '{"jsonrpc":"2.0","id":1,"method":"Controller.1.configuration@YouTube"}'
-        res_str = run_command(["adb", "-s", device_id, "shell", f"curl -s http://127.0.0.1:9998/jsonrpc -d '{get_config_json}'"])
+        res_str = run_remote_command(f"curl -s http://127.0.0.1:9998/jsonrpc -d '{get_config_json}'", device_id, device_ip)
 
         rpc_deactivate = (
             r'{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"Controller.1.deactivate\",'
@@ -242,15 +372,17 @@ def launch_on_device(
             res = json.loads(res_str.strip())
             if "result" in res:
                 config = res["result"]
-                sb_args = config.get("sbmainargs", [])
+                cobalt_json_args = config.get("sbmainargs", [])
                 
-                # Filter out any existing remote debugging port argument
-                sb_args = [arg for arg in sb_args if not arg.startswith("--remote-debugging-port=")]
-                
+                script_args = []
                 if devtools:
-                    sb_args.append("--remote-debugging-port=9222")
-                
-                config["sbmainargs"] = sb_args
+                    script_args.append("--remote-debugging-port=9222")
+
+                user_override_args = param if param else []
+
+                config["sbmainargs"] = remove_duplicate_sb_args(
+                    cobalt_json_args, script_args, user_override_args
+                )
 
                 # Set configuration
                 rpc_set_config = json.dumps({
@@ -259,7 +391,7 @@ def launch_on_device(
                     "method": "Controller.1.configuration@YouTube",
                     "params": config
                 })
-                run_command(["adb", "-s", device_id, "shell", f"curl -s http://127.0.0.1:9998/jsonrpc -d '{rpc_set_config}'"])
+                run_remote_command(f"curl -s http://127.0.0.1:9998/jsonrpc -d '{rpc_set_config}'", device_id, device_ip)
                 print("[INFO] DevTools configuration updated successfully.")
         except Exception as e:
             print(f"[WARNING] Failed to update DevTools configuration: {e}")
@@ -275,23 +407,46 @@ def launch_on_device(
             f"curl -s http://127.0.0.1:9998/jsonrpc -d '{rpc_activate}'",
         ]
 
+        if deeplink:
+            rpc_deeplink_json = json.dumps({
+                "jsonrpc": "2.0",
+                "id": 3,
+                "method": "YouTube.deeplink",
+                "params": deeplink
+            }).replace('"', r'\"')
+            remote_cmds.append(f"curl -X POST http://127.0.0.1:9998/jsonrpc -d '{rpc_deeplink_json}'")
+
         if devtools:
             print("[INFO] Setting up DevTools port forwarding...")
-            run_command(["adb", "-s", device_id, "forward", "tcp:9222", "tcp:9222"])
-            print("[INFO] DevTools is enabled. Please open Chrome and navigate to 'chrome://inspect' (add 'localhost:9222' to discover targets).")
+            if device_id:
+                run_command(["adb", "-s", device_id, "forward", "tcp:9222", "tcp:9222"])
+            elif device_ip:
+                ssh_tunnel_cmd = [
+                    "ssh",
+                    "-q",
+                    "-fN",
+                    "-L",
+                    "9222:localhost:9222",
+                    f"root@{device_ip}",
+                ]
+                try:
+                    subprocess.Popen(ssh_tunnel_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                except Exception as e:
+                    print(f"[WARNING] Failed to start SSH tunnel: {e}")
+            print("[INFO] DevTools is enabled. Please open Chrome and navigate to 'chrome://inspect' (add 'localhost:9222' or the device IP to discover targets).")
     else:
         remote_cmds += [
             "rdkDisplay remove || true",
             "sleep 2",
             "rdkDisplay create",
             "sleep 2",
-            "./loader_app",
+            f"XDG_RUNTIME_DIR=/run WAYLAND_DISPLAY=test-0 ./loader_app {' '.join(param)}" if param else "XDG_RUNTIME_DIR=/run WAYLAND_DISPLAY=test-0 ./loader_app",
             "rdkDisplay remove",
             "sleep 2",
         ]
 
     full_cmd = " && ".join(remote_cmds)
-    output = run_command(["adb", "-s", device_id, "shell", f"bash -l -c \"{full_cmd}\""])
+    output = run_remote_command(f"bash -l -c \"{full_cmd}\"", device_id, device_ip)
     print(output)
     if "ERROR_OPENING_FAILED" in output or "error" in output.lower():
         print("\n[WARNING] Activation failed with error (e.g., ERROR_OPENING_FAILED).")
@@ -317,6 +472,11 @@ def parse_args() -> argparse.Namespace:
         help="Build and run a test (e.g., nplb).",
     )
     parser.add_argument(
+        "--device-ip",
+        type=str,
+        help="Target RDK device IP address (uses SSH/SCP instead of ADB).",
+    )
+    parser.add_argument(
         "--config", type=str, help="Override default build configuration.")
     parser.add_argument(
         "--out-dir", type=str, help="Custom build output directory.")
@@ -326,6 +486,11 @@ def parse_args() -> argparse.Namespace:
         help="Skip configure and build steps.",
     )
     parser.add_argument(
+        "--skip-deploy",
+        action="store_true",
+        help="Skip deployment step (assumes files are already on the device).",
+    )
+    parser.add_argument(
         "--run", action="store_true", help="Run on device after build/deploy.")
     parser.add_argument(
         "--force-deploy",
@@ -333,16 +498,17 @@ def parse_args() -> argparse.Namespace:
         help="Force deployment even if up-to-date.",
     )
     parser.add_argument(
+        "--deeplink",
+        type=str,
+        dest="deeplink",
+        help="Deeplink parameter (e.g. v=dQw4w9WgXcQ) to pass to Cobalt when launching in plugin mode.",
+    )
+    parser.add_argument(
         "--reset",
         action="store_true",
         help=(
             "Run rdkDisplay remove and restart WPEFramework on the device. "
             "Useful if the display is inactive or WPEFramework is stuck."),
-    )
-    parser.add_argument(
-        "--devtools",
-        action="store_true",
-        help="Enable Chrome DevTools remote debugging port (port 9222) in plugin mode.",
     )
     parser.add_argument(
         "--setup-toolchain",
@@ -374,7 +540,27 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="View global OS/kernel/systemd logs from the device (runs raw journalctl).",
     )
-    return parser.parse_args()
+    parser.add_argument(
+        "--param",
+        nargs=argparse.REMAINDER,
+        default=[],
+        help=(
+            "Additional runtime parameter(s) to pass to StarboardMain (must be specified last). "
+            "All arguments must start with '--' (positional arguments are not supported)."
+        ),
+    )
+    args = parser.parse_args()
+
+    if args.param:
+        for arg in args.param:
+            if not arg.startswith("--"):
+                print(
+                    f"Error: All arguments passed to --param must start with '--' (positional arguments are not supported). "
+                    f"Positional argument '{arg}' is not supported."
+                )
+                sys.exit(1)
+
+    return args
 
 
 def get_model_name(device_id: str) -> Optional[str]:
@@ -444,21 +630,17 @@ def get_device_id() -> str:
     return dev
 
 
-def assert_software_version(device_id: str, min_version_date: str) -> None:
+def assert_software_version(device_id: Optional[str], device_ip: Optional[str], min_version_date: str) -> None:
     """Asserts that the device software date is at least the min_version_date."""
     try:
-        res = subprocess.run(
-            ["adb", "-s", device_id, "shell", "cat /version.txt"],
-            capture_output=True,
-            text=True,
-            timeout=5
-        )
-        if res.returncode != 0:
+        output = run_remote_command("cat /version.txt", device_id, device_ip, check=False)
+        if "imagename:" not in output:
             print("Error: Could not read /version.txt from the device to verify system software version.")
+            print(f"Details: {output}")
             sys.exit(1)
 
         custom_version = None
-        for line in res.stdout.splitlines():
+        for line in output.splitlines():
             if "custom version:" in line.lower():
                 custom_version = line.split(":", 1)[1].strip()
                 break
@@ -497,59 +679,38 @@ def assert_software_version(device_id: str, min_version_date: str) -> None:
         sys.exit(1)
 
 
-def check_and_switch_cobalt_version(device_id: str) -> None:
+def check_and_switch_cobalt_version(device_id: Optional[str], device_ip: Optional[str]) -> None:
     """Checks if Cobalt 26 is active on the device, otherwise switches and reboots."""
     try:
-        res = subprocess.run(
-            ["adb", "-s", device_id, "shell", "readlink /usr/lib/libloader_app.so"],
-            capture_output=True,
-            text=True,
-            timeout=5
-        )
-        current_target = res.stdout.strip()
+        current_target = run_remote_command(
+            "readlink /usr/lib/libloader_app.so", device_id, device_ip, check=False
+        ).strip()
 
-        # If it already points to /data/out_cobalt/libloader_app.so, it's already set to c26
         if current_target == "/data/out_cobalt/libloader_app.so":
             print("Cobalt 26 configuration is already active on the device.")
             return
 
         print("Cobalt configuration is not active. Running 'chCobalt custom_cobalt' on the device...")
-        res = subprocess.run(
-            ["adb", "-s", device_id, "shell", "chCobalt custom_cobalt"],
-            capture_output=True,
-            text=True,
-            timeout=10
-        )
-        if res.returncode != 0:
-            print(f"Error: Failed to run 'chCobalt custom_cobalt': {res.stderr}")
-            sys.exit(1)
+        run_remote_command("chCobalt custom_cobalt", device_id, device_ip)
 
         print("Device is being rebooted to apply changes...")
-        subprocess.run(
-            ["adb", "-s", device_id, "shell", "reboot"],
-            timeout=5
-        )
+        run_remote_command("bash -l -c 'reboot'", device_id, device_ip, check=False)
 
         print("Waiting 30 seconds for the device to reboot...")
         time.sleep(30)
 
-        print("Attempting to reconnect to device via ADB...")
+        print("Attempting to reconnect to device...")
         reconnected = False
         for i in range(10): # try up to 10 times with 3 second intervals
-            res = subprocess.run(
-                ["adb", "-s", device_id, "shell", "echo ok"],
-                capture_output=True,
-                text=True,
-                timeout=5
-            )
-            if res.returncode == 0 and res.stdout.strip() == "ok":
+            out = run_remote_command("echo ok", device_id, device_ip, check=False, verbose=False).strip()
+            if out == "ok":
                 reconnected = True
                 break
             print(f"Device not ready yet. Retrying in 3 seconds... ({i+1}/10)")
             time.sleep(3)
 
         if not reconnected:
-            print("Error: Could not reconnect to the device via ADB after reboot.")
+            print("Error: Could not reconnect to the device after reboot.")
             sys.exit(1)
 
         print("Reconnected to device successfully.")
@@ -559,10 +720,10 @@ def check_and_switch_cobalt_version(device_id: str) -> None:
         sys.exit(1)
 
 
-def revert_to_cobalt_25(device_id: str) -> None:
+def revert_to_cobalt_25(device_id: Optional[str], device_ip: Optional[str]) -> None:
     """Reverts the active Cobalt configuration on the device back to Cobalt 25."""
-    target = run_command(
-        ["adb", "-s", device_id, "shell", "readlink /usr/lib/libloader_app.so"]
+    target = run_remote_command(
+        "readlink /usr/lib/libloader_app.so", device_id, device_ip, check=False
     ).strip()
 
     if target != "/data/out_cobalt/libloader_app.so":
@@ -570,8 +731,8 @@ def revert_to_cobalt_25(device_id: str) -> None:
         return
 
     print("Running 'chCobalt c25' on the device...")
-    run_command(["adb", "-s", device_id, "shell", "chCobalt c25"])
-    run_command(["adb", "-s", device_id, "shell", "reboot -f"])
+    run_remote_command("chCobalt c25", device_id, device_ip)
+    run_remote_command("bash -l -c 'reboot -f'", device_id, device_ip, check=False)
     print("Revert to Cobalt 25 completed. The device is rebooting.")
 
 
@@ -604,18 +765,28 @@ def main() -> None:
     """Main execution flow."""
     args = parse_args()
 
+    if args.deeplink and (args.mode != "plugin" or args.tests):
+        print("Error: --deeplink is only supported when running in plugin mode (without --tests).")
+        sys.exit(1)
+
     if args.setup_toolchain:
         setup_toolchain()
         return
 
-    if args.revert_c25:
+    device_ip = args.device_ip
+    device_id = None
+    if not device_ip:
         device_id = get_device_id()
-        revert_to_cobalt_25(device_id)
+
+    if args.revert_c25:
+        revert_to_cobalt_25(device_id, device_ip)
         return
 
     if args.logs or args.system_logs:
-        device_id = get_device_id()
-        cmd = ["adb", "-s", device_id, "shell", "journalctl"]
+        if not device_ip:
+            cmd = ["adb", "-s", device_id, "shell", "journalctl"]
+        else:
+            cmd = ["ssh", "-q", f"root@{device_ip}", "journalctl"]
         if args.logs:
             cmd.extend([
                 "-t",
@@ -624,6 +795,8 @@ def main() -> None:
                 "Cobalt",
                 "-t",
                 "loader_app",
+                "-t",
+                "WPEFramework",
             ])
         if args.follow:
             cmd.append("-f")
@@ -634,31 +807,27 @@ def main() -> None:
         return
 
     if args.reset:
-        device_id = get_device_id()
         print("=== Resetting display ===")
-        run_command([
-            "adb", "-s", device_id, "shell", "bash -l -c 'rdkDisplay remove || true'"
-        ])
+        run_remote_command("bash -l -c 'rdkDisplay remove || true'", device_id, device_ip)
         print("=== Restarting WPEFramework ===")
-        run_command([
-            "adb", "-s", device_id, "shell", "systemctl restart wpeframework"
-        ], sleep_time=5)
+        run_remote_command("systemctl restart wpeframework", device_id, device_ip, sleep_time=5)
+        print("=== Cleaning up DevTools ports on host ===")
+        # Always try to kill SSH tunnel on host
+        run_command(["pkill", "-f", "9222:localhost:9222"], check=False)
+        # Try to remove ADB forward if we have a device_id
+        if device_id:
+            run_command(["adb", "-s", device_id, "forward", "--remove", "tcp:9222"], check=False)
         if not (args.run or args.tests or args.force_deploy):
             print("=== Reset finished. ===")
             return
 
-    device_id = get_device_id()
-    assert_software_version(device_id, MIN_SYSTEM_SOFTWARE_VERSION)
+    assert_software_version(device_id, device_ip, MIN_SYSTEM_SOFTWARE_VERSION)
     if args.mode == "plugin" and not args.tests:
-        check_and_switch_cobalt_version(device_id)
+        check_and_switch_cobalt_version(device_id, device_ip)
 
     # Setup Build Paths
     config = args.config or ("devel" if args.tests else "qa")
     out_dir = Path(args.out_dir or f"out/{PLATFORM}_{config}")
-
-    if args.devtools and config == "gold":
-        print("Error: DevTools is not supported/available in gold builds.")
-        sys.exit(1)
 
     if args.tests:
         targets = [f"{args.tests}_loader"]
@@ -695,25 +864,47 @@ def main() -> None:
         print("=== Skipping build step ===")
         is_up_to_date = False
 
-    if is_up_to_date and not args.force_deploy:
-        print("=== Up to date. Skipping deployment. ===")
+    # Check if the remote directory exists on the device.
+    # If it doesn't, we must deploy even if the build is up-to-date.
+    remote_dir_exists = False
+    try:
+        out = run_remote_command(
+            f"[ -d {remote_dir} ] && echo yes || echo no",
+            device_id,
+            device_ip,
+            check=False,
+            verbose=False,
+        ).strip()
+        remote_dir_exists = (out == "yes")
+    except Exception as e:
+        print(f"[WARNING] Failed to check if remote directory exists: {e}")
+
+    skip_deployment = args.skip_deploy or (is_up_to_date and not args.force_deploy and remote_dir_exists)
+
+    deployed_archive = False
+    if skip_deployment:
+        print("=== Skipping deployment ===")
         if not args.run:
             return
     else:
         if args.only_lib:
-            deploy_only_lib(device_id, out_dir, remote_dir)
+            deploy_only_lib(device_id, device_ip, out_dir, remote_dir)
         else:
-            package_and_deploy(device_id, out_dir, remote_dir, deps_file, args.mode)
+            package_and_deploy(device_id, device_ip, out_dir, remote_dir, deps_file, "executable" if args.tests else args.mode)
+            deployed_archive = True
 
     if args.run:
+        ensure_dolby_vision_policy(device_id, device_ip)
         launch_on_device(
             device_id,
+            device_ip,
             remote_dir,
-            is_up_to_date,
-            args.force_deploy,
+            deployed_archive,
             args.tests,
-            args.mode,
-            args.devtools,
+            "executable" if args.tests else args.mode,
+            config != "gold" and args.mode == "plugin" and not args.tests,
+            args.param,
+            args.deeplink,
         )
 
     print("=== Finished ===")

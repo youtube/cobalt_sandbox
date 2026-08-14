@@ -47,11 +47,26 @@ template <typename T>
 class ExperimentalFeatureKey {
  public:
   using ValueType = T;
-  constexpr explicit ExperimentalFeatureKey(std::string_view key) : key_(key) {}
+  using DefaultValueType =
+      std::conditional_t<std::is_same_v<T, std::string>, const char*, T>;
+
+  template <size_t N>
+  constexpr explicit ExperimentalFeatureKey(const char (&key)[N])
+      : key_(key, N - 1), default_value_(std::nullopt) {}
+
+  template <size_t N>
+  constexpr explicit ExperimentalFeatureKey(const char (&key)[N],
+                                            DefaultValueType default_value)
+      : key_(key, N - 1), default_value_(default_value) {}
+
   constexpr std::string_view key() const { return key_; }
+  constexpr const std::optional<DefaultValueType>& default_value() const {
+    return default_value_;
+  }
 
  private:
   std::string_view key_;
+  std::optional<DefaultValueType> default_value_;
 };
 
 // Container for experimental feature settings stored per-thread in Starboard.
@@ -68,7 +83,7 @@ class ExperimentalFeatures {
   ~ExperimentalFeatures() = default;
 
   // Returns the boolean value for the given key, falling back to false if the
-  // key is missing or unset.
+  // key is missing or is unset with no default value.
   bool GetBool(const ExperimentalFeatureKey<bool>& key) const {
     return Get(key).value_or(false);
   }
@@ -76,10 +91,15 @@ class ExperimentalFeatures {
   template <typename T>
   std::optional<T> Get(const ExperimentalFeatureKey<T>& key) const {
     auto it = settings_.find(key.key());
-    if (it == settings_.end()) {
-      return std::nullopt;
+    if (it != settings_.end()) {
+      if (auto val = GetValue<T>(it->second); val.has_value()) {
+        return val;
+      }
     }
-    return GetValue<T>(it->second);
+    if (key.default_value().has_value()) {
+      return T(*key.default_value());
+    }
+    return std::nullopt;
   }
 
   friend std::ostream& operator<<(std::ostream& os,
@@ -162,9 +182,6 @@ inline constexpr ExperimentalFeatureKey<bool>
 inline constexpr ExperimentalFeatureKey<bool> kMediaEnableFlushDuringSeek(
     "Media.EnableFlushDuringSeek");
 
-inline constexpr ExperimentalFeatureKey<bool> kMediaEnableLowLatency(
-    "Media.EnableLowLatency");
-
 inline constexpr ExperimentalFeatureKey<bool> kMediaEnableResetAudioDecoder(
     "Media.EnableResetAudioDecoder");
 
@@ -179,15 +196,25 @@ inline constexpr ExperimentalFeatureKey<bool>
     kMediaEnableVideoRendererVspAdjustment(
         "Media.EnableVideoRendererVspAdjustment");
 
+// To check the regression of the fix for the bug that pending frame grows
+// 2000+. For details, see http://b/517914191.
+inline constexpr ExperimentalFeatureKey<bool>
+    kMediaFixNeedMoreInputBackpressure("Media.FixNeedMoreInputBackpressure");
+
 inline constexpr ExperimentalFeatureKey<bool> kMediaFlushAudioTrackDuringSeek(
     "Media.FlushAudioTrackDuringSeek");
 
-inline constexpr ExperimentalFeatureKey<bool> kMediaForceClearSurfaceView(
-    "Media.ForceClearSurfaceView");
+inline constexpr ExperimentalFeatureKey<bool> kMediaForceDualThreads(
+    "Media.ForceDualThreads");
 
 inline constexpr ExperimentalFeatureKey<bool>
     kMediaIgnoreMediaCodecCallbacksDuringFlushing(
         "Media.IgnoreMediaCodecCallbacksDuringFlushing");
+
+inline constexpr ExperimentalFeatureKey<bool> kMediaNdkAudioTrack(
+    "Media.NdkAudioTrack");
+
+inline constexpr ExperimentalFeatureKey<bool> kMediaNdkVideo("Media.NdkVideo");
 
 inline constexpr ExperimentalFeatureKey<bool> kMediaSkipFlushOnDecoderTeardown(
     "Media.SkipFlushOnDecoderTeardown");
