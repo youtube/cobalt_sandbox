@@ -21,8 +21,10 @@ config("platform_configuration") {
   if (current_toolchain == starboard_toolchain) {
     ldflags = [
       "-Wl,--wrap=access",
+      "-Wl,--wrap=alarm",
       "-Wl,--wrap=close",
       "-Wl,--wrap=fstatat",
+      "-Wl,--wrap=if_indextoname",
       "-Wl,--wrap=open",
       "-Wl,--wrap=openat",
       "-Wl,--wrap=stat",

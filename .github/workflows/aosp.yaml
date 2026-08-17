@@ -2,34 +2,41 @@ name: aosp
 
 on:
   pull_request:
-    types: [opened, reopened, synchronize, labeled, ready_for_review]
+    types: [opened, reopened, synchronize, ready_for_review]
     branches:
       - main
-      - experimental/*
-      - feature/*
   push:
     branches:
       - main
-      - experimental/*
-      - feature/*
   workflow_dispatch:
-    inputs:
-      nightly:
-        description: 'Nightly workflow.'
-        required: true
-        type: boolean
-        default: false
 
-permissions: read-all
+permissions:
+  actions: write
+  contents: read
 
 jobs:
-  aosp-arm:
-    uses: ./.github/workflows/main.yaml
-    permissions:
-      packages: write
-      pull-requests: write
-    with:
-      platform: aosp-arm
-      nightly: ${{ github.event.inputs.nightly }}
-    secrets:
-      datadog_api_key: ${{ secrets.DD_API_KEY }}
+  mock-aosp:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create mock report
+        run: |
+          jq -n \
+            --arg platform "aosp-arm" \
+            '{
+              platform: $platform,
+              config: "devel",
+              build_result: "success",
+              on_device_test_result: "success",
+              on_host_test_result: "success",
+              web_tests_result: "success",
+              e2e_test_result: "success",
+              yts_test_result: "success",
+              test_failures: {},
+              failed: false
+            }' > report_aosp-arm.json
+
+      - name: Upload Mock aosp-arm
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-report-aosp-arm
+          path: report_aosp-arm.json

@@ -145,5 +145,51 @@ TEST_F(MojoRendererBypassBridgeTest, InvalidateWaitsForRead) {
   invalidate_finished.Wait();
 }
 
+TEST_F(MojoRendererBypassBridgeTest, EnableBitstreamConverter) {
+  NiceMock<MockDemuxerStream> audio_stream(DemuxerStream::AUDIO);
+  NiceMock<MockDemuxerStream> video_stream(DemuxerStream::VIDEO);
+
+  bridge_->SetStreams(&audio_stream, &video_stream);
+
+  EXPECT_CALL(audio_stream, EnableBitstreamConverter()).Times(1);
+  EXPECT_CALL(video_stream, EnableBitstreamConverter()).Times(1);
+
+  bridge_->EnableBitstreamConverter(DemuxerStream::AUDIO);
+  bridge_->EnableBitstreamConverter(DemuxerStream::VIDEO);
+
+  bridge_->Invalidate();
+  // Should be a no-op when inactive.
+  bridge_->EnableBitstreamConverter(DemuxerStream::AUDIO);
+}
+
+TEST_F(MojoRendererBypassBridgeTest, UnknownStreamType) {
+  NiceMock<MockDemuxerStream> audio_stream(DemuxerStream::AUDIO);
+  NiceMock<MockDemuxerStream> video_stream(DemuxerStream::VIDEO);
+
+  bridge_->SetStreams(&audio_stream, &video_stream);
+
+  EXPECT_CALL(audio_stream, EnableBitstreamConverter()).Times(0);
+  EXPECT_CALL(video_stream, EnableBitstreamConverter()).Times(0);
+
+  bridge_->EnableBitstreamConverter(DemuxerStream::UNKNOWN);
+
+  bridge_->Invalidate();
+}
+
+TEST_F(MojoRendererBypassBridgeTest, PostTimeUpdateAndStatistics) {
+  const base::TimeDelta kTime = base::Seconds(10);
+  const base::TimeDelta kMaxTime = base::Seconds(10);
+  const base::TimeTicks kCaptureTime = base::TimeTicks::Now();
+  EXPECT_CALL(time_update_cb_, Run(kTime, kMaxTime, kCaptureTime));
+  bridge_->PostTimeUpdate(kTime, kMaxTime, kCaptureTime);
+
+  PipelineStatistics stats;
+  stats.audio_bytes_decoded = 1024;
+  EXPECT_CALL(statistics_update_cb_, Run(_));
+  bridge_->PostStatisticsUpdate(stats);
+
+  task_environment_.RunUntilIdle();
+}
+
 }  // namespace
 }  // namespace media

@@ -51,6 +51,7 @@ public class AudioTrackBridge {
   private AudioTimestamp mAudioTimestamp = new AudioTimestamp(0, 0);
 
   private final Object mPositionLock = new Object();
+
   @GuardedBy("mPositionLock")
   private long mMaxFramePositionSoFar = 0;
 
@@ -86,7 +87,8 @@ public class AudioTrackBridge {
       case AudioFormat.ENCODING_E_AC3:
         return new byte[maxSamplesPerWrite];
       default:
-        // Throwing RuntimeException crashes the app, which is intended since the invariant is broken.
+        // Throwing RuntimeException crashes the app, which is intended since the invariant is
+        // broken.
         throw new IllegalArgumentException("Unsupported sample type: " + sampleType);
     }
   }
@@ -321,52 +323,65 @@ public class AudioTrackBridge {
     }
   }
 
-  // TODO (b/262608024): Have this method return a boolean and return false on failure.
   @CalledByNative
   private void pause() {
-    if (mAudioTrack == null) {
-      Log.e(TAG, "Unable to pause with NULL audio track.");
-      return;
-    }
     try {
+      if (mAudioTrack == null) {
+        Log.e(TAG, "Unable to pause with NULL audio track.");
+        return;
+      }
       mAudioTrack.pause();
-    } catch (IllegalStateException e) {
-      Log.e(TAG, String.format(Locale.US, "Unable to pause audio track, error: %s", e.toString()));
+    } catch (Throwable t) {
+      // Catch Throwable (both Exception and Error) to prevent JNI crashes if the JVM
+      // throws linkage errors (e.g., NoClassDefFoundError) during ClassLoader unloading
+      // in teardown. See b/455621481.
+      Log.e(TAG, "Exception or Error during AudioTrack.pause()", t);
     }
   }
 
   // TODO (b/262608024): Have this method return a boolean and return false on failure.
   @CalledByNative
   private void stop() {
-    if (mAudioTrack == null) {
-      Log.e(TAG, "Unable to stop with NULL audio track.");
-      return;
-    }
     try {
+      if (mAudioTrack == null) {
+        Log.e(TAG, "Unable to stop with NULL audio track.");
+        return;
+      }
       mAudioTrack.stop();
-    } catch (IllegalStateException e) {
-      Log.e(TAG, String.format(Locale.US, "Unable to stop audio track, error: %s", e.toString()));
+    } catch (Throwable t) {
+      // Catch Throwable (both Exception and Error) to prevent JNI crashes if the JVM
+      // throws linkage errors (e.g., NoClassDefFoundError) during ClassLoader unloading
+      // in teardown. See b/455621481.
+      Log.e(TAG, "Exception or Error during AudioTrack.stop()", t);
     }
   }
 
   @CalledByNative
   private void flush() {
-    if (mAudioTrack == null) {
-      Log.e(TAG, "Unable to flush with NULL audio track.");
-      return;
-    }
-    mAudioTrack.flush();
-    // Reset the states to allow reuse of |audioTrack| after flush() is called. This can reduce
-    // switch latency for passthrough playbacks.
-    mAvSyncHeader = null;
-    mAvSyncPacketBytesRemaining = 0;
-    synchronized (mPositionLock) {
-      mMaxFramePositionSoFar = 0;
+    try {
+      if (mAudioTrack == null) {
+        Log.e(TAG, "Unable to flush with NULL audio track.");
+        return;
+      }
+      mAudioTrack.flush();
+      // Reset the states to allow reuse of |audioTrack| after flush() is called. This can reduce
+      // switch latency for passthrough playbacks.
+      mAvSyncHeader = null;
+      mAvSyncPacketBytesRemaining = 0;
+      synchronized (mPositionLock) {
+        mMaxFramePositionSoFar = 0;
+      }
+    } catch (Throwable t) {
+      // Catch Throwable (both Exception and Error) to prevent JNI crashes if the JVM
+      // throws linkage errors (e.g., NoClassDefFoundError) during ClassLoader unloading
+      // in teardown. See b/455621481.
+      Log.e(TAG, "Exception or Error during AudioTrack.flush()", t);
     }
   }
 
   @CalledByNative
-  private int writeWithPresentationTime(byte[] audioData, int sizeInBytes, long presentationTimeInMicroseconds) {
+  private int writeWithPresentationTime(
+      byte[] audioData, int sizeInBytes, long presentationTimeInMicroseconds) {
     if (mAudioTrack == null) {
       Log.e(TAG, "Unable to write with NULL audio track.");
       return 0;
@@ -418,7 +433,8 @@ public class AudioTrackBridge {
 
     if (mAvSyncHeader.remaining() > 0) {
       int ret =
-          mAudioTrack.write(mAvSyncHeader, mAvSyncHeader.remaining(), AudioTrack.WRITE_NON_BLOCKING);
+          mAudioTrack.write(
+              mAvSyncHeader, mAvSyncHeader.remaining(), AudioTrack.WRITE_NON_BLOCKING);
       if (ret < 0) {
         mAvSyncPacketBytesRemaining = 0;
         return ret;
@@ -521,8 +537,6 @@ public class AudioTrackBridge {
       mFramePosition = framePosition;
       mNanoTime = nanoTime;
     }
-
-
 
     @CalledByNative("AudioTimestamp")
     public long getFramePosition() {
