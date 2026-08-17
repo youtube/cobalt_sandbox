@@ -15,11 +15,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest
-from unittest.mock import mock_open, patch
-import logging
 import io
 import json
+import logging
+import unittest
+from unittest.mock import MagicMock, mock_open, patch
 
 from cobalt.tools.junit_mini_parser import find_failing_tests, main
 
@@ -153,15 +153,16 @@ class TestFindFailingTests(unittest.TestCase):
 class TestMain(unittest.TestCase):
   """Test cases for main function in junit_mini_parser."""
 
-  def setUp(self):
+  def setUp(self) -> None:
     logging.disable(logging.CRITICAL)
 
-  def tearDown(self):
+  def tearDown(self) -> None:
     logging.disable(logging.NOTSET)
 
   @patch('cobalt.tools.junit_mini_parser.find_failing_tests')
   @patch('sys.stdout', new_callable=io.StringIO)
-  def test_main_success(self, mock_stdout, mock_find):
+  def test_main_success(self, mock_stdout: io.StringIO,
+                        mock_find: MagicMock) -> None:
     mock_find.return_value = {}
     exit_code = main(['results.xml'])
     self.assertEqual(exit_code, 0)
@@ -171,7 +172,8 @@ class TestMain(unittest.TestCase):
 
   @patch('cobalt.tools.junit_mini_parser.find_failing_tests')
   @patch('sys.stdout', new_callable=io.StringIO)
-  def test_main_failure(self, mock_stdout, mock_find):
+  def test_main_failure(self, mock_stdout: io.StringIO,
+                        mock_find: MagicMock) -> None:
     mock_find.return_value = {
         'results.xml': [{
             'name': 'Test.fail',
@@ -192,7 +194,7 @@ class TestMain(unittest.TestCase):
     self.assertEqual(json.loads(mock_stdout.getvalue()), expected_output)
 
   @patch('sys.stdout', new_callable=io.StringIO)
-  def test_main_no_files(self, mock_stdout):
+  def test_main_no_files(self, mock_stdout: io.StringIO) -> None:
     exit_code = main([])
     self.assertEqual(exit_code, 0)
     expected_output = {'failing_tests': {}}

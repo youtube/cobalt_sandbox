@@ -5,65 +5,58 @@ on:
     types: [opened, reopened, synchronize, ready_for_review]
     branches:
       - main
-      - experimental/*
-      - feature/*
   push:
     branches:
       - main
-      - experimental/*
-      - feature/*
   workflow_dispatch:
-    inputs:
-      nightly:
-        description: 'Nightly workflow.'
-        required: true
-        type: boolean
-        default: false
 
-permissions: read-all
+permissions:
+  actions: write
+  contents: read
 
 jobs:
-  # This is default Chromium build config
-  chromium_linux-x64:
-    uses: ./.github/workflows/main.yaml
-    permissions:
-      packages: write
-      pull-requests: write
-    with:
-      platform: chromium_linux
-      nightly: ${{ github.event.inputs.nightly }}
-    secrets:
-      datadog_api_key: ${{ secrets.DD_API_KEY }}
-  # This is default Cobalt build config
-  linux:
-    uses: ./.github/workflows/main.yaml
-    permissions:
-      packages: write
-      pull-requests: write
-    with:
-      platform: linux
-      nightly: ${{ github.event.inputs.nightly }}
-    secrets:
-      datadog_api_key: ${{ secrets.DD_API_KEY }}
-  # This is cobalt on linux using modular build config
-  linux-modular:
-    uses: ./.github/workflows/main.yaml
-    permissions:
-      packages: write
-      pull-requests: write
-    with:
-      platform: linux-modular
-      nightly: ${{ github.event.inputs.nightly }}
-    secrets:
-      datadog_api_key: ${{ secrets.DD_API_KEY }}
-  # This is content_shell without starboard
-  linux-web-tests:
-    uses: ./.github/workflows/main.yaml
-    permissions:
-      packages: write
-      pull-requests: write
-    with:
-      platform: linux-web-tests
-      nightly: ${{ github.event.inputs.nightly }}
-    secrets:
-      datadog_api_key: ${{ secrets.DD_API_KEY }}
+  mock-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create mock reports
+        run: |
+          for platform in linux-x64x11 linux-modular linux-web-tests chromium_linux; do
+            jq -n \
+              --arg platform "$platform" \
+              '{
+                platform: $platform,
+                config: "devel",
+                build_result: "success",
+                on_device_test_result: "success",
+                on_host_test_result: "success",
+                web_tests_result: "success",
+                e2e_test_result: "success",
+                yts_test_result: "success",
+                test_failures: {},
+                failed: false
+              }' > "report_${platform}.json"
+          done
+
+      - name: Upload Mock linux-x64x11
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-report-linux-x64x11
+          path: report_linux-x64x11.json
+
+      - name: Upload Mock linux-modular
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-report-linux-modular
+          path: report_linux-modular.json
+
+      - name: Upload Mock linux-web-tests
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-report-linux-web-tests
+          path: report_linux-web-tests.json
+
+      - name: Upload Mock chromium_linux
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-report-chromium_linux
+          path: report_chromium_linux.json

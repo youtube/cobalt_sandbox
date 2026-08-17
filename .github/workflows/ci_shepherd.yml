@@ -1,0 +1,86 @@
+name: CI Shepherd
+
+on:
+  workflow_run:
+    workflows: [android, aosp, evergreen, linux]
+    types:
+      - completed
+
+permissions:
+  statuses: write
+  pull-requests: write
+  actions: read
+
+jobs:
+  generate-report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github
+            cobalt/tools
+
+      - name: Collate Reports
+        id: collate
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          exit_code=0
+          python3 cobalt/tools/collate_ci_reports.py \
+            --sha "${{ github.event.workflow_run.head_sha }}" > collate_output.txt || exit_code=$?
+          cat collate_output.txt
+          # If the script failed without printing STATUS, fallback to FAILURE
+          status=$(grep "STATUS:" collate_output.txt | cut -d' ' -f2 || echo "FAILURE")
+          echo "status=${status}" >> "${GITHUB_OUTPUT}"
+          echo "exit_code=${exit_code}" >> "${GITHUB_OUTPUT}"
+
+      - name: Format Report to Markdown
+        if: always() && steps.collate.outputs.status != ''
+        run: |
+          # Generate combined_report.md
+          python3 cobalt/tools/format_ci_report.py
+
+      - name: Update Commit Status
+        if: always() && steps.collate.outputs.status != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+          STATUS: ${{ steps.collate.outputs.status }}
+        run: |
+          if [ "${STATUS}" = "SUCCESS" ]; then
+            state="success"
+            desc="All CI checks passed."
+          elif [ "${STATUS}" = "FAILURE" ]; then
+            state="failure"
+            desc="Some CI checks failed."
+          else
+            state="pending"
+            desc="CI checks are still in progress."
+          fi
+
+          gh api "repos/${{ github.repository }}/statuses/${SHA}" \
+            -f state="${state}" \
+            -f target_url="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            -f description="${desc}" \
+            -f context="Combined CI Report"
+
+      - name: Comment on PR
+        if: always() && github.event.workflow_run.event == 'pull_request' && hashFiles('combined_report.md') != ''
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: combined-ci-report
+          path: combined_report.md
+          number: ${{ github.event.workflow_run.pull_requests[0].number }}
+
+      - name: Publish Step Summary
+        if: always() && hashFiles('combined_report.md') != ''
+        run: |
+          cat combined_report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail if CI failed
+        if: always() && steps.collate.outputs.exit_code != '0' && steps.collate.outputs.exit_code != ''
+        run: |
+          echo "CI checks failed with exit code ${{ steps.collate.outputs.exit_code }}."
+          exit ${{ steps.collate.outputs.exit_code }}

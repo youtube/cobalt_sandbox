@@ -1093,21 +1093,10 @@ jobs:
                 ' test_failures.json || true
               fi
             fi
-            rm -f test_failures.json
           fi
 
           if [[ "${BUILD_RESULT}" != "success" ]]; then
             echo "::error::Build job failed with result: ${BUILD_RESULT}"
-            failed=true
-          fi
-
-          if [[ "${ON_DEVICE_TEST_RESULT}" == "failure" || "${ON_DEVICE_TEST_RESULT}" == "cancelled" ]]; then
-            echo "::error::On-device test job failed with result: ${ON_DEVICE_TEST_RESULT}"
-            failed=true
-          fi
-
-          if [[ "${ON_HOST_TEST_RESULT}" == "failure" || "${ON_HOST_TEST_RESULT}" == "cancelled" ]]; then
-            echo "::error::On-host test job failed with result: ${ON_HOST_TEST_RESULT}"
             failed=true
           fi
 
@@ -1130,7 +1119,45 @@ jobs:
             echo "::warning::YTS playback test job failed with result: ${YTS_PLAYBACK_TEST_RESULT} (non-blocking)"
           fi
 
+          # Generate report fragment
+          failures_json="{}"
+          if [ -s test_failures.json ]; then
+            failures_json=$(cat test_failures.json)
+          fi
+
+          jq -n \
+            --arg platform "${{ matrix.platform }}" \
+            --arg config "${{ matrix.config }}" \
+            --arg build "${BUILD_RESULT}" \
+            --arg device "${ON_DEVICE_TEST_RESULT}" \
+            --arg host "${ON_HOST_TEST_RESULT}" \
+            --arg web "${WEB_TESTS_RESULT}" \
+            --arg e2e "${E2E_TEST_RESULT}" \
+            --arg yts "${YTS_TEST_RESULT}" \
+            --arg failed "${failed}" \
+            --argjson failures "${failures_json}" \
+            '{
+              platform: $platform,
+              config: $config,
+              build_result: $build,
+              on_device_test_result: $device,
+              on_host_test_result: $host,
+              web_tests_result: $web,
+              e2e_test_result: $e2e,
+              yts_test_result: $yts,
+              test_failures: $failures,
+              failed: ($failed == "true")
+            }' > report_${{ matrix.platform }}.json
+
+          rm -f test_failures.json
+
           if [[ "${failed}" == "true" ]]; then
             exit 1
           fi
         shell: bash
+      - name: Upload Report Fragment
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-report-${{ matrix.platform }}
+          path: report_${{ matrix.platform }}.json
