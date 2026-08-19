@@ -2,7 +2,7 @@ name: CI Shepherd
 
 on:
   workflow_run:
-    workflows: [android, aosp, evergreen, linux, tvos]
+    workflows: ['android', 'aosp', 'evergreen', 'linux', 'tvos']
     types:
       - in_progress
       - completed
@@ -143,7 +143,7 @@ jobs:
           ' > combined_report.md
 
       - name: Comment on PR
-        if: always() && github.event.workflow_run.event == 'pull_request' && length(github.event.workflow_run.pull_requests) > 0 && steps.report.outcome == 'success'
+        if: always() && github.event.workflow_run.event == 'pull_request' && toJSON(github.event.workflow_run.pull_requests) != '[]' && github.event.workflow_run.pull_requests[0].number != '' && steps.report.outcome == 'success'
         uses: marocchino/sticky-pull-request-comment@3362cf0a34974d4ad7277c407421379903e135d5 # v2.9.0
         with:
           header: combined-ci-report
