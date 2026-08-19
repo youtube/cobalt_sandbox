@@ -157,11 +157,10 @@ jobs:
           if [ -n "${pr_number}" ]; then
             header="<!-- sticky-pull-request-comment: combined-ci-report -->"
             report_content=$(cat combined_report.md)
-            comment_body="${header}
-${report_content}"
+            comment_body=$(printf "%s\n\n%s\n" "${header}" "${report_content}")
 
             # Check for existing comment with header
-            existing_comment_id=$(gh api "repos/${REPO}/issues/${pr_number}/comments" | jq -r --arg h "${header}" '.[] | select(.body | contains($h)) | .id' | head -n 1 || true)
+            existing_comment_id=$(gh api "repos/${REPO}/issues/${pr_number}/comments" --jq '.[] | select(.body | contains("sticky-pull-request-comment: combined-ci-report")) | .id' | head -n 1 || true)
 
             if [ -n "${existing_comment_id}" ]; then
               echo "Updating existing sticky PR comment ${existing_comment_id} on PR #${pr_number}"
