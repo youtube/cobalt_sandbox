@@ -1,0 +1,180 @@
+name: CI Shepherd
+
+on:
+  workflow_run:
+    workflows: ['android', 'aosp', 'evergreen', 'linux', 'tvos']
+    types:
+      - in_progress
+      - completed
+
+permissions:
+  contents: read
+  actions: write
+  statuses: write
+  pull-requests: write
+
+jobs:
+  deflake:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
+    outputs:
+      rerun_triggered: ${{ steps.rerun.outputs.rerun_triggered || 'false' }}
+    steps:
+      - name: Checkout .github Files
+        if: github.event.workflow_run.conclusion == 'failure'
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          filter: blob:none
+          sparse-checkout: .github
+
+      - name: Rerun Failing Tests
+        id: rerun
+        if: github.event.workflow_run.conclusion == 'failure'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+          WORKFLOW: ${{ github.event.workflow_run.id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # Max number of times the tests should run.
+          MAX_ATTEMPTS=$(jq -r '.deflake_runs | tonumber? // 3' .github/config/infra/deflake.json 2>/dev/null || echo 3)
+
+          # This call fails until the workflow has run $MAX_ATTEMPTS times.
+          if gh run view --repo "${REPO}" "${WORKFLOW}" --attempt "${MAX_ATTEMPTS}"; then
+            echo "Done retrying ${WORKFLOW_NAME}. It is still failing after ${MAX_ATTEMPTS} attempts."
+            echo "rerun_triggered=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Check if there are failing _tests jobs to rerun.
+          failed_tests=$(gh run view --repo "${REPO}" "${WORKFLOW}" --json jobs --jq '[.jobs[] | select(.conclusion=="failure") | select(.name | contains("_tests"))] | length')
+
+          if [ "${failed_tests}" -eq 0 ]; then
+            echo "No failing '_tests' jobs found to rerun."
+            echo "rerun_triggered=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Rerun all failed jobs under the workflow all in one go.
+          echo "Rerunning failed jobs under https://github.com/${REPO}/actions/runs/${WORKFLOW}"
+          gh run rerun --repo "${REPO}" "${WORKFLOW}" --failed
+          echo "rerun_triggered=true" >> "$GITHUB_OUTPUT"
+
+          # Sleep to allow GitHub API to transition the run status to in_progress/queued
+          sleep 5
+
+  generate-report:
+    runs-on: ubuntu-latest
+    needs: deflake
+    if: always() && !cancelled()
+    permissions:
+      statuses: write
+      pull-requests: write
+    steps:
+      - name: Update Triggering Workflow Commit Status
+        id: update-status
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+          STATUS: ${{ github.event.workflow_run.status }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
+          RERUN_TRIGGERED: ${{ needs.deflake.outputs.rerun_triggered || 'false' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ "${RERUN_TRIGGERED}" = "true" ]; then
+            state="pending"
+            desc="Retrying failed tests"
+          elif [ "${STATUS}" = "in_progress" ] || [ "${STATUS}" = "queued" ] || [ "${STATUS}" = "requested" ] || [ -z "${CONCLUSION}" ] || [ "${CONCLUSION}" = "null" ]; then
+            state="pending"
+            desc="Checks are running"
+          elif [ "${CONCLUSION}" = "success" ]; then
+            state="success"
+            desc="Passed"
+          elif [ "${CONCLUSION}" = "cancelled" ]; then
+            state="failure"
+            desc="Cancelled"
+          else
+            state="failure"
+            desc="Failed"
+          fi
+
+          gh api "repos/${REPO}/statuses/${HEAD_SHA}" \
+            -f state="${state}" \
+            -f target_url="${RUN_URL}" \
+            -f description="${desc}" \
+            -f context="CI / ${WORKFLOW_NAME}"
+
+      - name: Generate Combined Report
+        id: report
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          gh api "repos/${REPO}/commits/${HEAD_SHA}/status" | jq -r '
+            {success: "✅ PASS", pending: "⏳ PENDING"} as $icons |
+            (if .state == "pending" or ([.statuses[]? | select(.state == "pending")] | length > 0) then
+              "⏳ **Checks are running...**"
+            elif .state == "success" then
+              "✅ **All checks have completed. Nothing is running.**"
+            else
+              "❌ **All checks have completed. Nothing is running.**"
+            end) as $summary |
+            ["## Combined CI Status Report", "", $summary, "", "| Workflow | Status | Details |", "|---|---|---|"] +
+            [
+              .statuses // [] | sort_by(.context)[] |
+              "| [\(.context)](\(.target_url)) | \($icons[.state] // "❌ FAIL") | \(.description // "-") |"
+            ] | join("\n")
+          ' > combined_report.md
+
+      - name: Comment on PR
+        if: always() && github.event.workflow_run.event == 'pull_request' && steps.report.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          EVENT_JSON: ${{ toJson(github.event.workflow_run) }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          pr_number=$(echo "${EVENT_JSON}" | jq -r '.pull_requests[0].number // empty')
+
+          if [ -n "${pr_number}" ]; then
+            header="<!-- sticky-pull-request-comment: combined-ci-report -->"
+            report_content=$(cat combined_report.md)
+            comment_body=$(printf "%s\n\n%s\n" "${header}" "${report_content}")
+
+            # Check for existing comment with header
+            existing_comment_id=$(gh api "repos/${REPO}/issues/${pr_number}/comments" --jq '.[] | select(.body | contains("sticky-pull-request-comment: combined-ci-report")) | .id' | head -n 1 || true)
+
+            if [ -n "${existing_comment_id}" ]; then
+              echo "Updating existing sticky PR comment ${existing_comment_id} on PR #${pr_number}"
+              gh api -X PATCH "repos/${REPO}/issues/comments/${existing_comment_id}" -f body="${comment_body}"
+            else
+              echo "Creating new sticky PR comment on PR #${pr_number}"
+              gh api -X POST "repos/${REPO}/issues/${pr_number}/comments" -f body="${comment_body}"
+            fi
+          else
+            echo "No pull request number found; skipping PR comment."
+          fi
+
+      - name: Publish Step Summary
+        if: always() && steps.report.outcome == 'success'
+        shell: bash
+        run: |
+          cat combined_report.md >> "$GITHUB_STEP_SUMMARY"
