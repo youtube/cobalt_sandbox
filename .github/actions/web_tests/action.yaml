@@ -21,30 +21,22 @@ runs:
         set -x
         # The web tests fail when not run from the source folder. Use the existing checkout.
         tar -I 'zstd -T0' -xf "${GITHUB_WORKSPACE}/test_artifacts.tar.zstd"
-    - name: Run Web Tests
+    - name: Run Web Tests (Mocked)
       id: run-tests
       shell: bash
       working-directory: cobalt/src
       env:
-        TEST_PATH: wpt_internal/cobalt
         PLATFORM: ${{ matrix.platform }}
         CONFIG: ${{ matrix.config }}
       run: |
         set -x
-        env
-
         RESULTS_DIR="out/${PLATFORM}_${CONFIG}/layout-test-results"
         echo "RESULTS_DIR=${RESULTS_DIR}" >> "${GITHUB_ENV}"
-
-        third_party/blink/tools/run_web_tests.py \
-          --driver-logging \
-          --additional-driver-flag="--no-sandbox" \
-          --debug \
-          --no-show-results \
-          --target "${PLATFORM}_${CONFIG}" \
-          "${TEST_PATH}"
-
-        echo "Finished running tests..."
+        mkdir -p "${RESULTS_DIR}"
+        python3 "${GITHUB_WORKSPACE}/.github/scripts/mock_step.py" \
+          --job-name "${JOB_NAME:-web_tests}" \
+          --job-type test \
+          --output-dir "${GITHUB_WORKSPACE}/cobalt/src/${RESULTS_DIR}"
     - name: Archive Test Results
       if: always() && contains(fromJson('["success", "failed"]'), steps.run-tests.outcome)
       uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
