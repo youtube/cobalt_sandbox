@@ -27,34 +27,27 @@ runs:
         uses: ./.github/actions/sccache
         with:
           sccache_gcs_key: ${{ inputs.sccache_gcs_key }}
-      - name: GN gen
+      - name: GN gen (Mocked)
         env:
-          ENABLE_SCCACHE: ${{ inputs.enable_sccache }}
           PLATFORM: ${{ matrix.platform }}
           CONFIG: ${{ matrix.config }}
+          JOB_NAME: ${{ matrix.name }}_${{ matrix.config }}
         working-directory: cobalt/src
         run: |
-          gn_flags=()
-          if [[ "${PLATFORM}" == *"tvos"* ]]; then
-            # TvOS does not use RBE unless it's sccache
-            gn_flags+=(--no-rbe)
-          fi
-          if [[ "${ENABLE_SCCACHE}" == "true" ]]; then
-            gn_flags+=(--use-sccache)
-          fi
-          cobalt/build/gn.py -p "${PLATFORM}" -C "${CONFIG}" "${gn_flags[@]}"
+          set -x
+          mkdir -p "out/${PLATFORM}_${CONFIG}"
+          python3 "${GITHUB_WORKSPACE}/.github/scripts/mock_step.py" \
+            --job-name "${JOB_NAME}" \
+            --job-type build \
+            --output-dir "out/${PLATFORM}_${CONFIG}"
         shell: bash
       - name: Configure Siso Credential Helper
         shell: bash
         run: |
           echo "SISO_CREDENTIAL_HELPER=gcloud" >> "${GITHUB_ENV}"
-      - name: List GN args
-        env:
-          PLATFORM: ${{ matrix.platform }}
-          CONFIG: ${{ matrix.config }}
-        working-directory: cobalt/src
+      - name: List GN args (Mocked)
         run: |
-          gn args --list --short --overrides-only out/"${PLATFORM}_${CONFIG}"
+          echo "Mock list GN args"
         shell: bash
       - name: Get list of changed files
         if: github.event_name == 'pull_request'
@@ -88,33 +81,18 @@ runs:
         run: |
           set -x
 
-          if [[ ! -f "${STATIC_TEST_TARGETS_JSON_FILE}" ]]; then
-            echo "Static test targets file not found at ${STATIC_TEST_TARGETS_JSON_FILE}. Skipping step."
-            echo "test_targets_count=0" >> "${GITHUB_OUTPUT}"
-            exit 0
+          mkdir -p "$(dirname "${TEST_TARGETS_JSON_FILE}")"
+          src_static="${STATIC_TEST_TARGETS_JSON_FILE}"
+          if [[ ! -f "${src_static}" && -f "${GITHUB_WORKSPACE}/${STATIC_TEST_TARGETS_JSON_FILE}" ]]; then
+            src_static="${GITHUB_WORKSPACE}/${STATIC_TEST_TARGETS_JSON_FILE}"
           fi
 
-          # TODO: b/382508397 - Currently, override with static test targets
-          cp -av "${STATIC_TEST_TARGETS_JSON_FILE}" "${TEST_TARGETS_JSON_FILE}"
-
-          # gn desc out/${PLATFORM}_${CONFIG}/ "*" --format=json > gn_desc.json
-          # # Trim any warning gn printed before the json (all lines above the first curly brace).
-          # sed -n '/^{/,$p' -i gn_desc.json
-
-          # changed_files_arg=""
-
-          # TODO(oxv): If this list is too it will blow out the command line. Pass list in a file to the script instead.
-          # Since the output of the script below isn't currently used the arg is disabled.
-          # if [[ -s "${CHANGED_FILES_LIST}" ]]; then
-          #   changed_files_arg="--sources $(cat ${CHANGED_FILES_LIST} | jq -cr '. | join(",")')"
-          # fi
-
-          # vpython3 cobalt/build/test_targets.py \
-          #     --root-target "${ROOT_TARGET}" \
-          #     ${changed_files_arg} \
-          #     --gn-json gn_desc.json \
-          #     --json-output > "${DYN_TEST_TARGETS_JSON_FILE}"
-
+          if [[ -f "${src_static}" ]]; then
+            cp -av "${src_static}" "${TEST_TARGETS_JSON_FILE}"
+          else
+            echo "Static test targets file not found at ${STATIC_TEST_TARGETS_JSON_FILE}. Writing empty array."
+            echo "[]" > "${TEST_TARGETS_JSON_FILE}"
+          fi
 
           test_targets_json=$(jq -cr '[.[] | select(.target != null) | .target]' "${TEST_TARGETS_JSON_FILE}")
           echo "test_targets_json=${test_targets_json}" >> "${GITHUB_OUTPUT}"
@@ -127,34 +105,21 @@ runs:
         with:
           name: ${{ matrix.platform }}_test_targets_json
           path: cobalt/src/out/${{ matrix.platform }}_${{ matrix.config }}/test_targets.json
-      - name: Ninja build test targets
+      - name: Ninja build test targets (Mocked)
         if: ${{ matrix.config == 'devel' && fromJSON(steps.calculate-test-targets.outputs.test_targets_count || 0) > 0 }}
-        id: build-test-targets
-        working-directory: cobalt/src
-        env:
-          TEST_TARGETS_JSON: ${{ steps.calculate-test-targets.outputs.test_targets_json }}
-          PLATFORM: ${{ matrix.platform }}
-          CONFIG: ${{ matrix.config }}
         run: |
-          set -ex
-          readarray -t test_targets < <(echo "${TEST_TARGETS_JSON:-[]}" | jq -r '.[]')
-          time autoninja -C out/"${PLATFORM}_${CONFIG}" "${test_targets[@]}"
+          echo "Mock build test targets"
         shell: bash
-      - name: Ninja build
-        working-directory: cobalt/src
-        env:
-          TARGETS_JSON: ${{ inputs.targets }}
-          USE_SCCACHE: ${{ inputs.enable_sccache }}
-          PLATFORM: ${{ matrix.platform }}
-          CONFIG: ${{ matrix.config }}
+      - name: Ninja build (Mocked)
         run: |
-          set -ex
-          readarray -t targets < <(echo "${TARGETS_JSON:-[]}" | jq -r '.[]')
-          time autoninja -C out/"${PLATFORM}_${CONFIG}" "${targets[@]}"
-          if [[ "${USE_SCCACHE}" == "true" ]]; then
-            sccache --show-stats
-          fi
+          echo "Mock build"
         shell: bash
+      - name: Create dummy Android APKs (Mocked)
+        if: (startsWith(matrix.platform, 'android') || startsWith(matrix.platform, 'aosp')) && matrix.config == 'qa'
+        shell: bash
+        run: |
+          mkdir -p "cobalt/src/out/${{ matrix.platform }}_qa/apks" "cobalt/src/out/${{ matrix.platform }}_qa/gen"
+          touch "cobalt/src/out/${{ matrix.platform }}_qa/apks/dummy.apk" "cobalt/src/out/${{ matrix.platform }}_qa/gen/build_info.json"
       - name: Archive Android APKs
         if: (startsWith(matrix.platform, 'android') || startsWith(matrix.platform, 'aosp')) && matrix.config == 'qa'
         uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
