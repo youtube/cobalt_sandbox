@@ -81,33 +81,18 @@ runs:
         run: |
           set -x
 
-          if [[ ! -f "${STATIC_TEST_TARGETS_JSON_FILE}" ]]; then
-            echo "Static test targets file not found at ${STATIC_TEST_TARGETS_JSON_FILE}. Skipping step."
-            echo "test_targets_count=0" >> "${GITHUB_OUTPUT}"
-            exit 0
+          mkdir -p "$(dirname "${TEST_TARGETS_JSON_FILE}")"
+          src_static="${STATIC_TEST_TARGETS_JSON_FILE}"
+          if [[ ! -f "${src_static}" && -f "${GITHUB_WORKSPACE}/${STATIC_TEST_TARGETS_JSON_FILE}" ]]; then
+            src_static="${GITHUB_WORKSPACE}/${STATIC_TEST_TARGETS_JSON_FILE}"
           fi
 
-          # TODO: b/382508397 - Currently, override with static test targets
-          cp -av "${STATIC_TEST_TARGETS_JSON_FILE}" "${TEST_TARGETS_JSON_FILE}"
-
-          # gn desc out/${PLATFORM}_${CONFIG}/ "*" --format=json > gn_desc.json
-          # # Trim any warning gn printed before the json (all lines above the first curly brace).
-          # sed -n '/^{/,$p' -i gn_desc.json
-
-          # changed_files_arg=""
-
-          # TODO(oxv): If this list is too it will blow out the command line. Pass list in a file to the script instead.
-          # Since the output of the script below isn't currently used the arg is disabled.
-          # if [[ -s "${CHANGED_FILES_LIST}" ]]; then
-          #   changed_files_arg="--sources $(cat ${CHANGED_FILES_LIST} | jq -cr '. | join(",")')"
-          # fi
-
-          # vpython3 cobalt/build/test_targets.py \
-          #     --root-target "${ROOT_TARGET}" \
-          #     ${changed_files_arg} \
-          #     --gn-json gn_desc.json \
-          #     --json-output > "${DYN_TEST_TARGETS_JSON_FILE}"
-
+          if [[ -f "${src_static}" ]]; then
+            cp -av "${src_static}" "${TEST_TARGETS_JSON_FILE}"
+          else
+            echo "Static test targets file not found at ${STATIC_TEST_TARGETS_JSON_FILE}. Writing empty array."
+            echo "[]" > "${TEST_TARGETS_JSON_FILE}"
+          fi
 
           test_targets_json=$(jq -cr '[.[] | select(.target != null) | .target]' "${TEST_TARGETS_JSON_FILE}")
           echo "test_targets_json=${test_targets_json}" >> "${GITHUB_OUTPUT}"
@@ -129,6 +114,12 @@ runs:
         run: |
           echo "Mock build"
         shell: bash
+      - name: Create dummy Android APKs (Mocked)
+        if: (startsWith(matrix.platform, 'android') || startsWith(matrix.platform, 'aosp')) && matrix.config == 'qa'
+        shell: bash
+        run: |
+          mkdir -p "cobalt/src/out/${{ matrix.platform }}_qa/apks" "cobalt/src/out/${{ matrix.platform }}_qa/gen"
+          touch "cobalt/src/out/${{ matrix.platform }}_qa/apks/dummy.apk" "cobalt/src/out/${{ matrix.platform }}_qa/gen/build_info.json"
       - name: Archive Android APKs
         if: (startsWith(matrix.platform, 'android') || startsWith(matrix.platform, 'aosp')) && matrix.config == 'qa'
         uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1

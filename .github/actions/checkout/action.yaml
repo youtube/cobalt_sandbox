@@ -26,4 +26,10 @@ runs:
       shell: bash
       run: |
         echo "Mocking checkout to ${DEST_PATH}"
-        mkdir -p "${DEST_PATH}"
+        mkdir -p "${DEST_PATH}/src"
+        if [ -d "${GITHUB_WORKSPACE}/cobalt" ]; then
+          cp -r "${GITHUB_WORKSPACE}/cobalt" "${DEST_PATH}/src/" || true
+        fi
+        if [ -d "${GITHUB_WORKSPACE}/.github" ]; then
+          cp -r "${GITHUB_WORKSPACE}/.github" "${DEST_PATH}/src/" || true
+        fi
