@@ -1,0 +1,22 @@
+{
+  "rules": [
+    {
+      "job_pattern": ".*_on_host_tests_1",
+      "fail_until_attempt": 1,
+      "failure_details": {
+        "suite": "FlakySuite",
+        "case": "FlakyTest",
+        "message": "Transient failure"
+      }
+    },
+    {
+      "job_pattern": ".*_on_host_tests_2",
+      "fail_until_attempt": 99,
+      "failure_details": {
+        "suite": "PersistentFailSuite",
+        "case": "PersistentTest",
+        "message": "Permanent failure"
+      }
+    }
+  ]
+}
