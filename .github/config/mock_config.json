@@ -2,11 +2,11 @@
   "rules": [
     {
       "job_pattern": ".*_on_host_tests_1",
-      "fail_until_attempt": 2,
+      "fail_until_attempt": 1,
       "failure_details": {
-        "suite": "Flaky",
-        "case": "Test",
-        "message": "Flaky"
+        "suite": "FlakySuite",
+        "case": "FlakyTest",
+        "message": "Transient failure"
       }
     }
   ]
