@@ -1,0 +1,13 @@
+{
+  "rules": [
+    {
+      "job_pattern": ".*_on_host_tests_1",
+      "fail_until_attempt": 99,
+      "failure_details": {
+        "suite": "PersistentFailSuite",
+        "case": "PersistentTest",
+        "message": "Permanent failure"
+      }
+    }
+  ]
+}
