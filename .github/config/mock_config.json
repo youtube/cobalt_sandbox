@@ -1,0 +1,12 @@
+{
+  "rules": [
+    {
+      "job_pattern": ".*_devel",
+      "step_type": "build",
+      "fail_until_attempt": 99,
+      "failure_details": {
+        "message": "Compilation error: undefined reference to Symbol"
+      }
+    }
+  ]
+}
