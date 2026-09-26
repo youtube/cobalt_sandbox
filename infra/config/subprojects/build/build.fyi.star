@@ -177,6 +177,7 @@ But, the tests are built by {}.\
             ),
         },
     ),
+    ssd = None,
     console_view_entry = consoles.console_view_entry(
         category = "mac",
         short_name = "test",

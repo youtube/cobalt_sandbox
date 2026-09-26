@@ -333,6 +333,7 @@ ci.thin_tester(
         os_type = targets.os_type.ANDROID,
     ),
     cores = 8,
+    ssd = None,
     gardener_rotations = gardener_rotations.ANDROID,
     console_view_entry = consoles.console_view_entry(
         category = "tester|x64",
