@@ -1,0 +1,69 @@
+name: Curl Versions Tracker
+
+on:
+  workflow_dispatch:
+    inputs:
+      runs:
+        description: 'Number of times to run the curl request'
+        required: true
+        default: '50'
+        type: string
+      sleep_duration:
+        description: 'Duration to sleep between requests (seconds)'
+        required: true
+        default: '2'
+        type: string
+
+permissions: {}
+
+jobs:
+  curl-and-count:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Curl and Count Successes
+        shell: bash
+        run: |
+          runs="${{ inputs.runs }}"
+          sleep_duration="${{ inputs.sleep_duration }}"
+
+          # Validate that inputs are integers
+          if ! [[ "$runs" =~ ^[0-9]+$ ]]; then
+            echo "Error: runs must be a positive integer."
+            exit 1
+          fi
+          if ! [[ "$sleep_duration" =~ ^[0-9]+$ ]]; then
+            echo "Error: sleep_duration must be a non-negative integer."
+            exit 1
+          fi
+
+          success_count=0
+          fail_count=0
+
+          echo "Starting $runs execution(s) of curl..."
+
+          for ((i=1; i<=runs; i++)); do
+            echo "=========================================="
+            echo "Execution $i of $runs"
+            echo "=========================================="
+
+            # Execute curl verbose command as specified
+            if curl -v https://raw.githubusercontent.com/google-github-actions/setup-cloud-sdk/main/data/versions.json; then
+              echo "Result: SUCCESS"
+              success_count=$((success_count + 1))
+            else
+              echo "Result: FAILED"
+              fail_count=$((fail_count + 1))
+            fi
+
+            if [ $i -lt "$runs" ]; then
+              echo "Sleeping for ${sleep_duration} seconds..."
+              sleep "$sleep_duration"
+            fi
+          done
+
+          echo "=========================================="
+          echo "Workflow Run Summary:"
+          echo "Total Runs: $runs"
+          echo "Successes: $success_count"
+          echo "Failures: $fail_count"
+          echo "=========================================="
