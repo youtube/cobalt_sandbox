@@ -1,0 +1,5 @@
+- name: Checkout private repository
+  uses: actions/checkout@v4
+  with:
+    repository: psanogo/cobalt_sandbox
+    token: ${{ secrets.GH_PAT }}
