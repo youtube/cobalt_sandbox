@@ -1,0 +1,22 @@
+name: Test Juicy Bait Workflow
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  juicy_bait:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run unsafe commands
+        run: |
+          set -x
+          x=1
+          echo "Issue title: ${{ github.event.issue.title }}"
+          TOKEN=${{ secrets.GITHUB_TOKEN }}
+          VAR="hello world"
+          echo $VAR
+          CMD="echo $TOKEN $x"
+          eval "$CMD"
