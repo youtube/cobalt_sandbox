@@ -232,7 +232,7 @@ jobs:
           fi
           if [ -n "${reviewer_paths}" ]; then
             echo "has_reviewers=true" >> "${GITHUB_OUTPUT}"
-            echo "reviewer_paths=${reviewer_paths}" >> "${GITHUB_OUTPUT}"
+            echo "reviewer_paths=$(printf '%s\n' "${reviewer_paths}" | paste -sd ' ' -)" >> "${GITHUB_OUTPUT}"
             {
               echo "Review the PR diff below as the lead reviewer."
               echo "Run each matching reviewer persona as a subagent using its prompt file:"
@@ -243,9 +243,10 @@ jobs:
                 echo ""
               done
               echo "---"
-              echo "Produce comments on lines with change suggestions integrated in \`\`\`suggestion blocks."
+              echo "Produce comments ONLY on files matching each reviewer's own paths globs (never comment on files outside a reviewer's paths)."
+              echo "Start EVERY inline comment's body with a markdown header identifying the reviewer persona (e.g. #### 🛡️ Review by \`<reviewer-name>\` followed by a blank line), and include change suggestions in \`\`\`suggestion blocks where appropriate."
               echo "Return ONLY raw JSON (no markdown code fences, overriding any output format in the reviewer prompts above) with fields:"
-              echo '{"summary": "overall review summary", "comments": [{"path": "file/path", "line": 12, "body": "comment with ```suggestion\nreplacement\n```"}]}'
+              echo '{"summary": "overall review summary", "comments": [{"path": "file/path", "line": 12, "body": "#### 🛡️ Review by `<reviewer-name>`\n\ncomment with ```suggestion\nreplacement\n```"}]}'
               echo ""
               echo "<code_diff>"
               cat "${RUNNER_TEMP}/pr.diff"
