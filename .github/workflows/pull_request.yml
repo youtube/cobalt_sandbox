@@ -336,7 +336,7 @@ jobs:
   post_review_comment:
     name: 'Post Review Comment'
     needs: [pull_request_review]
-    if: needs.pull_request_review.outputs.has_comment == 'true'
+    if: always() && !cancelled() && needs.pull_request_review.result == 'success' && needs.pull_request_review.outputs.has_comment == 'true'
     runs-on: ubuntu-latest
     permissions:
       issues: write
