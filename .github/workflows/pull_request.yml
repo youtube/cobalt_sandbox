@@ -273,8 +273,8 @@ jobs:
       - name: 'Format Comment'
         id: format_comment
         env:
-          COMMIT_MSG: ${{ steps.gemini_commit.outputs.gemini_response || '' }}
-          OWNER_REV: ${{ steps.gemini_review.outputs.gemini_response || '' }}
+          COMMIT_MSG: ${{ steps.gemini_commit.outputs.summary || '' }}
+          OWNER_REV: ${{ steps.gemini_review.outputs.summary || '' }}
           PR_NUM: ${{ github.event.pull_request.number || github.event.issue.number || inputs.pr_number }}
         run: |
           set -euo pipefail
